@@ -1,7 +1,6 @@
 import { Home, Menu, Sparkles } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
-import { apps } from '@/apps/registry'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -40,21 +39,6 @@ export function AppShell() {
               <Home className="size-4" />
               Dashboard
             </NavLink>
-            {apps.map((app) => (
-              <NavLink
-                key={app.id}
-                to={app.href}
-                className={({ isActive }) =>
-                  cn(
-                    'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                    isActive && 'bg-secondary text-secondary-foreground',
-                  )
-                }
-              >
-                <app.Icon className="size-4 text-accent" />
-                {app.title}
-              </NavLink>
-            ))}
           </nav>
 
           <div className="md:hidden">
@@ -68,11 +52,6 @@ export function AppShell() {
                 <DropdownMenuItem asChild>
                   <Link to="/">Dashboard</Link>
                 </DropdownMenuItem>
-                {apps.map((app) => (
-                  <DropdownMenuItem key={app.id} asChild>
-                    <Link to={app.href}>{app.title}</Link>
-                  </DropdownMenuItem>
-                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

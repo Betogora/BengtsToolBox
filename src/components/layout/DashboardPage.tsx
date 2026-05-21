@@ -9,41 +9,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 const diagnosticAppId = 'diagnostics'
 const hubApps = apps.filter((app) => app.id !== diagnosticAppId)
-const diagnosticApp = apps.find((app) => app.id === diagnosticAppId)
 
 type AppTileProps = {
   app: HubApp
-  isDiagnostic?: boolean
 }
 
-function AppTile({ app, isDiagnostic = false }: AppTileProps) {
+function AppTile({ app }: AppTileProps) {
   return (
     <Link
       to={app.href}
       aria-label={`${app.title} öffnen`}
-      className={cn(
-        'group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-        isDiagnostic && 'sm:col-span-2',
-      )}
+      className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
-      <Card
-        className={cn(
-          'h-full overflow-hidden transition-colors',
-          isDiagnostic
-            ? 'border-primary/25 bg-primary/5 group-hover:bg-primary/10'
-            : 'group-hover:border-primary/45 group-hover:bg-secondary/35',
-        )}
-      >
-        <CardHeader
-          className={cn(
-            'gap-5 p-6',
-            isDiagnostic && 'sm:flex-row sm:items-center sm:justify-between',
-          )}
-        >
+      <Card className="h-full overflow-hidden transition-colors group-hover:border-primary/45 group-hover:bg-secondary/35">
+        <CardHeader className="gap-5 p-6">
           <div className="flex items-center gap-5">
             <div
               className="flex size-16 shrink-0 items-center justify-center rounded-lg text-white"
@@ -56,11 +38,9 @@ function AppTile({ app, isDiagnostic = false }: AppTileProps) {
             </CardTitle>
           </div>
 
-          {!isDiagnostic && (
-            <Badge variant={app.status === 'Live' ? 'default' : 'secondary'}>
-              {app.status}
-            </Badge>
-          )}
+          <Badge variant={app.status === 'Live' ? 'default' : 'secondary'}>
+            {app.status}
+          </Badge>
         </CardHeader>
       </Card>
     </Link>
@@ -88,7 +68,7 @@ export function DashboardPage() {
           <Card className="bg-primary text-primary-foreground">
             <CardHeader className="p-4">
               <Layers3 className="mb-5 size-5" />
-              <CardTitle className="text-3xl">{apps.length}</CardTitle>
+              <CardTitle className="text-3xl">{hubApps.length}</CardTitle>
               <CardDescription className="text-primary-foreground/75">
                 Apps verfügbar
               </CardDescription>
@@ -108,9 +88,6 @@ export function DashboardPage() {
         {hubApps.map((app) => (
           <AppTile key={app.id} app={app} />
         ))}
-        {diagnosticApp && (
-          <AppTile app={diagnosticApp} isDiagnostic />
-        )}
       </section>
     </div>
   )
