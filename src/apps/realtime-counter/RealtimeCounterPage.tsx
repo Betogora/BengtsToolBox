@@ -97,9 +97,7 @@ export function RealtimeCounterPage() {
               <Trophy className="size-5 text-primary" />
               Team-Scores
             </CardTitle>
-            <CardDescription>
-              {isLoading ? 'Synchronisiere...' : `${players.length} Personen`}
-            </CardDescription>
+            {isLoading && <CardDescription>Synchronisiere...</CardDescription>}
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="rounded-lg bg-secondary p-4">

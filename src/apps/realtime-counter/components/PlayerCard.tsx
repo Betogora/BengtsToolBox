@@ -1,4 +1,5 @@
 import { Minus, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 
 import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
 import type { CounterPlayer } from '@/apps/realtime-counter/types'
@@ -29,28 +30,58 @@ export function PlayerCard({
   onRemove,
   onTeamChange,
 }: PlayerCardProps) {
+  const [isEditingName, setIsEditingName] = useState(false)
   const team = counterTeams.find((entry) => entry.id === player.teamId)
+  const saveName = (name: string) => {
+    onNameChange(name)
+    setIsEditingName(false)
+  }
 
   return (
     <Card className="overflow-hidden transition-colors">
       {team && <div className={cn('h-1 w-full', team.dotClassName)} />}
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Input
-              key={player.name}
-              aria-label={`Name fuer Person ${player.position}`}
-              className="h-12 pr-10 text-2xl font-semibold shadow-none md:text-2xl"
-              defaultValue={player.name}
-              onBlur={(event) => onNameChange(event.currentTarget.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur()
-                }
-              }}
-            />
-            <Pencil className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            {isEditingName ? (
+              <Input
+                key={player.name}
+                aria-label={`Name fuer Person ${player.position}`}
+                autoFocus
+                className="h-12"
+                defaultValue={player.name}
+                onBlur={(event) => saveName(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur()
+                  }
+
+                  if (event.key === 'Escape') {
+                    setIsEditingName(false)
+                  }
+                }}
+                style={{
+                  fontSize: '1.875rem',
+                  fontWeight: 600,
+                  lineHeight: '2.25rem',
+                }}
+              />
+            ) : (
+              <h2 className="truncate py-1 text-3xl font-semibold tracking-normal">
+                {player.name}
+              </h2>
+            )}
           </div>
+          {!isEditingName && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`${player.name} bearbeiten`}
+              onClick={() => setIsEditingName(true)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
