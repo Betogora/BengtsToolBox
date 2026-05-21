@@ -22,7 +22,7 @@ export function AppShell() {
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold leading-tight">
-                Bencs Toolbox
+                Bengts ToolBox
               </span>
             </span>
           </Link>

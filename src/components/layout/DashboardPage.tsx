@@ -1,7 +1,7 @@
 import { Cloud, Layers3, MousePointerClick } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { apps } from '@/apps/registry'
+import { apps, type HubApp } from '@/apps/registry'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -9,6 +9,63 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+
+const diagnosticAppId = 'diagnostics'
+const hubApps = apps.filter((app) => app.id !== diagnosticAppId)
+const diagnosticApp = apps.find((app) => app.id === diagnosticAppId)
+
+type AppTileProps = {
+  app: HubApp
+  isDiagnostic?: boolean
+}
+
+function AppTile({ app, isDiagnostic = false }: AppTileProps) {
+  return (
+    <Link
+      to={app.href}
+      aria-label={`${app.title} öffnen`}
+      className={cn(
+        'group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        isDiagnostic && 'sm:col-span-2',
+      )}
+    >
+      <Card
+        className={cn(
+          'h-full overflow-hidden transition-colors',
+          isDiagnostic
+            ? 'border-primary/25 bg-primary/5 group-hover:bg-primary/10'
+            : 'group-hover:border-primary/45 group-hover:bg-secondary/35',
+        )}
+      >
+        <CardHeader
+          className={cn(
+            'gap-5 p-6',
+            isDiagnostic && 'sm:flex-row sm:items-center sm:justify-between',
+          )}
+        >
+          <div className="flex items-center gap-5">
+            <div
+              className="flex size-16 shrink-0 items-center justify-center rounded-lg text-white"
+              style={{ backgroundColor: app.color }}
+            >
+              <app.Icon className="size-8" />
+            </div>
+            <CardTitle className="text-2xl transition-colors group-hover:text-primary sm:text-3xl">
+              {app.title}
+            </CardTitle>
+          </div>
+
+          {!isDiagnostic && (
+            <Badge variant={app.status === 'Live' ? 'default' : 'secondary'}>
+              {app.status}
+            </Badge>
+          )}
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
 
 export function DashboardPage() {
   return (
@@ -20,7 +77,7 @@ export function DashboardPage() {
             Firebase-ready SPA
           </Badge>
           <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-            Bencs App-Hub
+            App-Hub
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
             Deine Mini-Apps, Spiele und Experimente an einem Ort.
@@ -48,38 +105,12 @@ export function DashboardPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        {apps.map((app) => (
-          <Link
-            key={app.id}
-            to={app.href}
-            aria-label={`${app.title} öffnen`}
-            className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            <Card className="h-full overflow-hidden transition-colors group-hover:border-primary/45 group-hover:bg-secondary/35">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div
-                    className="flex size-11 shrink-0 items-center justify-center rounded-lg text-white"
-                    style={{ backgroundColor: app.color }}
-                  >
-                    <app.Icon className="size-5" />
-                  </div>
-                  <Badge
-                    variant={app.status === 'Live' ? 'default' : 'secondary'}
-                  >
-                    {app.status}
-                  </Badge>
-                </div>
-                <CardTitle className="text-xl transition-colors group-hover:text-primary">
-                  {app.title}
-                </CardTitle>
-                <CardDescription className="min-h-12">
-                  {app.description}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+        {hubApps.map((app) => (
+          <AppTile key={app.id} app={app} />
         ))}
+        {diagnosticApp && (
+          <AppTile app={diagnosticApp} isDiagnostic />
+        )}
       </section>
     </div>
   )
