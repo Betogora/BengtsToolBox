@@ -51,7 +51,15 @@ Firebase-Ausfaelle sollen die Toolbox nicht unbenutzbar machen:
 
 ## Deploy-Modell
 
-Der Workflow `.github/workflows/firebase-hosting.yml` baut die App, deployed
-Firestore Rules/Indexes und veroeffentlicht danach Firebase Hosting. Der
-Service Account liegt in GitHub als Secret
-`FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX`.
+Der Workflow `.github/workflows/firebase-hosting.yml` baut die App und
+veroeffentlicht Firebase Hosting. Firestore Rules/Indexes werden vorerst
+manuell deployed:
+
+```powershell
+npx firebase-tools deploy --only firestore:rules,firestore:indexes
+```
+
+Der Service Account liegt in GitHub als Secret
+`FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX`. Wenn dieser Account spaeter
+Rules-/Firestore-Rechte bekommt, kann der Rules-Deploy wieder in den Workflow
+aufgenommen werden.

@@ -34,9 +34,10 @@ Die Schritt-fuer-Schritt-Anleitung liegt hier:
 
 [docs/ONLINE_HOSTING_GUIDE.md](docs/ONLINE_HOSTING_GUIDE.md)
 
-Der GitHub-Workflow deployed bei Push auf `main` zuerst Firestore Rules/Indexes
-und danach Firebase Hosting. Hosting und Firestore-Regeln sind getrennte
-Firebase-Produkte; beide muessen fuer Live-Sync korrekt deployed sein.
+Der GitHub-Workflow deployed bei Push auf `main` Firebase Hosting.
+Firestore-Regeln sind ein separates Firebase-Produkt und werden manuell
+deployed, bis der GitHub-Service-Account zusaetzliche Rules-/Firestore-Rechte
+bekommt.
 
 ## Wichtige Befehle
 

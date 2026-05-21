@@ -144,7 +144,10 @@ und Indexes ebenfalls deployed werden:
 npx firebase-tools deploy --only firestore:rules,firestore:indexes
 ```
 
-Der GitHub-Workflow deployed diese Dateien bei Push auf `main` automatisch mit.
+Diese Dateien werden aktuell manuell deployed. Der GitHub-Service-Account aus
+`firebase-tools init hosting:github` hat standardmaessig nur Hosting-Rechte; fuer
+automatische Rules-Deploys braeuchte er zusaetzliche Firebase Rules/
+Firestore-Berechtigungen.
 
 ## 7. Deploy aus GitHub starten
 
