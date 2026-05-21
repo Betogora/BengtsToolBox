@@ -8,4 +8,10 @@ export const firebasePaths = {
     `apps/realtime-counter/sessions/${sessionId}/players/${playerId}`,
   randomizerState: (stateId = 'default') =>
     `apps/randomizer/state/${stateId}`,
+  liveBuzzerState: (sessionId = 'default') =>
+    `apps/live-buzzer/sessions/${sessionId}/state/default`,
+  liveBuzzerPlayers: (sessionId = 'default') =>
+    `apps/live-buzzer/sessions/${sessionId}/players`,
+  liveBuzzerPlayer: (sessionId: string, playerId: string) =>
+    `apps/live-buzzer/sessions/${sessionId}/players/${playerId}`,
 } as const

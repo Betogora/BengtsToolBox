@@ -101,6 +101,36 @@ export function useFirestoreCollection<T extends CollectionItem>(
     [data, localKey, orderField, path],
   )
 
+  const saveItems = useCallback(
+    async (items: T[]) => {
+      const nextData = [...items].sort(
+        (left, right) => Number(left[orderField]) - Number(right[orderField]),
+      )
+
+      setData(nextData)
+      writeLocalValue(localKey, nextData)
+
+      const services = getFirebaseServices()
+
+      if (!services) {
+        return
+      }
+
+      await ensureAnonymousUser()
+      await Promise.all(
+        nextData.map((item) => {
+          const { id, ...value } = item
+
+          return setDoc(doc(services.db, path, id), {
+            ...value,
+            updatedAt: serverTimestamp(),
+          })
+        }),
+      )
+    },
+    [localKey, orderField, path],
+  )
+
   const mergeItem = useCallback(
     async (id: string, value: Partial<T>) => {
       const nextData = data.map((item) =>
@@ -131,6 +161,7 @@ export function useFirestoreCollection<T extends CollectionItem>(
     isLoading,
     isRealtime: isFirebaseConfigured,
     mergeItem,
+    saveItems,
     setItem,
   }
 }

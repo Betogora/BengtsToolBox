@@ -1,8 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
-import { Dice5, Stethoscope, TimerReset } from 'lucide-react'
+import { Bell, Dice5, Stethoscope, TimerReset } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { DiagnosticsPage } from '@/apps/diagnostics'
+import { LiveBuzzerPage } from '@/apps/live-buzzer'
 import { RandomizerPage } from '@/apps/randomizer'
 import { RealtimeCounterPage } from '@/apps/realtime-counter'
 
@@ -44,6 +45,18 @@ export const apps: HubApp[] = [
     color: appTileAccent,
     Icon: TimerReset,
     Page: RealtimeCounterPage,
+  },
+  {
+    id: 'live-buzzer',
+    title: 'Live-Buzzer',
+    description:
+      'Quizshow-Buzzer mit Admin-Freigabe, Spielerkennung und Live-Lockout.',
+    href: '/apps/live-buzzer',
+    routePath: 'apps/live-buzzer',
+    status: 'Live',
+    color: appTileAccent,
+    Icon: Bell,
+    Page: LiveBuzzerPage,
   },
   {
     id: 'randomizer',
