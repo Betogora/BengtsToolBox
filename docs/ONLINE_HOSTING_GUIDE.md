@@ -96,6 +96,12 @@ VITE_FIREBASE_APP_ID
 ```
 
 Die Werte kommen aus der Firebase Web-App-Konfiguration.
+Im Feld `Secret` darf jeweils nur der reine Wert stehen, nicht der Name:
+
+```txt
+Richtig: AIzaSy...
+Falsch: VITE_FIREBASE_API_KEY = AIzaSy...
+```
 
 ## 6. Firebase Service Account fuer GitHub Actions
 
@@ -120,7 +126,25 @@ Dabei auswaehlen:
 - Single-page app rewrite: `Yes`
 - Automatische Deploys auf `main`: `Yes`
 
-Firebase legt dann normalerweise selbst ein passendes GitHub Secret fuer den Service Account an. Falls du es manuell machst, muss ein Secret namens `FIREBASE_SERVICE_ACCOUNT` existieren und den JSON-Key eines Service Accounts enthalten.
+Firebase legt dann normalerweise selbst ein passendes GitHub Secret fuer den Service Account an.
+In diesem Projekt heisst es:
+
+```txt
+FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX
+```
+
+Falls du es manuell machst, muss der Workflow entweder diesen Secret-Namen verwenden oder entsprechend angepasst werden.
+
+## 6.1 Firestore-Regeln deployen
+
+Hosting alleine veroeffentlicht nur die Website. Fuer Firestore muessen Regeln
+und Indexes ebenfalls deployed werden:
+
+```powershell
+npx firebase-tools deploy --only firestore:rules,firestore:indexes
+```
+
+Der GitHub-Workflow deployed diese Dateien bei Push auf `main` automatisch mit.
 
 ## 7. Deploy aus GitHub starten
 
@@ -155,6 +179,7 @@ Wenn GitHub Actions rot wird:
 
 - `npm ci` Fehler: `package-lock.json` fehlt oder passt nicht.
 - `npm run build` Fehler: Code/TypeScript-Fehler im Projekt.
-- Firebase Deploy Fehler: Service Account Secret oder `FIREBASE_PROJECT_ID` fehlt.
+- Firebase Deploy Fehler: Service Account Secret `FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX` oder `FIREBASE_PROJECT_ID` fehlt.
 - App online leer: Firebase Web-App-Secrets fehlen oder sind falsch.
-
+- `auth/api-key-not-valid`: GitHub Secret enthaelt vermutlich `NAME = wert` statt nur `wert`.
+- `Missing or insufficient permissions`: Firestore-Regeln sind nicht deployed oder Anonymous Auth ist deaktiviert.

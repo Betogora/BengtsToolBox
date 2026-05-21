@@ -1,4 +1,5 @@
 export const firebasePaths = {
+  diagnosticsHealth: () => 'apps/diagnostics/health/default',
   realtimeCounterSession: (sessionId = 'default') =>
     `apps/realtime-counter/sessions/${sessionId}`,
   realtimeCounterPlayers: (sessionId = 'default') =>

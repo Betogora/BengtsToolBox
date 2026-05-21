@@ -1,7 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
-import { Dice5, TimerReset } from 'lucide-react'
+import { Dice5, Stethoscope, TimerReset } from 'lucide-react'
 import type { ComponentType } from 'react'
 
+import { DiagnosticsPage } from '@/apps/diagnostics'
 import { RandomizerPage } from '@/apps/randomizer'
 import { RealtimeCounterPage } from '@/apps/realtime-counter'
 
@@ -18,6 +19,18 @@ export type HubApp = {
 }
 
 export const apps: HubApp[] = [
+  {
+    id: 'diagnostics',
+    title: 'Diagnose',
+    description:
+      'Prueft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
+    href: '/apps/diagnostics',
+    routePath: 'apps/diagnostics',
+    status: 'Live',
+    color: '#3b5d75',
+    Icon: Stethoscope,
+    Page: DiagnosticsPage,
+  },
   {
     id: 'realtime-counter',
     title: 'Echtzeit-Counter',
