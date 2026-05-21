@@ -18,16 +18,18 @@ export type HubApp = {
   Page: ComponentType
 }
 
+export const appTileAccent = 'var(--brand-orange)'
+
 export const apps: HubApp[] = [
   {
     id: 'diagnostics',
     title: 'Diagnose',
     description:
-      'Prueft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
+      'Prüft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
     href: '/apps/diagnostics',
     routePath: 'apps/diagnostics',
     status: 'Live',
-    color: '#3b5d75',
+    color: appTileAccent,
     Icon: Stethoscope,
     Page: DiagnosticsPage,
   },
@@ -35,11 +37,11 @@ export const apps: HubApp[] = [
     id: 'realtime-counter',
     title: 'Echtzeit-Counter',
     description:
-      'Gemeinsamer Score-Tracker fuer bis zu 5 Personen mit Live-Sync ueber Firestore.',
+      'Gemeinsamer Score-Tracker für bis zu 5 Personen mit Live-Sync über Firestore.',
     href: '/apps/realtime-counter',
     routePath: 'apps/realtime-counter',
     status: 'Live',
-    color: '#125e55',
+    color: appTileAccent,
     Icon: TimerReset,
     Page: RealtimeCounterPage,
   },
@@ -47,11 +49,11 @@ export const apps: HubApp[] = [
     id: 'randomizer',
     title: 'Zufallsgenerator',
     description:
-      'Online-Wuerfel und Random Number Generator mit gemerktem letzten Zustand.',
+      'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
     status: 'Live',
-    color: '#9a5f12',
+    color: appTileAccent,
     Icon: Dice5,
     Page: RandomizerPage,
   },

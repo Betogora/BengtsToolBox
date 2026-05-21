@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 const statusLabels: Record<DiagnosticStatus, string> = {
   error: 'Fehler',
   ok: 'OK',
-  pending: 'Prueft',
+  pending: 'Prüft',
   warn: 'Hinweis',
 }
 
@@ -71,7 +71,7 @@ export function DiagnosticsPage() {
             Firebase- und Multi-Device-Checks
           </h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
-            Prueft Konfiguration, Anonymous Auth, Firestore-Lesen und Schreiben,
+            Prüft Konfiguration, Anonymous Auth, Firestore-Lesen und Schreiben,
             Realtime-Snapshots und den lokalen Fallback der Toolbox.
           </p>
         </div>
@@ -90,8 +90,8 @@ export function DiagnosticsPage() {
               Shared State Test
             </CardTitle>
             <CardDescription>
-              Oeffne diese Seite in zwei Fenstern. Ein Klick auf Checks starten
-              muss den Zaehler und Zeitstempel in beiden Fenstern aktualisieren.
+              Öffne diese Seite in zwei Fenstern. Ein Klick auf Checks starten
+              muss den Zähler und Zeitstempel in beiden Fenstern aktualisieren.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

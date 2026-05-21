@@ -73,7 +73,7 @@ export function useDiagnostics() {
       isFirebaseConfigured ? 'pending' : 'warn',
       isFirebaseConfigured
         ? 'Wartet auf Lesetest.'
-        : 'Lesetest im Demo-Modus uebersprungen.',
+        : 'Lesetest im Demo-Modus übersprungen.',
     ),
     makeCheck(
       'firestore-write',
@@ -81,7 +81,7 @@ export function useDiagnostics() {
       isFirebaseConfigured ? 'pending' : 'warn',
       isFirebaseConfigured
         ? 'Wartet auf Schreibtest.'
-        : 'Schreibtest im Demo-Modus uebersprungen.',
+        : 'Schreibtest im Demo-Modus übersprungen.',
     ),
     makeCheck(
       'realtime',
@@ -89,7 +89,7 @@ export function useDiagnostics() {
       isFirebaseConfigured ? 'pending' : 'warn',
       isFirebaseConfigured
         ? 'Wartet auf Snapshot-Update.'
-        : 'Realtime-Test im Demo-Modus uebersprungen.',
+        : 'Realtime-Test im Demo-Modus übersprungen.',
     ),
     makeCheck(
       'local-fallback',
@@ -135,7 +135,7 @@ export function useDiagnostics() {
           storedValue === value ? 'ok' : 'error',
           storedValue === value
             ? 'Lokaler Fallback kann Werte speichern und lesen.'
-            : 'LocalStorage hat den Testwert nicht korrekt zurueckgegeben.',
+            : 'LocalStorage hat den Testwert nicht korrekt zurückgegeben.',
         ),
       )
     } catch (error) {
@@ -246,7 +246,7 @@ export function useDiagnostics() {
             'realtime',
             'Realtime Snapshot',
             'ok',
-            `Letztes Update ${nextHealth.checkedAt}, Zaehler ${nextHealth.writeCount}.`,
+            `Letztes Update ${nextHealth.checkedAt}, Zähler ${nextHealth.writeCount}.`,
           ),
         )
       },

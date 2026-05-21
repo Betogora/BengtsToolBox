@@ -1,12 +1,10 @@
-import { ArrowRight, Blocks, Cloud, Layers3 } from 'lucide-react'
+import { Cloud, Layers3, MousePointerClick } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { apps } from '@/apps/registry'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -22,11 +20,10 @@ export function DashboardPage() {
             Firebase-ready SPA
           </Badge>
           <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-            Dein modularer App-Hub fuer Mini-Apps, Spiele und Experimente.
+            Bencs App-Hub
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-            Jede App ist isoliert, nutzt dieselbe UI-Sprache und kann ueber die
-            Registry erweitert werden, ohne die bestehenden Bereiche anzufassen.
+            Deine Mini-Apps, Spiele und Experimente an einem Ort.
           </p>
         </div>
 
@@ -34,17 +31,17 @@ export function DashboardPage() {
           <Card className="bg-primary text-primary-foreground">
             <CardHeader className="p-4">
               <Layers3 className="mb-5 size-5" />
-              <CardTitle className="text-3xl">2</CardTitle>
+              <CardTitle className="text-3xl">{apps.length}</CardTitle>
               <CardDescription className="text-primary-foreground/75">
-                Apps geplant
+                Apps verfügbar
               </CardDescription>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="p-4">
-              <Blocks className="mb-5 size-5 text-primary" />
+              <MousePointerClick className="mb-5 size-5 text-accent" />
               <CardTitle className="text-3xl">1</CardTitle>
-              <CardDescription>Registry fuer alle Kacheln</CardDescription>
+              <CardDescription>Klick pro Kachel</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -52,33 +49,36 @@ export function DashboardPage() {
 
       <section className="grid gap-4 sm:grid-cols-2">
         {apps.map((app) => (
-          <Card key={app.id} className="overflow-hidden">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div
-                  className="flex size-11 shrink-0 items-center justify-center rounded-lg text-white"
-                  style={{ backgroundColor: app.color }}
-                >
-                  <app.Icon className="size-5" />
+          <Link
+            key={app.id}
+            to={app.href}
+            aria-label={`${app.title} öffnen`}
+            className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Card className="h-full overflow-hidden transition-colors group-hover:border-primary/45 group-hover:bg-secondary/35">
+              <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div
+                    className="flex size-11 shrink-0 items-center justify-center rounded-lg text-white"
+                    style={{ backgroundColor: app.color }}
+                  >
+                    <app.Icon className="size-5" />
+                  </div>
+                  <Badge
+                    variant={app.status === 'Live' ? 'default' : 'secondary'}
+                  >
+                    {app.status}
+                  </Badge>
                 </div>
-                <Badge variant={app.status === 'Live' ? 'default' : 'secondary'}>
-                  {app.status}
-                </Badge>
-              </div>
-              <CardTitle className="text-xl">{app.title}</CardTitle>
-              <CardDescription className="min-h-12">
-                {app.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full justify-between">
-                <Link to={app.href}>
-                  App oeffnen
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+                <CardTitle className="text-xl transition-colors group-hover:text-primary">
+                  {app.title}
+                </CardTitle>
+                <CardDescription className="min-h-12">
+                  {app.description}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
         ))}
       </section>
     </div>

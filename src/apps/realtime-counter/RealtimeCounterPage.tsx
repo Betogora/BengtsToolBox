@@ -35,15 +35,15 @@ export function RealtimeCounterPage() {
             Echtzeit-Counter
           </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Waehle deine Kennung aus und zaehle deinen Score hoch. Andere
-            Geraete sehen die Aenderungen live, sobald Firebase konfiguriert ist.
+            Wähle deine Kennung aus und zähle deinen Score hoch. Andere
+            Geräte sehen die Änderungen live, sobald Firebase konfiguriert ist.
           </p>
         </div>
         <Button
           variant="outline"
           onClick={() => {
             resetScores()
-            toast.success('Scores wurden zurueckgesetzt.')
+            toast.success('Scores wurden zurückgesetzt.')
           }}
         >
           <RotateCcw className="size-4" />
@@ -93,7 +93,7 @@ export function RealtimeCounterPage() {
                 }}
               >
                 <UsersRound className="size-4" />
-                Meinen Score erhoehen
+                Meinen Score erhöhen
               </Button>
             )}
           </CardContent>

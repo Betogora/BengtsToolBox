@@ -33,7 +33,7 @@ export function PlayerCard({
             size="sm"
             onClick={onSelect}
           >
-            {isActive ? 'Aktiv' : 'Waehlen'}
+            {isActive ? 'Aktiv' : 'Wählen'}
           </Button>
         </div>
       </CardHeader>
@@ -46,7 +46,7 @@ export function PlayerCard({
         </div>
         <Button
           size="icon"
-          aria-label={`${player.name} erhoehen`}
+          aria-label={`${player.name} erhöhen`}
           onClick={onIncrement}
         >
           <Plus className="size-4" />

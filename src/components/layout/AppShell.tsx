@@ -22,10 +22,7 @@ export function AppShell() {
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold leading-tight">
-                BengtsToolBox
-              </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                Privater App-Hub
+                Bencs Toolbox
               </span>
             </span>
           </Link>
@@ -36,7 +33,7 @@ export function AppShell() {
               className={({ isActive }) =>
                 cn(
                   'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-foreground',
+                  isActive && 'bg-secondary text-secondary-foreground',
                 )
               }
             >
@@ -50,11 +47,11 @@ export function AppShell() {
                 className={({ isActive }) =>
                   cn(
                     'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                    isActive && 'bg-secondary text-foreground',
+                    isActive && 'bg-secondary text-secondary-foreground',
                   )
                 }
               >
-                <app.Icon className="size-4" />
+                <app.Icon className="size-4 text-accent" />
                 {app.title}
               </NavLink>
             ))}

@@ -27,8 +27,8 @@ export function RandomizerPage() {
           Zufallsgenerator
         </h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Stelle eine Spanne ein, wuerfle online und behalte den letzten Zustand
-          samt kurzem Verlauf ueber Firestore.
+          Stelle eine Spanne ein, würfle online und behalte den letzten Zustand
+          samt kurzem Verlauf über Firestore.
         </p>
       </section>
 
@@ -94,7 +94,7 @@ export function RandomizerPage() {
                 }}
               >
                 <Dice5 className="size-4" />
-                Wuerfeln
+                Würfeln
               </Button>
               <Button variant="outline" size="lg" onClick={clearHistory}>
                 <RotateCcw className="size-4" />
@@ -111,13 +111,13 @@ export function RandomizerPage() {
               Letzte Ergebnisse
             </CardTitle>
             <CardDescription>
-              Die letzten 12 Wuerfe werden im gemeinsamen State gespeichert.
+              Die letzten 12 Würfe werden im gemeinsamen State gespeichert.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {data.history.length === 0 ? (
               <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                Noch keine Wuerfe vorhanden.
+                Noch keine Würfe vorhanden.
               </div>
             ) : (
               <div className="grid gap-3">
