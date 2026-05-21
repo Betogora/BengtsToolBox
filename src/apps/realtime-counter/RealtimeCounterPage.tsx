@@ -2,9 +2,10 @@ import { Plus, RotateCcw, Trophy } from 'lucide-react'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 
-import { buzzerTeams } from '@/apps/live-buzzer/teams'
+import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
 import { PlayerCard } from '@/apps/realtime-counter/components/PlayerCard'
 import { useRealtimeCounter } from '@/apps/realtime-counter/hooks/useRealtimeCounter'
+import { counterTeams } from '@/apps/realtime-counter/teams'
 import { FirebaseStatus } from '@/components/shared/FirebaseStatus'
 import { Button } from '@/components/ui/button'
 import {
@@ -37,7 +38,7 @@ export function RealtimeCounterPage() {
   )
   const teamSummaries = useMemo(
     () =>
-      buzzerTeams.map((team) => ({
+      counterTeams.map((team) => ({
         ...team,
         memberCount: players.filter((player) => player.teamId === team.id)
           .length,
@@ -47,7 +48,13 @@ export function RealtimeCounterPage() {
       })),
     [players],
   )
-  const unassignedPlayers = players.filter((player) => !player.teamId)
+  const counterTeamIds = useMemo(
+    () => new Set<BuzzerTeamId>(counterTeams.map((team) => team.id)),
+    [],
+  )
+  const unassignedPlayers = players.filter(
+    (player) => !player.teamId || !counterTeamIds.has(player.teamId),
+  )
   const unassignedScore = unassignedPlayers.reduce(
     (sum, player) => sum + player.score,
     0,
@@ -61,10 +68,6 @@ export function RealtimeCounterPage() {
           <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-4xl">
             Echtzeit-Counter
           </h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Bearbeite Personen, Teams und Punkte gemeinsam live auf allen
-            verbundenen Geraeten.
-          </p>
         </div>
         <Button
           variant="outline"

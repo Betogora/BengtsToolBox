@@ -1,24 +1,15 @@
-import { Minus, Plus, Trash2 } from 'lucide-react'
+import { Minus, Pencil, Plus, Trash2 } from 'lucide-react'
 
-import { buzzerTeams } from '@/apps/live-buzzer/teams'
 import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
 import type { CounterPlayer } from '@/apps/realtime-counter/types'
-import { Badge } from '@/components/ui/badge'
+import { counterTeams } from '@/apps/realtime-counter/teams'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 type PlayerCardProps = {
@@ -27,7 +18,7 @@ type PlayerCardProps = {
   onIncrement: () => void
   onNameChange: (name: string) => void
   onRemove: () => void
-  onTeamChange: (teamId: BuzzerTeamId | null) => void
+  onTeamChange: (teamId: BuzzerTeamId) => void
 }
 
 export function PlayerCard({
@@ -38,14 +29,28 @@ export function PlayerCard({
   onRemove,
   onTeamChange,
 }: PlayerCardProps) {
-  const team = buzzerTeams.find((entry) => entry.id === player.teamId)
+  const team = counterTeams.find((entry) => entry.id === player.teamId)
 
   return (
     <Card className="overflow-hidden transition-colors">
       {team && <div className={cn('h-1 w-full', team.dotClassName)} />}
-      <CardHeader className="space-y-0 pb-3">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-base">Person {player.position}</CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Input
+              key={player.name}
+              aria-label={`Name fuer Person ${player.position}`}
+              className="h-12 pr-10 text-2xl font-semibold shadow-none md:text-2xl"
+              defaultValue={player.name}
+              onBlur={(event) => onNameChange(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur()
+                }
+              }}
+            />
+            <Pencil className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -57,36 +62,27 @@ export function PlayerCard({
         </div>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid gap-2">
-          <Input
-            key={player.name}
-            aria-label={`Name fuer Person ${player.position}`}
-            defaultValue={player.name}
-            onBlur={(event) => onNameChange(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.currentTarget.blur()
-              }
-            }}
-          />
-          <Select
-            value={player.teamId ?? 'none'}
-            onValueChange={(value) =>
-              onTeamChange(value === 'none' ? null : (value as BuzzerTeamId))
-            }
-          >
-            <SelectTrigger aria-label={`Team fuer ${player.name}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Kein Team</SelectItem>
-              {buzzerTeams.map((teamOption) => (
-                <SelectItem key={teamOption.id} value={teamOption.id}>
-                  {teamOption.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-2 gap-2">
+          {counterTeams.map((teamOption) => {
+            const isSelected = player.teamId === teamOption.id
+
+            return (
+              <Button
+                key={teamOption.id}
+                className={cn(
+                  'justify-start gap-2',
+                  isSelected && teamOption.className,
+                )}
+                variant={isSelected ? 'secondary' : 'outline'}
+                onClick={() => onTeamChange(teamOption.id)}
+              >
+                <span
+                  className={cn('size-3 rounded-full', teamOption.dotClassName)}
+                />
+                {teamOption.buttonLabel}
+              </Button>
+            )
+          })}
         </div>
 
         <div className="flex items-end justify-between gap-4">
@@ -115,10 +111,6 @@ export function PlayerCard({
             </Button>
           </div>
         </div>
-
-        <Badge className={team?.className} variant="outline">
-          {team?.name ?? 'Kein Team'}
-        </Badge>
       </CardContent>
     </Card>
   )
