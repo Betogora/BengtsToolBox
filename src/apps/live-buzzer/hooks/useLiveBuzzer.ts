@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 
 import type {
   BuzzerPlayer,
+  BuzzerRoundResult,
   BuzzerSessionState,
+  BuzzerTeamId,
+  BuzzerTimestamp,
 } from '@/apps/live-buzzer/types'
 import {
   ensureAnonymousUser,
@@ -20,20 +23,70 @@ const maxPlayers = 20
 const defaultPlayerCount = 5
 const identityKey = 'app-hub:live-buzzer:identity'
 
+export const buzzerTeams: {
+  id: BuzzerTeamId
+  name: string
+  className: string
+  dotClassName: string
+}[] = [
+  {
+    id: 'red',
+    name: 'Rot',
+    className: 'border-red-300 bg-red-50 text-red-950',
+    dotClassName: 'bg-red-500',
+  },
+  {
+    id: 'blue',
+    name: 'Blau',
+    className: 'border-blue-300 bg-blue-50 text-blue-950',
+    dotClassName: 'bg-blue-500',
+  },
+  {
+    id: 'green',
+    name: 'Gruen',
+    className: 'border-emerald-300 bg-emerald-50 text-emerald-950',
+    dotClassName: 'bg-emerald-500',
+  },
+  {
+    id: 'yellow',
+    name: 'Gelb',
+    className: 'border-yellow-300 bg-yellow-50 text-yellow-950',
+    dotClassName: 'bg-yellow-400',
+  },
+  {
+    id: 'purple',
+    name: 'Lila',
+    className: 'border-purple-300 bg-purple-50 text-purple-950',
+    dotClassName: 'bg-purple-500',
+  },
+  {
+    id: 'orange',
+    name: 'Orange',
+    className: 'border-orange-300 bg-orange-50 text-orange-950',
+    dotClassName: 'bg-orange-500',
+  },
+]
+
 const initialSessionState: BuzzerSessionState = {
   isOpen: false,
+  adminPlayerId: null,
   winnerPlayerId: null,
+  winnerTeamId: null,
   roundNumber: 0,
   playerCount: defaultPlayerCount,
   lastBuzzedAt: null,
+  lastBuzzedAtClientIso: null,
+  history: [],
 }
 
 const createPlayer = (position: number): BuzzerPlayer => ({
   id: `player-${position}`,
   position,
   name: `Nutzer ${position}`,
+  teamId: null,
   isActive: position <= defaultPlayerCount,
   buzzedAt: null,
+  buzzedAtClientIso: null,
 })
 
 const defaultPlayers = Array.from({ length: defaultPlayerCount }, (_, index) =>
@@ -58,11 +111,46 @@ function normalizePlayerId(playerId: string, playerCount: number) {
   return playerId
 }
 
+function fallbackPlayerName(playerId: string) {
+  return `Nutzer ${playerId.replace('player-', '')}`
+}
+
 function sanitizeName(name: string, playerId: string) {
-  const fallbackPosition = playerId.replace('player-', '')
   const trimmedName = name.trim()
 
-  return trimmedName || `Nutzer ${fallbackPosition}`
+  return trimmedName || fallbackPlayerName(playerId)
+}
+
+function timestampToMillis(value: BuzzerTimestamp, fallbackIso?: string | null) {
+  if (typeof value === 'string') {
+    return Date.parse(value)
+  }
+
+  if (value && 'toMillis' in value) {
+    return value.toMillis()
+  }
+
+  return fallbackIso ? Date.parse(fallbackIso) : Number.NaN
+}
+
+function createRoundResult(
+  state: BuzzerSessionState | undefined,
+  player: BuzzerPlayer,
+  buzzedAtClientIso: string,
+): BuzzerRoundResult {
+  const roundNumber = state?.roundNumber ?? initialSessionState.roundNumber
+
+  return {
+    id:
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    roundNumber,
+    winnerPlayerId: player.id,
+    winnerPlayerName: sanitizeName(player.name, player.id),
+    winnerTeamId: player.teamId,
+    createdAt: buzzedAtClientIso,
+  }
 }
 
 type LocalIdentity = {
@@ -100,6 +188,16 @@ export function useLiveBuzzer(sessionId = 'default') {
   )
 
   const playerCount = normalizePlayerCount(stateStore.data.playerCount)
+  const sessionState: BuzzerSessionState = {
+    ...initialSessionState,
+    ...stateStore.data,
+    adminPlayerId: stateStore.data.adminPlayerId ?? null,
+    winnerPlayerId: stateStore.data.winnerPlayerId ?? null,
+    winnerTeamId: stateStore.data.winnerTeamId ?? null,
+    lastBuzzedAt: stateStore.data.lastBuzzedAt ?? null,
+    lastBuzzedAtClientIso: stateStore.data.lastBuzzedAtClientIso ?? null,
+    history: stateStore.data.history ?? [],
+  }
   const selectedPlayerId = normalizePlayerId(
     localIdentity.playerId,
     playerCount,
@@ -112,15 +210,57 @@ export function useLiveBuzzer(sessionId = 'default') {
     return Array.from({ length: playerCount }, (_, index) => {
       const position = index + 1
       const id = `player-${position}`
-      return byId.get(id) ?? { ...createPlayer(position), isActive: true }
+      const player = byId.get(id)
+
+      return {
+        ...createPlayer(position),
+        ...player,
+        teamId: player?.teamId ?? null,
+        buzzedAt: player?.buzzedAt ?? null,
+        buzzedAtClientIso: player?.buzzedAtClientIso ?? null,
+        isActive: true,
+      }
     })
   }, [playerCount, playersStore.data])
 
   const selectedPlayer =
     players.find((player) => player.id === selectedPlayerId) ?? players[0]
   const winner =
-    players.find((player) => player.id === stateStore.data.winnerPlayerId) ??
-    null
+    players.find((player) => player.id === sessionState.winnerPlayerId) ?? null
+  const admin =
+    players.find((player) => player.id === sessionState.adminPlayerId) ?? null
+  const winnerTeam =
+    buzzerTeams.find((team) => team.id === sessionState.winnerTeamId) ?? null
+  const selectedTeam =
+    buzzerTeams.find((team) => team.id === selectedPlayer?.teamId) ?? null
+  const isAdmin = sessionState.adminPlayerId === selectedPlayerId
+  const canClaimAdmin =
+    !sessionState.adminPlayerId || sessionState.adminPlayerId === selectedPlayerId
+
+  const buzzRanks = useMemo(() => {
+    const buzzedPlayers = players
+      .map((player) => ({
+        playerId: player.id,
+        value: timestampToMillis(player.buzzedAt, player.buzzedAtClientIso),
+      }))
+      .filter((entry) => Number.isFinite(entry.value))
+      .sort((left, right) => left.value - right.value)
+
+    return new Map(
+      buzzedPlayers.map((entry, index) => [entry.playerId, index + 1]),
+    )
+  }, [players])
+
+  const teamSummaries = useMemo(
+    () =>
+      buzzerTeams.map((team) => ({
+        ...team,
+        memberCount: players.filter((player) => player.teamId === team.id)
+          .length,
+        isWinner: sessionState.winnerTeamId === team.id,
+      })),
+    [players, sessionState.winnerTeamId],
+  )
 
   useEffect(() => {
     if (playersStore.isLoading) {
@@ -134,13 +274,15 @@ export function useLiveBuzzer(sessionId = 'default') {
         const id = `player-${position}`
 
         if (!existingIds.has(id)) {
-          const player = {
-            position,
-            name: `Nutzer ${position}`,
-            isActive: true,
-            buzzedAt: null,
-          }
-          playersStore.setItem(id, player)
+          const player = createPlayer(position)
+          playersStore.setItem(id, {
+            position: player.position,
+            name: player.name,
+            teamId: player.teamId,
+            isActive: player.isActive,
+            buzzedAt: player.buzzedAt,
+            buzzedAtClientIso: player.buzzedAtClientIso,
+          })
         }
       },
     )
@@ -150,7 +292,7 @@ export function useLiveBuzzer(sessionId = 'default') {
     const nextPlayerId = normalizePlayerId(playerId, playerCount)
     const playerName =
       players.find((player) => player.id === nextPlayerId)?.name ??
-      `Nutzer ${nextPlayerId.replace('player-', '')}`
+      fallbackPlayerName(nextPlayerId)
     const nextIdentity = {
       playerId: nextPlayerId,
       name: playerName,
@@ -181,69 +323,46 @@ export function useLiveBuzzer(sessionId = 'default') {
     })
   }
 
-  const buzz = async () => {
-    if (
-      !stateStore.data.isOpen ||
-      stateStore.data.winnerPlayerId ||
-      !selectedPlayer
-    ) {
-      return false
-    }
+  const updateSelectedTeam = (teamId: BuzzerTeamId | null) =>
+    playersStore.mergeItem(selectedPlayerId, {
+      teamId,
+      isActive: true,
+      lastUpdatedBy: session.userId,
+    })
 
-    const buzzedAt = new Date().toISOString()
-    const name = sanitizeName(selectedName, selectedPlayerId)
+  const claimAdmin = async () => {
     const services = getFirebaseServices()
 
     if (!services) {
-      await Promise.all([
-        playersStore.mergeItem(selectedPlayerId, {
-          name,
-          isActive: true,
-          buzzedAt,
-          lastUpdatedBy: session.userId,
-        }),
-        stateStore.merge({
-          isOpen: false,
-          winnerPlayerId: selectedPlayerId,
-          lastBuzzedAt: buzzedAt,
+      if (!sessionState.adminPlayerId || isAdmin) {
+        await stateStore.merge({
+          adminPlayerId: selectedPlayerId,
           updatedBy: session.userId,
-        }),
-      ])
-      return true
+        })
+        return true
+      }
+
+      return false
     }
 
     await ensureAnonymousUser()
 
     return runTransaction(services.db, async (transaction) => {
       const stateRef = doc(services.db, statePath)
-      const playerRef = doc(services.db, playerDocPath(selectedPlayerId))
       const stateSnapshot = await transaction.get(stateRef)
       const remoteState = stateSnapshot.data() as
         | BuzzerSessionState
         | undefined
+      const adminPlayerId = remoteState?.adminPlayerId ?? null
 
-      if (!remoteState?.isOpen || remoteState.winnerPlayerId) {
+      if (adminPlayerId && adminPlayerId !== selectedPlayerId) {
         return false
       }
 
       transaction.set(
-        playerRef,
-        {
-          name,
-          position: selectedPlayer.position,
-          isActive: true,
-          buzzedAt,
-          lastUpdatedBy: session.userId,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      )
-      transaction.set(
         stateRef,
         {
-          isOpen: false,
-          winnerPlayerId: selectedPlayerId,
-          lastBuzzedAt: buzzedAt,
+          adminPlayerId: selectedPlayerId,
           updatedBy: session.userId,
           updatedAt: serverTimestamp(),
         },
@@ -254,6 +373,119 @@ export function useLiveBuzzer(sessionId = 'default') {
     })
   }
 
+  const releaseAdmin = () => {
+    if (!isAdmin) {
+      return Promise.resolve(false)
+    }
+
+    return stateStore
+      .merge({
+        adminPlayerId: null,
+        updatedBy: session.userId,
+      })
+      .then(() => true)
+  }
+
+  const buzz = async () => {
+    if (!sessionState.isOpen || !selectedPlayer?.isActive) {
+      return 'blocked' as const
+    }
+
+    if (selectedPlayer.buzzedAt || selectedPlayer.buzzedAtClientIso) {
+      return 'already-buzzed' as const
+    }
+
+    const buzzedAtClientIso = new Date().toISOString()
+    const name = sanitizeName(selectedName, selectedPlayerId)
+    const services = getFirebaseServices()
+
+    if (!services) {
+      await playersStore.mergeItem(selectedPlayerId, {
+        name,
+        isActive: true,
+        buzzedAt: buzzedAtClientIso,
+        buzzedAtClientIso,
+        lastUpdatedBy: session.userId,
+      })
+
+      if (!sessionState.winnerPlayerId) {
+        await stateStore.merge({
+          winnerPlayerId: selectedPlayerId,
+          winnerTeamId: selectedPlayer.teamId,
+          lastBuzzedAt: buzzedAtClientIso,
+          lastBuzzedAtClientIso: buzzedAtClientIso,
+          history: [
+            createRoundResult(sessionState, selectedPlayer, buzzedAtClientIso),
+            ...sessionState.history,
+          ].slice(0, 5),
+          updatedBy: session.userId,
+        })
+        return 'winner' as const
+      }
+
+      return 'late' as const
+    }
+
+    await ensureAnonymousUser()
+
+    return runTransaction(services.db, async (transaction) => {
+      const stateRef = doc(services.db, statePath)
+      const playerRef = doc(services.db, playerDocPath(selectedPlayerId))
+      const stateSnapshot = await transaction.get(stateRef)
+      const playerSnapshot = await transaction.get(playerRef)
+      const remoteState = stateSnapshot.data() as
+        | BuzzerSessionState
+        | undefined
+      const remotePlayer =
+        (playerSnapshot.data() as BuzzerPlayer | undefined) ?? selectedPlayer
+
+      if (!remoteState?.isOpen || remotePlayer.buzzedAt) {
+        return 'blocked' as const
+      }
+
+      const isWinnerBuzz = !remoteState.winnerPlayerId
+      const nextHistory = isWinnerBuzz
+        ? [
+            createRoundResult(remoteState, selectedPlayer, buzzedAtClientIso),
+            ...(remoteState.history ?? []),
+          ].slice(0, 5)
+        : remoteState.history ?? []
+
+      transaction.set(
+        playerRef,
+        {
+          name,
+          teamId: selectedPlayer.teamId,
+          position: selectedPlayer.position,
+          isActive: true,
+          buzzedAt: serverTimestamp(),
+          buzzedAtClientIso,
+          lastUpdatedBy: session.userId,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      )
+
+      if (isWinnerBuzz) {
+        transaction.set(
+          stateRef,
+          {
+            winnerPlayerId: selectedPlayerId,
+            winnerTeamId: selectedPlayer.teamId,
+            lastBuzzedAt: serverTimestamp(),
+            lastBuzzedAtClientIso: buzzedAtClientIso,
+            history: nextHistory,
+            updatedBy: session.userId,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        )
+      }
+
+      return isWinnerBuzz ? ('winner' as const) : ('late' as const)
+    })
+  }
+
   const resetVisibleBuzzes = () =>
     playersStore.saveItems(
       [
@@ -261,6 +493,7 @@ export function useLiveBuzzer(sessionId = 'default') {
         ...players.map((player) => ({
           ...player,
           buzzedAt: null,
+          buzzedAtClientIso: null,
           isActive: true,
           lastUpdatedBy: session.userId,
         })),
@@ -272,8 +505,10 @@ export function useLiveBuzzer(sessionId = 'default') {
     await stateStore.merge({
       isOpen: true,
       winnerPlayerId: null,
-      roundNumber: stateStore.data.roundNumber + 1,
+      winnerTeamId: null,
+      roundNumber: sessionState.roundNumber + 1,
       lastBuzzedAt: null,
+      lastBuzzedAtClientIso: null,
       updatedBy: session.userId,
     })
   }
@@ -289,10 +524,18 @@ export function useLiveBuzzer(sessionId = 'default') {
     await stateStore.merge({
       isOpen: false,
       winnerPlayerId: null,
+      winnerTeamId: null,
       lastBuzzedAt: null,
+      lastBuzzedAtClientIso: null,
       updatedBy: session.userId,
     })
   }
+
+  const clearHistory = () =>
+    stateStore.merge({
+      history: [],
+      updatedBy: session.userId,
+    })
 
   const updatePlayerCount = async (value: number) => {
     const nextCount = normalizePlayerCount(value)
@@ -306,11 +549,15 @@ export function useLiveBuzzer(sessionId = 'default') {
         const existingPlayer = existingPlayers.get(id)
 
         return {
+          ...createPlayer(position),
+          ...existingPlayer,
           id,
           position,
-          name: existingPlayer?.name ?? `Nutzer ${position}`,
+          name: existingPlayer?.name ?? fallbackPlayerName(id),
+          teamId: existingPlayer?.teamId ?? null,
           isActive: true,
           buzzedAt: existingPlayer?.buzzedAt ?? null,
+          buzzedAtClientIso: existingPlayer?.buzzedAtClientIso ?? null,
           lastUpdatedBy: session.userId,
         }
       }),
@@ -320,6 +567,7 @@ export function useLiveBuzzer(sessionId = 'default') {
           ...player,
           isActive: false,
           buzzedAt: null,
+          buzzedAtClientIso: null,
           lastUpdatedBy: session.userId,
         })),
     ]
@@ -332,11 +580,18 @@ export function useLiveBuzzer(sessionId = 'default') {
   }
 
   return {
+    admin,
+    buzz,
+    buzzRanks,
+    buzzerTeams,
+    canClaimAdmin,
+    claimAdmin,
+    clearHistory,
     clearRound,
     closeRound,
     choosePlayer,
-    buzz,
     error: stateStore.error ?? playersStore.error,
+    isAdmin,
     isLoading: stateStore.isLoading || playersStore.isLoading,
     isRealtime: stateStore.isRealtime && playersStore.isRealtime,
     maxPlayers,
@@ -344,14 +599,19 @@ export function useLiveBuzzer(sessionId = 'default') {
     openRound,
     playerCount,
     players,
-    roundNumber: stateStore.data.roundNumber,
+    releaseAdmin,
+    roundNumber: sessionState.roundNumber,
     saveSelectedName,
     selectedName,
     selectedPlayer,
     selectedPlayerId,
-    sessionState: stateStore.data,
+    selectedTeam,
+    sessionState,
     setSelectedName,
+    teamSummaries,
     updatePlayerCount,
+    updateSelectedTeam,
     winner,
+    winnerTeam,
   }
 }
