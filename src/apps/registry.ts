@@ -38,7 +38,7 @@ export const apps: HubApp[] = [
     id: 'realtime-counter',
     title: 'Echtzeit-Counter',
     description:
-      'Gemeinsamer Score-Tracker für bis zu 5 Personen mit Live-Sync über Firestore.',
+      'Gemeinsamer Team-Counter mit editierbaren Personen, Teams und Live-Sync ueber Firestore.',
     href: '/apps/realtime-counter',
     routePath: 'apps/realtime-counter',
     status: 'Live',

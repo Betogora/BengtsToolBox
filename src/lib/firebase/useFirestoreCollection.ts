@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   orderBy,
@@ -155,8 +156,27 @@ export function useFirestoreCollection<T extends CollectionItem>(
     [data, localKey, path],
   )
 
+  const deleteItem = useCallback(
+    async (id: string) => {
+      const nextData = data.filter((item) => item.id !== id)
+      setData(nextData)
+      writeLocalValue(localKey, nextData)
+
+      const services = getFirebaseServices()
+
+      if (!services) {
+        return
+      }
+
+      await ensureAnonymousUser()
+      await deleteDoc(doc(services.db, path, id))
+    },
+    [data, localKey, path],
+  )
+
   return {
     data,
+    deleteItem,
     error,
     isLoading,
     isRealtime: isFirebaseConfigured,
