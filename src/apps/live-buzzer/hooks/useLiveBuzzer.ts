@@ -396,9 +396,23 @@ export function useLiveBuzzer(sessionId = 'default') {
     })
   }
 
+  const resetAndOpenRound = async () => {
+    await resetVisibleBuzzes()
+    await stateStore.merge({
+      isOpen: true,
+      winnerPlayerId: null,
+      winnerTeamId: null,
+      roundNumber: sessionState.roundNumber + 1,
+      lastBuzzedAt: null,
+      lastBuzzedAtClientIso: null,
+      updatedBy: session.userId,
+    })
+  }
+
   const clearHistory = () =>
     stateStore.merge({
       history: [],
+      roundNumber: 1,
       updatedBy: session.userId,
     })
 
@@ -415,6 +429,7 @@ export function useLiveBuzzer(sessionId = 'default') {
     openRound,
     players,
     removePlayer,
+    resetAndOpenRound,
     roundNumber: sessionState.roundNumber,
     selectedPlayer,
     selectedPlayerId,

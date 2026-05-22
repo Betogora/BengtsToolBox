@@ -2,7 +2,6 @@ import { Dice5, History, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
-import { FirebaseStatus } from '@/components/shared/FirebaseStatus'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -16,15 +15,14 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 
 export function RandomizerPage() {
-  const { data, updateRange, roll, clearHistory, isLoading, error, isRealtime } =
+  const { data, updateRange, roll, clearHistory, isLoading, error } =
     useRandomizer()
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section>
-        <FirebaseStatus isRealtime={isRealtime} />
-        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-4xl">
-          Zufallsgenerator
+        <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+          Random Number Generator
         </h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Stelle eine Spanne ein, würfle online und behalte den letzten Zustand

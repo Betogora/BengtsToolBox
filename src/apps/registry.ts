@@ -34,7 +34,7 @@ export const apps: HubApp[] = [
   },
   {
     id: 'realtime-counter',
-    title: 'Echtzeit-Counter',
+    title: 'Counter',
     description:
       'Gemeinsamer Team-Counter mit editierbaren Personen, Teams und Live-Sync über Firestore.',
     href: '/apps/realtime-counter',
@@ -58,7 +58,7 @@ export const apps: HubApp[] = [
   },
   {
     id: 'randomizer',
-    title: 'Zufallsgenerator',
+    title: 'Random Number Generator',
     description:
       'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
     href: '/apps/randomizer',

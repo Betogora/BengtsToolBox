@@ -6,7 +6,6 @@ import { useRealtimeCounter } from '@/apps/realtime-counter/hooks/useRealtimeCou
 import { counterTeams } from '@/apps/realtime-counter/teams'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import type { TeamId } from '@/apps/shared/teams'
-import { FirebaseStatus } from '@/components/shared/FirebaseStatus'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -24,7 +23,6 @@ export function RealtimeCounterPage() {
     incrementPlayer,
     isLoading,
     error,
-    isRealtime,
     players,
     removePlayer,
     resetScores,
@@ -64,9 +62,8 @@ export function RealtimeCounterPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <FirebaseStatus isRealtime={isRealtime} />
-          <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-4xl">
-            Echtzeit-Counter
+          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+            Counter
           </h1>
         </div>
         <Button

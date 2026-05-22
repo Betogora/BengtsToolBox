@@ -1,4 +1,4 @@
-import { Home, Menu } from 'lucide-react'
+import { Home, Menu, Stethoscope } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -36,6 +36,18 @@ export function AppShell() {
               <Home className="size-4" />
               Dashboard
             </NavLink>
+            <NavLink
+              to="/apps/diagnostics"
+              className={({ isActive }) =>
+                cn(
+                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                  isActive && 'bg-secondary text-secondary-foreground',
+                )
+              }
+            >
+              <Stethoscope className="size-4" />
+              Diagnose
+            </NavLink>
           </nav>
 
           <div className="md:hidden">
@@ -48,6 +60,9 @@ export function AppShell() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link to="/">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/apps/diagnostics">Diagnose</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

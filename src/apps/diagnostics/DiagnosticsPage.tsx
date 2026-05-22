@@ -7,6 +7,7 @@ import {
   TriangleAlert,
 } from 'lucide-react'
 
+import { apps } from '@/apps/registry'
 import { useDiagnostics } from '@/apps/diagnostics/hooks/useDiagnostics'
 import type { DiagnosticStatus } from '@/apps/diagnostics/types'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { isFirebaseConfigured } from '@/lib/firebase/client'
 import { cn } from '@/lib/utils'
 
 const statusLabels: Record<DiagnosticStatus, string> = {
@@ -58,6 +60,9 @@ function StatusIcon({ status }: { status: DiagnosticStatus }) {
 export function DiagnosticsPage() {
   const { authUid, checks, health, healthPath, isRunning, runChecks, status } =
     useDiagnostics()
+  const appStatusLabel = isFirebaseConfigured
+    ? 'Firestore live'
+    : 'Lokaler Demo-Modus'
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -81,6 +86,39 @@ export function DiagnosticsPage() {
           Checks starten
         </Button>
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Cloud className="size-5 text-primary" />
+            App-Status
+          </CardTitle>
+          <CardDescription>
+            Zentraler Sync-Modus für alle Apps der Toolbox.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2">
+          {apps.map((app) => (
+            <div
+              key={app.id}
+              className="flex items-center justify-between gap-3 rounded-md border p-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-md text-white"
+                  style={{ backgroundColor: app.color }}
+                >
+                  <app.Icon className="size-4" />
+                </span>
+                <div className="truncate font-medium">{app.title}</div>
+              </div>
+              <Badge variant={isFirebaseConfigured ? 'default' : 'secondary'}>
+                {appStatusLabel}
+              </Badge>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <Card>

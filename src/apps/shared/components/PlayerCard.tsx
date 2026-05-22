@@ -26,7 +26,7 @@ type PlayerCardProps = {
   onIncrement?: () => void
   onNameChange: (name: string) => void
   onRemove: () => void
-  onTeamChange: (teamId: TeamId) => void
+  onTeamChange: (teamId: TeamId | null) => void
   score?: number
 }
 
@@ -66,7 +66,7 @@ export function PlayerCard({
             {isEditingName ? (
               <Input
                 key={player.name}
-                aria-label={`Name fuer Person ${player.position}`}
+                aria-label={`Name für Person ${player.position}`}
                 autoFocus
                 className="h-12"
                 defaultValue={player.name}
@@ -125,7 +125,7 @@ export function PlayerCard({
                   isSelected && teamOption.className,
                 )}
                 variant={isSelected ? 'secondary' : 'outline'}
-                onClick={() => onTeamChange(teamOption.id)}
+                onClick={() => onTeamChange(isSelected ? null : teamOption.id)}
               >
                 <span
                   className={cn('size-3 rounded-full', teamOption.dotClassName)}
@@ -156,7 +156,7 @@ export function PlayerCard({
               </Button>
               <Button
                 size="icon"
-                aria-label={`${player.name} erhoehen`}
+                aria-label={`${player.name} erhöhen`}
                 onClick={onIncrement}
               >
                 <Plus className="size-4" />

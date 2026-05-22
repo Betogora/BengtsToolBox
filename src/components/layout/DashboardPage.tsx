@@ -1,4 +1,5 @@
 import { ArrowRight, Layers3 } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
 import { apps, type HubApp } from '@/apps/registry'
@@ -22,13 +23,14 @@ function AppTile({ app }: AppTileProps) {
       to={app.href}
       aria-label={`${app.title} öffnen`}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      style={{ '--tile-color': app.color } as CSSProperties}
     >
-      <Card className="relative h-full overflow-hidden transition-colors group-hover:border-primary/45 group-hover:bg-card/95">
+      <Card className="relative h-full overflow-hidden transition-colors group-hover:border-[var(--tile-color)] group-hover:bg-card/95">
         <div
           className="absolute inset-x-0 top-0 h-2"
           style={{ backgroundColor: app.color }}
         />
-        <CardHeader className="grid min-h-44 gap-5 p-6 pt-7">
+        <CardHeader className="grid min-h-36 gap-6 p-6 pt-7">
           <div className="flex items-start justify-between gap-5">
             <div
               className="flex size-12 shrink-0 items-center justify-center rounded-lg text-white"
@@ -40,20 +42,17 @@ function AppTile({ app }: AppTileProps) {
               <app.Icon className="size-6" />
             </div>
             <div
-              className="flex size-9 shrink-0 translate-x-1 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-transform group-hover:translate-x-0 group-hover:bg-primary group-hover:text-primary-foreground"
+              className="flex size-9 shrink-0 translate-x-1 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-all group-hover:translate-x-0 group-hover:bg-[var(--tile-color)] group-hover:text-white"
               aria-hidden="true"
             >
               <ArrowRight className="size-4" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <CardTitle className="text-xl transition-colors group-hover:text-primary">
+          <div>
+            <CardTitle className="text-2xl leading-tight transition-colors group-hover:text-[var(--tile-color)] sm:text-3xl">
               {app.title}
             </CardTitle>
-            <CardDescription className="max-w-xl text-base leading-7">
-              {app.description}
-            </CardDescription>
           </div>
         </CardHeader>
       </Card>
