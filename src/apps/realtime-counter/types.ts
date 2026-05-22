@@ -1,10 +1,10 @@
-import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
+import type { TeamId } from '@/apps/shared/teams'
 
 export type CounterPlayer = {
   id: string
   name: string
   score: number
-  teamId: BuzzerTeamId | null
+  teamId: TeamId | null
   position: number
   lastUpdatedBy?: string
 }

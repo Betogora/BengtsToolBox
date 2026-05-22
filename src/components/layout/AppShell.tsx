@@ -1,4 +1,4 @@
-import { Home, Menu, Sparkles } from 'lucide-react'
+import { Home, Menu } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -14,13 +14,10 @@ export function AppShell() {
   return (
     <div className="min-h-svh">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex min-w-0 items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="size-5" />
-            </span>
+        <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="flex min-w-0 items-center">
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold leading-tight">
+              <span className="block truncate text-sm font-semibold leading-none">
                 Bengts ToolBox
               </span>
             </span>

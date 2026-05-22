@@ -2,10 +2,10 @@ import { Plus, RotateCcw, Trophy } from 'lucide-react'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 
-import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
-import { PlayerCard } from '@/apps/realtime-counter/components/PlayerCard'
 import { useRealtimeCounter } from '@/apps/realtime-counter/hooks/useRealtimeCounter'
 import { counterTeams } from '@/apps/realtime-counter/teams'
+import { PlayerCard } from '@/apps/shared/components/PlayerCard'
+import type { TeamId } from '@/apps/shared/teams'
 import { FirebaseStatus } from '@/components/shared/FirebaseStatus'
 import { Button } from '@/components/ui/button'
 import {
@@ -49,7 +49,7 @@ export function RealtimeCounterPage() {
     [players],
   )
   const counterTeamIds = useMemo(
-    () => new Set<BuzzerTeamId>(counterTeams.map((team) => team.id)),
+    () => new Set<TeamId>(counterTeams.map((team) => team.id)),
     [],
   )
   const unassignedPlayers = players.filter(
@@ -160,6 +160,7 @@ export function RealtimeCounterPage() {
                 toast.success(`${player.name} wurde entfernt.`)
               }}
               onTeamChange={(teamId) => updatePlayerTeam(player.id, teamId)}
+              score={player.score}
             />
           ))}
 

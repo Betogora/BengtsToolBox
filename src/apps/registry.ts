@@ -19,8 +19,6 @@ export type HubApp = {
   Page: ComponentType
 }
 
-export const appTileAccent = 'var(--brand-orange)'
-
 export const apps: HubApp[] = [
   {
     id: 'diagnostics',
@@ -30,7 +28,7 @@ export const apps: HubApp[] = [
     href: '/apps/diagnostics',
     routePath: 'apps/diagnostics',
     status: 'Live',
-    color: appTileAccent,
+    color: 'var(--brand-lime)',
     Icon: Stethoscope,
     Page: DiagnosticsPage,
   },
@@ -38,11 +36,11 @@ export const apps: HubApp[] = [
     id: 'realtime-counter',
     title: 'Echtzeit-Counter',
     description:
-      'Gemeinsamer Team-Counter mit editierbaren Personen, Teams und Live-Sync ueber Firestore.',
+      'Gemeinsamer Team-Counter mit editierbaren Personen, Teams und Live-Sync über Firestore.',
     href: '/apps/realtime-counter',
     routePath: 'apps/realtime-counter',
     status: 'Live',
-    color: appTileAccent,
+    color: 'var(--brand-blue)',
     Icon: TimerReset,
     Page: RealtimeCounterPage,
   },
@@ -50,11 +48,11 @@ export const apps: HubApp[] = [
     id: 'live-buzzer',
     title: 'Live-Buzzer',
     description:
-      'Quizshow-Buzzer mit Admin-Freigabe, Spielerkennung und Live-Lockout.',
+      'Quizshow-Buzzer mit automatischen Spielerkarten, Blau/Gelb-Teams und gemeinsamer Rundensteuerung.',
     href: '/apps/live-buzzer',
     routePath: 'apps/live-buzzer',
     status: 'Live',
-    color: appTileAccent,
+    color: 'var(--brand-teal)',
     Icon: Bell,
     Page: LiveBuzzerPage,
   },
@@ -66,7 +64,7 @@ export const apps: HubApp[] = [
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
     status: 'Live',
-    color: appTileAccent,
+    color: 'var(--brand-orange)',
     Icon: Dice5,
     Page: RandomizerPage,
   },

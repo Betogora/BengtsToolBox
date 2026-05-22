@@ -1,8 +1,7 @@
-import { Cloud, Layers3, MousePointerClick } from 'lucide-react'
+import { ArrowRight, Layers3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { apps, type HubApp } from '@/apps/registry'
-import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardDescription,
@@ -24,23 +23,38 @@ function AppTile({ app }: AppTileProps) {
       aria-label={`${app.title} öffnen`}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
-      <Card className="h-full overflow-hidden transition-colors group-hover:border-primary/45 group-hover:bg-secondary/35">
-        <CardHeader className="gap-5 p-6">
-          <div className="flex items-center gap-5">
+      <Card className="relative h-full overflow-hidden transition-colors group-hover:border-primary/45 group-hover:bg-card/95">
+        <div
+          className="absolute inset-x-0 top-0 h-2"
+          style={{ backgroundColor: app.color }}
+        />
+        <CardHeader className="grid min-h-44 gap-5 p-6 pt-7">
+          <div className="flex items-start justify-between gap-5">
             <div
-              className="flex size-16 shrink-0 items-center justify-center rounded-lg text-white"
-              style={{ backgroundColor: app.color }}
+              className="flex size-12 shrink-0 items-center justify-center rounded-lg text-white"
+              style={{
+                backgroundColor: app.color,
+                boxShadow: `0 14px 30px -18px ${app.color}`,
+              }}
             >
-              <app.Icon className="size-8" />
+              <app.Icon className="size-6" />
             </div>
-            <CardTitle className="text-2xl transition-colors group-hover:text-primary sm:text-3xl">
-              {app.title}
-            </CardTitle>
+            <div
+              className="flex size-9 shrink-0 translate-x-1 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-transform group-hover:translate-x-0 group-hover:bg-primary group-hover:text-primary-foreground"
+              aria-hidden="true"
+            >
+              <ArrowRight className="size-4" />
+            </div>
           </div>
 
-          <Badge variant={app.status === 'Live' ? 'default' : 'secondary'}>
-            {app.status}
-          </Badge>
+          <div className="space-y-2">
+            <CardTitle className="text-xl transition-colors group-hover:text-primary">
+              {app.title}
+            </CardTitle>
+            <CardDescription className="max-w-xl text-base leading-7">
+              {app.description}
+            </CardDescription>
+          </div>
         </CardHeader>
       </Card>
     </Link>
@@ -49,39 +63,30 @@ function AppTile({ app }: AppTileProps) {
 
 export function DashboardPage() {
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:py-12">
-      <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
+    <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-8 sm:px-6 lg:py-12">
+      <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
         <div className="max-w-3xl">
-          <Badge variant="secondary" className="mb-4 gap-2">
-            <Cloud className="size-3.5" />
-            Firebase-ready SPA
-          </Badge>
           <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
             App-Hub
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-            Deine Mini-Apps, Spiele und Experimente an einem Ort.
+            Wähle ein Tool und leg direkt los.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-primary text-primary-foreground">
-            <CardHeader className="p-4">
-              <Layers3 className="mb-5 size-5" />
-              <CardTitle className="text-3xl">{hubApps.length}</CardTitle>
+        <Card className="bg-primary text-primary-foreground">
+          <CardHeader className="flex-row items-center gap-4 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/15">
+              <Layers3 className="size-5" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">{hubApps.length} Apps</CardTitle>
               <CardDescription className="text-primary-foreground/75">
-                Apps verfügbar
+                Tools, Spiele, Experimente
               </CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="p-4">
-              <MousePointerClick className="mb-5 size-5 text-accent" />
-              <CardTitle className="text-3xl">1</CardTitle>
-              <CardDescription>Klick pro Kachel</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+            </div>
+          </CardHeader>
+        </Card>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 import type { CounterPlayer } from '@/apps/realtime-counter/types'
-import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
+import type { TeamId } from '@/apps/shared/teams'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
@@ -93,7 +93,7 @@ export function useRealtimeCounter(sessionId = 'default') {
     })
   }
 
-  const updatePlayerTeam = (playerId: string, teamId: BuzzerTeamId | null) =>
+  const updatePlayerTeam = (playerId: string, teamId: TeamId | null) =>
     counter.mergeItem(playerId, {
       teamId,
       lastUpdatedBy: session.userId,

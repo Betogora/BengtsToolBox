@@ -1,44 +1,64 @@
 import { Minus, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
-import type { CounterPlayer } from '@/apps/realtime-counter/types'
-import { counterTeams } from '@/apps/realtime-counter/teams'
+import { appTeams, type TeamId } from '@/apps/shared/teams'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
+type SharedPlayer = {
+  id: string
+  name: string
+  position: number
+  teamId: TeamId | null
+}
+
 type PlayerCardProps = {
-  player: CounterPlayer
-  onDecrement: () => void
-  onIncrement: () => void
+  player: SharedPlayer
+  buzzLabel?: string
+  buzzRank?: number
+  buzzTime?: string
+  isHighlighted?: boolean
+  isWinner?: boolean
+  onDecrement?: () => void
+  onIncrement?: () => void
   onNameChange: (name: string) => void
   onRemove: () => void
-  onTeamChange: (teamId: BuzzerTeamId) => void
+  onTeamChange: (teamId: TeamId) => void
+  score?: number
 }
 
 export function PlayerCard({
   player,
+  buzzLabel,
+  buzzRank,
+  buzzTime,
+  isHighlighted = false,
+  isWinner = false,
   onDecrement,
   onIncrement,
   onNameChange,
   onRemove,
   onTeamChange,
+  score,
 }: PlayerCardProps) {
   const [isEditingName, setIsEditingName] = useState(false)
-  const team = counterTeams.find((entry) => entry.id === player.teamId)
+  const team = appTeams.find((entry) => entry.id === player.teamId)
   const saveName = (name: string) => {
     onNameChange(name)
     setIsEditingName(false)
   }
 
   return (
-    <Card className="overflow-hidden transition-colors">
+    <Card
+      className={cn(
+        'overflow-hidden transition-colors',
+        isHighlighted && 'border-primary/60 bg-primary/5',
+        isWinner && 'border-accent bg-accent/10',
+      )}
+    >
       {team && <div className={cn('h-1 w-full', team.dotClassName)} />}
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
@@ -94,7 +114,7 @@ export function PlayerCard({
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid grid-cols-2 gap-2">
-          {counterTeams.map((teamOption) => {
+          {appTeams.map((teamOption) => {
             const isSelected = player.teamId === teamOption.id
 
             return (
@@ -116,32 +136,51 @@ export function PlayerCard({
           })}
         </div>
 
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className="text-4xl font-semibold tabular-nums">
-              {player.score}
+        {typeof score === 'number' && onIncrement && onDecrement && (
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="text-4xl font-semibold tabular-nums">
+                {score}
+              </div>
+              <div className="text-xs text-muted-foreground">Score</div>
             </div>
-            <div className="text-xs text-muted-foreground">Score</div>
+            <div className="flex gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label={`${player.name} verringern`}
+                disabled={score <= 0}
+                onClick={onDecrement}
+              >
+                <Minus className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                aria-label={`${player.name} erhoehen`}
+                onClick={onIncrement}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              size="icon"
-              variant="outline"
-              aria-label={`${player.name} verringern`}
-              disabled={player.score <= 0}
-              onClick={onDecrement}
-            >
-              <Minus className="size-4" />
-            </Button>
-            <Button
-              size="icon"
-              aria-label={`${player.name} erhoehen`}
-              onClick={onIncrement}
-            >
-              <Plus className="size-4" />
-            </Button>
+        )}
+
+        {buzzLabel && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+            <div>
+              <div className="text-sm text-muted-foreground">Buzz</div>
+              <div className="mt-1 font-semibold tabular-nums">
+                {buzzTime ?? '-'}
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              {buzzRank && <Badge variant="secondary">#{buzzRank}</Badge>}
+              <Badge variant={isWinner ? 'default' : 'outline'}>
+                {buzzLabel}
+              </Badge>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )

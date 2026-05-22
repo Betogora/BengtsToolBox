@@ -1,12 +1,7 @@
 import type { Timestamp } from 'firebase/firestore'
+import type { TeamId } from '@/apps/shared/teams'
 
-export type BuzzerTeamId =
-  | 'red'
-  | 'blue'
-  | 'green'
-  | 'yellow'
-  | 'purple'
-  | 'orange'
+export type BuzzerTeamId = TeamId
 
 export type BuzzerTimestamp = Timestamp | string | null
 
@@ -21,11 +16,9 @@ export type BuzzerRoundResult = {
 
 export type BuzzerSessionState = {
   isOpen: boolean
-  adminPlayerId: string | null
   winnerPlayerId: string | null
   winnerTeamId: BuzzerTeamId | null
   roundNumber: number
-  playerCount: number
   lastBuzzedAt: BuzzerTimestamp
   lastBuzzedAtClientIso: string | null
   history: BuzzerRoundResult[]
