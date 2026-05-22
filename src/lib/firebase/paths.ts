@@ -14,4 +14,10 @@ export const firebasePaths = {
     `apps/live-buzzer/sessions/${sessionId}/players`,
   liveBuzzerPlayer: (sessionId: string, playerId: string) =>
     `apps/live-buzzer/sessions/${sessionId}/players/${playerId}`,
+  progressDashboardState: (sessionId = 'default') =>
+    `apps/progress-dashboard/sessions/${sessionId}/state/default`,
+  progressDashboardPlayers: (sessionId = 'default') =>
+    `apps/progress-dashboard/sessions/${sessionId}/players`,
+  progressDashboardDatasets: (sessionId = 'default') =>
+    `apps/progress-dashboard/sessions/${sessionId}/datasets`,
 } as const

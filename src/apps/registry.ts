@@ -1,9 +1,10 @@
 import type { LucideIcon } from 'lucide-react'
-import { Bell, Dice5, Stethoscope, TimerReset } from 'lucide-react'
+import { Bell, ChartNoAxesCombined, Dice5, Stethoscope, TimerReset } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { DiagnosticsPage } from '@/apps/diagnostics'
 import { LiveBuzzerPage } from '@/apps/live-buzzer'
+import { ProgressDashboardPage } from '@/apps/progress-dashboard'
 import { RandomizerPage } from '@/apps/randomizer'
 import { RealtimeCounterPage } from '@/apps/realtime-counter'
 
@@ -55,6 +56,18 @@ export const apps: HubApp[] = [
     color: 'var(--brand-teal)',
     Icon: Bell,
     Page: LiveBuzzerPage,
+  },
+  {
+    id: 'progress-dashboard',
+    title: 'Fortschritts-Dashboard',
+    description:
+      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensaetzen.',
+    href: '/apps/progress-dashboard',
+    routePath: 'apps/progress-dashboard',
+    status: 'Live',
+    color: 'var(--brand-violet)',
+    Icon: ChartNoAxesCombined,
+    Page: ProgressDashboardPage,
   },
   {
     id: 'randomizer',
