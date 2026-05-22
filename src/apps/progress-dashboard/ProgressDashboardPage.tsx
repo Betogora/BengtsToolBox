@@ -137,13 +137,6 @@ function fromDateTimeLocalValue(value: string, fallback: string) {
   return Number.isNaN(date.getTime()) ? fallback : date.toISOString()
 }
 
-function getIconLabel(
-  icon: ProgressEventIcon,
-  icons: ReturnType<typeof useProgressDashboard>['progressEventIcons'],
-) {
-  return icons.find((entry) => entry.id === icon)?.chartLabel ?? '+'
-}
-
 function getSortedEvents(events: ProgressEvent[]) {
   return [...events].sort(
     (left, right) =>
@@ -262,11 +255,9 @@ function InlineTextEdit({
 
 function ProgressChart({
   dataset,
-  icons,
   players,
 }: {
   dataset: ProgressDataset
-  icons: ReturnType<typeof useProgressDashboard>['progressEventIcons']
   players: ProgressPlayer[]
 }) {
   const sortedEvents = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
@@ -478,28 +469,30 @@ function ProgressChart({
             />
           )
         })}
-        {eventPoints.map((point) => (
-          <g key={point.event.id}>
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="13"
-              fill="#ffffff"
-              stroke={point.event.playerColor}
-              strokeWidth="3"
-            />
-            <text
-              x={point.x}
-              y={point.y + 4}
-              textAnchor="middle"
-              fontSize="10"
-              fontWeight="700"
-              fill="#062433"
-            >
-              {getIconLabel(point.event.icon, icons)}
-            </text>
-          </g>
-        ))}
+        {eventPoints.map((point) => {
+          const Icon = eventIconComponents[point.event.icon]
+
+          return (
+            <g key={point.event.id}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="13"
+                fill="#ffffff"
+                stroke={point.event.playerColor}
+                strokeWidth="3"
+              />
+              <Icon
+                x={point.x - 7}
+                y={point.y - 7}
+                width="14"
+                height="14"
+                color="#062433"
+                strokeWidth="2.4"
+              />
+            </g>
+          )
+        })}
       </svg>
     </div>
   )
@@ -958,7 +951,6 @@ export function ProgressDashboardPage() {
         <CardContent>
           <ProgressChart
             dataset={activeDataset}
-            icons={progressEventIcons}
             players={players}
           />
         </CardContent>
