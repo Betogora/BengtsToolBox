@@ -32,11 +32,10 @@ export const progressEventIcons: {
 }[] = [
   { id: 'plus', label: 'Plus', chartLabel: '+' },
   { id: 'minus', label: 'Minus', chartLabel: '-' },
-  { id: 'check', label: 'Check', chartLabel: 'OK' },
-  { id: 'star', label: 'Star', chartLabel: '*' },
-  { id: 'bolt', label: 'Blitz', chartLabel: '!' },
-  { id: 'flag', label: 'Flagge', chartLabel: 'F' },
-  { id: 'cup', label: 'Cup', chartLabel: 'C' },
+  { id: 'wine', label: 'Wein', chartLabel: 'W' },
+  { id: 'beer', label: 'Bier', chartLabel: 'B' },
+  { id: 'schnaps', label: 'Schnaps', chartLabel: 'S' },
+  { id: 'funnel', label: 'Trichter', chartLabel: 'T' },
 ]
 
 const activeDatasetId = 'dataset-current'
@@ -64,10 +63,9 @@ function createDataset(position = 1): ProgressDataset {
   return {
     id: activeDatasetId,
     position,
-    name: 'Aktueller Datensatz',
-    chartTitle: 'Fortschritt ueber Zeit',
-    topic: 'Aufgaben-Challenge',
-    unit: 'Aufgaben',
+    name: 'Datensatz',
+    chartTitle: 'Fortschritt über Zeit',
+    unit: 'Getränke',
     status: 'active',
     createdAtClientIso: now,
     archivedAtClientIso: null,
@@ -106,6 +104,47 @@ function sanitizeColor(color: string, fallback: string) {
   return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed : fallback
 }
 
+function formatArchiveDatasetName(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Datensatz'
+  }
+
+  const year = String(date.getFullYear())
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `Datensatz ${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+function normalizeEventIcon(icon: unknown, valueDelta: number): ProgressEventIcon {
+  if (
+    icon === 'plus' ||
+    icon === 'minus' ||
+    icon === 'wine' ||
+    icon === 'beer' ||
+    icon === 'schnaps' ||
+    icon === 'funnel'
+  ) {
+    return icon
+  }
+
+  return valueDelta < 0 ? 'minus' : 'plus'
+}
+
+function normalizeDatasetName(name: string | undefined) {
+  const trimmedName = name?.trim()
+
+  if (!trimmedName || trimmedName === 'Aktueller Datensatz') {
+    return 'Datensatz'
+  }
+
+  return trimmedName
+}
+
 function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer {
   const position = Number.isFinite(player.position)
     ? Number(player.position)
@@ -123,22 +162,23 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
 function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
   return {
     ...dataset,
-    chartTitle: dataset.chartTitle?.trim() || 'Fortschritt ueber Zeit',
+    chartTitle: dataset.chartTitle?.trim() || 'Fortschritt über Zeit',
     createdAtClientIso: dataset.createdAtClientIso || new Date().toISOString(),
     archivedAtClientIso: dataset.archivedAtClientIso ?? null,
     events: (dataset.events ?? []).map((event, index) => ({
       ...event,
-      valueDelta: event.valueDelta === -1 ? -1 : 1,
-      icon: event.icon ?? (event.valueDelta === -1 ? 'minus' : 'plus'),
+      valueDelta: Number.isFinite(Number(event.valueDelta))
+        ? Number(event.valueDelta)
+        : 1,
+      icon: normalizeEventIcon(event.icon, Number(event.valueDelta) || 1),
       position: Number.isFinite(event.position) ? event.position : index + 1,
       createdAtClientIso: event.createdAtClientIso || new Date().toISOString(),
       createdAtLabel: event.createdAtLabel || event.createdAtClientIso,
     })),
-    name: dataset.name?.trim() || 'Datensatz',
+    name: normalizeDatasetName(dataset.name),
     position: Number.isFinite(dataset.position) ? dataset.position : 1,
     status: dataset.status === 'archived' ? 'archived' : 'active',
-    topic: dataset.topic?.trim() || 'Aufgaben-Challenge',
-    unit: dataset.unit?.trim() || 'Punkte',
+    unit: dataset.unit?.trim() || 'Getränke',
   }
 }
 
@@ -253,7 +293,7 @@ export function useProgressDashboard(sessionId = 'default') {
     })
 
   const updateActiveDatasetMeta = (
-    field: 'name' | 'chartTitle' | 'topic' | 'unit',
+    field: 'name' | 'chartTitle' | 'unit',
     value: string,
   ) => saveActiveDataset({ [field]: value.trim() || createDataset()[field] })
 
@@ -317,7 +357,7 @@ export function useProgressDashboard(sessionId = 'default') {
       playerName: player.name,
       playerColor: player.color,
       valueDelta,
-      icon: valueDelta === -1 ? 'minus' : 'plus',
+      icon: valueDelta < 0 ? 'minus' : 'plus',
       createdAtClientIso: now,
       createdAtLabel: now,
       position: nextPosition,
@@ -364,6 +404,7 @@ export function useProgressDashboard(sessionId = 'default') {
 
     await datasetsStore.setItem(archiveId, {
       ...archiveValue,
+      name: formatArchiveDatasetName(now),
       position: archivePosition,
       status: 'archived',
       archivedAtClientIso: now,

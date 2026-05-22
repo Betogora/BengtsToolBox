@@ -61,7 +61,7 @@ export const apps: HubApp[] = [
     id: 'progress-dashboard',
     title: 'Fortschritts-Dashboard',
     description:
-      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensaetzen.',
+      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
     href: '/apps/progress-dashboard',
     routePath: 'apps/progress-dashboard',
     status: 'Live',

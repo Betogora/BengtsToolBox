@@ -1,13 +1,12 @@
 export type ProgressEventIcon =
   | 'plus'
   | 'minus'
-  | 'check'
-  | 'star'
-  | 'bolt'
-  | 'flag'
-  | 'cup'
+  | 'wine'
+  | 'beer'
+  | 'schnaps'
+  | 'funnel'
 
-export type ProgressEventDelta = 1 | -1
+export type ProgressEventDelta = number
 
 export type ProgressPlayer = {
   id: string
@@ -37,7 +36,6 @@ export type ProgressDataset = {
   position: number
   name: string
   chartTitle: string
-  topic: string
   unit: string
   status: ProgressDatasetStatus
   createdAtClientIso: string

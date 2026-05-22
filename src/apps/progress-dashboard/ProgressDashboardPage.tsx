@@ -1,17 +1,21 @@
 import {
   Archive,
   BarChart3,
+  Beer,
   ChevronDown,
   ChevronRight,
+  Funnel,
+  Martini,
   Minus,
   Pencil,
   Plus,
   RotateCcw,
   Trash2,
   Trophy,
-  UserPlus,
   UsersRound,
+  Wine,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
@@ -60,6 +64,41 @@ const chartPadding = {
   right: 36,
   bottom: 58,
   left: 70,
+}
+
+const drinkValueOptions = [
+  0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10,
+]
+
+const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
+  plus: Plus,
+  minus: Minus,
+  wine: Wine,
+  beer: Beer,
+  schnaps: Martini,
+  funnel: Funnel,
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('de-DE', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(value)
+}
+
+function formatSignedNumber(value: number) {
+  const sign = value > 0 ? '+' : value < 0 ? '-' : ''
+
+  return `${sign}${formatNumber(Math.abs(value))}`
+}
+
+function getDrinkValueSelectValue(value: number) {
+  const absoluteValue = Math.abs(value)
+  const matchingValue = drinkValueOptions.find(
+    (option) => Math.abs(option - absoluteValue) < 0.001,
+  )
+
+  return String(matchingValue ?? 1)
 }
 
 function formatDateTime(value: string | null | undefined) {
@@ -156,7 +195,7 @@ function ConfirmButton({
               setOpen(false)
             }}
           >
-            Bestaetigen
+            Bestätigen
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -289,9 +328,7 @@ function ProgressChart({
     ((time - xDomainMin) / (xDomainMax - xDomainMin || 1)) * plotWidth
   const yScale = (value: number) =>
     chartPadding.top + plotHeight - (value / yDomainMax) * plotHeight
-  const yTicks = Array.from({ length: 5 }, (_, index) =>
-    Math.round((yDomainMax / 4) * index),
-  )
+  const yTicks = Array.from({ length: 5 }, (_, index) => (yDomainMax / 4) * index)
   const xTicks = Array.from({ length: 5 }, (_, index) => {
     const time = xDomainMin + ((xDomainMax - xDomainMin) / 4) * index
 
@@ -357,7 +394,7 @@ function ProgressChart({
               fontSize="12"
               fill="#557079"
             >
-              {tick}
+              {formatNumber(tick)}
             </text>
           </g>
         ))}
@@ -492,7 +529,7 @@ function PlayerCard({
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <InlineTextEdit
-              ariaLabel={`Name fuer ${player.name}`}
+              ariaLabel={`Name für ${player.name}`}
               className="py-1 text-2xl font-semibold tracking-normal"
               fallback={`Person ${player.position}`}
               inputClassName="h-11 text-xl font-semibold"
@@ -501,7 +538,7 @@ function PlayerCard({
             />
           </div>
           <ConfirmButton
-            title="Spieler loeschen?"
+            title="Spieler löschen?"
             description={`${player.name} wird entfernt. Bestehende Ereignisse bleiben im Datensatz erhalten.`}
             onConfirm={() => onRemove(player.id)}
             trigger={
@@ -548,8 +585,10 @@ function PlayerCard({
 
         <div className="flex items-end justify-between gap-4">
           <div>
-            <div className="text-4xl font-semibold tabular-nums">{score}</div>
-            <div className="text-xs text-muted-foreground">Score</div>
+            <div className="text-4xl font-semibold tabular-nums">
+              {formatNumber(score)}
+            </div>
+            <div className="text-xs text-muted-foreground">Getränke</div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -563,7 +602,7 @@ function PlayerCard({
             </Button>
             <Button
               size="icon"
-              aria-label={`${player.name} erhoehen`}
+              aria-label={`${player.name} erhöhen`}
               onClick={() => onAddEvent(player, 1)}
             >
               <Plus className="size-4" />
@@ -641,22 +680,45 @@ function EventTable({
                 </div>
               </td>
               <td className="px-3 py-2">
-                <Select
-                  value={String(event.valueDelta)}
-                  onValueChange={(value) =>
-                    onUpdateEvent(event.id, {
-                      valueDelta: Number(value) === -1 ? -1 : 1,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">+1</SelectItem>
-                    <SelectItem value="-1">-1</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={event.valueDelta < 0 ? '-' : '+'}
+                    onValueChange={(value) =>
+                      onUpdateEvent(event.id, {
+                        valueDelta:
+                          (value === '-' ? -1 : 1) * Math.abs(event.valueDelta || 1),
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="+">+</SelectItem>
+                      <SelectItem value="-">-</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={getDrinkValueSelectValue(event.valueDelta)}
+                    onValueChange={(value) =>
+                      onUpdateEvent(event.id, {
+                        valueDelta:
+                          (event.valueDelta < 0 ? -1 : 1) * Number(value),
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {drinkValueOptions.map((value) => (
+                        <SelectItem key={value} value={String(value)}>
+                          {formatNumber(value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </td>
               <td className="px-3 py-2">
                 <Select
@@ -673,7 +735,14 @@ function EventTable({
                   <SelectContent>
                     {icons.map((icon) => (
                       <SelectItem key={icon.id} value={icon.id}>
-                        {icon.chartLabel} {icon.label}
+                        <span className="flex items-center gap-2">
+                          {(() => {
+                            const Icon = eventIconComponents[icon.id]
+
+                            return <Icon className="size-4" />
+                          })()}
+                          {icon.label}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -681,11 +750,11 @@ function EventTable({
               </td>
               <td className="px-3 py-2 text-right">
                 <ConfirmButton
-                  title="Ereignis loeschen?"
+                  title="Ereignis löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
-                    <Button variant="ghost" size="icon" aria-label="Ereignis loeschen">
+                    <Button variant="ghost" size="icon" aria-label="Ereignis löschen">
                       <Trash2 className="size-4" />
                     </Button>
                   }
@@ -738,11 +807,11 @@ function ArchiveDatasetCard({
           </div>
         </button>
         <ConfirmButton
-          title="Datensatz loeschen?"
+          title="Datensatz löschen?"
           description="Der archivierte Datensatz wird dauerhaft entfernt."
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="ghost" size="icon" aria-label="Archiv loeschen">
+            <Button variant="ghost" size="icon" aria-label="Archiv löschen">
               <Trash2 className="size-4" />
             </Button>
           }
@@ -768,7 +837,7 @@ function ArchiveDatasetCard({
                     />
                     <span className="font-medium">{event.playerName}</span>
                     <Badge variant={event.valueDelta > 0 ? 'default' : 'outline'}>
-                      {event.valueDelta > 0 ? '+1' : '-1'}
+                      {formatSignedNumber(event.valueDelta)}
                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
@@ -794,7 +863,6 @@ export function ProgressDashboardPage() {
     deleteEvent,
     error,
     isLoading,
-    isRealtime,
     leader,
     playerScores,
     players,
@@ -823,11 +891,10 @@ export function ProgressDashboardPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={isRealtime ? 'default' : 'secondary'}>
-            {isRealtime ? 'Live Sync' : 'Lokal'}
-          </Badge>
           <Badge variant="outline">{players.length} Spieler</Badge>
-          <Badge variant="outline">{totalEvents} Ereignisse</Badge>
+          <Badge variant="outline">
+            {formatNumber(totalEvents)} Getränke-Ereignisse
+          </Badge>
         </div>
       </section>
 
@@ -847,24 +914,17 @@ export function ProgressDashboardPage() {
               <InlineTextEdit
                 ariaLabel="Diagrammtitel"
                 className="text-2xl font-semibold tracking-normal sm:text-3xl"
-                fallback="Fortschritt ueber Zeit"
+                fallback="Fortschritt über Zeit"
                 inputClassName="h-12 text-2xl font-semibold"
                 value={activeDataset.chartTitle}
                 onSave={(value) => updateActiveDatasetMeta('chartTitle', value)}
               />
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 <Input
                   aria-label="Datensatzname"
                   value={activeDataset.name}
                   onChange={(event) =>
                     updateActiveDatasetMeta('name', event.currentTarget.value)
-                  }
-                />
-                <Input
-                  aria-label="Thema"
-                  value={activeDataset.topic}
-                  onChange={(event) =>
-                    updateActiveDatasetMeta('topic', event.currentTarget.value)
                   }
                 />
                 <Input
@@ -879,17 +939,17 @@ export function ProgressDashboardPage() {
             <div className="grid gap-2 rounded-lg border bg-secondary/60 p-4 lg:min-w-64">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
-                Fuehrung
+                Führung
               </div>
               <div className="text-2xl font-semibold">
                 {leader ? leader.player.name : '-'}
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-semibold tabular-nums">
-                  {leader?.score ?? 0}
+                  {formatNumber(leader?.score ?? 0)}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  von {totalScore} {activeDataset.unit}
+                  von {formatNumber(totalScore)} {activeDataset.unit}
                 </span>
               </div>
             </div>
@@ -914,16 +974,6 @@ export function ProgressDashboardPage() {
             <p className="mt-1 text-sm text-muted-foreground">Synchronisiere...</p>
           )}
         </div>
-        <Button
-          variant="outline"
-          onClick={async () => {
-            await addPlayer()
-            toast.success('Person hinzugefuegt.')
-          }}
-        >
-          <UserPlus className="size-4" />
-          Add Person
-        </Button>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -938,7 +988,7 @@ export function ProgressDashboardPage() {
               if (didSave) {
                 toast.success(valueDelta > 0 ? '+1 gespeichert.' : '-1 gespeichert.')
               } else {
-                toast.error('Der Score kann nicht unter 0 fallen.')
+                toast.error('Der Stand kann nicht unter 0 fallen.')
               }
             }}
             onColorChange={(playerId, color) => updatePlayerColor(playerId, color)}
@@ -949,6 +999,21 @@ export function ProgressDashboardPage() {
             }}
           />
         ))}
+        <Card className="border-dashed">
+          <CardContent className="flex min-h-64 items-center justify-center p-6">
+            <Button
+              className="h-24 w-full flex-col gap-2"
+              variant="outline"
+              onClick={async () => {
+                await addPlayer()
+                toast.success('Person hinzugefügt.')
+              }}
+            >
+              <Plus className="size-6" />
+              Spieler hinzufügen
+            </Button>
+          </CardContent>
+        </Card>
       </section>
 
       <Card>
@@ -956,7 +1021,7 @@ export function ProgressDashboardPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="size-5 text-primary" />
-              Aktueller Datensatz
+              Datensatz
             </CardTitle>
             <ConfirmButton
               title="Datensatz archivieren und neu starten?"
@@ -974,7 +1039,7 @@ export function ProgressDashboardPage() {
             />
           </div>
           <CardDescription>
-            Ereignisse sind nach neuestem Zeitpunkt sortiert und koennen direkt
+            Ereignisse sind nach neuestem Zeitpunkt sortiert und können direkt
             korrigiert werden.
           </CardDescription>
         </CardHeader>
@@ -984,7 +1049,7 @@ export function ProgressDashboardPage() {
             icons={progressEventIcons}
             onDeleteEvent={async (eventId) => {
               await deleteEvent(eventId)
-              toast.success('Ereignis geloescht.')
+              toast.success('Ereignis gelöscht.')
             }}
             onUpdateEvent={(eventId, partialValue) => updateEvent(eventId, partialValue)}
           />
@@ -995,17 +1060,17 @@ export function ProgressDashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Archive className="size-5 text-primary" />
-            Alte Datensaetze
+            Alte Datensätze
           </CardTitle>
           <CardDescription>
-            Archivierte Datensaetze bleiben einsehbar und koennen benannt oder
-            geloescht werden.
+            Archivierte Datensätze bleiben einsehbar und können benannt oder
+            gelöscht werden.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (
             <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Noch keine archivierten Datensaetze.
+              Noch keine archivierten Datensätze.
             </div>
           ) : (
             archivedDatasets.map((dataset) => (
@@ -1014,7 +1079,7 @@ export function ProgressDashboardPage() {
                 dataset={dataset}
                 onDelete={async (datasetId) => {
                   await deleteDataset(datasetId)
-                  toast.success('Datensatz geloescht.')
+                  toast.success('Datensatz gelöscht.')
                 }}
                 onRename={(datasetId, name) =>
                   updateArchivedDatasetName(datasetId, name)
