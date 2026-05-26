@@ -873,6 +873,8 @@ export function ProgressDashboardPage() {
   } = useProgressDashboard()
   const totalEvents = activeDataset.events.length
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
+  const unitLabel = activeDataset.unit.trim()
+  const defaultChartTitle = unitLabel ? `${unitLabel}-Dashboard` : 'Dashboard'
   const chartAccentStyle = {
     '--progress-accent': leader?.player.color ?? 'var(--brand-teal)',
   } as CSSProperties
@@ -888,7 +890,8 @@ export function ProgressDashboardPage() {
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{players.length} Spieler</Badge>
           <Badge variant="outline">
-            {formatNumber(totalEvents)} {activeDataset.unit}
+            {formatNumber(totalEvents)}
+            {unitLabel ? ` ${unitLabel}` : ''}
           </Badge>
         </div>
       </section>
@@ -909,19 +912,12 @@ export function ProgressDashboardPage() {
               <InlineTextEdit
                 ariaLabel="Diagrammtitel"
                 className="text-2xl font-semibold tracking-normal sm:text-3xl"
-                fallback={`${activeDataset.unit}-Dashboard`}
+                fallback={defaultChartTitle}
                 inputClassName="h-12 text-2xl font-semibold"
                 value={activeDataset.chartTitle}
                 onSave={(value) => updateActiveDatasetMeta('chartTitle', value)}
               />
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <Input
-                  aria-label="Datensatzname"
-                  value={activeDataset.name}
-                  onChange={(event) =>
-                    updateActiveDatasetMeta('name', event.currentTarget.value)
-                  }
-                />
+              <div className="mt-3 grid gap-2">
                 <Input
                   aria-label="Einheit"
                   value={activeDataset.unit}
@@ -931,20 +927,21 @@ export function ProgressDashboardPage() {
                 />
               </div>
             </div>
-            <div className="grid h-fit gap-2 self-start rounded-lg border bg-secondary/60 p-4 lg:min-w-64">
+            <div className="grid h-fit gap-1 self-start rounded-lg border bg-secondary/60 p-2.5 lg:min-w-60">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
                 Führung
               </div>
-              <div className="text-2xl font-semibold">
-                {leader ? leader.player.name : '-'}
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-semibold tabular-nums">
+              <div className="flex min-w-0 items-baseline gap-3">
+                <span className="min-w-0 flex-1 truncate text-lg font-semibold">
+                  {leader ? leader.player.name : '-'}
+                </span>
+                <span className="text-2xl font-semibold tabular-nums">
                   {formatNumber(leader?.score ?? 0)}
                 </span>
-                <span className="text-sm text-muted-foreground">
-                  von {formatNumber(totalScore)} {activeDataset.unit}
+                <span className="shrink-0 text-sm text-muted-foreground">
+                  von {formatNumber(totalScore)}
+                  {unitLabel ? ` ${unitLabel}` : ''}
                 </span>
               </div>
             </div>
@@ -994,8 +991,8 @@ export function ProgressDashboardPage() {
             }}
           />
         ))}
-        <Card className="border-dashed">
-          <CardContent className="flex min-h-64 items-center justify-center p-6">
+        <Card className="min-h-[13.25rem] border-dashed">
+          <CardContent className="flex h-full items-center justify-center p-6">
             <Button
               className="h-24 w-full flex-col gap-2"
               variant="outline"
@@ -1033,10 +1030,6 @@ export function ProgressDashboardPage() {
               }
             />
           </div>
-          <CardDescription>
-            Ereignisse sind nach neuestem Zeitpunkt sortiert und können direkt
-            korrigiert werden.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <EventTable
@@ -1057,10 +1050,6 @@ export function ProgressDashboardPage() {
             <Archive className="size-5 text-primary" />
             Alte Datensätze
           </CardTitle>
-          <CardDescription>
-            Archivierte Datensätze bleiben einsehbar und können benannt oder
-            gelöscht werden.
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (

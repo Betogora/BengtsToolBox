@@ -23,9 +23,12 @@ export const progressColorPresets = [
 
 const defaultUnit = 'Getränke'
 const legacyDefaultChartTitle = 'Fortschritt über Zeit'
+const emptyUnitDefaultChartTitle = 'Dashboard'
 
 function getDefaultChartTitle(unit: string) {
-  return `${unit.trim() || defaultUnit}-Dashboard`
+  const trimmedUnit = unit.trim()
+
+  return trimmedUnit ? `${trimmedUnit}-Dashboard` : emptyUnitDefaultChartTitle
 }
 
 function isDefaultChartTitle(title: string, unit: string) {
@@ -173,7 +176,8 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
 }
 
 function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
-  const unit = dataset.unit?.trim() || defaultUnit
+  const hasUnit = typeof dataset.unit === 'string'
+  const unit = hasUnit ? dataset.unit : defaultUnit
   const chartTitle = dataset.chartTitle?.trim()
 
   return {
@@ -305,7 +309,7 @@ export function useProgressDashboard(sessionId = 'default') {
     const trimmedValue = value.trim()
 
     if (field === 'unit') {
-      const nextUnit = trimmedValue || defaultUnit
+      const nextUnit = value
       const shouldSyncChartTitle = isDefaultChartTitle(
         activeDataset.chartTitle,
         activeDataset.unit,
