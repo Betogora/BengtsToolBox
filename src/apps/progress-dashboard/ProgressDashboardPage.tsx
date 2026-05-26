@@ -874,7 +874,6 @@ export function ProgressDashboardPage() {
   const totalEvents = activeDataset.events.length
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
   const unitLabel = activeDataset.unit.trim()
-  const defaultChartTitle = unitLabel ? `${unitLabel}-Dashboard` : 'Dashboard'
   const chartAccentStyle = {
     '--progress-accent': leader?.player.color ?? 'var(--brand-teal)',
   } as CSSProperties
@@ -907,43 +906,33 @@ export function ProgressDashboardPage() {
 
       <Card style={chartAccentStyle}>
         <CardHeader className="gap-4">
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
-            <div className="min-w-0">
-              <InlineTextEdit
-                ariaLabel="Diagrammtitel"
-                className="text-2xl font-semibold tracking-normal sm:text-3xl"
-                fallback={defaultChartTitle}
-                inputClassName="h-12 text-2xl font-semibold"
-                value={activeDataset.chartTitle}
-                onSave={(value) => updateActiveDatasetMeta('chartTitle', value)}
-              />
-              <div className="mt-3 grid gap-2">
-                <Input
-                  aria-label="Einheit"
-                  value={activeDataset.unit}
-                  onChange={(event) =>
-                    updateActiveDatasetMeta('unit', event.currentTarget.value)
-                  }
-                />
-              </div>
-            </div>
-            <div className="grid h-fit gap-1 self-start rounded-lg border bg-secondary/60 p-2.5 lg:min-w-60">
+          <div className="flex flex-col gap-3 rounded-lg border bg-secondary/60 p-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
                 Führung
               </div>
-              <div className="flex min-w-0 items-baseline gap-3">
-                <span className="min-w-0 flex-1 truncate text-lg font-semibold">
-                  {leader ? leader.player.name : '-'}
-                </span>
+              <div className="min-w-0 truncate text-lg font-semibold">
+                {leader ? leader.player.name : '-'}
+              </div>
+              <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tabular-nums">
                   {formatNumber(leader?.score ?? 0)}
                 </span>
-                <span className="shrink-0 text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   von {formatNumber(totalScore)}
                   {unitLabel ? ` ${unitLabel}` : ''}
                 </span>
               </div>
+            </div>
+            <div className="w-full md:w-64">
+              <Input
+                aria-label="Einheit"
+                value={activeDataset.unit}
+                onChange={(event) =>
+                  updateActiveDatasetMeta('unit', event.currentTarget.value)
+                }
+              />
             </div>
           </div>
         </CardHeader>
