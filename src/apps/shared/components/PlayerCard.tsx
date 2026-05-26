@@ -24,6 +24,7 @@ type PlayerCardProps = {
   isWinner?: boolean
   onDecrement?: () => void
   onIncrement?: () => void
+  onIncrementLarge?: () => void
   onNameChange: (name: string) => void
   onRemove: () => void
   onTeamChange: (teamId: TeamId | null) => void
@@ -39,6 +40,7 @@ export function PlayerCard({
   isWinner = false,
   onDecrement,
   onIncrement,
+  onIncrementLarge,
   onNameChange,
   onRemove,
   onTeamChange,
@@ -66,7 +68,7 @@ export function PlayerCard({
             {isEditingName ? (
               <Input
                 key={player.name}
-                aria-label={`Name für Person ${player.position}`}
+                aria-label={`Name fuer Person ${player.position}`}
                 autoFocus
                 className="h-12"
                 defaultValue={player.name}
@@ -156,11 +158,21 @@ export function PlayerCard({
               </Button>
               <Button
                 size="icon"
-                aria-label={`${player.name} erhöhen`}
+                aria-label={`${player.name} erhoehen`}
                 onClick={onIncrement}
               >
                 <Plus className="size-4" />
               </Button>
+              {onIncrementLarge && (
+                <Button
+                  size="sm"
+                  aria-label={`${player.name} um 5 erhoehen`}
+                  onClick={onIncrementLarge}
+                >
+                  <Plus className="size-4" />
+                  5
+                </Button>
+              )}
             </div>
           </div>
         )}

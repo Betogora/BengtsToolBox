@@ -1,11 +1,5 @@
 export const firebasePaths = {
   diagnosticsHealth: () => 'apps/diagnostics/health/default',
-  realtimeCounterSession: (sessionId = 'default') =>
-    `apps/realtime-counter/sessions/${sessionId}`,
-  realtimeCounterPlayers: (sessionId = 'default') =>
-    `apps/realtime-counter/sessions/${sessionId}/players`,
-  realtimeCounterPlayer: (sessionId: string, playerId: string) =>
-    `apps/realtime-counter/sessions/${sessionId}/players/${playerId}`,
   randomizerState: (stateId = 'default') =>
     `apps/randomizer/state/${stateId}`,
   decisionWheelState: (stateId = 'default') =>
@@ -18,6 +12,12 @@ export const firebasePaths = {
     `apps/live-buzzer/sessions/${sessionId}/players`,
   liveBuzzerPlayer: (sessionId: string, playerId: string) =>
     `apps/live-buzzer/sessions/${sessionId}/players/${playerId}`,
+  scoreboardState: (sessionId = 'default') =>
+    `apps/scoreboard/sessions/${sessionId}/state/default`,
+  scoreboardPlayers: (sessionId = 'default') =>
+    `apps/scoreboard/sessions/${sessionId}/players`,
+  scoreboardPlayer: (sessionId: string, playerId: string) =>
+    `apps/scoreboard/sessions/${sessionId}/players/${playerId}`,
   progressDashboardState: (sessionId = 'default') =>
     `apps/progress-dashboard/sessions/${sessionId}/state/default`,
   progressDashboardPlayers: (sessionId = 'default') =>

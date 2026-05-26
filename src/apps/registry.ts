@@ -4,8 +4,8 @@ import {
   ChartNoAxesCombined,
   CircleDot,
   Dice5,
+  ListOrdered,
   Stethoscope,
-  TimerReset,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -14,7 +14,7 @@ import { DiagnosticsPage } from '@/apps/diagnostics'
 import { LiveBuzzerPage } from '@/apps/live-buzzer'
 import { ProgressDashboardPage } from '@/apps/progress-dashboard'
 import { RandomizerPage } from '@/apps/randomizer'
-import { RealtimeCounterPage } from '@/apps/realtime-counter'
+import { ScoreboardPage } from '@/apps/scoreboard'
 
 export type HubApp = {
   id: string
@@ -33,7 +33,7 @@ export const apps: HubApp[] = [
     id: 'diagnostics',
     title: 'Diagnose',
     description:
-      'Prüft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
+      'Prueft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
     href: '/apps/diagnostics',
     routePath: 'apps/diagnostics',
     status: 'Live',
@@ -42,16 +42,16 @@ export const apps: HubApp[] = [
     Page: DiagnosticsPage,
   },
   {
-    id: 'realtime-counter',
-    title: 'Counter',
+    id: 'scoreboard',
+    title: 'Scoreboard',
     description:
-      'Gemeinsamer Team-Counter mit editierbaren Personen, Teams und Live-Sync über Firestore.',
-    href: '/apps/realtime-counter',
-    routePath: 'apps/realtime-counter',
+      'Live-Scoreboard fuer Spieleabende, Quiz, Challenges und kleine Turniere.',
+    href: '/apps/scoreboard',
+    routePath: 'apps/scoreboard',
     status: 'Live',
     color: 'var(--brand-blue)',
-    Icon: TimerReset,
-    Page: RealtimeCounterPage,
+    Icon: ListOrdered,
+    Page: ScoreboardPage,
   },
   {
     id: 'live-buzzer',
@@ -69,7 +69,7 @@ export const apps: HubApp[] = [
     id: 'progress-dashboard',
     title: 'Fortschritts-Dashboard',
     description:
-      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
+      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensaetzen.',
     href: '/apps/progress-dashboard',
     routePath: 'apps/progress-dashboard',
     status: 'Live',
@@ -81,7 +81,7 @@ export const apps: HubApp[] = [
     id: 'randomizer',
     title: 'Random Number Generator',
     description:
-      'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
+      'Online-Wuerfel und Random Number Generator mit gemerktem letzten Zustand.',
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
     status: 'Live',
@@ -91,9 +91,9 @@ export const apps: HubApp[] = [
   },
   {
     id: 'decision-wheel',
-    title: 'Glücksrad',
+    title: 'Gluecksrad',
     description:
-      'Decision Wheel für Spieleabende, Aufgaben, Preise und schnelle Auswahl mit Live-Sync.',
+      'Decision Wheel fuer Spieleabende, Aufgaben, Preise und schnelle Auswahl mit Live-Sync.',
     href: '/apps/decision-wheel',
     routePath: 'apps/decision-wheel',
     status: 'Live',
