@@ -8,6 +8,8 @@ export const firebasePaths = {
     `apps/realtime-counter/sessions/${sessionId}/players/${playerId}`,
   randomizerState: (stateId = 'default') =>
     `apps/randomizer/state/${stateId}`,
+  decisionWheelState: (stateId = 'default') =>
+    `apps/decision-wheel/state/${stateId}`,
   coinflipState: (stateId = 'default') =>
     `apps/schlag-den-rabe/games/coinflip/state/${stateId}`,
   liveBuzzerState: (sessionId = 'default') =>

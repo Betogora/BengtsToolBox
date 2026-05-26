@@ -1,7 +1,15 @@
 import type { LucideIcon } from 'lucide-react'
-import { Bell, ChartNoAxesCombined, Dice5, Stethoscope, TimerReset } from 'lucide-react'
+import {
+  Bell,
+  ChartNoAxesCombined,
+  CircleDot,
+  Dice5,
+  Stethoscope,
+  TimerReset,
+} from 'lucide-react'
 import type { ComponentType } from 'react'
 
+import { DecisionWheelPage } from '@/apps/decision-wheel'
 import { DiagnosticsPage } from '@/apps/diagnostics'
 import { LiveBuzzerPage } from '@/apps/live-buzzer'
 import { ProgressDashboardPage } from '@/apps/progress-dashboard'
@@ -80,5 +88,17 @@ export const apps: HubApp[] = [
     color: 'var(--brand-orange)',
     Icon: Dice5,
     Page: RandomizerPage,
+  },
+  {
+    id: 'decision-wheel',
+    title: 'Glücksrad',
+    description:
+      'Decision Wheel für Spieleabende, Aufgaben, Preise und schnelle Auswahl mit Live-Sync.',
+    href: '/apps/decision-wheel',
+    routePath: 'apps/decision-wheel',
+    status: 'Live',
+    color: 'var(--brand-teal)',
+    Icon: CircleDot,
+    Page: DecisionWheelPage,
   },
 ]

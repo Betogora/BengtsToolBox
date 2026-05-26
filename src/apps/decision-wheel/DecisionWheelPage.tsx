@@ -1,0 +1,470 @@
+import type { CSSProperties } from 'react'
+import { useMemo, useState } from 'react'
+import {
+  CircleDot,
+  History,
+  Plus,
+  RotateCcw,
+  Shuffle,
+  Trash2,
+  Trophy,
+} from 'lucide-react'
+import { toast } from 'sonner'
+
+import { useDecisionWheel } from '@/apps/decision-wheel/hooks/useDecisionWheel'
+import type {
+  DecisionWheelEntry,
+  DecisionWheelResult,
+} from '@/apps/decision-wheel/types'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+
+type WheelSegment = DecisionWheelEntry & {
+  startAngle: number
+  endAngle: number
+  midAngle: number
+}
+
+const wheelSize = 260
+const wheelCenter = wheelSize / 2
+const wheelRadius = 118
+
+function normalizeRotation(value: number) {
+  return ((value % 360) + 360) % 360
+}
+
+function polarToCartesian(angle: number) {
+  const radians = ((angle - 90) * Math.PI) / 180
+
+  return {
+    x: wheelCenter + wheelRadius * Math.cos(radians),
+    y: wheelCenter + wheelRadius * Math.sin(radians),
+  }
+}
+
+function createSegmentPath(startAngle: number, endAngle: number) {
+  const start = polarToCartesian(startAngle)
+  const end = polarToCartesian(endAngle)
+  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0
+
+  return [
+    `M ${wheelCenter} ${wheelCenter}`,
+    `L ${start.x} ${start.y}`,
+    `A ${wheelRadius} ${wheelRadius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
+    'Z',
+  ].join(' ')
+}
+
+function getSegments(entries: DecisionWheelEntry[]): WheelSegment[] {
+  const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0)
+  let currentAngle = 0
+
+  return entries.map((entry) => {
+    const size = (entry.weight / totalWeight) * 360
+    const startAngle = currentAngle
+    const endAngle = currentAngle + size
+
+    currentAngle = endAngle
+
+    return {
+      ...entry,
+      startAngle,
+      endAngle,
+      midAngle: startAngle + size / 2,
+    }
+  })
+}
+
+function shortenWheelLabel(value: string) {
+  return value.length > 16 ? `${value.slice(0, 15)}...` : value
+}
+
+type WheelGraphicProps = {
+  entries: DecisionWheelEntry[]
+  rotation: number
+  isSpinning: boolean
+}
+
+function WheelGraphic({ entries, rotation, isSpinning }: WheelGraphicProps) {
+  const segments = useMemo(() => getSegments(entries), [entries])
+
+  if (entries.length === 0) {
+    return (
+      <div className="flex aspect-square w-full max-w-[30rem] items-center justify-center rounded-full border border-dashed bg-secondary text-center text-sm text-muted-foreground">
+        Keine Optionen im Rad.
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative mx-auto aspect-square w-full max-w-[30rem]">
+      <div
+        className="absolute left-1/2 top-0 z-10 h-0 w-0 -translate-x-1/2 border-x-[13px] border-t-[26px] border-x-transparent border-t-foreground"
+        aria-hidden="true"
+      />
+      <svg
+        viewBox={`0 0 ${wheelSize} ${wheelSize}`}
+        className="size-full drop-shadow-sm"
+        role="img"
+        aria-label="Glücksrad"
+        style={
+          {
+            transform: `rotate(${rotation}deg)`,
+            transition: isSpinning
+              ? 'transform 1400ms cubic-bezier(0.16, 1, 0.3, 1)'
+              : 'none',
+          } as CSSProperties
+        }
+      >
+        <circle cx={wheelCenter} cy={wheelCenter} r={wheelRadius + 5} fill="#ffffff" />
+        {segments.map((segment) => {
+          const segmentSize = segment.endAngle - segment.startAngle
+          const labelPosition = {
+            x:
+              wheelCenter +
+              wheelRadius * 0.58 * Math.cos(((segment.midAngle - 90) * Math.PI) / 180),
+            y:
+              wheelCenter +
+              wheelRadius * 0.58 * Math.sin(((segment.midAngle - 90) * Math.PI) / 180),
+          }
+
+          return (
+            <g key={segment.id}>
+              {segmentSize >= 359.99 ? (
+                <circle
+                  cx={wheelCenter}
+                  cy={wheelCenter}
+                  r={wheelRadius}
+                  fill={segment.color}
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+              ) : (
+                <path
+                  d={createSegmentPath(segment.startAngle, segment.endAngle)}
+                  fill={segment.color}
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+              )}
+              {segmentSize > 16 && (
+                <text
+                  x={labelPosition.x}
+                  y={labelPosition.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#ffffff"
+                  fontSize={entries.length > 8 ? 8 : 10}
+                  fontWeight="700"
+                  paintOrder="stroke"
+                  stroke="rgba(6, 36, 51, 0.35)"
+                  strokeWidth="2"
+                  transform={`rotate(${segment.midAngle}, ${labelPosition.x}, ${labelPosition.y})`}
+                >
+                  {shortenWheelLabel(segment.text)}
+                </text>
+              )}
+            </g>
+          )
+        })}
+        <circle cx={wheelCenter} cy={wheelCenter} r="24" fill="#ffffff" />
+        <circle cx={wheelCenter} cy={wheelCenter} r="13" fill="var(--primary)" />
+      </svg>
+    </div>
+  )
+}
+
+type ResultPanelProps = {
+  result: DecisionWheelResult | null
+}
+
+function ResultPanel({ result }: ResultPanelProps) {
+  return (
+    <div className="rounded-lg border bg-secondary p-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Trophy className="size-4" />
+        Gewinner
+      </div>
+      <div className="mt-2 flex min-h-10 items-center justify-between gap-3">
+        <div className="min-w-0 truncate text-2xl font-semibold">
+          {result?.text ?? 'Noch nicht gedreht'}
+        </div>
+        {result && (
+          <span
+            className="size-5 shrink-0 rounded-full border"
+            style={{ backgroundColor: result.color }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function DecisionWheelPage() {
+  const {
+    addEntry,
+    clearHistory,
+    data,
+    error,
+    isLoading,
+    isRealtime,
+    removeEntry,
+    resetToExamples,
+    spin,
+    toggleRemoveWinnerAfterSpin,
+    updateEntry,
+  } = useDecisionWheel()
+  const [rotation, setRotation] = useState(0)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [spinEntries, setSpinEntries] = useState<DecisionWheelEntry[] | null>(null)
+  const visibleEntries = spinEntries ?? data.entries
+  const canSpin = data.entries.length > 0 && !isSpinning
+
+  const handleSpin = () => {
+    const entriesBeforeSpin = data.entries
+    const result = spin()
+
+    if (!result) {
+      toast.error('Lege zuerst mindestens eine Option an.')
+      return
+    }
+
+    const selectedSegment = getSegments(entriesBeforeSpin).find(
+      (segment) => segment.id === result.entryId,
+    )
+
+    if (!selectedSegment) {
+      return
+    }
+
+    const currentRotation = normalizeRotation(rotation)
+    const correction =
+      (360 - normalizeRotation(currentRotation + selectedSegment.midAngle)) % 360
+
+    setSpinEntries(entriesBeforeSpin)
+    setIsSpinning(true)
+    setRotation(rotation + 1440 + correction)
+    window.setTimeout(() => {
+      setIsSpinning(false)
+      setSpinEntries(null)
+      toast.success(`${result.text} wurde gezogen.`)
+    }, 1450)
+  }
+
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+            Glücksrad
+          </h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">
+            Baue ein Rad für Entscheidungen, Spieleabende, Preise oder Aufgaben
+            und drehe live mit gemeinsamem Zustand.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={isRealtime ? 'default' : 'secondary'}>
+            {isRealtime ? 'Live-Sync' : 'Lokal'}
+          </Badge>
+          <Badge variant="outline">{data.entries.length} Optionen</Badge>
+        </div>
+      </section>
+
+      {error && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardDescription>{error.message}</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr] lg:items-start">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CircleDot className="size-5 text-primary" />
+              Rad
+            </CardTitle>
+            <CardDescription>
+              {isLoading ? 'Synchronisiere...' : 'State-ID: default'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-5">
+            <WheelGraphic
+              entries={visibleEntries}
+              rotation={rotation}
+              isSpinning={isSpinning}
+            />
+
+            <Button size="lg" disabled={!canSpin} onClick={handleSpin}>
+              <Shuffle className="size-4" />
+              {isSpinning ? 'Dreht...' : 'Drehen'}
+            </Button>
+
+            <ResultPanel result={data.lastResult} />
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Optionen</CardTitle>
+                  <CardDescription>
+                    Text, Farbe und Gewichtung pro Segment.
+                  </CardDescription>
+                </div>
+                <Button size="sm" onClick={addEntry}>
+                  <Plus className="size-4" />
+                  Option
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {data.entries.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  Keine Optionen vorhanden. Lege eine Option an oder stelle die
+                  Beispiele wieder her.
+                </div>
+              ) : (
+                data.entries.map((entry, index) => (
+                  <div
+                    key={entry.id}
+                    className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_4.5rem_2.5rem_2.5rem] sm:items-end"
+                  >
+                    <div className="grid gap-1.5">
+                      <Label htmlFor={`entry-text-${entry.id}`}>Text</Label>
+                      <Input
+                        id={`entry-text-${entry.id}`}
+                        value={entry.text}
+                        onChange={(event) =>
+                          updateEntry(entry.id, { text: event.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor={`entry-weight-${entry.id}`}>Gewicht</Label>
+                      <Input
+                        id={`entry-weight-${entry.id}`}
+                        min={1}
+                        type="number"
+                        value={entry.weight}
+                        onChange={(event) =>
+                          updateEntry(entry.id, {
+                            weight: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor={`entry-color-${entry.id}`}>Farbe</Label>
+                      <Input
+                        id={`entry-color-${entry.id}`}
+                        className="h-9 p-1"
+                        type="color"
+                        value={entry.color}
+                        onChange={(event) =>
+                          updateEntry(entry.id, { color: event.target.value })
+                        }
+                      />
+                    </div>
+                    <Button
+                      aria-label={`${entry.text || `Option ${index + 1}`} löschen`}
+                      className="self-end"
+                      size="icon"
+                      variant="outline"
+                      onClick={() => removeEntry(entry.id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+
+              <Separator />
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  variant={data.removeWinnerAfterSpin ? 'default' : 'outline'}
+                  role="switch"
+                  aria-checked={data.removeWinnerAfterSpin}
+                  onClick={toggleRemoveWinnerAfterSpin}
+                >
+                  <Trophy className="size-4" />
+                  Gewinner entfernen
+                </Button>
+                <Button variant="outline" onClick={resetToExamples}>
+                  <RotateCcw className="size-4" />
+                  Beispiele
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="size-5 text-primary" />
+                    Verlauf
+                  </CardTitle>
+                  <CardDescription>Die letzten 12 Ergebnisse.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={clearHistory}>
+                  <RotateCcw className="size-4" />
+                  Leeren
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {data.history.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  Noch keine Drehungen vorhanden.
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {data.history.map((result, index) => (
+                    <div key={result.id}>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">{result.text}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(result.createdAt).toLocaleString()}
+                          </div>
+                        </div>
+                        <span
+                          className={cn('size-4 shrink-0 rounded-full border')}
+                          style={{ backgroundColor: result.color }}
+                          aria-hidden="true"
+                        />
+                      </div>
+                      {index < data.history.length - 1 && (
+                        <Separator className="mt-3" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </div>
+  )
+}
