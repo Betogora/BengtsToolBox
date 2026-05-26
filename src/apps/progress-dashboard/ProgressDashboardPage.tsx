@@ -267,7 +267,7 @@ function ProgressChart({
 
   if (sortedEvents.length === 0 || validEventTimes.length === 0) {
     return (
-      <div className="flex aspect-[2.45/1] min-h-72 items-center justify-center rounded-lg border border-dashed bg-card text-center text-sm text-muted-foreground">
+      <div className="flex aspect-[2.45/1] min-h-0 items-center justify-center rounded-lg border border-dashed bg-card p-4 text-center text-sm text-muted-foreground">
         Noch keine Ereignisse im aktuellen Datensatz.
       </div>
     )
@@ -361,12 +361,12 @@ function ProgressChart({
   })
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-white p-3">
+    <div className="overflow-hidden rounded-lg border bg-white p-3">
       <svg
         role="img"
         aria-label={dataset.chartTitle}
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="min-h-72 w-full min-w-[720px]"
+        className="block h-auto w-full"
       >
         <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
         {yTicks.map((tick) => (
@@ -505,6 +505,7 @@ function PlayerCard({
   onNameChange,
   onRemove,
   playerScore,
+  unit,
 }: {
   colorPresets: string[]
   onAddEvent: (player: ProgressPlayer, valueDelta: ProgressEventDelta) => void
@@ -512,6 +513,7 @@ function PlayerCard({
   onNameChange: (playerId: string, name: string) => void
   onRemove: (playerId: string) => void
   playerScore: PlayerScore
+  unit: string
 }) {
   const { player, score } = playerScore
 
@@ -547,7 +549,7 @@ function PlayerCard({
         </div>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           {colorPresets.map((color) => (
             <Button
               key={color}
@@ -570,7 +572,7 @@ function PlayerCard({
           <Input
             aria-label={`${player.name} freie Farbe`}
             type="color"
-            className="h-8 w-12 p-1"
+            className="h-8 w-12 shrink-0 p-1"
             value={player.color}
             onChange={(event) => onColorChange(player.id, event.currentTarget.value)}
           />
@@ -581,7 +583,7 @@ function PlayerCard({
             <div className="text-4xl font-semibold tabular-nums">
               {formatNumber(score)}
             </div>
-            <div className="text-xs text-muted-foreground">Getränke</div>
+            <div className="text-xs text-muted-foreground">{unit}</div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -886,7 +888,7 @@ export function ProgressDashboardPage() {
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{players.length} Spieler</Badge>
           <Badge variant="outline">
-            {formatNumber(totalEvents)} Getränke-Ereignisse
+            {formatNumber(totalEvents)} {activeDataset.unit}
           </Badge>
         </div>
       </section>
@@ -907,7 +909,7 @@ export function ProgressDashboardPage() {
               <InlineTextEdit
                 ariaLabel="Diagrammtitel"
                 className="text-2xl font-semibold tracking-normal sm:text-3xl"
-                fallback="Fortschritt über Zeit"
+                fallback={`${activeDataset.unit}-Dashboard`}
                 inputClassName="h-12 text-2xl font-semibold"
                 value={activeDataset.chartTitle}
                 onSave={(value) => updateActiveDatasetMeta('chartTitle', value)}
@@ -929,7 +931,7 @@ export function ProgressDashboardPage() {
                 />
               </div>
             </div>
-            <div className="grid gap-2 rounded-lg border bg-secondary/60 p-4 lg:min-w-64">
+            <div className="grid h-fit gap-2 self-start rounded-lg border bg-secondary/60 p-4 lg:min-w-64">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
                 Führung
@@ -974,6 +976,7 @@ export function ProgressDashboardPage() {
             key={playerScore.player.id}
             colorPresets={progressColorPresets}
             playerScore={playerScore}
+            unit={activeDataset.unit}
             onAddEvent={async (player, valueDelta) => {
               const didSave = await addEvent(player, valueDelta)
 

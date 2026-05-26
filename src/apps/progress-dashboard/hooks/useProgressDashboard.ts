@@ -19,11 +19,24 @@ export const progressColorPresets = [
   '#12b296',
   '#feaa01',
   '#7c3aed',
-  '#dc2626',
-  '#16a34a',
-  '#2563eb',
-  '#ea580c',
 ]
+
+const defaultUnit = 'Getränke'
+const legacyDefaultChartTitle = 'Fortschritt über Zeit'
+
+function getDefaultChartTitle(unit: string) {
+  return `${unit.trim() || defaultUnit}-Dashboard`
+}
+
+function isDefaultChartTitle(title: string, unit: string) {
+  const trimmedTitle = title.trim()
+
+  return (
+    !trimmedTitle ||
+    trimmedTitle === legacyDefaultChartTitle ||
+    trimmedTitle === getDefaultChartTitle(unit)
+  )
+}
 
 export const progressEventIcons: {
   id: ProgressEventIcon
@@ -64,8 +77,8 @@ function createDataset(position = 1): ProgressDataset {
     id: activeDatasetId,
     position,
     name: 'Datensatz',
-    chartTitle: 'Fortschritt über Zeit',
-    unit: 'Getränke',
+    chartTitle: getDefaultChartTitle(defaultUnit),
+    unit: defaultUnit,
     status: 'active',
     createdAtClientIso: now,
     archivedAtClientIso: null,
@@ -160,9 +173,15 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
 }
 
 function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
+  const unit = dataset.unit?.trim() || defaultUnit
+  const chartTitle = dataset.chartTitle?.trim()
+
   return {
     ...dataset,
-    chartTitle: dataset.chartTitle?.trim() || 'Fortschritt über Zeit',
+    chartTitle:
+      !chartTitle || chartTitle === legacyDefaultChartTitle
+        ? getDefaultChartTitle(unit)
+        : chartTitle,
     createdAtClientIso: dataset.createdAtClientIso || new Date().toISOString(),
     archivedAtClientIso: dataset.archivedAtClientIso ?? null,
     events: (dataset.events ?? []).map((event, index) => ({
@@ -178,7 +197,7 @@ function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
     name: normalizeDatasetName(dataset.name),
     position: Number.isFinite(dataset.position) ? dataset.position : 1,
     status: dataset.status === 'archived' ? 'archived' : 'active',
-    unit: dataset.unit?.trim() || 'Getränke',
+    unit,
   }
 }
 
@@ -261,19 +280,6 @@ export function useProgressDashboard(sessionId = 'default') {
   const leader = [...playerScores].sort((left, right) => right.score - left.score)[0]
 
   useEffect(() => {
-    if (playersStore.isLoading || playersStore.data.length > 0) {
-      return
-    }
-
-    playersStore.saveItems(
-      defaultPlayers.map((player) => ({
-        ...player,
-        lastUpdatedBy: session.userId,
-      })),
-    )
-  }, [playersStore, session.userId])
-
-  useEffect(() => {
     if (datasetsStore.isLoading || datasetsStore.data.length > 0) {
       return
     }
@@ -295,7 +301,26 @@ export function useProgressDashboard(sessionId = 'default') {
   const updateActiveDatasetMeta = (
     field: 'name' | 'chartTitle' | 'unit',
     value: string,
-  ) => saveActiveDataset({ [field]: value.trim() || createDataset()[field] })
+  ) => {
+    const trimmedValue = value.trim()
+
+    if (field === 'unit') {
+      const nextUnit = trimmedValue || defaultUnit
+      const shouldSyncChartTitle = isDefaultChartTitle(
+        activeDataset.chartTitle,
+        activeDataset.unit,
+      )
+
+      return saveActiveDataset({
+        unit: nextUnit,
+        ...(shouldSyncChartTitle
+          ? { chartTitle: getDefaultChartTitle(nextUnit) }
+          : {}),
+      })
+    }
+
+    return saveActiveDataset({ [field]: trimmedValue || createDataset()[field] })
+  }
 
   const addPlayer = () => {
     const nextPosition =
