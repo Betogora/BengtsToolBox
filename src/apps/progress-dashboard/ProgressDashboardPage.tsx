@@ -67,7 +67,7 @@ const chartPadding = {
 }
 
 const drinkValueOptions = [
-  0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10,
+  0.25, 0.5, 1, 2, 3, 4,
 ]
 
 const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
@@ -382,7 +382,7 @@ function ProgressChart({
               x={chartPadding.left - 14}
               y={yScale(tick) + 4}
               textAnchor="end"
-              fontSize="12"
+              fontSize="14"
               fill="#557079"
             >
               {formatNumber(tick)}
@@ -402,7 +402,7 @@ function ProgressChart({
               x={xScale(tick.time)}
               y={chartHeight - 24}
               textAnchor="middle"
-              fontSize="12"
+              fontSize="14"
               fill="#557079"
             >
               {tick.label}
@@ -428,7 +428,7 @@ function ProgressChart({
           y={chartHeight / 2}
           textAnchor="middle"
           transform={`rotate(-90 20 ${chartHeight / 2})`}
-          fontSize="13"
+          fontSize="14"
           fontWeight="600"
           fill="#062433"
         >
@@ -438,7 +438,7 @@ function ProgressChart({
           x={chartWidth / 2}
           y={chartHeight - 6}
           textAnchor="middle"
-          fontSize="13"
+          fontSize="14"
           fontWeight="600"
           fill="#062433"
         >
@@ -874,6 +874,7 @@ export function ProgressDashboardPage() {
   const totalEvents = activeDataset.events.length
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
   const unitLabel = activeDataset.unit.trim()
+  const [isActiveDatasetOpen, setIsActiveDatasetOpen] = useState(false)
   const chartAccentStyle = {
     '--progress-accent': leader?.player.color ?? 'var(--brand-teal)',
   } as CSSProperties
@@ -883,12 +884,14 @@ export function ProgressDashboardPage() {
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Fortschritts-Dashboard
+            Dashboard
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{players.length} Spieler</Badge>
-          <Badge variant="outline">
+          <Badge variant="outline" className="text-sm">
+            {players.length} Spieler
+          </Badge>
+          <Badge variant="outline" className="text-sm">
             {formatNumber(totalEvents)}
             {unitLabel ? ` ${unitLabel}` : ''}
           </Badge>
@@ -906,17 +909,17 @@ export function ProgressDashboardPage() {
 
       <Card style={chartAccentStyle}>
         <CardHeader className="gap-4">
-          <div className="flex flex-col gap-3 rounded-lg border bg-secondary/60 p-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 rounded-lg border bg-secondary/60 p-3 text-sm md:flex-row md:items-center md:justify-between">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
                 Führung
               </div>
-              <div className="min-w-0 truncate text-lg font-semibold">
+              <div className="min-w-0 truncate text-sm font-semibold">
                 {leader ? leader.player.name : '-'}
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold tabular-nums">
                   {formatNumber(leader?.score ?? 0)}
                 </span>
                 <span className="text-sm text-muted-foreground">
@@ -928,6 +931,7 @@ export function ProgressDashboardPage() {
             <div className="w-full md:w-64">
               <Input
                 aria-label="Einheit"
+                className="text-sm"
                 value={activeDataset.unit}
                 onChange={(event) =>
                   updateActiveDatasetMeta('unit', event.currentTarget.value)
@@ -997,30 +1001,42 @@ export function ProgressDashboardPage() {
         </Card>
       </section>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="size-5 text-primary" />
-              Datensatz
-            </CardTitle>
-            <ConfirmButton
-              title="Datensatz archivieren und neu starten?"
-              description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
-              onConfirm={async () => {
-                await resetAndArchiveDataset()
-                toast.success('Datensatz archiviert und neu gestartet.')
-              }}
-              trigger={
-                <Button variant="outline">
-                  <RotateCcw className="size-4" />
-                  Reset / New
-                </Button>
-              }
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
+      <div className="rounded-lg border bg-card">
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            onClick={() => setIsActiveDatasetOpen((current) => !current)}
+          >
+            {isActiveDatasetOpen ? (
+              <ChevronDown className="size-4 shrink-0" />
+            ) : (
+              <ChevronRight className="size-4 shrink-0" />
+            )}
+            <div className="flex min-w-0 items-center gap-2">
+              <BarChart3 className="size-5 shrink-0 text-primary" />
+              <span className="font-semibold">Datensatz</span>
+              <span className="text-xs text-muted-foreground">
+                {formatNumber(totalEvents)} Ereignisse
+              </span>
+            </div>
+          </button>
+          <ConfirmButton
+            title="Datensatz archivieren und neu starten?"
+            description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
+            onConfirm={async () => {
+              await resetAndArchiveDataset()
+              toast.success('Datensatz archiviert und neu gestartet.')
+            }}
+            trigger={
+              <Button variant="outline">
+                <RotateCcw className="size-4" />
+                Reset / New
+              </Button>
+            }
+          />
+        </div>
+        {isActiveDatasetOpen && (
+          <div className="border-t p-4">
           <EventTable
             dataset={activeDataset}
             icons={progressEventIcons}
@@ -1030,8 +1046,9 @@ export function ProgressDashboardPage() {
             }}
             onUpdateEvent={(eventId, partialValue) => updateEvent(eventId, partialValue)}
           />
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
 
       <Card>
         <CardHeader>
