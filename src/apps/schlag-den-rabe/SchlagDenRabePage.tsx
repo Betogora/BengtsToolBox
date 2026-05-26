@@ -31,7 +31,7 @@ function GameTile({ game }: { game: GameApp }) {
   return (
     <Link
       to={game.href}
-      aria-label={`${game.title} oeffnen`}
+      aria-label={`${game.title} öffnen`}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       style={{ '--tile-color': game.color } as CSSProperties}
     >
@@ -76,10 +76,10 @@ export function SchlagDenRabePage() {
       <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
         <div className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-            Schlag den Rabe
+            Schlag den Raab
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-            Waehle ein Spiel und leg direkt los.
+            Wähle ein Spiel und leg direkt los.
           </p>
         </div>
 

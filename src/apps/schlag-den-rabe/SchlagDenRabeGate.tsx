@@ -56,9 +56,9 @@ export function SchlagDenRabeGate({ children }: { children: ReactNode }) {
           <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Target className="size-6" />
           </div>
-          <CardTitle className="text-2xl">Schlag den Rabe</CardTitle>
+          <CardTitle className="text-2xl">Schlag den Raab</CardTitle>
           <CardDescription>
-            Dieser Bereich ist mit einem einfachen Passwort geschuetzt.
+            Dieser Bereich ist mit einem einfachen Passwort geschützt.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -25,10 +25,6 @@ export function CoinflipPage() {
         <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
           Coinflip
         </h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Wirf eine digitale Muenze und teile das Ergebnis live mit allen, die
-          gerade dabei sind.
-        </p>
       </section>
 
       {error && (
@@ -45,11 +41,9 @@ export function CoinflipPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Coins className="size-5 text-primary" />
-              Muenze
+              Münze
             </CardTitle>
-            <CardDescription>
-              {isLoading ? 'Synchronisiere...' : 'State-ID: default'}
-            </CardDescription>
+            {isLoading && <CardDescription>Synchronisiere...</CardDescription>}
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="rounded-lg bg-secondary p-6 text-center">
@@ -64,7 +58,7 @@ export function CoinflipPage() {
                 size="lg"
                 onClick={async () => {
                   await flip()
-                  toast.success('Muenze geworfen.')
+                  toast.success('Münze geworfen.')
                 }}
               >
                 <Coins className="size-4" />
@@ -84,9 +78,6 @@ export function CoinflipPage() {
               <History className="size-5 text-primary" />
               Letzte Ergebnisse
             </CardTitle>
-            <CardDescription>
-              Die letzten 12 Flips werden im gemeinsamen State gespeichert.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {data.history.length === 0 ? (

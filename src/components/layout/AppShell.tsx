@@ -58,7 +58,7 @@ export function AppShell() {
               }
             >
               <Target className="size-4" />
-              Schlag den Rabe
+              Schlag den Raab
             </NavLink>
           </nav>
 
@@ -77,7 +77,7 @@ export function AppShell() {
                   <Link to="/apps/diagnostics">Diagnose</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/schlag-den-rabe">Schlag den Rabe</Link>
+                  <Link to="/schlag-den-rabe">Schlag den Raab</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
