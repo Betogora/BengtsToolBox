@@ -10,20 +10,18 @@ import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
 const colorPresets = [
-  '#027a9f',
+  '#e1ef7e',
   '#feaa01',
   '#12b296',
+  '#027a9f',
   '#7c3aed',
   '#e85d75',
-  '#6f9e27',
 ]
 
 const exampleEntries: DecisionWheelEntry[] = [
-  { id: 'movie', text: 'Filmabend', color: colorPresets[0], weight: 1 },
-  { id: 'game', text: 'Brettspiel', color: colorPresets[1], weight: 1 },
-  { id: 'snack', text: 'Snacks holen', color: colorPresets[2], weight: 1 },
-  { id: 'task', text: 'Aufgabe ziehen', color: colorPresets[3], weight: 1 },
-  { id: 'wildcard', text: 'Wildcard', color: colorPresets[4], weight: 1 },
+  { id: 'option-1', text: 'Option 1', color: colorPresets[0], weight: 1 },
+  { id: 'option-2', text: 'Option 2', color: colorPresets[1], weight: 1 },
+  { id: 'option-3', text: 'Option 3', color: colorPresets[2], weight: 1 },
 ]
 
 const initialDecisionWheelState: DecisionWheelState = {
@@ -34,8 +32,9 @@ const initialDecisionWheelState: DecisionWheelState = {
 }
 
 function createRandomId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
+  return typeof globalThis.crypto !== 'undefined' &&
+    'randomUUID' in globalThis.crypto
+    ? globalThis.crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
@@ -51,20 +50,28 @@ function sanitizeWeight(weight: number | undefined) {
   return Number.isFinite(numericWeight) ? Math.max(1, Math.round(numericWeight)) : 1
 }
 
+export function getEntryDisplayText(
+  entry: Pick<DecisionWheelEntry, 'text'>,
+  index: number,
+) {
+  const trimmedText = entry.text?.trim()
+
+  return trimmedText || `Option ${index + 1}`
+}
+
 function fallbackEntryText(index: number) {
   return `Option ${index + 1}`
 }
 
-function normalizeEntry(
+function normalizeEntryForStorage(
   entry: DecisionWheelEntry,
   index: number,
 ): DecisionWheelEntry {
   const fallbackColor = colorPresets[index % colorPresets.length]
-  const text = entry.text?.trim()
 
   return {
     id: entry.id || `entry-${index + 1}`,
-    text: text || fallbackEntryText(index),
+    text: entry.text ?? '',
     color: sanitizeColor(entry.color, fallbackColor),
     weight: sanitizeWeight(entry.weight),
   }
@@ -72,7 +79,7 @@ function normalizeEntry(
 
 function normalizeState(state: DecisionWheelState): DecisionWheelState {
   return {
-    entries: (state.entries ?? []).map(normalizeEntry),
+    entries: (state.entries ?? []).map(normalizeEntryForStorage),
     lastResult: state.lastResult ?? null,
     history: (state.history ?? []).slice(0, 12),
     removeWinnerAfterSpin: Boolean(state.removeWinnerAfterSpin),
@@ -106,7 +113,7 @@ export function useDecisionWheel(stateId = 'default') {
 
   const saveEntries = (entries: DecisionWheelEntry[]) =>
     store.merge({
-      entries: entries.map(normalizeEntry),
+      entries: entries.map(normalizeEntryForStorage),
       updatedBy: session.userId,
     })
 
@@ -129,7 +136,7 @@ export function useDecisionWheel(stateId = 'default') {
     saveEntries(
       data.entries.map((entry, index) =>
         entry.id === entryId
-          ? normalizeEntry({ ...entry, ...partialValue }, index)
+          ? normalizeEntryForStorage({ ...entry, ...partialValue }, index)
           : entry,
       ),
     )
@@ -158,6 +165,7 @@ export function useDecisionWheel(stateId = 'default') {
     })
 
   const spin = () => {
+    // The wheel animation is visual only; this weighted draw decides the winner first.
     const winner = pickWeightedWinner(data.entries)
 
     if (!winner) {
@@ -167,7 +175,10 @@ export function useDecisionWheel(stateId = 'default') {
     const result: DecisionWheelResult = {
       id: `result-${createRandomId()}`,
       entryId: winner.id,
-      text: winner.text,
+      text: getEntryDisplayText(
+        winner,
+        data.entries.findIndex((entry) => entry.id === winner.id),
+      ),
       color: winner.color,
       weight: winner.weight,
       createdAt: new Date().toISOString(),

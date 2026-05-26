@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import {
   CircleDot,
   History,
+  ListChecks,
   Plus,
   RotateCcw,
   Shuffle,
@@ -11,7 +12,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useDecisionWheel } from '@/apps/decision-wheel/hooks/useDecisionWheel'
+import {
+  getEntryDisplayText,
+  useDecisionWheel,
+} from '@/apps/decision-wheel/hooks/useDecisionWheel'
 import type {
   DecisionWheelEntry,
   DecisionWheelResult,
@@ -21,7 +25,6 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -122,13 +125,13 @@ function WheelGraphic({ entries, rotation, isSpinning }: WheelGraphicProps) {
           {
             transform: `rotate(${rotation}deg)`,
             transition: isSpinning
-              ? 'transform 1400ms cubic-bezier(0.16, 1, 0.3, 1)'
+              ? 'transform 2200ms cubic-bezier(0.12, 0.72, 0.18, 1)'
               : 'none',
           } as CSSProperties
         }
       >
         <circle cx={wheelCenter} cy={wheelCenter} r={wheelRadius + 5} fill="#ffffff" />
-        {segments.map((segment) => {
+        {segments.map((segment, index) => {
           const segmentSize = segment.endAngle - segment.startAngle
           const labelPosition = {
             x:
@@ -172,7 +175,7 @@ function WheelGraphic({ entries, rotation, isSpinning }: WheelGraphicProps) {
                   strokeWidth="2"
                   transform={`rotate(${segment.midAngle}, ${labelPosition.x}, ${labelPosition.y})`}
                 >
-                  {shortenWheelLabel(segment.text)}
+                  {shortenWheelLabel(getEntryDisplayText(segment, index))}
                 </text>
               )}
             </g>
@@ -218,7 +221,6 @@ export function DecisionWheelPage() {
     clearHistory,
     data,
     error,
-    isLoading,
     isRealtime,
     removeEntry,
     resetToExamples,
@@ -255,12 +257,12 @@ export function DecisionWheelPage() {
 
     setSpinEntries(entriesBeforeSpin)
     setIsSpinning(true)
-    setRotation(rotation + 1440 + correction)
+    setRotation(rotation + 1800 + correction)
     window.setTimeout(() => {
       setIsSpinning(false)
       setSpinEntries(null)
       toast.success(`${result.text} wurde gezogen.`)
-    }, 1450)
+    }, 2250)
   }
 
   return (
@@ -270,10 +272,6 @@ export function DecisionWheelPage() {
           <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
             Glücksrad
           </h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Baue ein Rad für Entscheidungen, Spieleabende, Preise oder Aufgaben
-            und drehe live mit gemeinsamem Zustand.
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant={isRealtime ? 'default' : 'secondary'}>
@@ -287,8 +285,10 @@ export function DecisionWheelPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>Firebase-Fehler</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
           </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{error.message}</p>
+          </CardContent>
         </Card>
       )}
 
@@ -299,9 +299,6 @@ export function DecisionWheelPage() {
               <CircleDot className="size-5 text-primary" />
               Rad
             </CardTitle>
-            <CardDescription>
-              {isLoading ? 'Synchronisiere...' : 'State-ID: default'}
-            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
             <WheelGraphic
@@ -324,10 +321,10 @@ export function DecisionWheelPage() {
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Optionen</CardTitle>
-                  <CardDescription>
-                    Text, Farbe und Gewichtung pro Segment.
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <ListChecks className="size-5 text-primary" />
+                    Optionen
+                  </CardTitle>
                 </div>
                 <Button size="sm" onClick={addEntry}>
                   <Plus className="size-4" />
@@ -384,7 +381,7 @@ export function DecisionWheelPage() {
                       />
                     </div>
                     <Button
-                      aria-label={`${entry.text || `Option ${index + 1}`} löschen`}
+                      aria-label={`${getEntryDisplayText(entry, index)} löschen`}
                       className="self-end"
                       size="icon"
                       variant="outline"
@@ -424,7 +421,6 @@ export function DecisionWheelPage() {
                     <History className="size-5 text-primary" />
                     Verlauf
                   </CardTitle>
-                  <CardDescription>Die letzten 12 Ergebnisse.</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={clearHistory}>
                   <RotateCcw className="size-4" />
