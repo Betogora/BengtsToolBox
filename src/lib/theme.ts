@@ -1,21 +1,21 @@
 export const themePalette = {
-  deepPurple: '#363237',
-  indigo: '#2D4262',
-  taupe: '#73605B',
-  blush: '#D09683',
+  darkNavy: '#011A27',
+  blueberry: '#063852',
+  tangerine: '#F0810F',
+  daffodil: '#E6DF44',
 } as const
 
 export const participantColorPresets = [
-  themePalette.indigo,
-  themePalette.deepPurple,
-  themePalette.taupe,
-  themePalette.blush,
+  themePalette.blueberry,
+  themePalette.tangerine,
+  themePalette.daffodil,
+  themePalette.darkNavy,
 ] as const
 
 export const teamThemeColors = {
-  blue: themePalette.indigo,
-  yellow: themePalette.blush,
-  unassigned: themePalette.taupe,
+  blue: themePalette.blueberry,
+  yellow: themePalette.daffodil,
+  unassigned: themePalette.tangerine,
 } as const
 
 function normalizeHexColor(color: string | undefined) {
@@ -47,7 +47,7 @@ export function normalizeThemeColor(color: string | undefined, fallbackIndex = 0
 }
 
 function getRelativeLuminance(color: string) {
-  const normalizedColor = normalizeHexColor(color) ?? themePalette.indigo
+  const normalizedColor = normalizeHexColor(color) ?? themePalette.blueberry
   const channels = [0, 2, 4].map((start) => {
     const value = Number.parseInt(normalizedColor.slice(start + 1, start + 3), 16) / 255
 
@@ -60,7 +60,7 @@ function getRelativeLuminance(color: string) {
 }
 
 export function getReadableTextColor(backgroundColor: string) {
-  return getRelativeLuminance(backgroundColor) > 0.38
-    ? themePalette.deepPurple
+  return getRelativeLuminance(backgroundColor) > 0.25
+    ? themePalette.darkNavy
     : '#FFFFFF'
 }
