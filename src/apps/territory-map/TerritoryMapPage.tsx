@@ -50,6 +50,10 @@ const maxZoom = 8
 const minZoom = 0.7
 const unclaimedValue = '__unclaimed'
 
+function clampZoom(value: number) {
+  return Math.min(maxZoom, Math.max(minZoom, value))
+}
+
 function getClaimColor(
   claimPlayerId: string,
   claimColor: string,
@@ -149,7 +153,7 @@ function ClaimDialog({
             <Label htmlFor="claim-player">Esser</Label>
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger id="claim-player">
-                <SelectValue placeholder="Esser waehlen" />
+                <SelectValue placeholder="Esser wählen" />
               </SelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -184,12 +188,12 @@ function AddEaterCard({
   return (
     <div className="rounded-md border border-dashed bg-background p-3">
       <Button
-        className="h-20 w-full flex-col gap-2"
+        className="h-9 w-full"
         variant="outline"
         onClick={() => void onAdd()}
       >
-        <CirclePlus className="size-5" />
-        Esser hinzufuegen
+        <CirclePlus className="size-4" />
+        Esser hinzufügen
       </Button>
     </div>
   )
@@ -225,6 +229,7 @@ export function TerritoryMapPage() {
   const activePointersRef = useRef(new Map<number, { x: number; y: number }>())
   const dragDistanceRef = useRef(0)
   const lastPinchDistanceRef = useRef<number | null>(null)
+  const svgRef = useRef<SVGSVGElement | null>(null)
   const territories = territoriesByMap[state.activeMap]
   const selectedTerritory = useMemo(
     () =>
@@ -241,6 +246,57 @@ export function TerritoryMapPage() {
   const resetView = () => {
     setZoom(1)
     setOffset({ x: 0, y: 0 })
+  }
+
+  const getSvgPoint = (clientX: number, clientY: number) => {
+    const svg = svgRef.current
+
+    if (!svg) {
+      return null
+    }
+
+    const rect = svg.getBoundingClientRect()
+    const viewBox = svg.viewBox.baseVal
+    const scale = Math.min(rect.width / viewBox.width, rect.height / viewBox.height)
+    const renderedWidth = viewBox.width * scale
+    const renderedHeight = viewBox.height * scale
+    const left = rect.left + (rect.width - renderedWidth) / 2
+    const top = rect.top + (rect.height - renderedHeight) / 2
+
+    return {
+      x: (clientX - left) / scale + viewBox.x,
+      y: (clientY - top) / scale + viewBox.y,
+    }
+  }
+
+  const applyZoomAt = (clientX: number, clientY: number, nextZoom: number) => {
+    const nextClampedZoom = clampZoom(nextZoom)
+    const point = getSvgPoint(clientX, clientY)
+
+    if (!point) {
+      setZoom(nextClampedZoom)
+      return
+    }
+
+    const mapX = (point.x - offset.x) / zoom
+    const mapY = (point.y - offset.y) / zoom
+
+    setZoom(nextClampedZoom)
+    setOffset({
+      x: point.x - mapX * nextClampedZoom,
+      y: point.y - mapY * nextClampedZoom,
+    })
+  }
+
+  const stopMapGesture = (pointerId?: number) => {
+    if (typeof pointerId === 'number') {
+      activePointersRef.current.delete(pointerId)
+    } else {
+      activePointersRef.current.clear()
+    }
+
+    lastPinchDistanceRef.current = null
+    setDragStart(null)
   }
 
   const handleMapChange = (nextMap: string) => {
@@ -281,7 +337,7 @@ export function TerritoryMapPage() {
       return
     }
 
-    if (window.confirm(`${mapLabels[state.activeMap]} wirklich zuruecksetzen?`)) {
+    if (window.confirm(`${mapLabels[state.activeMap]} wirklich zurücksetzen?`)) {
       void resetCurrentMap()
     }
   }
@@ -329,8 +385,8 @@ export function TerritoryMapPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label="Ansicht zuruecksetzen"
-                  title="Ansicht zuruecksetzen"
+                  aria-label="Ansicht zurücksetzen"
+                  title="Ansicht zurücksetzen"
                   onClick={resetView}
                 >
                   <MousePointer2 className="size-4" />
@@ -338,8 +394,8 @@ export function TerritoryMapPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label="Letzten Claim rueckgaengig machen"
-                  title="Letzten Claim rueckgaengig machen"
+                  aria-label="Letzten Claim rückgängig machen"
+                  title="Letzten Claim rückgängig machen"
                   disabled={!state.lastClaimAction}
                   onClick={() => void undoLastClaim()}
                 >
@@ -348,8 +404,8 @@ export function TerritoryMapPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label="Aktuelle Karte zuruecksetzen"
-                  title="Aktuelle Karte zuruecksetzen"
+                  aria-label="Aktuelle Karte zurücksetzen"
+                  title="Aktuelle Karte zurücksetzen"
                   disabled={claimedCount === 0}
                   onClick={handleResetCurrentMap}
                 >
@@ -361,14 +417,14 @@ export function TerritoryMapPage() {
 
           <CardContent className="p-0">
             <div
-              className="h-[62svh] min-h-[420px] touch-none overflow-hidden bg-[#dceff0] cursor-grab active:cursor-grabbing"
+              className="h-[56svh] min-h-[320px] touch-none overflow-hidden bg-[#dceff0] cursor-grab active:cursor-grabbing sm:h-[62svh] sm:min-h-[420px]"
               onWheel={(event) => {
                 event.preventDefault()
-                const nextZoom = Math.min(
-                  maxZoom,
-                  Math.max(minZoom, zoom + (event.deltaY < 0 ? 0.28 : -0.28)),
+                applyZoomAt(
+                  event.clientX,
+                  event.clientY,
+                  zoom + (event.deltaY < 0 ? 0.28 : -0.28),
                 )
-                setZoom(nextZoom)
               }}
               onPointerDown={(event) => {
                 if (event.button !== 0) {
@@ -415,11 +471,10 @@ export function TerritoryMapPage() {
                   const previousDistance = lastPinchDistanceRef.current
 
                   if (previousDistance && nextDistance > 0) {
-                    setZoom((value) =>
-                      Math.min(
-                        maxZoom,
-                        Math.max(minZoom, value * (nextDistance / previousDistance)),
-                      ),
+                    applyZoomAt(
+                      (pointers[0].x + pointers[1].x) / 2,
+                      (pointers[0].y + pointers[1].y) / 2,
+                      zoom * (nextDistance / previousDistance),
                     )
                   }
 
@@ -440,17 +495,15 @@ export function TerritoryMapPage() {
                 })
               }}
               onPointerUp={(event) => {
-                activePointersRef.current.delete(event.pointerId)
-                lastPinchDistanceRef.current = null
-                setDragStart(null)
+                stopMapGesture(event.pointerId)
               }}
               onPointerCancel={(event) => {
-                activePointersRef.current.delete(event.pointerId)
-                lastPinchDistanceRef.current = null
-                setDragStart(null)
+                stopMapGesture(event.pointerId)
               }}
+              onPointerLeave={() => stopMapGesture()}
             >
               <svg
+                ref={svgRef}
                 viewBox={mapViewBoxes[state.activeMap]}
                 className="size-full"
                 aria-label={mapLabels[state.activeMap]}
@@ -528,7 +581,7 @@ export function TerritoryMapPage() {
                       }
                     />
                     <Input
-                      aria-label={`${player.name} Farbe aendern`}
+                      aria-label={`${player.name} Farbe ändern`}
                       type="color"
                       value={player.color}
                       onChange={(event) =>
