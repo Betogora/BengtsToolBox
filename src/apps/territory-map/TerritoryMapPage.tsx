@@ -4,8 +4,6 @@ import {
   RotateCcw,
   Undo2,
   Users,
-  ZoomIn,
-  ZoomOut,
 } from 'lucide-react'
 import { useMemo, useState, type CSSProperties } from 'react'
 
@@ -99,6 +97,9 @@ function TerritoryShape({
       onClick={(event) => {
         event.stopPropagation()
         onSelect()
+      }}
+      onPointerDown={(event) => {
+        event.stopPropagation()
       }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -336,24 +337,6 @@ export function TerritoryMapPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  aria-label="Hineinzoomen"
-                  title="Hineinzoomen"
-                  onClick={() => setZoom((value) => Math.min(2.8, value + 0.2))}
-                >
-                  <ZoomIn className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Herauszoomen"
-                  title="Herauszoomen"
-                  onClick={() => setZoom((value) => Math.max(0.7, value - 0.2))}
-                >
-                  <ZoomOut className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
                   aria-label="Ansicht zuruecksetzen"
                   title="Ansicht zuruecksetzen"
                   onClick={resetView}
@@ -387,6 +370,14 @@ export function TerritoryMapPage() {
           <CardContent className="p-0">
             <div
               className="h-[62svh] min-h-[420px] touch-none overflow-hidden bg-[#dceff0]"
+              onWheel={(event) => {
+                event.preventDefault()
+                const nextZoom = Math.min(
+                  3.5,
+                  Math.max(0.7, zoom + (event.deltaY < 0 ? 0.14 : -0.14)),
+                )
+                setZoom(nextZoom)
+              }}
               onPointerDown={(event) => {
                 if (event.button !== 0) {
                   return
