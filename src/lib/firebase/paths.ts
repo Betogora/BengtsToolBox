@@ -24,4 +24,8 @@ export const firebasePaths = {
     `apps/progress-dashboard/sessions/${sessionId}/players`,
   progressDashboardDatasets: (sessionId = 'default') =>
     `apps/progress-dashboard/sessions/${sessionId}/datasets`,
+  territoryMapState: (sessionId = 'default') =>
+    `apps/territory-map/sessions/${sessionId}/state/default`,
+  territoryMapPlayers: (sessionId = 'default') =>
+    `apps/territory-map/sessions/${sessionId}/players`,
 } as const

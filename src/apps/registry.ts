@@ -4,6 +4,7 @@ import {
   ChartNoAxesCombined,
   CircleDot,
   Dice5,
+  Map,
   ListOrdered,
   Stethoscope,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ import { LiveBuzzerPage } from '@/apps/live-buzzer'
 import { ProgressDashboardPage } from '@/apps/progress-dashboard'
 import { RandomizerPage } from '@/apps/randomizer'
 import { ScoreboardPage } from '@/apps/scoreboard'
+import { TerritoryMapPage } from '@/apps/territory-map'
 
 export type HubApp = {
   id: string
@@ -100,5 +102,17 @@ export const apps: HubApp[] = [
     color: 'var(--brand-teal)',
     Icon: CircleDot,
     Page: DecisionWheelPage,
+  },
+  {
+    id: 'territory-map',
+    title: 'Territory Map',
+    description:
+      'Interaktive Claim-Karte fuer Weltlaender und deutsche Bundeslaender mit Spielerfarben und Live-Sync.',
+    href: '/apps/territory-map',
+    routePath: 'apps/territory-map',
+    status: 'Live',
+    color: 'var(--brand-blue)',
+    Icon: Map,
+    Page: TerritoryMapPage,
   },
 ]
