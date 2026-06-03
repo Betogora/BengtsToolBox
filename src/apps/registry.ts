@@ -35,7 +35,7 @@ export const apps: HubApp[] = [
     id: 'diagnostics',
     title: 'Diagnose',
     description:
-      'Prueft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
+      'Prüft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
     href: '/apps/diagnostics',
     routePath: 'apps/diagnostics',
     status: 'Live',
@@ -47,7 +47,7 @@ export const apps: HubApp[] = [
     id: 'scoreboard',
     title: 'Scoreboard',
     description:
-      'Live-Scoreboard fuer Spieleabende, Quiz, Challenges und kleine Turniere.',
+      'Live-Scoreboard für Spieleabende, Quiz, Challenges und kleine Turniere.',
     href: '/apps/scoreboard',
     routePath: 'apps/scoreboard',
     status: 'Live',
@@ -71,7 +71,7 @@ export const apps: HubApp[] = [
     id: 'progress-dashboard',
     title: 'Fortschritts-Dashboard',
     description:
-      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensaetzen.',
+      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
     href: '/apps/progress-dashboard',
     routePath: 'apps/progress-dashboard',
     status: 'Live',
@@ -83,7 +83,7 @@ export const apps: HubApp[] = [
     id: 'randomizer',
     title: 'Random Number Generator',
     description:
-      'Online-Wuerfel und Random Number Generator mit gemerktem letzten Zustand.',
+      'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
     status: 'Live',
@@ -93,9 +93,9 @@ export const apps: HubApp[] = [
   },
   {
     id: 'decision-wheel',
-    title: 'Gluecksrad',
+    title: 'Glücksrad',
     description:
-      'Decision Wheel fuer Spieleabende, Aufgaben, Preise und schnelle Auswahl mit Live-Sync.',
+      'Decision Wheel für Spieleabende, Aufgaben, Preise und schnelle Auswahl.',
     href: '/apps/decision-wheel',
     routePath: 'apps/decision-wheel',
     status: 'Live',
@@ -107,7 +107,7 @@ export const apps: HubApp[] = [
     id: 'territory-map',
     title: 'World Suhi Map',
     description:
-      'Interaktive Sushi-Reisekarte fuer Weltlaender und deutsche Bundeslaender mit Esserfarben und Live-Sync.',
+      'Interaktive Sushi-Reisekarte für Weltländer und deutsche Bundesländer mit Esserfarben und Live-Sync.',
     href: '/apps/territory-map',
     routePath: 'apps/territory-map',
     status: 'Live',

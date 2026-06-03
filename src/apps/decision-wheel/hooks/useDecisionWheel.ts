@@ -28,7 +28,6 @@ const initialDecisionWheelState: DecisionWheelState = {
   entries: exampleEntries,
   lastResult: null,
   history: [],
-  removeWinnerAfterSpin: false,
 }
 
 function createRandomId() {
@@ -82,7 +81,6 @@ function normalizeState(state: DecisionWheelState): DecisionWheelState {
     entries: (state.entries ?? []).map(normalizeEntryForStorage),
     lastResult: state.lastResult ?? null,
     history: (state.history ?? []).slice(0, 12),
-    removeWinnerAfterSpin: Boolean(state.removeWinnerAfterSpin),
     updatedAt: state.updatedAt,
     updatedBy: state.updatedBy,
   }
@@ -151,12 +149,6 @@ export function useDecisionWheel(stateId = 'default') {
       updatedBy: session.userId,
     })
 
-  const toggleRemoveWinnerAfterSpin = () =>
-    store.merge({
-      removeWinnerAfterSpin: !data.removeWinnerAfterSpin,
-      updatedBy: session.userId,
-    })
-
   const clearHistory = () =>
     store.merge({
       history: [],
@@ -183,12 +175,8 @@ export function useDecisionWheel(stateId = 'default') {
       weight: winner.weight,
       createdAt: new Date().toISOString(),
     }
-    const nextEntries = data.removeWinnerAfterSpin
-      ? data.entries.filter((entry) => entry.id !== winner.id)
-      : data.entries
-
     store.merge({
-      entries: nextEntries,
+      entries: data.entries,
       lastResult: result,
       history: [result, ...data.history].slice(0, 12),
       updatedBy: session.userId,
@@ -206,7 +194,6 @@ export function useDecisionWheel(stateId = 'default') {
     removeEntry,
     resetToExamples,
     spin,
-    toggleRemoveWinnerAfterSpin,
     updateEntry,
   }
 }

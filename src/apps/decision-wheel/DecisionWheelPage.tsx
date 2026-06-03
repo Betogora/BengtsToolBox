@@ -221,11 +221,9 @@ export function DecisionWheelPage() {
     clearHistory,
     data,
     error,
-    isRealtime,
     removeEntry,
     resetToExamples,
     spin,
-    toggleRemoveWinnerAfterSpin,
     updateEntry,
   } = useDecisionWheel()
   const [rotation, setRotation] = useState(0)
@@ -274,9 +272,6 @@ export function DecisionWheelPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={isRealtime ? 'default' : 'secondary'}>
-            {isRealtime ? 'Live-Sync' : 'Lokal'}
-          </Badge>
           <Badge variant="outline">{data.entries.length} Optionen</Badge>
         </div>
       </section>
@@ -326,17 +321,17 @@ export function DecisionWheelPage() {
                     Optionen
                   </CardTitle>
                 </div>
-                <Button size="sm" onClick={addEntry}>
-                  <Plus className="size-4" />
-                  Option
+                <Button variant="outline" size="sm" onClick={resetToExamples}>
+                  <RotateCcw className="size-4" />
+                  Reset
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="grid gap-3">
               {data.entries.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Keine Optionen vorhanden. Lege eine Option an oder stelle die
-                  Beispiele wieder her.
+                  Keine Optionen vorhanden. Füge eine Option hinzu oder setze die
+                  Liste zurück.
                 </div>
               ) : (
                 data.entries.map((entry, index) => (
@@ -393,21 +388,14 @@ export function DecisionWheelPage() {
                 ))
               )}
 
-              <Separator />
-
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="flex min-h-[5.125rem] items-center justify-center rounded-lg border border-dashed p-3">
                 <Button
-                  variant={data.removeWinnerAfterSpin ? 'default' : 'outline'}
-                  role="switch"
-                  aria-checked={data.removeWinnerAfterSpin}
-                  onClick={toggleRemoveWinnerAfterSpin}
+                  className="h-9 w-full"
+                  variant="outline"
+                  onClick={addEntry}
                 >
-                  <Trophy className="size-4" />
-                  Gewinner entfernen
-                </Button>
-                <Button variant="outline" onClick={resetToExamples}>
-                  <RotateCcw className="size-4" />
-                  Beispiele
+                  <Plus className="size-4" />
+                  Spieler hinzufügen
                 </Button>
               </div>
             </CardContent>
