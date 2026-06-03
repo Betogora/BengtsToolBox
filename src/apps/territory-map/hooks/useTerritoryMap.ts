@@ -9,12 +9,17 @@ import type {
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
 import { firebasePaths } from '@/lib/firebase/paths'
-import { getThemeColorByIndex, participantColorPresets } from '@/lib/theme'
+import { themePalette } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-export const territoryColorPresets = [...participantColorPresets]
+export const territoryColorPresets = [
+  themePalette.blueberry,
+  themePalette.tangerine,
+  themePalette.daffodil,
+  themePalette.darkNavy,
+] as const
 
 const emptyClaimsByMap: TerritoryClaimsByMap = {
   world: {},
@@ -30,15 +35,21 @@ const initialState: TerritoryMapState = {
 const defaultPlayers: TerritoryPlayer[] = [
   {
     id: 'person-1',
-    name: 'Sushi-Tourist 1',
+    name: 'Bengt',
     color: territoryColorPresets[0],
     position: 1,
   },
   {
     id: 'person-2',
-    name: 'Sushi-Tourist 2',
+    name: 'Paul',
     color: territoryColorPresets[1],
     position: 2,
+  },
+  {
+    id: 'person-3',
+    name: 'Sushi-Tourist 3',
+    color: territoryColorPresets[2],
+    position: 3,
   },
 ]
 
@@ -59,7 +70,9 @@ function sanitizeColor(color: string, fallback: string) {
 }
 
 function getTerritoryColorByIndex(index: number) {
-  return getThemeColorByIndex(index)
+  const normalizedIndex = Number.isFinite(index) ? Math.max(0, Math.trunc(index)) : 0
+
+  return territoryColorPresets[normalizedIndex % territoryColorPresets.length]
 }
 
 function fallbackPlayerName(player: Pick<TerritoryPlayer, 'id' | 'position'>) {
