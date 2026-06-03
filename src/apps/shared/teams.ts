@@ -11,15 +11,15 @@ export const appTeams: {
     id: 'blue',
     name: 'Blau',
     buttonLabel: 'Team Blau',
-    className: 'border-blue-300 bg-blue-50 text-blue-950',
-    dotClassName: 'bg-blue-500',
+    className: 'border-primary/30 bg-primary/10 text-primary',
+    dotClassName: 'bg-primary',
   },
   {
     id: 'yellow',
     name: 'Gelb',
     buttonLabel: 'Team Gelb',
-    className: 'border-yellow-300 bg-yellow-50 text-yellow-950',
-    dotClassName: 'bg-yellow-400',
+    className: 'border-accent/40 bg-accent/20 text-accent-foreground',
+    dotClassName: 'bg-accent',
   },
 ]
 

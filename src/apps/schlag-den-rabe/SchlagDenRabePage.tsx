@@ -1,5 +1,4 @@
 import { ArrowRight, Coins, Target } from 'lucide-react'
-import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -13,7 +12,6 @@ type GameApp = {
   id: string
   title: string
   href: string
-  color: string
   Icon: typeof Coins
 }
 
@@ -22,7 +20,6 @@ const games: GameApp[] = [
     id: 'coinflip',
     title: 'Coinflip',
     href: '/schlag-den-rabe/coinflip',
-    color: 'var(--brand-orange)',
     Icon: Coins,
   },
 ]
@@ -33,26 +30,16 @@ function GameTile({ game }: { game: GameApp }) {
       to={game.href}
       aria-label={`${game.title} öffnen`}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      style={{ '--tile-color': game.color } as CSSProperties}
     >
-      <Card className="relative h-full overflow-hidden transition-colors group-hover:border-[var(--tile-color)] group-hover:bg-card/95">
-        <div
-          className="absolute inset-x-0 top-0 h-2"
-          style={{ backgroundColor: game.color }}
-        />
+      <Card className="relative h-full overflow-hidden transition-colors group-hover:border-primary group-hover:bg-card/95">
+        <div className="absolute inset-x-0 top-0 h-2 bg-primary" />
         <CardHeader className="grid min-h-36 gap-6 p-6 pt-7">
           <div className="flex items-start justify-between gap-5">
-            <div
-              className="flex size-12 shrink-0 items-center justify-center rounded-lg text-white"
-              style={{
-                backgroundColor: game.color,
-                boxShadow: `0 14px 30px -18px ${game.color}`,
-              }}
-            >
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)]">
               <game.Icon className="size-6" />
             </div>
             <div
-              className="flex size-9 shrink-0 translate-x-1 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-all group-hover:translate-x-0 group-hover:bg-[var(--tile-color)] group-hover:text-white"
+              className="flex size-9 shrink-0 translate-x-1 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-all group-hover:translate-x-0 group-hover:bg-primary group-hover:text-primary-foreground"
               aria-hidden="true"
             >
               <ArrowRight className="size-4" />
@@ -60,7 +47,7 @@ function GameTile({ game }: { game: GameApp }) {
           </div>
 
           <div>
-            <CardTitle className="text-2xl leading-tight transition-colors group-hover:text-[var(--tile-color)] sm:text-3xl">
+            <CardTitle className="text-2xl leading-tight transition-colors group-hover:text-primary sm:text-3xl">
               {game.title}
             </CardTitle>
           </div>

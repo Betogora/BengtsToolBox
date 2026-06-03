@@ -94,7 +94,7 @@ function TerritoryShape({
       className="cursor-pointer transition-[filter,opacity,stroke-width] hover:brightness-105 focus:outline-none focus-visible:stroke-ring"
       fill={ownerColor}
       opacity={claim ? 0.94 : 1}
-      stroke={isSelected ? '#062433' : '#f6fbfb'}
+      stroke={isSelected ? 'var(--foreground)' : 'var(--background)'}
       strokeWidth={isSelected ? 2.2 : 0.75}
       vectorEffect="non-scaling-stroke"
       onClick={(event) => {
@@ -263,6 +263,7 @@ export function TerritoryMapPage() {
     resetCurrentMap,
     setActiveMap,
     state,
+    territoryColorPresets,
     unclaimTerritory,
     undoLastClaim,
     updatePlayerColor,
@@ -469,7 +470,7 @@ export function TerritoryMapPage() {
 
           <CardContent className="p-0">
             <div
-              className="h-[56svh] min-h-[320px] touch-none overflow-hidden bg-[#dceff0] cursor-grab active:cursor-grabbing sm:h-[62svh] sm:min-h-[420px]"
+              className="h-[56svh] min-h-[320px] touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing sm:h-[62svh] sm:min-h-[420px]"
               onWheel={(event) => {
                 event.preventDefault()
                 applyZoomAt(
@@ -568,20 +569,20 @@ export function TerritoryMapPage() {
                     patternUnits="userSpaceOnUse"
                     patternTransform="rotate(45)"
                   >
-                    <rect width="10" height="10" fill="#d8e1e2" />
-                    <rect width="3" height="10" fill="#aebec1" opacity="0.75" />
+                    <rect width="10" height="10" fill="var(--muted)" />
+                    <rect width="3" height="10" fill="var(--border)" opacity="0.75" />
                   </pattern>
                   <filter id="map-shadow" x="-10%" y="-10%" width="120%" height="120%">
                     <feDropShadow
                       dx="0"
                       dy="10"
                       stdDeviation="14"
-                      floodColor="#062433"
+                      floodColor="var(--foreground)"
                       floodOpacity="0.16"
                     />
                   </filter>
                 </defs>
-                <rect width="100%" height="100%" fill="#dceff0" />
+                <rect width="100%" height="100%" fill="var(--secondary)" />
                 <g transform={transform} filter="url(#map-shadow)">
                   {territories.map((territory) => (
                     <TerritoryShape
@@ -633,15 +634,24 @@ export function TerritoryMapPage() {
                         onSave={(value) => updatePlayerName(player.id, value)}
                       />
                     </div>
-                    <Input
-                      aria-label={`${player.name} Farbe ändern`}
-                      type="color"
-                      value={player.color}
-                      onChange={(event) =>
-                        void updatePlayerColor(player.id, event.target.value)
-                      }
-                      className="h-9 w-12 p-1"
-                    />
+                    <div className="flex shrink-0 items-center gap-1">
+                      {territoryColorPresets.map((color) => (
+                        <Button
+                          key={color}
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label={`${player.name} Farbe ${color}`}
+                          className="size-8 p-0"
+                          onClick={() => void updatePlayerColor(player.id, color)}
+                        >
+                          <span
+                            className="size-4 rounded-full"
+                            style={{ backgroundColor: color }}
+                          />
+                        </Button>
+                      ))}
+                    </div>
                     {player.position > 2 && (
                       <Button
                         variant="ghost"

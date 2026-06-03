@@ -10,16 +10,16 @@ import type {
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import { firebasePaths } from '@/lib/firebase/paths'
+import {
+  getThemeColorByIndex,
+  normalizeThemeColor,
+  participantColorPresets,
+} from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-export const progressColorPresets = [
-  '#027a9f',
-  '#12b296',
-  '#feaa01',
-  '#7c3aed',
-]
+export const progressColorPresets = [...participantColorPresets]
 
 const defaultUnit = 'Getränke'
 const legacyDefaultChartTitle = 'Fortschritt über Zeit'
@@ -115,9 +115,11 @@ function sanitizeName(
 }
 
 function sanitizeColor(color: string, fallback: string) {
-  const trimmed = color.trim()
+  const fallbackIndex = progressColorPresets.findIndex(
+    (preset) => preset.toLowerCase() === fallback.toLowerCase(),
+  )
 
-  return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed : fallback
+  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
 }
 
 function formatArchiveDatasetName(value: string) {
@@ -165,7 +167,7 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
   const position = Number.isFinite(player.position)
     ? Number(player.position)
     : index + 1
-  const fallbackColor = progressColorPresets[index % progressColorPresets.length]
+  const fallbackColor = getThemeColorByIndex(index)
 
   return {
     ...player,
@@ -190,6 +192,7 @@ function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
     archivedAtClientIso: dataset.archivedAtClientIso ?? null,
     events: (dataset.events ?? []).map((event, index) => ({
       ...event,
+      playerColor: normalizeThemeColor(event.playerColor, index),
       valueDelta: Number.isFinite(Number(event.valueDelta))
         ? Number(event.valueDelta)
         : 1,
@@ -334,7 +337,7 @@ export function useProgressDashboard(sessionId = 'default') {
     return playersStore.setItem(id, {
       name: `Person ${nextPosition}`,
       position: nextPosition,
-      color: progressColorPresets[(nextPosition - 1) % progressColorPresets.length],
+      color: getThemeColorByIndex(nextPosition - 1),
       lastUpdatedBy: session.userId,
     })
   }

@@ -376,14 +376,14 @@ function ProgressChart({
               x2={chartWidth - chartPadding.right}
               y1={yScale(tick)}
               y2={yScale(tick)}
-              stroke="#d7e4e6"
+              stroke="var(--border)"
             />
             <text
               x={chartPadding.left - 14}
               y={yScale(tick) + 4}
               textAnchor="end"
               fontSize="12"
-              fill="#557079"
+              fill="var(--muted-foreground)"
             >
               {formatNumber(tick)}
             </text>
@@ -396,14 +396,14 @@ function ProgressChart({
               x2={xScale(tick.time)}
               y1={chartPadding.top}
               y2={chartHeight - chartPadding.bottom}
-              stroke="#e3ecee"
+              stroke="var(--muted)"
             />
             <text
               x={xScale(tick.time)}
               y={chartHeight - 24}
               textAnchor="middle"
               fontSize="12"
-              fill="#557079"
+              fill="var(--muted-foreground)"
             >
               {tick.label}
             </text>
@@ -414,14 +414,14 @@ function ProgressChart({
           x2={chartPadding.left}
           y1={chartPadding.top}
           y2={chartHeight - chartPadding.bottom}
-          stroke="#7d969e"
+          stroke="var(--brand-surface)"
         />
         <line
           x1={chartPadding.left}
           x2={chartWidth - chartPadding.right}
           y1={chartHeight - chartPadding.bottom}
           y2={chartHeight - chartPadding.bottom}
-          stroke="#7d969e"
+          stroke="var(--brand-surface)"
         />
         <text
           x={20}
@@ -430,7 +430,7 @@ function ProgressChart({
           transform={`rotate(-90 20 ${chartHeight / 2})`}
           fontSize="13"
           fontWeight="600"
-          fill="#062433"
+          fill="var(--foreground)"
         >
           {dataset.unit}
         </text>
@@ -440,7 +440,7 @@ function ProgressChart({
           textAnchor="middle"
           fontSize="13"
           fontWeight="600"
-          fill="#062433"
+          fill="var(--foreground)"
         >
           Zeit
         </text>
@@ -487,7 +487,7 @@ function ProgressChart({
                 y={point.y - 7}
                 width="14"
                 height="14"
-                color="#062433"
+                color="var(--foreground)"
                 strokeWidth="2.4"
               />
             </g>
@@ -569,13 +569,6 @@ function PlayerCard({
               />
             </Button>
           ))}
-          <Input
-            aria-label={`${player.name} freie Farbe`}
-            type="color"
-            className="h-8 w-12 shrink-0 p-1"
-            value={player.color}
-            onChange={(event) => onColorChange(player.id, event.currentTarget.value)}
-          />
         </div>
 
         <div className="flex items-end justify-between gap-4">
@@ -875,7 +868,7 @@ export function ProgressDashboardPage() {
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
   const unitLabel = activeDataset.unit.trim()
   const chartAccentStyle = {
-    '--progress-accent': leader?.player.color ?? 'var(--brand-teal)',
+    '--progress-accent': leader?.player.color ?? 'var(--primary)',
   } as CSSProperties
 
   return (

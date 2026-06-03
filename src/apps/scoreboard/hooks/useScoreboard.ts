@@ -7,6 +7,7 @@ import type {
 } from '@/apps/scoreboard/types'
 import { appTeams, isTeamId, type TeamId } from '@/apps/shared/teams'
 import { firebasePaths } from '@/lib/firebase/paths'
+import { teamThemeColors } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -62,14 +63,14 @@ function sanitizeName(
 
 function getTeamColor(teamId: TeamId | null) {
   if (teamId === 'blue') {
-    return '#3b82f6'
+    return teamThemeColors.blue
   }
 
   if (teamId === 'yellow') {
-    return '#facc15'
+    return teamThemeColors.yellow
   }
 
-  return '#557079'
+  return teamThemeColors.unassigned
 }
 
 function normalizePlayer(
@@ -99,7 +100,7 @@ function normalizeState(state: ScoreboardState): ScoreboardState {
       .map((event, index) => ({
         ...event,
         playerTeamId: isTeamId(event.playerTeamId) ? event.playerTeamId : null,
-        playerColor: event.playerColor || getTeamColor(event.playerTeamId),
+        playerColor: getTeamColor(event.playerTeamId),
         delta: Math.trunc(Number(event.delta) || 0),
         previousScore: Math.max(0, Math.trunc(Number(event.previousScore) || 0)),
         nextScore: Math.max(0, Math.trunc(Number(event.nextScore) || 0)),

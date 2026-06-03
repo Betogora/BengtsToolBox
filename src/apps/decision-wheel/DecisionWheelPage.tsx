@@ -31,6 +31,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { getReadableTextColor } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
 type WheelSegment = DecisionWheelEntry & {
@@ -167,11 +168,11 @@ function WheelGraphic({ entries, rotation, isSpinning }: WheelGraphicProps) {
                   y={labelPosition.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill="#ffffff"
+                  fill={getReadableTextColor(segment.color)}
                   fontSize={entries.length > 8 ? 8 : 10}
                   fontWeight="700"
                   paintOrder="stroke"
-                  stroke="rgba(6, 36, 51, 0.35)"
+                  stroke="rgba(54, 50, 55, 0.38)"
                   strokeWidth="2"
                   transform={`rotate(${segment.midAngle}, ${labelPosition.x}, ${labelPosition.y})`}
                 >
@@ -221,6 +222,7 @@ export function DecisionWheelPage() {
     clearHistory,
     data,
     error,
+    colorPresets,
     removeEntry,
     resetToExamples,
     spin,
@@ -364,16 +366,29 @@ export function DecisionWheelPage() {
                       />
                     </div>
                     <div className="grid gap-1.5">
-                      <Label htmlFor={`entry-color-${entry.id}`}>Farbe</Label>
-                      <Input
-                        id={`entry-color-${entry.id}`}
-                        className="h-9 p-1"
-                        type="color"
-                        value={entry.color}
-                        onChange={(event) =>
-                          updateEntry(entry.id, { color: event.target.value })
-                        }
-                      />
+                      <Label>Farbe</Label>
+                      <div className="flex h-9 items-center gap-1">
+                        {colorPresets.map((color) => (
+                          <Button
+                            key={color}
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            aria-label={`Farbe ${color}`}
+                            className={cn(
+                              'size-8 p-0',
+                              entry.color.toLowerCase() === color.toLowerCase() &&
+                                'ring-2 ring-ring ring-offset-2',
+                            )}
+                            onClick={() => updateEntry(entry.id, { color })}
+                          >
+                            <span
+                              className="size-4 rounded-full"
+                              style={{ backgroundColor: color }}
+                            />
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                     <Button
                       aria-label={`${getEntryDisplayText(entry, index)} löschen`}

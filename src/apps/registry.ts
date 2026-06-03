@@ -25,7 +25,6 @@ export type HubApp = {
   href: string
   routePath: string
   status: 'Live' | 'Preview'
-  color: string
   Icon: LucideIcon
   Page: ComponentType
 }
@@ -39,7 +38,6 @@ export const apps: HubApp[] = [
     href: '/apps/diagnostics',
     routePath: 'apps/diagnostics',
     status: 'Live',
-    color: 'var(--brand-lime)',
     Icon: Stethoscope,
     Page: DiagnosticsPage,
   },
@@ -51,7 +49,6 @@ export const apps: HubApp[] = [
     href: '/apps/scoreboard',
     routePath: 'apps/scoreboard',
     status: 'Live',
-    color: 'var(--brand-blue)',
     Icon: ListOrdered,
     Page: ScoreboardPage,
   },
@@ -63,7 +60,6 @@ export const apps: HubApp[] = [
     href: '/apps/live-buzzer',
     routePath: 'apps/live-buzzer',
     status: 'Live',
-    color: 'var(--brand-teal)',
     Icon: Bell,
     Page: LiveBuzzerPage,
   },
@@ -75,7 +71,6 @@ export const apps: HubApp[] = [
     href: '/apps/progress-dashboard',
     routePath: 'apps/progress-dashboard',
     status: 'Live',
-    color: 'var(--brand-violet)',
     Icon: ChartNoAxesCombined,
     Page: ProgressDashboardPage,
   },
@@ -87,7 +82,6 @@ export const apps: HubApp[] = [
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
     status: 'Live',
-    color: 'var(--brand-orange)',
     Icon: Dice5,
     Page: RandomizerPage,
   },
@@ -99,7 +93,6 @@ export const apps: HubApp[] = [
     href: '/apps/decision-wheel',
     routePath: 'apps/decision-wheel',
     status: 'Live',
-    color: 'var(--brand-teal)',
     Icon: CircleDot,
     Page: DecisionWheelPage,
   },
@@ -111,7 +104,6 @@ export const apps: HubApp[] = [
     href: '/apps/sushi',
     routePath: 'apps/sushi',
     status: 'Live',
-    color: 'var(--brand-blue)',
     Icon: UtensilsCrossed,
     Page: TerritoryMapPage,
   },

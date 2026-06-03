@@ -104,10 +104,7 @@ export function DiagnosticsPage() {
               className="flex items-center justify-between gap-3 rounded-md border p-3"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span
-                  className="flex size-9 shrink-0 items-center justify-center rounded-md text-white"
-                  style={{ backgroundColor: app.color }}
-                >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   <app.Icon className="size-4" />
                 </span>
                 <div className="truncate font-medium">{app.title}</div>

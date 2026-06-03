@@ -6,17 +6,15 @@ import type {
   DecisionWheelState,
 } from '@/apps/decision-wheel/types'
 import { firebasePaths } from '@/lib/firebase/paths'
+import {
+  getThemeColorByIndex,
+  normalizeThemeColor,
+  participantColorPresets,
+} from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-const colorPresets = [
-  '#e1ef7e',
-  '#feaa01',
-  '#12b296',
-  '#027a9f',
-  '#7c3aed',
-  '#e85d75',
-]
+const colorPresets = [...participantColorPresets]
 
 const exampleEntries: DecisionWheelEntry[] = [
   { id: 'option-1', text: 'Option 1', color: colorPresets[0], weight: 1 },
@@ -35,12 +33,6 @@ function createRandomId() {
     'randomUUID' in globalThis.crypto
     ? globalThis.crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
-
-function sanitizeColor(color: string | undefined, fallback: string) {
-  const trimmedColor = color?.trim() ?? ''
-
-  return /^#[0-9a-f]{6}$/i.test(trimmedColor) ? trimmedColor : fallback
 }
 
 function sanitizeWeight(weight: number | undefined) {
@@ -66,12 +58,10 @@ function normalizeEntryForStorage(
   entry: DecisionWheelEntry,
   index: number,
 ): DecisionWheelEntry {
-  const fallbackColor = colorPresets[index % colorPresets.length]
-
   return {
     id: entry.id || `entry-${index + 1}`,
     text: entry.text ?? '',
-    color: sanitizeColor(entry.color, fallbackColor),
+    color: normalizeThemeColor(entry.color, index),
     weight: sanitizeWeight(entry.weight),
   }
 }
@@ -120,7 +110,7 @@ export function useDecisionWheel(stateId = 'default') {
     const entry: DecisionWheelEntry = {
       id: `entry-${createRandomId()}`,
       text: fallbackEntryText(nextIndex),
-      color: colorPresets[nextIndex % colorPresets.length],
+      color: getThemeColorByIndex(nextIndex),
       weight: 1,
     }
 

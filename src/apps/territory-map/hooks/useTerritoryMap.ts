@@ -9,18 +9,16 @@ import type {
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
 import { firebasePaths } from '@/lib/firebase/paths'
+import {
+  getThemeColorByIndex,
+  normalizeThemeColor,
+  participantColorPresets,
+} from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-export const territoryColorPresets = [
-  '#027a9f',
-  '#12b296',
-  '#feaa01',
-  '#7c3aed',
-  '#dc2626',
-  '#16a34a',
-]
+export const territoryColorPresets = [...participantColorPresets]
 
 const emptyClaimsByMap: TerritoryClaimsByMap = {
   world: {},
@@ -55,9 +53,11 @@ function createRandomId() {
 }
 
 function sanitizeColor(color: string, fallback: string) {
-  const trimmed = color.trim()
+  const fallbackIndex = territoryColorPresets.findIndex(
+    (preset) => preset.toLowerCase() === fallback.toLowerCase(),
+  )
 
-  return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed : fallback
+  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
 }
 
 function fallbackPlayerName(player: Pick<TerritoryPlayer, 'id' | 'position'>) {
@@ -89,8 +89,7 @@ function normalizePlayer(
   const position = Number.isFinite(Number(player.position))
     ? Number(player.position)
     : index + 1
-  const fallbackColor =
-    territoryColorPresets[index % territoryColorPresets.length]
+  const fallbackColor = getThemeColorByIndex(index)
 
   return {
     ...player,
@@ -104,8 +103,24 @@ function normalizeClaimsByMap(
   claimsByMap: Partial<TerritoryClaimsByMap> | undefined,
 ): TerritoryClaimsByMap {
   return {
-    world: claimsByMap?.world ?? {},
-    germany: claimsByMap?.germany ?? {},
+    world: Object.fromEntries(
+      Object.entries(claimsByMap?.world ?? {}).map(([id, claim], index) => [
+        id,
+        {
+          ...claim,
+          playerColor: normalizeThemeColor(claim.playerColor, index),
+        },
+      ]),
+    ),
+    germany: Object.fromEntries(
+      Object.entries(claimsByMap?.germany ?? {}).map(([id, claim], index) => [
+        id,
+        {
+          ...claim,
+          playerColor: normalizeThemeColor(claim.playerColor, index),
+        },
+      ]),
+    ),
   }
 }
 
@@ -158,8 +173,7 @@ export function useTerritoryMap(sessionId = 'default') {
     const nextPosition =
       players.reduce((max, player) => Math.max(max, player.position), 0) + 1
     const id = `person-${nextPosition}`
-    const fallbackColor =
-      territoryColorPresets[(nextPosition - 1) % territoryColorPresets.length]
+    const fallbackColor = getThemeColorByIndex(nextPosition - 1)
 
     const player: TerritoryPlayer = {
       id,
