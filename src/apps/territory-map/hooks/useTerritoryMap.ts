@@ -36,13 +36,13 @@ const initialState: TerritoryMapState = {
 const defaultPlayers: TerritoryPlayer[] = [
   {
     id: 'person-1',
-    name: 'Spieler 1',
+    name: 'Esser 1',
     color: territoryColorPresets[0],
     position: 1,
   },
   {
     id: 'person-2',
-    name: 'Spieler 2',
+    name: 'Esser 2',
     color: territoryColorPresets[1],
     position: 2,
   },
@@ -65,7 +65,7 @@ function fallbackPlayerName(player: Pick<TerritoryPlayer, 'id' | 'position'>) {
     ? player.position
     : Number(player.id.replace('person-', ''))
 
-  return `Spieler ${Number.isFinite(position) ? position : 1}`
+  return `Esser ${Number.isFinite(position) ? position : 1}`
 }
 
 function sanitizeName(
@@ -248,6 +248,43 @@ export function useTerritoryMap(sessionId = 'default') {
       .then(() => true)
   }
 
+  const unclaimTerritory = (
+    mapId: TerritoryMapId,
+    territoryId: string,
+    previousClaimOverride?: TerritoryClaim,
+  ) => {
+    const previousClaim =
+      state.claimsByMap[mapId][territoryId] ?? previousClaimOverride ?? null
+
+    if (!previousClaim) {
+      return Promise.resolve(false)
+    }
+
+    const nextMapClaims = { ...state.claimsByMap[mapId] }
+    delete nextMapClaims[territoryId]
+
+    const now = new Date().toISOString()
+    const action: TerritoryClaimAction = {
+      id: `claim-${createRandomId()}`,
+      mapId,
+      territoryId,
+      previousClaim,
+      nextClaim: null,
+      createdAtClientIso: now,
+    }
+
+    return stateStore
+      .merge({
+        claimsByMap: {
+          ...state.claimsByMap,
+          [mapId]: nextMapClaims,
+        },
+        lastClaimAction: action,
+        updatedBy: session.userId,
+      })
+      .then(() => true)
+  }
+
   const undoLastClaim = () => {
     const action = state.lastClaimAction
 
@@ -312,6 +349,7 @@ export function useTerritoryMap(sessionId = 'default') {
     setActiveMap,
     state,
     territoryColorPresets,
+    unclaimTerritory,
     undoLastClaim,
     updatePlayerColor,
     updatePlayerName,

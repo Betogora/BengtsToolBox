@@ -4,9 +4,9 @@ import {
   ChartNoAxesCombined,
   CircleDot,
   Dice5,
-  Map,
   ListOrdered,
   Stethoscope,
+  UtensilsCrossed,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -105,14 +105,14 @@ export const apps: HubApp[] = [
   },
   {
     id: 'territory-map',
-    title: 'Territory Map',
+    title: 'World Suhi Map',
     description:
-      'Interaktive Claim-Karte fuer Weltlaender und deutsche Bundeslaender mit Spielerfarben und Live-Sync.',
+      'Interaktive Sushi-Reisekarte fuer Weltlaender und deutsche Bundeslaender mit Esserfarben und Live-Sync.',
     href: '/apps/territory-map',
     routePath: 'apps/territory-map',
     status: 'Live',
     color: 'var(--brand-blue)',
-    Icon: Map,
+    Icon: UtensilsCrossed,
     Page: TerritoryMapPage,
   },
 ]

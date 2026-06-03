@@ -1,11 +1,12 @@
 import {
-  Map,
+  CirclePlus,
   MousePointer2,
   RotateCcw,
   Undo2,
+  UtensilsCrossed,
   Users,
 } from 'lucide-react'
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useRef, useState, type CSSProperties } from 'react'
 
 import { mapViewBoxes, territoriesByMap } from '@/apps/territory-map/data/territories'
 import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
@@ -18,7 +19,6 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -46,12 +46,7 @@ const mapLabels: Record<TerritoryMapId, string> = {
   germany: 'Deutschland',
 }
 
-const mapDescriptions: Record<TerritoryMapId, string> = {
-  world: 'Laender als freie Territorien',
-  germany: 'Bundeslaender als Territorien',
-}
-
-const newPlayerValue = '__new-player'
+const unclaimedValue = '__unclaimed'
 
 function getClaimColor(
   claimPlayerId: string,
@@ -98,9 +93,6 @@ function TerritoryShape({
         event.stopPropagation()
         onSelect()
       }}
-      onPointerDown={(event) => {
-        event.stopPropagation()
-      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
@@ -121,19 +113,17 @@ function ClaimDialog({
   territory,
 }: {
   claim?: {
+    playerId: string
     playerName: string
   }
-  onClaim: (playerId: string, name: string, color: string) => Promise<void>
+  onClaim: (playerId: string) => Promise<void>
   onOpenChange: (open: boolean) => void
   players: TerritoryPlayer[]
   territory: Territory | null
 }) {
   const [selectedPlayerId, setSelectedPlayerId] = useState(
-    players[0]?.id ?? newPlayerValue,
+    claim?.playerId ?? players[0]?.id ?? unclaimedValue,
   )
-  const [newPlayerName, setNewPlayerName] = useState('')
-  const [newPlayerColor, setNewPlayerColor] = useState('#027a9f')
-  const isNewPlayer = selectedPlayerId === newPlayerValue
 
   if (!territory) {
     return null
@@ -143,20 +133,20 @@ function ClaimDialog({
     <Dialog open={Boolean(territory)} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{territory.name} claimen</DialogTitle>
+          <DialogTitle>Land {territory.name} Suhi bereisen</DialogTitle>
           <DialogDescription>
             {claim
-              ? `Aktuell geclaimed von ${claim.playerName}.`
+              ? `Aktuell bereist von ${claim.playerName}.`
               : 'Dieses Territorium ist noch frei.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="claim-player">Spieler</Label>
+            <Label htmlFor="claim-player">Esser</Label>
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger id="claim-player">
-                <SelectValue placeholder="Spieler waehlen" />
+                <SelectValue placeholder="Esser waehlen" />
               </SelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -164,49 +154,71 @@ function ClaimDialog({
                     {player.name}
                   </SelectItem>
                 ))}
-                <SelectItem value={newPlayerValue}>Neuen Spieler anlegen</SelectItem>
+                <SelectItem value={unclaimedValue}>Unclaimed</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {isNewPlayer && (
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-              <div className="grid gap-2">
-                <Label htmlFor="new-player-name">Name</Label>
-                <Input
-                  id="new-player-name"
-                  value={newPlayerName}
-                  onChange={(event) => setNewPlayerName(event.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="new-player-color">Farbe</Label>
-                <Input
-                  id="new-player-color"
-                  type="color"
-                  value={newPlayerColor}
-                  onChange={(event) => setNewPlayerColor(event.target.value)}
-                  className="h-9 w-20 p-1"
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Abbrechen
           </Button>
-          <Button
-            onClick={() =>
-              onClaim(selectedPlayerId, newPlayerName, newPlayerColor)
-            }
-          >
-            Claim speichern
+          <Button onClick={() => onClaim(selectedPlayerId)}>
+            Nigiri gegessen
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function AddEaterCard({
+  onAdd,
+  nextPosition,
+}: {
+  onAdd: (name: string, color: string) => Promise<void>
+  nextPosition: number
+}) {
+  const [name, setName] = useState(`Esser ${nextPosition}`)
+  const [color, setColor] = useState('#feaa01')
+
+  return (
+    <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+      <div className="flex items-center gap-2">
+        <CirclePlus className="size-4 text-primary" />
+        <span className="text-sm font-medium">Esser hinzufuegen</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Input
+          aria-label="Neuer Esser Name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              void onAdd(name, color)
+            }
+          }}
+        />
+        <Input
+          aria-label="Neuer Esser Farbe"
+          type="color"
+          value={color}
+          onChange={(event) => setColor(event.target.value)}
+          className="h-9 w-12 p-1"
+        />
+      </div>
+      <Button
+        variant="outline"
+        onClick={async () => {
+          await onAdd(name, color)
+          setName(`Esser ${nextPosition + 1}`)
+        }}
+      >
+        <CirclePlus className="size-4" />
+        Esser
+      </Button>
+    </div>
   )
 }
 
@@ -218,11 +230,11 @@ export function TerritoryMapPage() {
     currentClaims,
     error,
     isLoading,
-    isRealtime,
     players,
     resetCurrentMap,
     setActiveMap,
     state,
+    unclaimTerritory,
     undoLastClaim,
     updatePlayerColor,
     updatePlayerName,
@@ -237,6 +249,9 @@ export function TerritoryMapPage() {
     offsetX: number
     offsetY: number
   } | null>(null)
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>())
+  const dragDistanceRef = useRef(0)
+  const lastPinchDistanceRef = useRef<number | null>(null)
   const territories = territoriesByMap[state.activeMap]
   const selectedTerritory = useMemo(
     () =>
@@ -261,22 +276,31 @@ export function TerritoryMapPage() {
     void setActiveMap(nextMap as TerritoryMapId)
   }
 
-  const handleClaim = async (playerId: string, name: string, color: string) => {
+  const handleClaim = async (playerId: string) => {
     if (!selectedTerritory) {
       return
     }
 
-    const newPlayer =
-      playerId === newPlayerValue ? await addPlayer(name, color) : null
-    const nextPlayerId = newPlayer?.id ?? playerId
+    if (playerId === unclaimedValue) {
+      await unclaimTerritory(
+        state.activeMap,
+        selectedTerritory.id,
+        selectedClaim,
+      )
+      setSelectedTerritoryId(null)
+      return
+    }
 
     await claimTerritory(
       state.activeMap,
       selectedTerritory.id,
-      nextPlayerId,
-      newPlayer ?? undefined,
+      playerId,
     )
     setSelectedTerritoryId(null)
+  }
+
+  const handleAddEater = async (name: string, color: string) => {
+    await addPlayer(name, color)
   }
 
   const handleResetCurrentMap = () => {
@@ -295,16 +319,12 @@ export function TerritoryMapPage() {
         <div>
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Map className="size-5" />
+              <UtensilsCrossed className="size-5" />
             </div>
             <div>
               <h1 className="text-3xl font-semibold tracking-normal">
-                Territory Claim Map
+                World Sushi Map
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {claimedCount} Claims auf der aktuellen Karte
-                {isRealtime ? ' · Live-Sync aktiv' : ' · lokaler Modus'}
-              </p>
             </div>
           </div>
           {error && (
@@ -330,7 +350,6 @@ export function TerritoryMapPage() {
                 <CardTitle className="text-xl">
                   {mapLabels[state.activeMap]}
                 </CardTitle>
-                <CardDescription>{mapDescriptions[state.activeMap]}</CardDescription>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -369,12 +388,12 @@ export function TerritoryMapPage() {
 
           <CardContent className="p-0">
             <div
-              className="h-[62svh] min-h-[420px] touch-none overflow-hidden bg-[#dceff0]"
+              className="h-[62svh] min-h-[420px] touch-none overflow-hidden bg-[#dceff0] cursor-grab active:cursor-grabbing"
               onWheel={(event) => {
                 event.preventDefault()
                 const nextZoom = Math.min(
                   3.5,
-                  Math.max(0.7, zoom + (event.deltaY < 0 ? 0.14 : -0.14)),
+                  Math.max(0.7, zoom + (event.deltaY < 0 ? 0.18 : -0.18)),
                 )
                 setZoom(nextZoom)
               }}
@@ -383,7 +402,11 @@ export function TerritoryMapPage() {
                   return
                 }
 
-                event.currentTarget.setPointerCapture(event.pointerId)
+                activePointersRef.current.set(event.pointerId, {
+                  x: event.clientX,
+                  y: event.clientY,
+                })
+                dragDistanceRef.current = 0
                 setDragStart({
                   pointerId: event.pointerId,
                   x: event.clientX,
@@ -391,19 +414,65 @@ export function TerritoryMapPage() {
                   offsetX: offset.x,
                   offsetY: offset.y,
                 })
+
+                if (activePointersRef.current.size === 2) {
+                  const pointers = [...activePointersRef.current.values()]
+                  lastPinchDistanceRef.current = Math.hypot(
+                    pointers[0].x - pointers[1].x,
+                    pointers[0].y - pointers[1].y,
+                  )
+                }
               }}
               onPointerMove={(event) => {
+                if (!activePointersRef.current.has(event.pointerId)) {
+                  return
+                }
+
+                activePointersRef.current.set(event.pointerId, {
+                  x: event.clientX,
+                  y: event.clientY,
+                })
+
+                if (activePointersRef.current.size >= 2) {
+                  const pointers = [...activePointersRef.current.values()]
+                  const nextDistance = Math.hypot(
+                    pointers[0].x - pointers[1].x,
+                    pointers[0].y - pointers[1].y,
+                  )
+                  const previousDistance = lastPinchDistanceRef.current
+
+                  if (previousDistance && nextDistance > 0) {
+                    setZoom((value) =>
+                      Math.min(3.5, Math.max(0.7, value * (nextDistance / previousDistance))),
+                    )
+                  }
+
+                  lastPinchDistanceRef.current = nextDistance
+                  return
+                }
+
                 if (!dragStart || dragStart.pointerId !== event.pointerId) {
                   return
                 }
 
+                const deltaX = event.clientX - dragStart.x
+                const deltaY = event.clientY - dragStart.y
+                dragDistanceRef.current = Math.hypot(deltaX, deltaY)
                 setOffset({
-                  x: dragStart.offsetX + (event.clientX - dragStart.x) / zoom,
-                  y: dragStart.offsetY + (event.clientY - dragStart.y) / zoom,
+                  x: dragStart.offsetX + (deltaX / zoom) * 1.25,
+                  y: dragStart.offsetY + (deltaY / zoom) * 1.25,
                 })
               }}
-              onPointerUp={() => setDragStart(null)}
-              onPointerCancel={() => setDragStart(null)}
+              onPointerUp={(event) => {
+                activePointersRef.current.delete(event.pointerId)
+                lastPinchDistanceRef.current = null
+                setDragStart(null)
+              }}
+              onPointerCancel={(event) => {
+                activePointersRef.current.delete(event.pointerId)
+                lastPinchDistanceRef.current = null
+                setDragStart(null)
+              }}
             >
               <svg
                 viewBox={mapViewBoxes[state.activeMap]}
@@ -438,7 +507,11 @@ export function TerritoryMapPage() {
                       key={territory.id}
                       claim={currentClaims[territory.id]}
                       isSelected={selectedTerritoryId === territory.id}
-                      onSelect={() => setSelectedTerritoryId(territory.id)}
+                      onSelect={() => {
+                        if (dragDistanceRef.current < 6) {
+                          setSelectedTerritoryId(territory.id)
+                        }
+                      }}
                       players={players}
                       territory={territory}
                     />
@@ -456,10 +529,7 @@ export function TerritoryMapPage() {
                 <Users className="size-4" />
               </div>
               <div>
-                <CardTitle>Spieler</CardTitle>
-                <CardDescription>
-                  Farben wirken direkt auf geclaimte Gebiete.
-                </CardDescription>
+                <CardTitle>Esser</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 p-4 pt-0">
@@ -493,6 +563,15 @@ export function TerritoryMapPage() {
                   </div>
                 </div>
               ))}
+              <AddEaterCard
+                nextPosition={
+                  players.reduce(
+                    (max, player) => Math.max(max, player.position),
+                    0,
+                  ) + 1
+                }
+                onAdd={handleAddEater}
+              />
               {isLoading && (
                 <p className="text-sm text-muted-foreground">Lade Spielstand...</p>
               )}
