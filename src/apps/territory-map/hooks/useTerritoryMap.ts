@@ -36,13 +36,13 @@ const initialState: TerritoryMapState = {
 const defaultPlayers: TerritoryPlayer[] = [
   {
     id: 'person-1',
-    name: 'Esser 1',
+    name: 'Sushi-Tourist 1',
     color: territoryColorPresets[0],
     position: 1,
   },
   {
     id: 'person-2',
-    name: 'Esser 2',
+    name: 'Sushi-Tourist 2',
     color: territoryColorPresets[1],
     position: 2,
   },
@@ -65,7 +65,7 @@ function fallbackPlayerName(player: Pick<TerritoryPlayer, 'id' | 'position'>) {
     ? player.position
     : Number(player.id.replace('person-', ''))
 
-  return `Esser ${Number.isFinite(position) ? position : 1}`
+  return `Sushi-Tourist ${Number.isFinite(position) ? position : 1}`
 }
 
 function sanitizeName(
@@ -73,6 +73,11 @@ function sanitizeName(
   player: Pick<TerritoryPlayer, 'id' | 'position'>,
 ) {
   const trimmedName = name.trim()
+  const legacyDefaultName = trimmedName.match(/^Esser\s+(\d+)$/)
+
+  if (legacyDefaultName) {
+    return `Sushi-Tourist ${legacyDefaultName[1]}`
+  }
 
   return trimmedName || fallbackPlayerName(player)
 }
@@ -200,6 +205,36 @@ export function useTerritoryMap(sessionId = 'default') {
       color: nextColor,
       lastUpdatedBy: session.userId,
     })
+  }
+
+  const removePlayer = async (playerId: string) => {
+    const player = players.find((entry) => entry.id === playerId)
+
+    if (!player || player.position <= 2) {
+      return false
+    }
+
+    const claimsByMap = normalizeClaimsByMap(state.claimsByMap)
+
+    await playersStore.deleteItem(playerId)
+    await stateStore.merge({
+      claimsByMap: {
+        world: Object.fromEntries(
+          Object.entries(claimsByMap.world).filter(
+            ([, claim]) => claim.playerId !== playerId,
+          ),
+        ),
+        germany: Object.fromEntries(
+          Object.entries(claimsByMap.germany).filter(
+            ([, claim]) => claim.playerId !== playerId,
+          ),
+        ),
+      },
+      lastClaimAction: null,
+      updatedBy: session.userId,
+    })
+
+    return true
   }
 
   const claimTerritory = (
@@ -344,6 +379,7 @@ export function useTerritoryMap(sessionId = 'default') {
     isLoading: stateStore.isLoading || playersStore.isLoading,
     isRealtime: stateStore.isRealtime && playersStore.isRealtime,
     players,
+    removePlayer,
     resetCurrentMap,
     session,
     setActiveMap,

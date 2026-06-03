@@ -108,8 +108,8 @@ export const apps: HubApp[] = [
     title: 'World Suhi Map',
     description:
       'Interaktive Sushi-Reisekarte für Weltländer und deutsche Bundesländer mit Esserfarben und Live-Sync.',
-    href: '/apps/territory-map',
-    routePath: 'apps/territory-map',
+    href: '/apps/sushi',
+    routePath: 'apps/sushi',
     status: 'Live',
     color: 'var(--brand-blue)',
     Icon: UtensilsCrossed,

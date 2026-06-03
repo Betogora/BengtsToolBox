@@ -1,7 +1,9 @@
 import {
   CirclePlus,
   MousePointer2,
+  Pencil,
   RotateCcw,
+  Trash2,
   Undo2,
   UtensilsCrossed,
   Users,
@@ -26,7 +28,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -112,6 +113,62 @@ function TerritoryShape({
   )
 }
 
+function InlineTextEdit({
+  ariaLabel,
+  fallback,
+  onSave,
+  value,
+}: {
+  ariaLabel: string
+  fallback: string
+  onSave: (value: string) => void | Promise<void>
+  value: string
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const displayValue = value.trim() || fallback
+
+  if (isEditing) {
+    return (
+      <Input
+        aria-label={ariaLabel}
+        autoFocus
+        className="h-9 font-medium"
+        defaultValue={displayValue}
+        onBlur={async (event) => {
+          await onSave(event.currentTarget.value)
+          setIsEditing(false)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.currentTarget.blur()
+          }
+
+          if (event.key === 'Escape') {
+            setIsEditing(false)
+          }
+        }}
+      />
+    )
+  }
+
+  return (
+    <div className="group flex min-w-0 items-center gap-1">
+      <span className="min-w-0 truncate rounded-sm px-1 py-1 text-sm font-medium transition-colors group-hover:bg-accent/35">
+        {displayValue}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8"
+        aria-label={`${ariaLabel} bearbeiten`}
+        onClick={() => setIsEditing(true)}
+      >
+        <Pencil className="size-4" />
+      </Button>
+    </div>
+  )
+}
+
 function ClaimDialog({
   claim,
   onClaim,
@@ -140,7 +197,7 @@ function ClaimDialog({
     <Dialog open={Boolean(territory)} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Land {territory.name} Suhi bereisen</DialogTitle>
+          <DialogTitle>{territory.name} Sushi-bereisen</DialogTitle>
           <DialogDescription>
             {claim
               ? `Aktuell bereist von ${claim.playerName}.`
@@ -148,12 +205,12 @@ function ClaimDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="grid gap-2">
-            <Label htmlFor="claim-player">Esser</Label>
+            <Label htmlFor="claim-player">Sushi-Tourist</Label>
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger id="claim-player">
-                <SelectValue placeholder="Esser wählen" />
+                <SelectValue placeholder="Sushi-Tourist wählen" />
               </SelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -165,16 +222,10 @@ function ClaimDialog({
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Abbrechen
-          </Button>
-          <Button onClick={() => onClaim(selectedPlayerId)}>
+          <Button className="sm:mb-0" onClick={() => onClaim(selectedPlayerId)}>
             Nigiri gegessen
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -193,7 +244,7 @@ function AddEaterCard({
         onClick={() => void onAdd()}
       >
         <CirclePlus className="size-4" />
-        Esser hinzufügen
+        Sushi-Tourist hinzufügen
       </Button>
     </div>
   )
@@ -208,6 +259,7 @@ export function TerritoryMapPage() {
     error,
     isLoading,
     players,
+    removePlayer,
     resetCurrentMap,
     setActiveMap,
     state,
@@ -558,7 +610,7 @@ export function TerritoryMapPage() {
                 <Users className="size-4" />
               </div>
               <div>
-                <CardTitle>Esser</CardTitle>
+                <CardTitle>Sushi-Tourist</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 p-4 pt-0">
@@ -573,13 +625,14 @@ export function TerritoryMapPage() {
                       className="size-3 rounded-full bg-[var(--player-color)]"
                       aria-hidden="true"
                     />
-                    <Input
-                      aria-label={`${player.name} umbenennen`}
-                      defaultValue={player.name}
-                      onBlur={(event) =>
-                        void updatePlayerName(player.id, event.target.value)
-                      }
-                    />
+                    <div className="min-w-0 flex-1">
+                      <InlineTextEdit
+                        ariaLabel={`Name für ${player.name}`}
+                        fallback={`Sushi-Tourist ${player.position}`}
+                        value={player.name}
+                        onSave={(value) => updatePlayerName(player.id, value)}
+                      />
+                    </div>
                     <Input
                       aria-label={`${player.name} Farbe ändern`}
                       type="color"
@@ -589,6 +642,16 @@ export function TerritoryMapPage() {
                       }
                       className="h-9 w-12 p-1"
                     />
+                    {player.position > 2 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`${player.name} entfernen`}
+                        onClick={() => void removePlayer(player.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
