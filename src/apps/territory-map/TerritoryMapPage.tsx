@@ -46,6 +46,8 @@ const mapLabels: Record<TerritoryMapId, string> = {
   germany: 'Deutschland',
 }
 
+const maxZoom = 8
+const minZoom = 0.7
 const unclaimedValue = '__unclaimed'
 
 function getClaimColor(
@@ -84,11 +86,12 @@ function TerritoryShape({
       role="button"
       tabIndex={0}
       aria-label={`${territory.name}, ${ownerLabel}`}
-      className="cursor-pointer stroke-background stroke-[2] transition-[filter,opacity,stroke-width] hover:brightness-105 focus:outline-none focus-visible:stroke-ring"
+      className="cursor-pointer transition-[filter,opacity,stroke-width] hover:brightness-105 focus:outline-none focus-visible:stroke-ring"
       fill={ownerColor}
       opacity={claim ? 0.94 : 1}
       stroke={isSelected ? '#062433' : '#f6fbfb'}
-      strokeWidth={isSelected ? 5 : 2}
+      strokeWidth={isSelected ? 2.2 : 0.75}
+      vectorEffect="non-scaling-stroke"
       onClick={(event) => {
         event.stopPropagation()
         onSelect()
@@ -175,48 +178,18 @@ function ClaimDialog({
 
 function AddEaterCard({
   onAdd,
-  nextPosition,
 }: {
-  onAdd: (name: string, color: string) => Promise<void>
-  nextPosition: number
+  onAdd: () => Promise<void>
 }) {
-  const [name, setName] = useState(`Esser ${nextPosition}`)
-  const [color, setColor] = useState('#feaa01')
-
   return (
-    <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
-      <div className="flex items-center gap-2">
-        <CirclePlus className="size-4 text-primary" />
-        <span className="text-sm font-medium">Esser hinzufuegen</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="Neuer Esser Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              void onAdd(name, color)
-            }
-          }}
-        />
-        <Input
-          aria-label="Neuer Esser Farbe"
-          type="color"
-          value={color}
-          onChange={(event) => setColor(event.target.value)}
-          className="h-9 w-12 p-1"
-        />
-      </div>
+    <div className="rounded-md border border-dashed bg-background p-3">
       <Button
+        className="h-20 w-full flex-col gap-2"
         variant="outline"
-        onClick={async () => {
-          await onAdd(name, color)
-          setName(`Esser ${nextPosition + 1}`)
-        }}
+        onClick={() => void onAdd()}
       >
-        <CirclePlus className="size-4" />
-        Esser
+        <CirclePlus className="size-5" />
+        Esser hinzufuegen
       </Button>
     </div>
   )
@@ -299,8 +272,8 @@ export function TerritoryMapPage() {
     setSelectedTerritoryId(null)
   }
 
-  const handleAddEater = async (name: string, color: string) => {
-    await addPlayer(name, color)
+  const handleAddEater = async () => {
+    await addPlayer()
   }
 
   const handleResetCurrentMap = () => {
@@ -392,8 +365,8 @@ export function TerritoryMapPage() {
               onWheel={(event) => {
                 event.preventDefault()
                 const nextZoom = Math.min(
-                  3.5,
-                  Math.max(0.7, zoom + (event.deltaY < 0 ? 0.18 : -0.18)),
+                  maxZoom,
+                  Math.max(minZoom, zoom + (event.deltaY < 0 ? 0.28 : -0.28)),
                 )
                 setZoom(nextZoom)
               }}
@@ -443,7 +416,10 @@ export function TerritoryMapPage() {
 
                   if (previousDistance && nextDistance > 0) {
                     setZoom((value) =>
-                      Math.min(3.5, Math.max(0.7, value * (nextDistance / previousDistance))),
+                      Math.min(
+                        maxZoom,
+                        Math.max(minZoom, value * (nextDistance / previousDistance)),
+                      ),
                     )
                   }
 
@@ -563,15 +539,7 @@ export function TerritoryMapPage() {
                   </div>
                 </div>
               ))}
-              <AddEaterCard
-                nextPosition={
-                  players.reduce(
-                    (max, player) => Math.max(max, player.position),
-                    0,
-                  ) + 1
-                }
-                onAdd={handleAddEater}
-              />
+              <AddEaterCard onAdd={handleAddEater} />
               {isLoading && (
                 <p className="text-sm text-muted-foreground">Lade Spielstand...</p>
               )}

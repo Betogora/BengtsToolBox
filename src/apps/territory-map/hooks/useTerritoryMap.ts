@@ -149,7 +149,7 @@ export function useTerritoryMap(sessionId = 'default') {
       updatedBy: session.userId,
     })
 
-  const addPlayer = (name: string, color: string) => {
+  const addPlayer = (name = '', color = '') => {
     const nextPosition =
       players.reduce((max, player) => Math.max(max, player.position), 0) + 1
     const id = `person-${nextPosition}`
