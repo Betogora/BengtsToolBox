@@ -9,17 +9,14 @@ import { firebasePaths } from '@/lib/firebase/paths'
 import {
   getThemeColorByIndex,
   normalizeThemeColor,
-  participantColorPresets,
 } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-const colorPresets = [...participantColorPresets]
-
 const exampleEntries: DecisionWheelEntry[] = [
-  { id: 'option-1', text: 'Option 1', color: colorPresets[0], weight: 1 },
-  { id: 'option-2', text: 'Option 2', color: colorPresets[1], weight: 1 },
-  { id: 'option-3', text: 'Option 3', color: colorPresets[2], weight: 1 },
+  { id: 'option-1', text: 'Option 1', color: getThemeColorByIndex(0), weight: 1 },
+  { id: 'option-2', text: 'Option 2', color: getThemeColorByIndex(1), weight: 1 },
+  { id: 'option-3', text: 'Option 3', color: getThemeColorByIndex(2), weight: 1 },
 ]
 
 const initialDecisionWheelState: DecisionWheelState = {
@@ -179,7 +176,6 @@ export function useDecisionWheel(stateId = 'default') {
     ...store,
     addEntry,
     clearHistory,
-    colorPresets,
     data,
     removeEntry,
     resetToExamples,

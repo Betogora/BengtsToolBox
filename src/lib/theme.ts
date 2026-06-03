@@ -1,4 +1,5 @@
 export const themePalette = {
+  skyBlue: '#47BFFF',
   darkNavy: '#011A27',
   blueberry: '#063852',
   tangerine: '#F0810F',
@@ -6,14 +7,14 @@ export const themePalette = {
 } as const
 
 export const participantColorPresets = [
-  themePalette.blueberry,
+  themePalette.skyBlue,
   themePalette.tangerine,
   themePalette.daffodil,
   themePalette.darkNavy,
 ] as const
 
 export const teamThemeColors = {
-  blue: themePalette.blueberry,
+  blue: themePalette.skyBlue,
   yellow: themePalette.daffodil,
   unassigned: themePalette.tangerine,
 } as const
@@ -39,11 +40,7 @@ export function normalizeThemeColor(color: string | undefined, fallbackIndex = 0
     return getThemeColorByIndex(fallbackIndex)
   }
 
-  const themeColor = participantColorPresets.find(
-    (preset) => preset.toUpperCase() === normalizedColor,
-  )
-
-  return themeColor ?? getThemeColorByIndex(fallbackIndex)
+  return normalizedColor
 }
 
 function getRelativeLuminance(color: string) {

@@ -499,7 +499,6 @@ function ProgressChart({
 }
 
 function PlayerCard({
-  colorPresets,
   onAddEvent,
   onColorChange,
   onNameChange,
@@ -507,7 +506,6 @@ function PlayerCard({
   playerScore,
   unit,
 }: {
-  colorPresets: string[]
   onAddEvent: (player: ProgressPlayer, valueDelta: ProgressEventDelta) => void
   onColorChange: (playerId: string, color: string) => void
   onNameChange: (playerId: string, name: string) => void
@@ -549,27 +547,15 @@ function PlayerCard({
         </div>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="flex items-center gap-2">
-          {colorPresets.map((color) => (
-            <Button
-              key={color}
-              variant="outline"
-              size="icon"
-              aria-label={`${player.name} Farbe ${color}`}
-              className={cn(
-                'size-8 rounded-md p-0',
-                player.color.toLowerCase() === color.toLowerCase() &&
-                  'ring-2 ring-ring ring-offset-2',
-              )}
-              onClick={() => onColorChange(player.id, color)}
-            >
-              <span
-                className="size-4 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-            </Button>
-          ))}
-        </div>
+        <Input
+          type="color"
+          aria-label={`${player.name} Farbe waehlen`}
+          className="size-9 cursor-pointer rounded-md border p-1"
+          value={player.color}
+          onChange={(event) =>
+            onColorChange(player.id, event.currentTarget.value)
+          }
+        />
 
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -854,7 +840,6 @@ export function ProgressDashboardPage() {
     leader,
     playerScores,
     players,
-    progressColorPresets,
     progressEventIcons,
     removePlayer,
     resetAndArchiveDataset,
@@ -953,7 +938,6 @@ export function ProgressDashboardPage() {
         {playerScores.map((playerScore) => (
           <PlayerCard
             key={playerScore.player.id}
-            colorPresets={progressColorPresets}
             playerScore={playerScore}
             unit={activeDataset.unit}
             onAddEvent={async (player, valueDelta) => {

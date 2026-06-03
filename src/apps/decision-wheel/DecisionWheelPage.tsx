@@ -222,7 +222,6 @@ export function DecisionWheelPage() {
     clearHistory,
     data,
     error,
-    colorPresets,
     removeEntry,
     resetToExamples,
     spin,
@@ -366,29 +365,19 @@ export function DecisionWheelPage() {
                       />
                     </div>
                     <div className="grid gap-1.5">
-                      <Label>Farbe</Label>
-                      <div className="flex h-9 items-center gap-1">
-                        {colorPresets.map((color) => (
-                          <Button
-                            key={color}
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            aria-label={`Farbe ${color}`}
-                            className={cn(
-                              'size-8 p-0',
-                              entry.color.toLowerCase() === color.toLowerCase() &&
-                                'ring-2 ring-ring ring-offset-2',
-                            )}
-                            onClick={() => updateEntry(entry.id, { color })}
-                          >
-                            <span
-                              className="size-4 rounded-full"
-                              style={{ backgroundColor: color }}
-                            />
-                          </Button>
-                        ))}
-                      </div>
+                      <Label htmlFor={`entry-color-${entry.id}`}>Farbe</Label>
+                      <Input
+                        id={`entry-color-${entry.id}`}
+                        type="color"
+                        aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
+                        className="h-9 cursor-pointer rounded-md border p-1"
+                        value={entry.color}
+                        onChange={(event) =>
+                          updateEntry(entry.id, {
+                            color: event.currentTarget.value,
+                          })
+                        }
+                      />
                     </div>
                     <Button
                       aria-label={`${getEntryDisplayText(entry, index)} löschen`}

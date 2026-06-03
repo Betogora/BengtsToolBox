@@ -1,5 +1,6 @@
 import {
   CirclePlus,
+  ListOrdered,
   MousePointer2,
   Pencil,
   RotateCcw,
@@ -50,6 +51,13 @@ const mapLabels: Record<TerritoryMapId, string> = {
 const maxZoom = 8
 const minZoom = 0.7
 const unclaimedValue = '__unclaimed'
+
+type SushiScore = {
+  player: TerritoryPlayer
+  world: number
+  germany: number
+  total: number
+}
 
 function clampZoom(value: number) {
   return Math.min(maxZoom, Math.max(minZoom, value))
@@ -197,7 +205,7 @@ function ClaimDialog({
     <Dialog open={Boolean(territory)} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{territory.name} Sushi-bereisen</DialogTitle>
+          <DialogTitle>{territory.name} Sushi-bereisen?</DialogTitle>
           <DialogDescription>
             {claim
               ? `Aktuell bereist von ${claim.playerName}.`
@@ -263,7 +271,6 @@ export function TerritoryMapPage() {
     resetCurrentMap,
     setActiveMap,
     state,
-    territoryColorPresets,
     unclaimTerritory,
     undoLastClaim,
     updatePlayerColor,
@@ -293,6 +300,30 @@ export function TerritoryMapPage() {
   const selectedClaim = selectedTerritory
     ? currentClaims[selectedTerritory.id]
     : undefined
+  const sushiScores = useMemo<SushiScore[]>(() => {
+    const getMapScore = (playerId: string, mapId: TerritoryMapId) =>
+      Object.values(state.claimsByMap[mapId]).filter(
+        (claim) => claim.playerId === playerId,
+      ).length
+
+    return players
+      .map((player) => {
+        const world = getMapScore(player.id, 'world')
+        const germany = getMapScore(player.id, 'germany')
+
+        return {
+          player,
+          world,
+          germany,
+          total: world + germany,
+        }
+      })
+      .sort(
+        (left, right) =>
+          right.total - left.total ||
+          left.player.position - right.player.position,
+      )
+  }, [players, state.claimsByMap])
 
   const transform = `translate(${offset.x} ${offset.y}) scale(${zoom})`
 
@@ -634,33 +665,27 @@ export function TerritoryMapPage() {
                         onSave={(value) => updatePlayerName(player.id, value)}
                       />
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {territoryColorPresets.map((color) => (
-                        <Button
-                          key={color}
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          aria-label={`${player.name} Farbe ${color}`}
-                          className="size-8 p-0"
-                          onClick={() => void updatePlayerColor(player.id, color)}
-                        >
-                          <span
-                            className="size-4 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                        </Button>
-                      ))}
-                    </div>
-                    {player.position > 2 && (
+                    <Input
+                      type="color"
+                      aria-label={`${player.name} Farbe wählen`}
+                      className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
+                      value={player.color}
+                      onChange={(event) =>
+                        void updatePlayerColor(player.id, event.currentTarget.value)
+                      }
+                    />
+                    {player.position > 2 ? (
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="size-9"
                         aria-label={`${player.name} entfernen`}
                         onClick={() => void removePlayer(player.id)}
                       >
                         <Trash2 className="size-4" />
                       </Button>
+                    ) : (
+                      <span className="size-9 shrink-0" aria-hidden="true" />
                     )}
                   </div>
                 </div>
@@ -669,6 +694,52 @@ export function TerritoryMapPage() {
               {isLoading && (
                 <p className="text-sm text-muted-foreground">Lade Spielstand...</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-row items-center gap-3 p-4">
+              <div className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                <ListOrdered className="size-4" />
+              </div>
+              <div>
+                <CardTitle>Punktzahl</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <ol className="grid gap-2">
+                {sushiScores.map((score) => (
+                  <li
+                    key={score.player.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-md border bg-background p-3"
+                    style={{ '--player-color': score.player.color } as CSSProperties}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="size-3 shrink-0 rounded-full bg-[var(--player-color)]"
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0 truncate text-sm font-medium">
+                        {score.player.name}
+                      </span>
+                    </div>
+                    <dl className="grid grid-cols-3 gap-2 text-right text-xs">
+                      <div>
+                        <dt className="text-muted-foreground">Welt</dt>
+                        <dd className="font-semibold">{score.world}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Deutschland</dt>
+                        <dd className="font-semibold">{score.germany}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Summe</dt>
+                        <dd className="font-semibold">{score.total}</dd>
+                      </div>
+                    </dl>
+                  </li>
+                ))}
+              </ol>
             </CardContent>
           </Card>
         </div>

@@ -9,11 +9,7 @@ import type {
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
 import { firebasePaths } from '@/lib/firebase/paths'
-import {
-  getThemeColorByIndex,
-  normalizeThemeColor,
-  participantColorPresets,
-} from '@/lib/theme'
+import { getThemeColorByIndex, participantColorPresets } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -53,11 +49,17 @@ function createRandomId() {
 }
 
 function sanitizeColor(color: string, fallback: string) {
-  const fallbackIndex = territoryColorPresets.findIndex(
-    (preset) => preset.toLowerCase() === fallback.toLowerCase(),
-  )
+  const trimmedColor = color.trim()
 
-  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
+  if (/^#[0-9a-f]{6}$/i.test(trimmedColor)) {
+    return trimmedColor.toUpperCase()
+  }
+
+  return fallback
+}
+
+function getTerritoryColorByIndex(index: number) {
+  return getThemeColorByIndex(index)
 }
 
 function fallbackPlayerName(player: Pick<TerritoryPlayer, 'id' | 'position'>) {
@@ -89,7 +91,7 @@ function normalizePlayer(
   const position = Number.isFinite(Number(player.position))
     ? Number(player.position)
     : index + 1
-  const fallbackColor = getThemeColorByIndex(index)
+  const fallbackColor = getTerritoryColorByIndex(index)
 
   return {
     ...player,
@@ -108,7 +110,10 @@ function normalizeClaimsByMap(
         id,
         {
           ...claim,
-          playerColor: normalizeThemeColor(claim.playerColor, index),
+          playerColor: sanitizeColor(
+            claim.playerColor,
+            getTerritoryColorByIndex(index),
+          ),
         },
       ]),
     ),
@@ -117,7 +122,10 @@ function normalizeClaimsByMap(
         id,
         {
           ...claim,
-          playerColor: normalizeThemeColor(claim.playerColor, index),
+          playerColor: sanitizeColor(
+            claim.playerColor,
+            getTerritoryColorByIndex(index),
+          ),
         },
       ]),
     ),
@@ -173,7 +181,7 @@ export function useTerritoryMap(sessionId = 'default') {
     const nextPosition =
       players.reduce((max, player) => Math.max(max, player.position), 0) + 1
     const id = `person-${nextPosition}`
-    const fallbackColor = getThemeColorByIndex(nextPosition - 1)
+    const fallbackColor = getTerritoryColorByIndex(nextPosition - 1)
 
     const player: TerritoryPlayer = {
       id,
@@ -231,7 +239,8 @@ export function useTerritoryMap(sessionId = 'default') {
     const claimsByMap = normalizeClaimsByMap(state.claimsByMap)
 
     await playersStore.deleteItem(playerId)
-    await stateStore.merge({
+    await stateStore.save({
+      ...state,
       claimsByMap: {
         world: Object.fromEntries(
           Object.entries(claimsByMap.world).filter(
@@ -323,7 +332,8 @@ export function useTerritoryMap(sessionId = 'default') {
     }
 
     return stateStore
-      .merge({
+      .save({
+        ...state,
         claimsByMap: {
           ...state.claimsByMap,
           [mapId]: nextMapClaims,
@@ -350,7 +360,8 @@ export function useTerritoryMap(sessionId = 'default') {
     }
 
     return stateStore
-      .merge({
+      .save({
+        ...state,
         claimsByMap: {
           ...state.claimsByMap,
           [action.mapId]: nextMapClaims,
@@ -362,7 +373,8 @@ export function useTerritoryMap(sessionId = 'default') {
   }
 
   const resetCurrentMap = () =>
-    stateStore.merge({
+    stateStore.save({
+      ...state,
       claimsByMap: {
         ...state.claimsByMap,
         [state.activeMap]: {},
