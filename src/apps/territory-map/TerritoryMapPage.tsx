@@ -98,7 +98,7 @@ export function TerritoryMapPage() {
     updatePlayerColor,
     updatePlayerName,
   } = useTerritoryMap()
-  const [isDatasetOpen, setIsDatasetOpen] = useState(false)
+  const [isDatasetOpen, setIsDatasetOpen] = useState(true)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
   const [view, setView] = useState<MapView>({
     offset: { x: 0, y: 0 },
@@ -345,24 +345,18 @@ export function TerritoryMapPage() {
             </p>
           )}
         </div>
-
-        <Tabs value={state.activeMap} onValueChange={handleMapChange}>
-          <TabsList>
-            <TabsTrigger value="world">Welt</TabsTrigger>
-            <TabsTrigger value="germany">Deutschland</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="overflow-hidden">
           <CardHeader className="gap-4 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-xl">
-                  {mapLabels[state.activeMap]}
-                </CardTitle>
-              </div>
+              <Tabs value={state.activeMap} onValueChange={handleMapChange}>
+                <TabsList>
+                  <TabsTrigger value="world">Welt</TabsTrigger>
+                  <TabsTrigger value="germany">Deutschland</TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               <div className="flex flex-wrap gap-2 [&_button]:size-11 sm:[&_button]:size-9">
                 <Button
@@ -381,7 +375,12 @@ export function TerritoryMapPage() {
 
           <CardContent className="p-0">
             <div
-              className="h-[56svh] min-h-[320px] touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing sm:h-[62svh] sm:min-h-[420px]"
+              className={[
+                'touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing',
+                state.activeMap === 'germany'
+                  ? 'h-[44svh] min-h-[300px] sm:h-[50svh] sm:min-h-[360px]'
+                  : 'h-[56svh] min-h-[320px] sm:h-[62svh] sm:min-h-[420px]',
+              ].join(' ')}
               onWheel={(event) => {
                 event.preventDefault()
                 applyZoomAt(
@@ -519,7 +518,7 @@ export function TerritoryMapPage() {
               <svg
                 ref={svgRef}
                 viewBox={mapViewBoxes[state.activeMap]}
-                className="size-full"
+                className="block size-full"
                 aria-label={mapLabels[state.activeMap]}
               >
                 <defs>
