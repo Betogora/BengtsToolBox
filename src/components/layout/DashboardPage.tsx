@@ -117,7 +117,7 @@ function AppTile({ app }: AppTileProps) {
           <AppPreview appId={app.id} />
         </div>
 
-        <CardHeader className="relative z-10 flex h-full max-w-[64%] flex-col justify-start gap-5 p-6">
+        <CardHeader className="relative z-10 flex h-full max-w-[64%] flex-col justify-start gap-3 p-5">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)] transition-colors group-hover:bg-secondary group-hover:text-secondary-foreground">
             <app.Icon className="size-6" />
           </div>
