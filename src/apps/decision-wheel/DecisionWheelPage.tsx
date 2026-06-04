@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CircleDot,
   History,
@@ -43,6 +43,9 @@ type WheelSegment = DecisionWheelEntry & {
 const wheelSize = 260
 const wheelCenter = wheelSize / 2
 const wheelRadius = 118
+const spinDurationMs = 4400
+const spinSettleDelayMs = spinDurationMs + 150
+const spinFullRotationDegrees = 1800
 
 function normalizeRotation(value: number) {
   return ((value % 360) + 360) % 360
@@ -126,7 +129,7 @@ function WheelGraphic({ entries, rotation, isSpinning }: WheelGraphicProps) {
           {
             transform: `rotate(${rotation}deg)`,
             transition: isSpinning
-              ? 'transform 2200ms cubic-bezier(0.12, 0.72, 0.18, 1)'
+              ? `transform ${spinDurationMs}ms cubic-bezier(0.12, 0.72, 0.18, 1)`
               : 'none',
           } as CSSProperties
         }
@@ -222,20 +225,36 @@ export function DecisionWheelPage() {
     clearHistory,
     data,
     error,
+    commitSpinResult,
+    prepareSpinResult,
     removeEntry,
     resetToExamples,
-    spin,
     updateEntry,
   } = useDecisionWheel()
   const [rotation, setRotation] = useState(0)
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinEntries, setSpinEntries] = useState<DecisionWheelEntry[] | null>(null)
+  const spinTimeoutRef = useRef<number | null>(null)
+  const isSpinLockedRef = useRef(false)
   const visibleEntries = spinEntries ?? data.entries
   const canSpin = data.entries.length > 0 && !isSpinning
 
+  useEffect(
+    () => () => {
+      if (spinTimeoutRef.current) {
+        window.clearTimeout(spinTimeoutRef.current)
+      }
+    },
+    [],
+  )
+
   const handleSpin = () => {
+    if (isSpinLockedRef.current) {
+      return
+    }
+
     const entriesBeforeSpin = data.entries
-    const result = spin()
+    const result = prepareSpinResult(entriesBeforeSpin)
 
     if (!result) {
       toast.error('Lege zuerst mindestens eine Option an.')
@@ -250,18 +269,32 @@ export function DecisionWheelPage() {
       return
     }
 
+    const selectedSegmentSize = selectedSegment.endAngle - selectedSegment.startAngle
+    const targetAngle =
+      selectedSegment.startAngle + Math.random() * selectedSegmentSize
     const currentRotation = normalizeRotation(rotation)
     const correction =
-      (360 - normalizeRotation(currentRotation + selectedSegment.midAngle)) % 360
+      (360 - normalizeRotation(currentRotation + targetAngle)) % 360
 
+    isSpinLockedRef.current = true
     setSpinEntries(entriesBeforeSpin)
     setIsSpinning(true)
-    setRotation(rotation + 1800 + correction)
-    window.setTimeout(() => {
-      setIsSpinning(false)
-      setSpinEntries(null)
-      toast.success(`${result.text} wurde gezogen.`)
-    }, 2250)
+    setRotation(rotation + spinFullRotationDegrees + correction)
+    spinTimeoutRef.current = window.setTimeout(() => {
+      commitSpinResult(result)
+        .then(() => {
+          toast.success(`${result.text} wurde gezogen.`)
+        })
+        .catch(() => {
+          toast.error('Das Ergebnis konnte nicht gespeichert werden.')
+        })
+        .finally(() => {
+          spinTimeoutRef.current = null
+          isSpinLockedRef.current = false
+          setIsSpinning(false)
+          setSpinEntries(null)
+        })
+    }, spinSettleDelayMs)
   }
 
   return (

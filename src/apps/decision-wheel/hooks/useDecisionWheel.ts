@@ -137,43 +137,45 @@ export function useDecisionWheel(stateId = 'default') {
       updatedBy: session.userId,
     })
 
-  const spin = () => {
-    // The wheel animation is visual only; this weighted draw decides the winner first.
-    const winner = pickWeightedWinner(data.entries)
+  const prepareSpinResult = (entriesSnapshot = data.entries) => {
+    const winner = pickWeightedWinner(entriesSnapshot)
 
     if (!winner) {
       return null
     }
 
+    const winnerIndex = entriesSnapshot.findIndex((entry) => entry.id === winner.id)
     const result: DecisionWheelResult = {
       id: `result-${createRandomId()}`,
       entryId: winner.id,
       text: getEntryDisplayText(
         winner,
-        data.entries.findIndex((entry) => entry.id === winner.id),
+        winnerIndex,
       ),
       color: winner.color,
       weight: winner.weight,
       createdAt: new Date().toISOString(),
     }
+
+    return result
+  }
+
+  const commitSpinResult = (result: DecisionWheelResult) =>
     store.merge({
-      entries: data.entries,
       lastResult: result,
       history: [result, ...data.history].slice(0, 12),
       updatedBy: session.userId,
     })
 
-    return result
-  }
-
   return {
     ...store,
     addEntry,
     clearHistory,
+    commitSpinResult,
     data,
+    prepareSpinResult,
     removeEntry,
     resetToExamples,
-    spin,
     updateEntry,
   }
 }
