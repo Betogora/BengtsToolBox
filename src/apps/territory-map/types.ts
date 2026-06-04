@@ -7,11 +7,18 @@ export type Territory = {
   isoCode?: string
 }
 
+export type TerritoryClaimOwner = {
+  playerId: string
+  playerName: string
+  playerColor: string
+}
+
 export type TerritoryClaim = {
   territoryId: string
   playerId: string
   playerName: string
   playerColor: string
+  owners: TerritoryClaimOwner[]
   claimedAtClientIso: string
 }
 

@@ -8,8 +8,9 @@ import { memo, useState, type ReactNode } from 'react'
 import { territoriesByMap } from '@/apps/territory-map/data/territories'
 import { unclaimedValue } from '@/apps/territory-map/mapConfig'
 import type {
-  TerritoryDataset,
   Territory,
+  TerritoryClaim,
+  TerritoryDataset,
   TerritoryPlayer,
   TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
@@ -35,46 +36,39 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-function toDateTimeLocalValue(value: string) {
+function toDateInputValue(value: string) {
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
     return ''
   }
 
-  const offsetMs = date.getTimezoneOffset() * 60_000
+  const year = String(date.getFullYear())
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
 
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
+  return `${year}-${month}-${day}`
 }
 
-function fromDateTimeLocalValue(value: string, fallback: string) {
+function fromDateInputValue(value: string, fallback: string) {
   if (!value) {
     return fallback
   }
 
-  const date = new Date(value)
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(year, month - 1, day, 12)
 
   return Number.isNaN(date.getTime()) ? fallback : date.toISOString()
 }
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return '-'
-  }
-
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return '-'
-  }
-
-  return date.toLocaleString()
+function getEventDateKey(event: TerritoryVisitEvent) {
+  return toDateInputValue(event.createdAtClientIso)
 }
 
 function getEventTable(events: TerritoryVisitEvent[]) {
   return [...events].sort(
     (left, right) =>
-      Date.parse(right.createdAtClientIso) - Date.parse(left.createdAtClientIso) ||
+      getEventDateKey(right).localeCompare(getEventDateKey(left)) ||
       right.position - left.position,
   )
 }
@@ -114,7 +108,7 @@ export function ConfirmButton({
               setOpen(false)
             }}
           >
-            Bestaetigen
+            Bestätigen
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -137,43 +131,78 @@ export const TerritoryShape = memo(function TerritoryShape({
   players,
   territory,
 }: {
-  claim?: {
-    playerId: string
-    playerName: string
-    playerColor: string
-  }
+  claim?: TerritoryClaim
   isSelected: boolean
   onSelect: () => void
   players: TerritoryPlayer[]
   territory: Territory
 }) {
-  const ownerColor = claim
-    ? getClaimColor(claim.playerId, claim.playerColor, players)
-    : 'url(#territory-unclaimed)'
-  const ownerLabel = claim ? claim.playerName : 'ungeclaimed'
+  const owners = claim?.owners?.length
+    ? claim.owners
+    : claim
+      ? [
+          {
+            playerId: claim.playerId,
+            playerName: claim.playerName,
+            playerColor: claim.playerColor,
+          },
+        ]
+      : []
+  const patternId = `territory-shared-${territory.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`
+  const ownerColor =
+    owners.length > 1
+      ? `url(#${patternId})`
+      : owners.length === 1
+        ? getClaimColor(owners[0].playerId, owners[0].playerColor, players)
+        : 'url(#territory-unclaimed)'
+  const ownerLabel =
+    owners.length > 0
+      ? owners.map((owner) => owner.playerName).join(', ')
+      : 'nicht bereist'
 
   return (
-    <path
-      d={territory.path}
-      role="button"
-      tabIndex={0}
-      aria-label={`${territory.name}, ${ownerLabel}`}
-      className="cursor-pointer transition-[opacity,stroke-width] focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105"
-      data-territory-id={territory.id}
-      fill={ownerColor}
-      opacity={claim ? 0.94 : 1}
-      stroke={isSelected ? 'var(--foreground)' : 'var(--background)'}
-      strokeWidth={isSelected ? 2.2 : 0.75}
-      vectorEffect="non-scaling-stroke"
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onSelect()
-        }
-      }}
-    >
-      <title>{`${territory.name}: ${ownerLabel}`}</title>
-    </path>
+    <>
+      {owners.length > 1 && (
+        <pattern
+          id={patternId}
+          width={owners.length * 8}
+          height="8"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          {owners.map((owner, index) => (
+            <rect
+              key={owner.playerId}
+              x={index * 8}
+              width="8"
+              height="8"
+              fill={getClaimColor(owner.playerId, owner.playerColor, players)}
+            />
+          ))}
+        </pattern>
+      )}
+      <path
+        d={territory.path}
+        role="button"
+        tabIndex={0}
+        aria-label={`${territory.name}, ${ownerLabel}`}
+        className="cursor-pointer transition-[opacity,stroke-width] focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105"
+        data-territory-id={territory.id}
+        fill={ownerColor}
+        opacity={claim ? 0.94 : 1}
+        stroke={isSelected ? 'var(--foreground)' : 'var(--background)'}
+        strokeWidth={isSelected ? 2.2 : 0.75}
+        vectorEffect="non-scaling-stroke"
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onSelect()
+          }
+        }}
+      >
+        <title>{`${territory.name}: ${ownerLabel}`}</title>
+      </path>
+    </>
   )
 })
 
@@ -240,10 +269,7 @@ export function ClaimDialog({
   players,
   territory,
 }: {
-  claim?: {
-    playerId: string
-    playerName: string
-  }
+  claim?: TerritoryClaim
   onClaim: (playerId: string) => Promise<void>
   onOpenChange: (open: boolean) => void
   players: TerritoryPlayer[]
@@ -257,6 +283,10 @@ export function ClaimDialog({
     return null
   }
 
+  const ownerNames = claim?.owners?.length
+    ? claim.owners.map((owner) => owner.playerName).join(', ')
+    : claim?.playerName
+
   return (
     <Dialog open={Boolean(territory)} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -264,7 +294,7 @@ export function ClaimDialog({
           <DialogTitle>{territory.name} Sushi-bereisen?</DialogTitle>
           <DialogDescription>
             {claim
-              ? `Aktuell bereist von ${claim.playerName}.`
+              ? `Aktuell bereist von ${ownerNames}.`
               : 'Dieses Territorium ist noch frei.'}
           </DialogDescription>
         </DialogHeader>
@@ -282,7 +312,7 @@ export function ClaimDialog({
                     {player.name}
                   </SelectItem>
                 ))}
-                <SelectItem value={unclaimedValue}>Unclaimed</SelectItem>
+                <SelectItem value={unclaimedValue}>Nicht bereist</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -340,7 +370,7 @@ export function TerritoryEventTable({
       <table className="w-full min-w-[780px] text-sm">
         <thead className="bg-secondary/70 text-left">
           <tr>
-            <th className="px-3 py-2 font-semibold">Zeitpunkt</th>
+            <th className="px-3 py-2 font-semibold">Datum</th>
             <th className="px-3 py-2 font-semibold">Spieler</th>
             <th className="px-3 py-2 font-semibold">Territorium</th>
             <th className="px-3 py-2 text-right font-semibold">Aktion</th>
@@ -351,12 +381,12 @@ export function TerritoryEventTable({
             <tr key={event.id} className="border-t">
               <td className="px-3 py-2">
                 <Input
-                  type="datetime-local"
+                  type="date"
                   className="h-9"
-                  value={toDateTimeLocalValue(event.createdAtClientIso)}
+                  value={toDateInputValue(event.createdAtClientIso)}
                   onChange={(inputEvent) =>
                     onUpdateEvent(event.id, {
-                      createdAtClientIso: fromDateTimeLocalValue(
+                      createdAtClientIso: fromDateInputValue(
                         inputEvent.currentTarget.value,
                         event.createdAtClientIso,
                       ),
@@ -414,14 +444,14 @@ export function TerritoryEventTable({
               </td>
               <td className="px-3 py-2 text-right">
                 <ConfirmButton
-                  title="Bereisung loeschen?"
+                  title="Bereisung löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Bereisung loeschen"
+                      aria-label="Bereisung löschen"
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -432,86 +462,6 @@ export function TerritoryEventTable({
           ))}
         </tbody>
       </table>
-    </div>
-  )
-}
-
-export function ArchivedTerritoryDatasetCard({
-  dataset,
-  onDelete,
-  onRename,
-}: {
-  dataset: TerritoryDataset
-  onDelete: (datasetId: string) => void | Promise<void>
-  onRename: (datasetId: string, name: string) => void | Promise<void>
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-  const events = getEventTable(dataset.events)
-
-  return (
-    <div className="rounded-lg border">
-      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          className="min-w-0 flex-1 text-left"
-          onClick={() => setIsOpen((current) => !current)}
-        >
-          <div className="font-semibold">{dataset.name || 'Archivierter Datensatz'}</div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {formatDateTime(dataset.archivedAtClientIso)} - {events.length}{' '}
-            Bereisungen
-          </div>
-        </button>
-        <div className="flex items-center gap-2">
-          <Input
-            aria-label="Archivname"
-            className="h-9 w-56"
-            defaultValue={dataset.name}
-            onBlur={(event) => onRename(dataset.id, event.currentTarget.value)}
-          />
-          <ConfirmButton
-            title="Datensatz loeschen?"
-            description="Der archivierte Datensatz wird dauerhaft entfernt."
-            onConfirm={() => onDelete(dataset.id)}
-            trigger={
-              <Button variant="ghost" size="icon" aria-label="Archiv loeschen">
-                <Trash2 className="size-4" />
-              </Button>
-            }
-          />
-        </div>
-      </div>
-      {isOpen && (
-        <div className="grid gap-2 border-t p-4">
-          {events.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-              Dieser Datensatz hat keine Bereisungen.
-            </div>
-          ) : (
-            events.map((event) => (
-              <div
-                key={event.id}
-                className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className="size-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: event.playerColor }}
-                  />
-                  <span className="min-w-0 truncate font-medium">
-                    {event.playerName}
-                  </span>
-                  <span className="min-w-0 truncate text-sm text-muted-foreground">
-                    {event.territoryName}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {formatDateTime(event.createdAtClientIso)}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
     </div>
   )
 }

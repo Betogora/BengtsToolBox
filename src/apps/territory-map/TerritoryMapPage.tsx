@@ -1,9 +1,9 @@
 import {
-  Archive,
   BarChart3,
+  ChevronDown,
+  ChevronRight,
   ListOrdered,
   MousePointer2,
-  RotateCcw,
   Trash2,
   UtensilsCrossed,
   Users,
@@ -19,9 +19,7 @@ import { toast } from 'sonner'
 
 import {
   AddEaterCard,
-  ArchivedTerritoryDatasetCard,
   ClaimDialog,
-  ConfirmButton,
   InlineTextEdit,
   TerritoryEventTable,
   TerritoryShape,
@@ -85,25 +83,22 @@ export function TerritoryMapPage() {
   const {
     activeDataset,
     addPlayer,
-    archivedDatasets,
     claimTerritory,
     claimsByMap,
     currentClaims,
-    deleteDataset,
     deleteEvent,
     error,
     isLoading,
     players,
     removePlayer,
-    resetAndArchiveDataset,
     setActiveMap,
     state,
     unclaimTerritory,
-    updateArchivedDatasetName,
     updateEvent,
     updatePlayerColor,
     updatePlayerName,
   } = useTerritoryMap()
+  const [isDatasetOpen, setIsDatasetOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
   const [view, setView] = useState<MapView>({
     offset: { x: 0, y: 0 },
@@ -143,7 +138,15 @@ export function TerritoryMapPage() {
   const sushiScores = useMemo<SushiScore[]>(() => {
     const getMapScore = (playerId: string, mapId: TerritoryMapId) =>
       Object.values(claimsByMap[mapId]).filter(
-        (claim) => claim.playerId === playerId,
+        (claim) =>
+          (claim.owners?.length
+            ? claim.owners
+            : [
+                {
+                  playerId: claim.playerId,
+                },
+              ]
+          ).some((owner) => owner.playerId === playerId),
       ).length
 
     return players
@@ -366,8 +369,8 @@ export function TerritoryMapPage() {
                   variant="outline"
                   size="icon"
                   className="size-11 sm:size-9"
-                  aria-label="Ansicht zuruecksetzen"
-                  title="Ansicht zuruecksetzen"
+                  aria-label="Ansicht zurücksetzen"
+                  title="Ansicht zurücksetzen"
                   onClick={resetView}
                 >
                   <MousePointer2 className="size-4" />
@@ -595,7 +598,7 @@ export function TerritoryMapPage() {
                     </div>
                     <Input
                       type="color"
-                      aria-label={`${player.name} Farbe waehlen`}
+                      aria-label={`${player.name} Farbe wählen`}
                       className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
                       value={player.color}
                       onChange={(event) =>
@@ -680,65 +683,36 @@ export function TerritoryMapPage() {
               <BarChart3 className="size-5 text-primary" />
               Datensatz
             </CardTitle>
-            <ConfirmButton
-              title="Datensatz archivieren und neu starten?"
-              description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
-              onConfirm={async () => {
-                await resetAndArchiveDataset()
-                toast.success('Datensatz archiviert und neu gestartet.')
-              }}
-              trigger={
-                <Button variant="outline">
-                  <RotateCcw className="size-4" />
-                  Reset
-                </Button>
-              }
-            />
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={isDatasetOpen ? 'Datensatz einklappen' : 'Datensatz ausklappen'}
+              title={isDatasetOpen ? 'Datensatz einklappen' : 'Datensatz ausklappen'}
+              onClick={() => setIsDatasetOpen((current) => !current)}
+            >
+              {isDatasetOpen ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )}
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <TerritoryEventTable
-            dataset={activeDataset}
-            players={players}
-            onDeleteEvent={async (eventId) => {
-              await deleteEvent(eventId)
-              toast.success('Bereisung geloescht.')
-            }}
-            onUpdateEvent={(eventId, partialValue) =>
-              updateEvent(eventId, partialValue)
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Archive className="size-5 text-primary" />
-            Alte Datensaetze
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          {archivedDatasets.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Noch keine archivierten Datensaetze.
-            </div>
-          ) : (
-            archivedDatasets.map((dataset) => (
-              <ArchivedTerritoryDatasetCard
-                key={dataset.id}
-                dataset={dataset}
-                onDelete={async (datasetId) => {
-                  await deleteDataset(datasetId)
-                  toast.success('Datensatz geloescht.')
-                }}
-                onRename={(datasetId, name) =>
-                  updateArchivedDatasetName(datasetId, name)
-                }
-              />
-            ))
-          )}
-        </CardContent>
+        {isDatasetOpen && (
+          <CardContent>
+            <TerritoryEventTable
+              dataset={activeDataset}
+              players={players}
+              onDeleteEvent={async (eventId) => {
+                await deleteEvent(eventId)
+                toast.success('Bereisung gelöscht.')
+              }}
+              onUpdateEvent={(eventId, partialValue) =>
+                updateEvent(eventId, partialValue)
+              }
+            />
+          </CardContent>
+        )}
       </Card>
 
       <ClaimDialog

@@ -1,4 +1,4 @@
-import { ArrowRight, Coins, Target } from 'lucide-react'
+import { Coins, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -34,15 +34,9 @@ function GameTile({ game }: { game: GameApp }) {
       <Card className="relative h-full overflow-hidden transition-colors group-hover:border-primary group-hover:bg-card/95">
         <div className="absolute inset-x-0 top-0 h-2 bg-primary" />
         <CardHeader className="grid min-h-36 gap-6 p-6 pt-7">
-          <div className="flex items-start justify-between gap-5">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)]">
+          <div>
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)] transition-colors group-hover:bg-secondary group-hover:text-secondary-foreground">
               <game.Icon className="size-6" />
-            </div>
-            <div
-              className="flex size-9 shrink-0 translate-x-1 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-all group-hover:translate-x-0 group-hover:bg-primary group-hover:text-primary-foreground"
-              aria-hidden="true"
-            >
-              <ArrowRight className="size-4" />
             </div>
           </div>
 

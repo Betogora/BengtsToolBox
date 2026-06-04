@@ -1,4 +1,4 @@
-import { ArrowRight, Layers3 } from 'lucide-react'
+import { Layers3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { apps, type HubApp } from '@/apps/registry'
@@ -117,15 +117,8 @@ function AppTile({ app }: AppTileProps) {
           <AppPreview appId={app.id} />
         </div>
 
-        <div
-          className="absolute right-[36%] top-6 z-20 flex size-9 translate-x-1/2 items-center justify-center rounded-md bg-secondary text-secondary-foreground transition-all group-hover:translate-x-[calc(50%+0.25rem)] group-hover:bg-primary group-hover:text-primary-foreground"
-          aria-hidden="true"
-        >
-          <ArrowRight className="size-4" />
-        </div>
-
-        <CardHeader className="relative z-10 grid h-full max-w-[64%] content-between gap-5 p-6">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)]">
+        <CardHeader className="relative z-10 flex h-full max-w-[64%] flex-col justify-start gap-5 p-6">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)] transition-colors group-hover:bg-secondary group-hover:text-secondary-foreground">
             <app.Icon className="size-6" />
           </div>
 

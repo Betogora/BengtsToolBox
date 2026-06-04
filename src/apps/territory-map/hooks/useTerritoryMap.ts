@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { territoriesByMap } from '@/apps/territory-map/data/territories'
 import type {
   TerritoryClaim,
+  TerritoryClaimOwner,
   TerritoryClaimsByMap,
   TerritoryDataset,
   TerritoryMapId,
@@ -147,6 +148,13 @@ function normalizeClaimsByMap(
         id,
         {
           ...claim,
+          owners: claim.owners ?? [
+            {
+              playerId: claim.playerId,
+              playerName: claim.playerName,
+              playerColor: claim.playerColor,
+            },
+          ],
           playerColor: sanitizeColor(
             claim.playerColor,
             getTerritoryColorByIndex(index),
@@ -159,6 +167,13 @@ function normalizeClaimsByMap(
         id,
         {
           ...claim,
+          owners: claim.owners ?? [
+            {
+              playerId: claim.playerId,
+              playerName: claim.playerName,
+              playerColor: claim.playerColor,
+            },
+          ],
           playerColor: sanitizeColor(
             claim.playerColor,
             getTerritoryColorByIndex(index),
@@ -193,9 +208,25 @@ function compareEventsAscending(
   right: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
 ) {
   return (
-    Date.parse(left.createdAtClientIso) - Date.parse(right.createdAtClientIso) ||
+    getLocalDateKey(left.createdAtClientIso).localeCompare(
+      getLocalDateKey(right.createdAtClientIso),
+    ) ||
     left.position - right.position
   )
+}
+
+function getLocalDateKey(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const year = String(date.getFullYear())
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
 function normalizeEvent(
@@ -242,13 +273,51 @@ function getCurrentClaims(events: TerritoryVisitEvent[]): TerritoryClaimsByMap {
     world: {},
     germany: {},
   }
+  const latestDaysByTerritory: Record<TerritoryMapId, Record<string, string>> = {
+    world: {},
+    germany: {},
+  }
+  const ownersByTerritory: Record<
+    TerritoryMapId,
+    Record<string, Map<string, TerritoryClaimOwner>>
+  > = {
+    world: {},
+    germany: {},
+  }
 
   ;[...events].sort(compareEventsAscending).forEach((event) => {
-    claimsByMap[event.mapId][event.territoryId] = {
-      territoryId: event.territoryId,
+    const eventDay = getLocalDateKey(event.createdAtClientIso)
+    const currentDay = latestDaysByTerritory[event.mapId][event.territoryId]
+
+    if (!eventDay) {
+      return
+    }
+
+    if (!currentDay || eventDay > currentDay) {
+      latestDaysByTerritory[event.mapId][event.territoryId] = eventDay
+      ownersByTerritory[event.mapId][event.territoryId] = new Map()
+    }
+
+    if (eventDay !== latestDaysByTerritory[event.mapId][event.territoryId]) {
+      return
+    }
+
+    const owners = ownersByTerritory[event.mapId][event.territoryId]
+
+    owners.set(event.playerId, {
       playerId: event.playerId,
       playerName: event.playerName,
       playerColor: event.playerColor,
+    })
+
+    const firstOwner = [...owners.values()][0]
+
+    claimsByMap[event.mapId][event.territoryId] = {
+      territoryId: event.territoryId,
+      playerId: firstOwner.playerId,
+      playerName: firstOwner.playerName,
+      playerColor: firstOwner.playerColor,
+      owners: [...owners.values()],
       claimedAtClientIso: event.createdAtClientIso,
     }
   })
@@ -276,6 +345,13 @@ function createEventsFromLegacyClaims(
           playerId: claim.playerId,
           playerName: claim.playerName,
           playerColor: claim.playerColor,
+          owners: claim.owners ?? [
+            {
+              playerId: claim.playerId,
+              playerName: claim.playerName,
+              playerColor: claim.playerColor,
+            },
+          ],
           createdAtClientIso,
           createdAtLabel: createdAtClientIso,
           position,
@@ -284,30 +360,25 @@ function createEventsFromLegacyClaims(
     )
 }
 
-function getLatestEventIdForTerritory(
+function getLatestEventIdsForTerritoryDay(
   events: TerritoryVisitEvent[],
   mapId: TerritoryMapId,
   territoryId: string,
 ) {
-  return [...events]
-    .filter((event) => event.mapId === mapId && event.territoryId === territoryId)
-    .sort((left, right) => compareEventsAscending(right, left))[0]?.id
-}
+  const territoryEvents = events.filter(
+    (event) => event.mapId === mapId && event.territoryId === territoryId,
+  )
+  const latestDay = territoryEvents
+    .map((event) => getLocalDateKey(event.createdAtClientIso))
+    .filter(Boolean)
+    .sort()
+    .at(-1)
 
-function formatArchiveDatasetName(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Datensatz'
-  }
-
-  const year = String(date.getFullYear())
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-
-  return `Datensatz ${year}-${month}-${day} ${hours}:${minutes}`
+  return latestDay
+    ? territoryEvents
+        .filter((event) => getLocalDateKey(event.createdAtClientIso) === latestDay)
+        .map((event) => event.id)
+    : []
 }
 
 export function useTerritoryMap(sessionId = 'default') {
@@ -350,13 +421,6 @@ export function useTerritoryMap(sessionId = 'default') {
     datasets.find((dataset) => dataset.id === activeDatasetId) ??
     datasets.find((dataset) => dataset.status === 'active') ??
     createDataset()
-  const archivedDatasets = datasets
-    .filter((dataset) => dataset.status === 'archived')
-    .sort(
-      (left, right) =>
-        Date.parse(right.archivedAtClientIso ?? right.createdAtClientIso) -
-        Date.parse(left.archivedAtClientIso ?? left.createdAtClientIso),
-    )
   const claimsByMap = useMemo(
     () => getCurrentClaims(activeDataset.events),
     [activeDataset.events],
@@ -549,14 +613,18 @@ export function useTerritoryMap(sessionId = 'default') {
   ) => {
     void previousClaimOverride
 
-    const eventId = getLatestEventIdForTerritory(
+    const eventIds = getLatestEventIdsForTerritoryDay(
       activeDataset.events,
       mapId,
       territoryId,
     )
 
-    return eventId
-      ? deleteEvent(eventId).then(() => true)
+    return eventIds.length > 0
+      ? saveActiveDataset({
+          events: activeDataset.events.filter(
+            (event) => !eventIds.includes(event.id),
+          ),
+        }).then(() => true)
       : Promise.resolve(false)
   }
 
@@ -599,44 +667,12 @@ export function useTerritoryMap(sessionId = 'default') {
       }),
     })
 
-  const resetAndArchiveDataset = async () => {
-    const now = new Date().toISOString()
-    const archiveId = `dataset-${createRandomId()}`
-    const archivePosition =
-      datasets.reduce((max, dataset) => Math.max(max, dataset.position), 0) + 1
-    const archiveValue = omitDatasetId(activeDataset)
-    const newDatasetValue = omitDatasetId(createDataset(1))
-
-    await datasetsStore.setItem(archiveId, {
-      ...archiveValue,
-      name: formatArchiveDatasetName(now),
-      position: archivePosition,
-      status: 'archived',
-      archivedAtClientIso: now,
-      lastUpdatedBy: session.userId,
-    })
-    await datasetsStore.setItem(activeDatasetId, {
-      ...newDatasetValue,
-      lastUpdatedBy: session.userId,
-    })
-  }
-
-  const updateArchivedDatasetName = (datasetId: string, name: string) =>
-    datasetsStore.mergeItem(datasetId, {
-      name: name.trim() || 'Archivierter Datensatz',
-      lastUpdatedBy: session.userId,
-    })
-
-  const deleteDataset = (datasetId: string) => datasetsStore.deleteItem(datasetId)
-
   return {
     activeDataset,
     addPlayer,
-    archivedDatasets,
     claimTerritory,
     claimsByMap,
     currentClaims,
-    deleteDataset,
     deleteEvent,
     error: stateStore.error ?? playersStore.error ?? datasetsStore.error,
     isLoading:
@@ -645,13 +681,11 @@ export function useTerritoryMap(sessionId = 'default') {
       stateStore.isRealtime && playersStore.isRealtime && datasetsStore.isRealtime,
     players,
     removePlayer,
-    resetAndArchiveDataset,
     session,
     setActiveMap,
     state,
     territoryColorPresets,
     unclaimTerritory,
-    updateArchivedDatasetName,
     updateEvent,
     updatePlayerColor,
     updatePlayerName,
