@@ -9,17 +9,12 @@ import type {
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
 import { firebasePaths } from '@/lib/firebase/paths'
-import { themePalette } from '@/lib/theme'
+import { normalizeThemeColor, participantColorPresets } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-export const territoryColorPresets = [
-  themePalette.blueberry,
-  themePalette.tangerine,
-  themePalette.daffodil,
-  themePalette.darkNavy,
-] as const
+export const territoryColorPresets = [...participantColorPresets]
 
 const emptyClaimsByMap: TerritoryClaimsByMap = {
   world: {},
@@ -60,13 +55,11 @@ function createRandomId() {
 }
 
 function sanitizeColor(color: string, fallback: string) {
-  const trimmedColor = color.trim()
+  const fallbackIndex = territoryColorPresets.findIndex(
+    (preset) => preset.toLowerCase() === fallback.toLowerCase(),
+  )
 
-  if (/^#[0-9a-f]{6}$/i.test(trimmedColor)) {
-    return trimmedColor.toUpperCase()
-  }
-
-  return fallback
+  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
 }
 
 function getTerritoryColorByIndex(index: number) {

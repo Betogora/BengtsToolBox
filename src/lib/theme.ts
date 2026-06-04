@@ -7,14 +7,14 @@ export const themePalette = {
 } as const
 
 export const participantColorPresets = [
-  themePalette.skyBlue,
+  themePalette.blueberry,
   themePalette.tangerine,
   themePalette.daffodil,
   themePalette.darkNavy,
 ] as const
 
 export const teamThemeColors = {
-  blue: themePalette.skyBlue,
+  blue: themePalette.blueberry,
   yellow: themePalette.daffodil,
   unassigned: themePalette.tangerine,
 } as const
@@ -38,6 +38,10 @@ export function normalizeThemeColor(color: string | undefined, fallbackIndex = 0
 
   if (!normalizedColor) {
     return getThemeColorByIndex(fallbackIndex)
+  }
+
+  if (normalizedColor === themePalette.skyBlue) {
+    return themePalette.blueberry
   }
 
   return normalizedColor
