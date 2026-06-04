@@ -15,10 +15,10 @@ export function AppShell() {
     <div className="min-h-svh">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex min-w-0 items-center">
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold leading-none">
-                Bengts ToolBox
+          <Link to="/" className="flex items-center">
+            <span>
+              <span className="block whitespace-nowrap text-sm font-semibold leading-none">
+                BengtsToolBox
               </span>
             </span>
           </Link>
@@ -71,13 +71,22 @@ export function AppShell() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/">Dashboard</Link>
+                  <Link to="/" className="gap-2">
+                    <Home className="size-4" />
+                    Dashboard
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/apps/diagnostics">Diagnose</Link>
+                  <Link to="/apps/diagnostics" className="gap-2">
+                    <Stethoscope className="size-4" />
+                    Diagnose
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/schlag-den-rabe">Schlag den Raab</Link>
+                  <Link to="/schlag-den-rabe" className="gap-2">
+                    <Target className="size-4" />
+                    Schlag den Raab
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
