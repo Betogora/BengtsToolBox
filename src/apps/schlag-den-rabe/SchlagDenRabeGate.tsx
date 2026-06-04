@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -57,9 +56,6 @@ export function SchlagDenRabeGate({ children }: { children: ReactNode }) {
             <Target className="size-6" />
           </div>
           <CardTitle className="text-2xl">Schlag den Raab</CardTitle>
-          <CardDescription>
-            Dieser Bereich ist mit einem einfachen Passwort geschützt.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4" onSubmit={handleSubmit}>

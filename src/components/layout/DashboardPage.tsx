@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { apps, type HubApp } from '@/apps/registry'
 import {
   Card,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -52,7 +51,7 @@ function AppTile({ app }: AppTileProps) {
 export function DashboardPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-8 sm:px-6 lg:py-12">
-      <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
+      <section className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
         <div className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
             App-Hub
@@ -62,17 +61,12 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <Card className="bg-primary text-primary-foreground">
+        <Card className="w-fit justify-self-start bg-primary text-primary-foreground lg:justify-self-end">
           <CardHeader className="flex-row items-center gap-4 p-4">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/15">
               <Layers3 className="size-5" />
             </div>
-            <div>
-              <CardTitle className="text-xl">{hubApps.length} Apps</CardTitle>
-              <CardDescription className="text-primary-foreground/75">
-                Tools, Spiele, Experimente
-              </CardDescription>
-            </div>
+            <CardTitle className="text-xl">{hubApps.length} Apps</CardTitle>
           </CardHeader>
         </Card>
       </section>
