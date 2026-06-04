@@ -90,6 +90,14 @@ function sanitizeName(
   return trimmedName || fallbackPlayerName(player)
 }
 
+function isDefaultPlayerName(name: string, position: number) {
+  return (
+    name === defaultPlayers.find((player) => player.position === position)?.name ||
+    name === `Sushi-Tourist ${position}` ||
+    name === `Esser ${position}`
+  )
+}
+
 function normalizePlayer(
   player: TerritoryPlayer,
   index: number,
@@ -98,12 +106,16 @@ function normalizePlayer(
     ? Number(player.position)
     : index + 1
   const fallbackColor = getTerritoryColorByIndex(index)
+  const name = sanitizeName(player.name ?? '', { id: player.id, position })
+  const color = isDefaultPlayerName(name, position)
+    ? getTerritoryColorByIndex(position - 1)
+    : sanitizeColor(player.color ?? fallbackColor, fallbackColor)
 
   return {
     ...player,
     position,
-    name: sanitizeName(player.name ?? '', { id: player.id, position }),
-    color: sanitizeColor(player.color ?? fallbackColor, fallbackColor),
+    name,
+    color,
   }
 }
 

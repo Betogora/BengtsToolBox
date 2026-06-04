@@ -114,6 +114,10 @@ function sanitizeName(
   return trimmedName || fallbackPlayerName(player)
 }
 
+function isDefaultPlayerName(name: string, position: number) {
+  return name === `Person ${position}`
+}
+
 function sanitizeColor(color: string, fallback: string) {
   const fallbackIndex = progressColorPresets.findIndex(
     (preset) => preset.toLowerCase() === fallback.toLowerCase(),
@@ -167,17 +171,24 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
   const position = Number.isFinite(player.position)
     ? Number(player.position)
     : index + 1
-  const fallbackColor = getThemeColorByIndex(index)
+  const fallbackColor = getThemeColorByIndex(position - 1)
+  const name = sanitizeName(player.name ?? '', { id: player.id, position })
+  const color = isDefaultPlayerName(name, position)
+    ? fallbackColor
+    : sanitizeColor(player.color ?? fallbackColor, fallbackColor)
 
   return {
     ...player,
     position,
-    name: sanitizeName(player.name ?? '', { id: player.id, position }),
-    color: sanitizeColor(player.color ?? fallbackColor, fallbackColor),
+    name,
+    color,
   }
 }
 
-function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
+function normalizeDataset(
+  dataset: ProgressDataset,
+  players: ProgressPlayer[],
+): ProgressDataset {
   const hasUnit = typeof dataset.unit === 'string'
   const unit = hasUnit ? dataset.unit : defaultUnit
   const chartTitle = dataset.chartTitle?.trim()
@@ -192,7 +203,9 @@ function normalizeDataset(dataset: ProgressDataset): ProgressDataset {
     archivedAtClientIso: dataset.archivedAtClientIso ?? null,
     events: (dataset.events ?? []).map((event, index) => ({
       ...event,
-      playerColor: normalizeThemeColor(event.playerColor, index),
+      playerColor:
+        players.find((player) => player.id === event.playerId)?.color ??
+        normalizeThemeColor(event.playerColor, index),
       valueDelta: Number.isFinite(Number(event.valueDelta))
         ? Number(event.valueDelta)
         : 1,
@@ -266,8 +279,8 @@ export function useProgressDashboard(sessionId = 'default') {
     [playersStore.data],
   )
   const datasets = useMemo(
-    () => datasetsStore.data.map(normalizeDataset),
-    [datasetsStore.data],
+    () => datasetsStore.data.map((dataset) => normalizeDataset(dataset, players)),
+    [datasetsStore.data, players],
   )
   const activeDataset =
     datasets.find((dataset) => dataset.id === stateStore.data.activeDatasetId) ??
