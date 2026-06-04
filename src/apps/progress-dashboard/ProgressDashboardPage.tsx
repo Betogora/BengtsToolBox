@@ -193,7 +193,7 @@ export function ProgressDashboardPage() {
               trigger={
                 <Button variant="outline">
                   <RotateCcw className="size-4" />
-                  Reset / New
+                  Reset
                 </Button>
               }
             />

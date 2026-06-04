@@ -59,7 +59,7 @@ const chartPadding = {
 }
 
 const drinkValueOptions = [
-  0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10,
+  0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10,
 ]
 
 const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
