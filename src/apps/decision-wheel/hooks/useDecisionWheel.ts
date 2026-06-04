@@ -5,6 +5,7 @@ import type {
   DecisionWheelResult,
   DecisionWheelState,
 } from '@/apps/decision-wheel/types'
+import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import {
   getThemeColorByIndex,
@@ -23,13 +24,6 @@ const initialDecisionWheelState: DecisionWheelState = {
   entries: exampleEntries,
   lastResult: null,
   history: [],
-}
-
-function createRandomId() {
-  return typeof globalThis.crypto !== 'undefined' &&
-    'randomUUID' in globalThis.crypto
-    ? globalThis.crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function sanitizeWeight(weight: number | undefined) {

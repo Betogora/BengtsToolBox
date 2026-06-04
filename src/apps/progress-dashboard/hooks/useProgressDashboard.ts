@@ -9,9 +9,11 @@ import type {
   ProgressEventIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
+import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import {
-  getThemeColorByIndex,
+  getParticipantColorByPosition,
+  normalizeParticipantColor,
   normalizeThemeColor,
   participantColorPresets,
 } from '@/lib/theme'
@@ -67,12 +69,6 @@ const initialState: ProgressDashboardState = {
   activeDatasetId,
 }
 
-function createRandomId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
-
 function createDataset(position = 1): ProgressDataset {
   const now = new Date().toISOString()
 
@@ -119,11 +115,7 @@ function isDefaultPlayerName(name: string, position: number) {
 }
 
 function sanitizeColor(color: string, fallback: string) {
-  const fallbackIndex = progressColorPresets.findIndex(
-    (preset) => preset.toLowerCase() === fallback.toLowerCase(),
-  )
-
-  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
+  return normalizeParticipantColor(color, fallback)
 }
 
 function formatArchiveDatasetName(value: string) {
@@ -171,7 +163,7 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
   const position = Number.isFinite(player.position)
     ? Number(player.position)
     : index + 1
-  const fallbackColor = getThemeColorByIndex(position - 1)
+  const fallbackColor = getParticipantColorByPosition(position)
   const name = sanitizeName(player.name ?? '', { id: player.id, position })
   const color = isDefaultPlayerName(name, position)
     ? fallbackColor
@@ -350,7 +342,7 @@ export function useProgressDashboard(sessionId = 'default') {
     return playersStore.setItem(id, {
       name: `Person ${nextPosition}`,
       position: nextPosition,
-      color: getThemeColorByIndex(nextPosition - 1),
+      color: getParticipantColorByPosition(nextPosition),
       lastUpdatedBy: session.userId,
     })
   }

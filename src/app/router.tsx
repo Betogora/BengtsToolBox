@@ -1,13 +1,30 @@
 import { createBrowserRouter } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { DashboardPage } from '@/components/layout/DashboardPage'
-import { apps } from '@/apps/registry'
+import { apps, type HubApp } from '@/apps/registry'
 import { CoinflipPage } from '@/apps/schlag-den-rabe/coinflip'
 import {
   SchlagDenRabeGate,
   SchlagDenRabePage,
 } from '@/apps/schlag-den-rabe'
+
+function LazyAppRoute({ app }: { app: HubApp }) {
+  const Page = lazy(app.loadPage)
+
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground sm:px-6">
+          Lade {app.title}...
+        </div>
+      }
+    >
+      <Page />
+    </Suspense>
+  )
+}
 
 export const router = createBrowserRouter([
   {
@@ -36,7 +53,7 @@ export const router = createBrowserRouter([
       },
       ...apps.map((app) => ({
         path: app.routePath,
-        element: <app.Page />,
+        element: <LazyAppRoute app={app} />,
       })),
     ],
   },

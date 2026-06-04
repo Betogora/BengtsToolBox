@@ -6,6 +6,7 @@ import type {
   ScoreboardState,
 } from '@/apps/scoreboard/types'
 import { appTeams, isTeamId, type TeamId } from '@/apps/shared/teams'
+import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { teamThemeColors } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
@@ -37,12 +38,6 @@ const defaultPlayers: ScoreboardPlayer[] = [
     position: 2,
   },
 ]
-
-function createRandomId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
 
 function fallbackPlayerName(player: Pick<ScoreboardPlayer, 'id' | 'position'>) {
   const position = Number.isFinite(player.position)

@@ -10,14 +10,6 @@ import {
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
-import { DecisionWheelPage } from '@/apps/decision-wheel'
-import { DiagnosticsPage } from '@/apps/diagnostics'
-import { LiveBuzzerPage } from '@/apps/live-buzzer'
-import { ProgressDashboardPage } from '@/apps/progress-dashboard'
-import { RandomizerPage } from '@/apps/randomizer'
-import { ScoreboardPage } from '@/apps/scoreboard'
-import { TerritoryMapPage } from '@/apps/territory-map'
-
 export type HubApp = {
   id: string
   title: string
@@ -26,7 +18,7 @@ export type HubApp = {
   routePath: string
   status: 'Live' | 'Preview'
   Icon: LucideIcon
-  Page: ComponentType
+  loadPage: () => Promise<{ default: ComponentType }>
 }
 
 export const apps: HubApp[] = [
@@ -39,7 +31,10 @@ export const apps: HubApp[] = [
     routePath: 'apps/diagnostics',
     status: 'Live',
     Icon: Stethoscope,
-    Page: DiagnosticsPage,
+    loadPage: () =>
+      import('@/apps/diagnostics').then(({ DiagnosticsPage }) => ({
+        default: DiagnosticsPage,
+      })),
   },
   {
     id: 'scoreboard',
@@ -50,7 +45,10 @@ export const apps: HubApp[] = [
     routePath: 'apps/scoreboard',
     status: 'Live',
     Icon: ListOrdered,
-    Page: ScoreboardPage,
+    loadPage: () =>
+      import('@/apps/scoreboard').then(({ ScoreboardPage }) => ({
+        default: ScoreboardPage,
+      })),
   },
   {
     id: 'live-buzzer',
@@ -61,7 +59,10 @@ export const apps: HubApp[] = [
     routePath: 'apps/live-buzzer',
     status: 'Live',
     Icon: Bell,
-    Page: LiveBuzzerPage,
+    loadPage: () =>
+      import('@/apps/live-buzzer').then(({ LiveBuzzerPage }) => ({
+        default: LiveBuzzerPage,
+      })),
   },
   {
     id: 'progress-dashboard',
@@ -72,7 +73,10 @@ export const apps: HubApp[] = [
     routePath: 'apps/progress-dashboard',
     status: 'Live',
     Icon: ChartNoAxesCombined,
-    Page: ProgressDashboardPage,
+    loadPage: () =>
+      import('@/apps/progress-dashboard').then(({ ProgressDashboardPage }) => ({
+        default: ProgressDashboardPage,
+      })),
   },
   {
     id: 'randomizer',
@@ -83,7 +87,10 @@ export const apps: HubApp[] = [
     routePath: 'apps/randomizer',
     status: 'Live',
     Icon: Dice5,
-    Page: RandomizerPage,
+    loadPage: () =>
+      import('@/apps/randomizer').then(({ RandomizerPage }) => ({
+        default: RandomizerPage,
+      })),
   },
   {
     id: 'decision-wheel',
@@ -94,7 +101,10 @@ export const apps: HubApp[] = [
     routePath: 'apps/decision-wheel',
     status: 'Live',
     Icon: CircleDot,
-    Page: DecisionWheelPage,
+    loadPage: () =>
+      import('@/apps/decision-wheel').then(({ DecisionWheelPage }) => ({
+        default: DecisionWheelPage,
+      })),
   },
   {
     id: 'territory-map',
@@ -105,6 +115,9 @@ export const apps: HubApp[] = [
     routePath: 'apps/sushi',
     status: 'Live',
     Icon: UtensilsCrossed,
-    Page: TerritoryMapPage,
+    loadPage: () =>
+      import('@/apps/territory-map').then(({ TerritoryMapPage }) => ({
+        default: TerritoryMapPage,
+      })),
   },
 ]

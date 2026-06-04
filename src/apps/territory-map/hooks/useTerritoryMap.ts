@@ -8,8 +8,13 @@ import type {
   TerritoryMapState,
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
+import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
-import { normalizeThemeColor, participantColorPresets } from '@/lib/theme'
+import {
+  getParticipantColorByPosition,
+  normalizeParticipantColor,
+  participantColorPresets,
+} from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -48,24 +53,12 @@ const defaultPlayers: TerritoryPlayer[] = [
   },
 ]
 
-function createRandomId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
-
 function sanitizeColor(color: string, fallback: string) {
-  const fallbackIndex = territoryColorPresets.findIndex(
-    (preset) => preset.toLowerCase() === fallback.toLowerCase(),
-  )
-
-  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
+  return normalizeParticipantColor(color, fallback)
 }
 
 function getTerritoryColorByIndex(index: number) {
-  const normalizedIndex = Number.isFinite(index) ? Math.max(0, Math.trunc(index)) : 0
-
-  return territoryColorPresets[normalizedIndex % territoryColorPresets.length]
+  return getParticipantColorByPosition(index + 1)
 }
 
 function fallbackPlayerName(player: Pick<TerritoryPlayer, 'id' | 'position'>) {

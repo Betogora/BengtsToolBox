@@ -10,6 +10,7 @@ import type {
 } from '@/apps/live-buzzer/types'
 import { buzzerTeams } from '@/apps/live-buzzer/teams'
 import { isTeamId } from '@/apps/shared/teams'
+import { createRandomId } from '@/apps/shared/utils'
 import {
   ensureAnonymousUser,
   getFirebaseServices,
@@ -30,12 +31,6 @@ const initialSessionState: BuzzerSessionState = {
   lastBuzzedAt: null,
   lastBuzzedAtClientIso: null,
   history: [],
-}
-
-function createRandomId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function createLocalPlayerId() {

@@ -33,6 +33,10 @@ export function getThemeColorByIndex(index: number) {
   return participantColorPresets[normalizedIndex % participantColorPresets.length]
 }
 
+export function getParticipantColorByPosition(position: number) {
+  return getThemeColorByIndex(position - 1)
+}
+
 export function normalizeThemeColor(color: string | undefined, fallbackIndex = 0) {
   const normalizedColor = normalizeHexColor(color)
 
@@ -45,6 +49,17 @@ export function normalizeThemeColor(color: string | undefined, fallbackIndex = 0
   }
 
   return normalizedColor
+}
+
+export function normalizeParticipantColor(
+  color: string | undefined,
+  fallbackColor: string,
+) {
+  const fallbackIndex = participantColorPresets.findIndex(
+    (preset) => preset.toLowerCase() === fallbackColor.toLowerCase(),
+  )
+
+  return normalizeThemeColor(color, fallbackIndex >= 0 ? fallbackIndex : 0)
 }
 
 function getRelativeLuminance(color: string) {
