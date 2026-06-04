@@ -1,9 +1,10 @@
 import {
+  Archive,
+  BarChart3,
   ListOrdered,
   MousePointer2,
   RotateCcw,
   Trash2,
-  Undo2,
   UtensilsCrossed,
   Users,
 } from 'lucide-react'
@@ -14,15 +15,19 @@ import {
   useState,
   type CSSProperties,
 } from 'react'
+import { toast } from 'sonner'
 
-import { mapViewBoxes, territoriesByMap } from '@/apps/territory-map/data/territories'
-import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
 import {
   AddEaterCard,
+  ArchivedTerritoryDatasetCard,
   ClaimDialog,
+  ConfirmButton,
   InlineTextEdit,
+  TerritoryEventTable,
   TerritoryShape,
 } from '@/apps/territory-map/components'
+import { mapViewBoxes, territoriesByMap } from '@/apps/territory-map/data/territories'
+import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
 import {
   clampZoom,
   mapLabels,
@@ -78,19 +83,24 @@ function getTerritoryIdFromTarget(target: EventTarget | null) {
 
 export function TerritoryMapPage() {
   const {
+    activeDataset,
     addPlayer,
+    archivedDatasets,
     claimTerritory,
-    claimedCount,
+    claimsByMap,
     currentClaims,
+    deleteDataset,
+    deleteEvent,
     error,
     isLoading,
     players,
     removePlayer,
-    resetCurrentMap,
+    resetAndArchiveDataset,
     setActiveMap,
     state,
     unclaimTerritory,
-    undoLastClaim,
+    updateArchivedDatasetName,
+    updateEvent,
     updatePlayerColor,
     updatePlayerName,
   } = useTerritoryMap()
@@ -132,7 +142,7 @@ export function TerritoryMapPage() {
     : undefined
   const sushiScores = useMemo<SushiScore[]>(() => {
     const getMapScore = (playerId: string, mapId: TerritoryMapId) =>
-      Object.values(state.claimsByMap[mapId]).filter(
+      Object.values(claimsByMap[mapId]).filter(
         (claim) => claim.playerId === playerId,
       ).length
 
@@ -153,7 +163,7 @@ export function TerritoryMapPage() {
           right.total - left.total ||
           left.player.position - right.player.position,
       )
-  }, [players, state.claimsByMap])
+  }, [claimsByMap, players])
 
   const applyLiveTransform = () => {
     rafRef.current = null
@@ -312,16 +322,6 @@ export function TerritoryMapPage() {
     await addPlayer()
   }
 
-  const handleResetCurrentMap = () => {
-    if (claimedCount === 0) {
-      return
-    }
-
-    if (window.confirm(`${mapLabels[state.activeMap]} wirklich zurücksetzen?`)) {
-      void resetCurrentMap()
-    }
-  }
-
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -366,31 +366,11 @@ export function TerritoryMapPage() {
                   variant="outline"
                   size="icon"
                   className="size-11 sm:size-9"
-                  aria-label="Ansicht zurücksetzen"
-                  title="Ansicht zurücksetzen"
+                  aria-label="Ansicht zuruecksetzen"
+                  title="Ansicht zuruecksetzen"
                   onClick={resetView}
                 >
                   <MousePointer2 className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Letzten Claim rückgängig machen"
-                  title="Letzten Claim rückgängig machen"
-                  disabled={!state.lastClaimAction}
-                  onClick={() => void undoLastClaim()}
-                >
-                  <Undo2 className="size-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Aktuelle Karte zurücksetzen"
-                  title="Aktuelle Karte zurücksetzen"
-                  disabled={claimedCount === 0}
-                  onClick={handleResetCurrentMap}
-                >
-                  <RotateCcw className="size-4" />
                 </Button>
               </div>
             </div>
@@ -607,7 +587,7 @@ export function TerritoryMapPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <InlineTextEdit
-                        ariaLabel={`Name für ${player.name}`}
+                        ariaLabel={`Name fuer ${player.name}`}
                         fallback={`Sushi-Tourist ${player.position}`}
                         value={player.name}
                         onSave={(value) => updatePlayerName(player.id, value)}
@@ -615,7 +595,7 @@ export function TerritoryMapPage() {
                     </div>
                     <Input
                       type="color"
-                      aria-label={`${player.name} Farbe wählen`}
+                      aria-label={`${player.name} Farbe waehlen`}
                       className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
                       value={player.color}
                       onChange={(event) =>
@@ -692,6 +672,74 @@ export function TerritoryMapPage() {
           </Card>
         </div>
       </section>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="size-5 text-primary" />
+              Datensatz
+            </CardTitle>
+            <ConfirmButton
+              title="Datensatz archivieren und neu starten?"
+              description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
+              onConfirm={async () => {
+                await resetAndArchiveDataset()
+                toast.success('Datensatz archiviert und neu gestartet.')
+              }}
+              trigger={
+                <Button variant="outline">
+                  <RotateCcw className="size-4" />
+                  Reset
+                </Button>
+              }
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TerritoryEventTable
+            dataset={activeDataset}
+            players={players}
+            onDeleteEvent={async (eventId) => {
+              await deleteEvent(eventId)
+              toast.success('Bereisung geloescht.')
+            }}
+            onUpdateEvent={(eventId, partialValue) =>
+              updateEvent(eventId, partialValue)
+            }
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Archive className="size-5 text-primary" />
+            Alte Datensaetze
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {archivedDatasets.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              Noch keine archivierten Datensaetze.
+            </div>
+          ) : (
+            archivedDatasets.map((dataset) => (
+              <ArchivedTerritoryDatasetCard
+                key={dataset.id}
+                dataset={dataset}
+                onDelete={async (datasetId) => {
+                  await deleteDataset(datasetId)
+                  toast.success('Datensatz geloescht.')
+                }}
+                onRename={(datasetId, name) =>
+                  updateArchivedDatasetName(datasetId, name)
+                }
+              />
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       <ClaimDialog
         key={selectedTerritory?.id ?? 'empty-territory'}

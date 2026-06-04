@@ -36,6 +36,33 @@ export type TerritoryMapState = {
   updatedBy?: string
 }
 
+export type TerritoryVisitEvent = {
+  id: string
+  mapId: TerritoryMapId
+  territoryId: string
+  territoryName: string
+  playerId: string
+  playerName: string
+  playerColor: string
+  createdAtClientIso: string
+  createdAtLabel: string
+  position: number
+  lastUpdatedBy?: string
+}
+
+export type TerritoryDatasetStatus = 'active' | 'archived'
+
+export type TerritoryDataset = {
+  id: string
+  position: number
+  name: string
+  status: TerritoryDatasetStatus
+  createdAtClientIso: string
+  archivedAtClientIso: string | null
+  events: TerritoryVisitEvent[]
+  lastUpdatedBy?: string
+}
+
 export type TerritoryPlayer = {
   id: string
   name: string

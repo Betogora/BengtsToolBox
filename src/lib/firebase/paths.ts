@@ -28,4 +28,6 @@ export const firebasePaths = {
     `apps/territory-map/sessions/${sessionId}/state/default`,
   territoryMapPlayers: (sessionId = 'default') =>
     `apps/territory-map/sessions/${sessionId}/players`,
+  territoryMapDatasets: (sessionId = 'default') =>
+    `apps/territory-map/sessions/${sessionId}/datasets`,
 } as const
