@@ -179,7 +179,7 @@ export function ClaimDialog({
             <Label htmlFor="claim-player">Sushi-Tourist</Label>
             <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
               <SelectTrigger id="claim-player">
-                <SelectValue placeholder="Sushi-Tourist wÃ¤hlen" />
+                <SelectValue placeholder="Sushi-Tourist wählen" />
               </SelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -213,7 +213,7 @@ export function AddEaterCard({
         onClick={() => void onAdd()}
       >
         <CirclePlus className="size-4" />
-        Sushi-Tourist hinzufÃ¼gen
+        Sushi-Tourist hinzufügen
       </Button>
     </div>
   )

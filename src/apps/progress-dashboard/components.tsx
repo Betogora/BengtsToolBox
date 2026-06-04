@@ -180,7 +180,7 @@ export function ConfirmButton({
               setOpen(false)
             }}
           >
-            BestÃ¤tigen
+            Bestätigen
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -514,7 +514,7 @@ export function PlayerCard({
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <InlineTextEdit
-              ariaLabel={`Name fÃ¼r ${player.name}`}
+              ariaLabel={`Name für ${player.name}`}
               className="py-1 text-2xl font-semibold tracking-normal"
               fallback={`Person ${player.position}`}
               inputClassName="h-11 text-xl font-semibold"
@@ -523,7 +523,7 @@ export function PlayerCard({
             />
           </div>
           <ConfirmButton
-            title="Spieler lÃ¶schen?"
+            title="Spieler löschen?"
             description={`${player.name} wird entfernt. Bestehende Ereignisse bleiben im Datensatz erhalten.`}
             onConfirm={() => onRemove(player.id)}
             trigger={
@@ -568,7 +568,7 @@ export function PlayerCard({
             </Button>
             <Button
               size="icon"
-              aria-label={`${player.name} erhÃ¶hen`}
+              aria-label={`${player.name} erhöhen`}
               onClick={() => onAddEvent(player, 1)}
             >
               <Plus className="size-4" />
@@ -716,11 +716,11 @@ export function EventTable({
               </td>
               <td className="px-3 py-2 text-right">
                 <ConfirmButton
-                  title="Ereignis lÃ¶schen?"
+                  title="Ereignis löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
-                    <Button variant="ghost" size="icon" aria-label="Ereignis lÃ¶schen">
+                    <Button variant="ghost" size="icon" aria-label="Ereignis löschen">
                       <Trash2 className="size-4" />
                     </Button>
                   }
@@ -773,11 +773,11 @@ export function ArchiveDatasetCard({
           </div>
         </button>
         <ConfirmButton
-          title="Datensatz lÃ¶schen?"
+          title="Datensatz löschen?"
           description="Der archivierte Datensatz wird dauerhaft entfernt."
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="ghost" size="icon" aria-label="Archiv lÃ¶schen">
+            <Button variant="ghost" size="icon" aria-label="Archiv löschen">
               <Trash2 className="size-4" />
             </Button>
           }
