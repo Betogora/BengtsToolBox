@@ -95,3 +95,9 @@ select {
   color: var(--primary-foreground);
   background: var(--primary);
 }
+
+@media (pointer: coarse) {
+  .territory-map-layer {
+    filter: none;
+  }
+}

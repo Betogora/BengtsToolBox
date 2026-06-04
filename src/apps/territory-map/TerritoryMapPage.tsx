@@ -1,20 +1,35 @@
 import {
-  CirclePlus,
   ListOrdered,
   MousePointer2,
-  Pencil,
   RotateCcw,
   Trash2,
   Undo2,
   UtensilsCrossed,
   Users,
 } from 'lucide-react'
-import { useMemo, useRef, useState, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 
 import { mapViewBoxes, territoriesByMap } from '@/apps/territory-map/data/territories'
 import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
+import {
+  AddEaterCard,
+  ClaimDialog,
+  InlineTextEdit,
+  TerritoryShape,
+} from '@/apps/territory-map/components'
+import {
+  clampZoom,
+  mapLabels,
+  tapMoveThreshold,
+  unclaimedValue,
+} from '@/apps/territory-map/mapConfig'
 import type {
-  Territory,
   TerritoryMapId,
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
@@ -25,32 +40,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-const mapLabels: Record<TerritoryMapId, string> = {
-  world: 'Weltkarte',
-  germany: 'Deutschland',
-}
-
-const maxZoom = 8
-const minZoom = 0.7
-const unclaimedValue = '__unclaimed'
 
 type SushiScore = {
   player: TerritoryPlayer
@@ -59,203 +50,30 @@ type SushiScore = {
   total: number
 }
 
-function clampZoom(value: number) {
-  return Math.min(maxZoom, Math.max(minZoom, value))
-}
-
-function getClaimColor(
-  claimPlayerId: string,
-  claimColor: string,
-  players: TerritoryPlayer[],
-) {
-  return players.find((player) => player.id === claimPlayerId)?.color ?? claimColor
-}
-
-function TerritoryShape({
-  claim,
-  isSelected,
-  onSelect,
-  players,
-  territory,
-}: {
-  claim?: {
-    playerId: string
-    playerName: string
-    playerColor: string
+type MapView = {
+  offset: {
+    x: number
+    y: number
   }
-  isSelected: boolean
-  onSelect: () => void
-  players: TerritoryPlayer[]
-  territory: Territory
-}) {
-  const ownerColor = claim
-    ? getClaimColor(claim.playerId, claim.playerColor, players)
-    : 'url(#territory-unclaimed)'
-  const ownerLabel = claim ? claim.playerName : 'ungeclaimed'
-
-  return (
-    <path
-      d={territory.path}
-      role="button"
-      tabIndex={0}
-      aria-label={`${territory.name}, ${ownerLabel}`}
-      className="cursor-pointer transition-[filter,opacity,stroke-width] hover:brightness-105 focus:outline-none focus-visible:stroke-ring"
-      fill={ownerColor}
-      opacity={claim ? 0.94 : 1}
-      stroke={isSelected ? 'var(--foreground)' : 'var(--background)'}
-      strokeWidth={isSelected ? 2.2 : 0.75}
-      vectorEffect="non-scaling-stroke"
-      onClick={(event) => {
-        event.stopPropagation()
-        onSelect()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onSelect()
-        }
-      }}
-    >
-      <title>{`${territory.name}: ${ownerLabel}`}</title>
-    </path>
-  )
+  zoom: number
 }
 
-function InlineTextEdit({
-  ariaLabel,
-  fallback,
-  onSave,
-  value,
-}: {
-  ariaLabel: string
-  fallback: string
-  onSave: (value: string) => void | Promise<void>
-  value: string
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const displayValue = value.trim() || fallback
-
-  if (isEditing) {
-    return (
-      <Input
-        aria-label={ariaLabel}
-        autoFocus
-        className="h-9 font-medium"
-        defaultValue={displayValue}
-        onBlur={async (event) => {
-          await onSave(event.currentTarget.value)
-          setIsEditing(false)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur()
-          }
-
-          if (event.key === 'Escape') {
-            setIsEditing(false)
-          }
-        }}
-      />
-    )
-  }
-
-  return (
-    <div className="group flex min-w-0 items-center gap-1">
-      <span className="min-w-0 truncate rounded-sm px-1 py-1 text-sm font-medium transition-colors group-hover:bg-accent/35">
-        {displayValue}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        aria-label={`${ariaLabel} bearbeiten`}
-        onClick={() => setIsEditing(true)}
-      >
-        <Pencil className="size-4" />
-      </Button>
-    </div>
-  )
+type MapPointer = {
+  x: number
+  y: number
 }
 
-function ClaimDialog({
-  claim,
-  onClaim,
-  onOpenChange,
-  players,
-  territory,
-}: {
-  claim?: {
-    playerId: string
-    playerName: string
-  }
-  onClaim: (playerId: string) => Promise<void>
-  onOpenChange: (open: boolean) => void
-  players: TerritoryPlayer[]
-  territory: Territory | null
-}) {
-  const [selectedPlayerId, setSelectedPlayerId] = useState(
-    claim?.playerId ?? players[0]?.id ?? unclaimedValue,
-  )
+function getMapTransform(view: MapView) {
+  return `translate(${view.offset.x} ${view.offset.y}) scale(${view.zoom})`
+}
 
-  if (!territory) {
+function getTerritoryIdFromTarget(target: EventTarget | null) {
+  if (!(target instanceof SVGElement)) {
     return null
   }
 
-  return (
-    <Dialog open={Boolean(territory)} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{territory.name} Sushi-bereisen?</DialogTitle>
-          <DialogDescription>
-            {claim
-              ? `Aktuell bereist von ${claim.playerName}.`
-              : 'Dieses Territorium ist noch frei.'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="grid gap-2">
-            <Label htmlFor="claim-player">Sushi-Tourist</Label>
-            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-              <SelectTrigger id="claim-player">
-                <SelectValue placeholder="Sushi-Tourist wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {players.map((player) => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {player.name}
-                  </SelectItem>
-                ))}
-                <SelectItem value={unclaimedValue}>Unclaimed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button className="sm:mb-0" onClick={() => onClaim(selectedPlayerId)}>
-            Nigiri gegessen
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function AddEaterCard({
-  onAdd,
-}: {
-  onAdd: () => Promise<void>
-}) {
-  return (
-    <div className="rounded-md border border-dashed bg-background p-3">
-      <Button
-        className="h-9 w-full"
-        variant="outline"
-        onClick={() => void onAdd()}
-      >
-        <CirclePlus className="size-4" />
-        Sushi-Tourist hinzufügen
-      </Button>
-    </div>
-  )
+  return target.closest<SVGElement>('[data-territory-id]')?.dataset
+    .territoryId ?? null
 }
 
 export function TerritoryMapPage() {
@@ -277,19 +95,31 @@ export function TerritoryMapPage() {
     updatePlayerName,
   } = useTerritoryMap()
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
-  const [zoom, setZoom] = useState(1)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const [dragStart, setDragStart] = useState<{
+  const [view, setView] = useState<MapView>({
+    offset: { x: 0, y: 0 },
+    zoom: 1,
+  })
+  const activePointersRef = useRef(new Map<number, MapPointer>())
+  const dragDistanceRef = useRef(0)
+  const dragStartRef = useRef<{
     pointerId: number
     x: number
     y: number
     offsetX: number
     offsetY: number
   } | null>(null)
-  const activePointersRef = useRef(new Map<number, { x: number; y: number }>())
-  const dragDistanceRef = useRef(0)
   const lastPinchDistanceRef = useRef<number | null>(null)
+  const liveViewRef = useRef<MapView>(view)
+  const mapLayerRef = useRef<SVGGElement | null>(null)
+  const pinchActiveRef = useRef(false)
+  const rafRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
+  const tapCandidateRef = useRef<{
+    pointerId: number
+    territoryId: string | null
+    x: number
+    y: number
+  } | null>(null)
   const territories = territoriesByMap[state.activeMap]
   const selectedTerritory = useMemo(
     () =>
@@ -325,11 +155,43 @@ export function TerritoryMapPage() {
       )
   }, [players, state.claimsByMap])
 
-  const transform = `translate(${offset.x} ${offset.y}) scale(${zoom})`
+  const applyLiveTransform = () => {
+    rafRef.current = null
+    mapLayerRef.current?.setAttribute(
+      'transform',
+      getMapTransform(liveViewRef.current),
+    )
+  }
+
+  const scheduleLiveTransform = () => {
+    if (rafRef.current !== null) {
+      return
+    }
+
+    rafRef.current = window.requestAnimationFrame(applyLiveTransform)
+  }
+
+  const applyView = (nextView: MapView, shouldCommit = false) => {
+    liveViewRef.current = nextView
+    scheduleLiveTransform()
+
+    if (shouldCommit) {
+      setView(nextView)
+    }
+  }
+
+  const commitLiveView = () => {
+    setView(liveViewRef.current)
+  }
 
   const resetView = () => {
-    setZoom(1)
-    setOffset({ x: 0, y: 0 })
+    applyView(
+      {
+        offset: { x: 0, y: 0 },
+        zoom: 1,
+      },
+      true,
+    )
   }
 
   const getSvgPoint = (clientX: number, clientY: number) => {
@@ -353,23 +215,40 @@ export function TerritoryMapPage() {
     }
   }
 
-  const applyZoomAt = (clientX: number, clientY: number, nextZoom: number) => {
+  const applyZoomAt = (
+    clientX: number,
+    clientY: number,
+    nextZoom: number,
+    shouldCommit = false,
+  ) => {
     const nextClampedZoom = clampZoom(nextZoom)
     const point = getSvgPoint(clientX, clientY)
+    const currentView = liveViewRef.current
 
     if (!point) {
-      setZoom(nextClampedZoom)
+      applyView(
+        {
+          ...currentView,
+          zoom: nextClampedZoom,
+        },
+        shouldCommit,
+      )
       return
     }
 
-    const mapX = (point.x - offset.x) / zoom
-    const mapY = (point.y - offset.y) / zoom
+    const mapX = (point.x - currentView.offset.x) / currentView.zoom
+    const mapY = (point.y - currentView.offset.y) / currentView.zoom
 
-    setZoom(nextClampedZoom)
-    setOffset({
-      x: point.x - mapX * nextClampedZoom,
-      y: point.y - mapY * nextClampedZoom,
-    })
+    applyView(
+      {
+        offset: {
+          x: point.x - mapX * nextClampedZoom,
+          y: point.y - mapY * nextClampedZoom,
+        },
+        zoom: nextClampedZoom,
+      },
+      shouldCommit,
+    )
   }
 
   const stopMapGesture = (pointerId?: number) => {
@@ -380,8 +259,25 @@ export function TerritoryMapPage() {
     }
 
     lastPinchDistanceRef.current = null
-    setDragStart(null)
+    dragStartRef.current = null
+    pinchActiveRef.current = false
+    tapCandidateRef.current = null
+    commitLiveView()
   }
+
+  useEffect(() => {
+    liveViewRef.current = view
+    mapLayerRef.current?.setAttribute('transform', getMapTransform(view))
+  }, [view])
+
+  useEffect(
+    () => () => {
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current)
+      }
+    },
+    [],
+  )
 
   const handleMapChange = (nextMap: string) => {
     setSelectedTerritoryId(null)
@@ -465,10 +361,11 @@ export function TerritoryMapPage() {
                 </CardTitle>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 [&_button]:size-11 sm:[&_button]:size-9">
                 <Button
                   variant="outline"
                   size="icon"
+                  className="size-11 sm:size-9"
                   aria-label="Ansicht zurücksetzen"
                   title="Ansicht zurücksetzen"
                   onClick={resetView}
@@ -507,29 +404,40 @@ export function TerritoryMapPage() {
                 applyZoomAt(
                   event.clientX,
                   event.clientY,
-                  zoom + (event.deltaY < 0 ? 0.28 : -0.28),
+                  liveViewRef.current.zoom + (event.deltaY < 0 ? 0.28 : -0.28),
+                  true,
                 )
               }}
               onPointerDown={(event) => {
-                if (event.button !== 0) {
+                if (event.pointerType === 'mouse' && event.button !== 0) {
                   return
                 }
 
+                event.currentTarget.setPointerCapture(event.pointerId)
                 activePointersRef.current.set(event.pointerId, {
                   x: event.clientX,
                   y: event.clientY,
                 })
                 dragDistanceRef.current = 0
-                setDragStart({
+                dragStartRef.current = {
                   pointerId: event.pointerId,
                   x: event.clientX,
                   y: event.clientY,
-                  offsetX: offset.x,
-                  offsetY: offset.y,
-                })
+                  offsetX: liveViewRef.current.offset.x,
+                  offsetY: liveViewRef.current.offset.y,
+                }
+                tapCandidateRef.current = {
+                  pointerId: event.pointerId,
+                  territoryId: getTerritoryIdFromTarget(event.target),
+                  x: event.clientX,
+                  y: event.clientY,
+                }
 
                 if (activePointersRef.current.size === 2) {
                   const pointers = [...activePointersRef.current.values()]
+                  pinchActiveRef.current = true
+                  tapCandidateRef.current = null
+                  dragStartRef.current = null
                   lastPinchDistanceRef.current = Math.hypot(
                     pointers[0].x - pointers[1].x,
                     pointers[0].y - pointers[1].y,
@@ -553,18 +461,22 @@ export function TerritoryMapPage() {
                     pointers[0].y - pointers[1].y,
                   )
                   const previousDistance = lastPinchDistanceRef.current
+                  pinchActiveRef.current = true
+                  tapCandidateRef.current = null
 
                   if (previousDistance && nextDistance > 0) {
                     applyZoomAt(
                       (pointers[0].x + pointers[1].x) / 2,
                       (pointers[0].y + pointers[1].y) / 2,
-                      zoom * (nextDistance / previousDistance),
+                      liveViewRef.current.zoom * (nextDistance / previousDistance),
                     )
                   }
 
                   lastPinchDistanceRef.current = nextDistance
                   return
                 }
+
+                const dragStart = dragStartRef.current
 
                 if (!dragStart || dragStart.pointerId !== event.pointerId) {
                   return
@@ -573,18 +485,53 @@ export function TerritoryMapPage() {
                 const deltaX = event.clientX - dragStart.x
                 const deltaY = event.clientY - dragStart.y
                 dragDistanceRef.current = Math.hypot(deltaX, deltaY)
-                setOffset({
-                  x: dragStart.offsetX + (deltaX / zoom) * 1.25,
-                  y: dragStart.offsetY + (deltaY / zoom) * 1.25,
+                const currentView = liveViewRef.current
+
+                if (dragDistanceRef.current >= tapMoveThreshold) {
+                  tapCandidateRef.current = null
+                }
+
+                applyView({
+                  offset: {
+                    x: dragStart.offsetX + (deltaX / currentView.zoom) * 1.25,
+                    y: dragStart.offsetY + (deltaY / currentView.zoom) * 1.25,
+                  },
+                  zoom: currentView.zoom,
                 })
               }}
               onPointerUp={(event) => {
-                stopMapGesture(event.pointerId)
+                const tapCandidate = tapCandidateRef.current
+
+                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId)
+                }
+
+                activePointersRef.current.delete(event.pointerId)
+
+                if (
+                  tapCandidate &&
+                  tapCandidate.pointerId === event.pointerId &&
+                  tapCandidate.territoryId &&
+                  !pinchActiveRef.current &&
+                  Math.hypot(
+                    event.clientX - tapCandidate.x,
+                    event.clientY - tapCandidate.y,
+                  ) < tapMoveThreshold
+                ) {
+                  setSelectedTerritoryId(tapCandidate.territoryId)
+                }
+
+                if (activePointersRef.current.size === 0) {
+                  stopMapGesture()
+                }
               }}
               onPointerCancel={(event) => {
+                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId)
+                }
+
                 stopMapGesture(event.pointerId)
               }}
-              onPointerLeave={() => stopMapGesture()}
             >
               <svg
                 ref={svgRef}
@@ -614,17 +561,18 @@ export function TerritoryMapPage() {
                   </filter>
                 </defs>
                 <rect width="100%" height="100%" fill="var(--secondary)" />
-                <g transform={transform} filter="url(#map-shadow)">
+                <g
+                  ref={mapLayerRef}
+                  className="territory-map-layer"
+                  transform={getMapTransform(view)}
+                  filter="url(#map-shadow)"
+                >
                   {territories.map((territory) => (
                     <TerritoryShape
                       key={territory.id}
                       claim={currentClaims[territory.id]}
                       isSelected={selectedTerritoryId === territory.id}
-                      onSelect={() => {
-                        if (dragDistanceRef.current < 6) {
-                          setSelectedTerritoryId(territory.id)
-                        }
-                      }}
+                      onSelect={() => setSelectedTerritoryId(territory.id)}
                       players={players}
                       territory={territory}
                     />
@@ -678,7 +626,7 @@ export function TerritoryMapPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-9"
+                        className="size-11 sm:size-9"
                         aria-label={`${player.name} entfernen`}
                         onClick={() => void removePlayer(player.id)}
                       >
