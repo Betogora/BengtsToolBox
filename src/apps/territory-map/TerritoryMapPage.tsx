@@ -9,8 +9,9 @@ import {
   Landmark,
   ListOrdered,
   MapPinned,
-  MousePointer2,
   Mountain,
+  Minus,
+  Plus,
   ShipWheel,
   Snowflake,
   Trash2,
@@ -41,8 +42,8 @@ import {
 } from '@/apps/territory-map/data/territories'
 import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
 import {
-  clampZoom,
   mapLabels,
+  mapZoomLevels,
   tapMoveThreshold,
   unclaimedValue,
 } from '@/apps/territory-map/mapConfig'
@@ -89,12 +90,12 @@ type MapView = {
   zoom: number
 }
 
-type MapPointer = {
-  x: number
-  y: number
-}
-
 const emptyTerritories: Territory[] = []
+const defaultZoomLevelIndex = 0
+const defaultMapView: MapView = {
+  offset: { x: 0, y: 0 },
+  zoom: mapZoomLevels[defaultZoomLevelIndex],
+}
 
 const africanTerritoryIds = new Set([
   'ao',
@@ -247,7 +248,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'sushi-in-afrika',
     title: 'Sushi in Afrika',
     Icon: Globe2,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte mindestens ein afrikanisches Territorium bereist hat.',
+    rule: 'Bereise auf der Weltkarte mindestens ein afrikanisches Territorium.',
     matches: (event) =>
       event.mapId === 'world' && africanTerritoryIds.has(event.territoryId),
   },
@@ -255,7 +256,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'heimspiel',
     title: 'Heimspiel',
     Icon: Home,
-    rule: 'Dieses Achievement bekommt jede Person, die Deutschland auf der Weltkarte oder ein Bundesland auf der Deutschlandkarte bereist hat.',
+    rule: 'Bereise Deutschland auf der Weltkarte oder ein Bundesland auf der Deutschlandkarte.',
     matches: (event) =>
       (event.mapId === 'world' && event.territoryId === 'de') ||
       event.mapId === 'germany',
@@ -264,7 +265,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'nordlicht',
     title: 'Nordlicht',
     Icon: Snowflake,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein nordisches Territorium bereist hat.',
+    rule: 'Bereise auf der Weltkarte ein nordisches Territorium.',
     matches: (event) =>
       event.mapId === 'world' && nordicTerritoryIds.has(event.territoryId),
   },
@@ -272,7 +273,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'alpengeschmack',
     title: 'Alpengeschmack',
     Icon: Mountain,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte Österreich oder die Schweiz bereist hat.',
+    rule: 'Bereise auf der Weltkarte Österreich oder die Schweiz.',
     matches: (event) =>
       event.mapId === 'world' && alpineTerritoryIds.has(event.territoryId),
   },
@@ -280,7 +281,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'balkan-rolle',
     title: 'Balkan-Rolle',
     Icon: MapPinned,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein Balkan-Territorium bereist hat.',
+    rule: 'Bereise auf der Weltkarte ein Balkan-Territorium.',
     matches: (event) =>
       event.mapId === 'world' && balkanTerritoryIds.has(event.territoryId),
   },
@@ -288,7 +289,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'sushi-in-amerika',
     title: 'Sushi in Amerika',
     Icon: Compass,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein Territorium in Nord-, Mittel- oder Südamerika bereist hat.',
+    rule: 'Bereise auf der Weltkarte ein Territorium in Nord-, Mittel- oder Südamerika.',
     matches: (event) =>
       event.mapId === 'world' && americaTerritoryIds.has(event.territoryId),
   },
@@ -296,7 +297,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'pazifik-teller',
     title: 'Pazifik-Teller',
     Icon: ShipWheel,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein Territorium in Ozeanien oder im Pazifik bereist hat.',
+    rule: 'Bereise auf der Weltkarte ein Territorium in Ozeanien oder im Pazifik.',
     matches: (event) =>
       event.mapId === 'world' && pacificTerritoryIds.has(event.territoryId),
   },
@@ -304,7 +305,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'mikro-maki',
     title: 'Mikro-Maki',
     Icon: Landmark,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte einen Microstate bereist hat.',
+    rule: 'Bereise auf der Weltkarte einen Microstate.',
     matches: (event) =>
       event.mapId === 'world' && microstateTerritoryIds.has(event.territoryId),
   },
@@ -312,14 +313,14 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'land-der-sushi',
     title: 'Land der Sushis',
     Icon: UtensilsCrossed,
-    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte Japan bereist hat.',
+    rule: 'Bereise auf der Weltkarte Japan.',
     matches: (event) => event.mapId === 'world' && event.territoryId === 'jp',
   },
   {
     id: 'hauptstadt-happen',
     title: 'Hauptstadt-Happen',
     Icon: Building2,
-    rule: 'Dieses Achievement bekommt jede Person, die Berlin auf der Deutschlandkarte bereist hat.',
+    rule: 'Bereise Berlin auf der Deutschlandkarte.',
     matches: (event) => event.mapId === 'germany' && event.territoryId === 'DE-BE',
   },
 ]
@@ -410,11 +411,9 @@ export function TerritoryMapPage() {
   const [territoriesByMap, setTerritoriesByMap] = useState<
     Partial<Record<TerritoryMapId, Territory[]>>
   >({})
-  const [view, setView] = useState<MapView>({
-    offset: { x: 0, y: 0 },
-    zoom: 1,
-  })
-  const activePointersRef = useRef(new Map<number, MapPointer>())
+  const [view, setView] = useState<MapView>(defaultMapView)
+  const [zoomLevelIndex, setZoomLevelIndex] = useState(defaultZoomLevelIndex)
+  const activePointersRef = useRef(new Set<number>())
   const dragDistanceRef = useRef(0)
   const dragStartRef = useRef<{
     pointerId: number
@@ -423,10 +422,9 @@ export function TerritoryMapPage() {
     offsetX: number
     offsetY: number
   } | null>(null)
-  const lastPinchDistanceRef = useRef<number | null>(null)
   const liveViewRef = useRef<MapView>(view)
   const mapLayerRef = useRef<SVGGElement | null>(null)
-  const pinchActiveRef = useRef(false)
+  const multiPointerActiveRef = useRef(false)
   const rafRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const tapCandidateRef = useRef<{
@@ -513,16 +511,11 @@ export function TerritoryMapPage() {
   }
 
   const resetView = () => {
-    applyView(
-      {
-        offset: { x: 0, y: 0 },
-        zoom: 1,
-      },
-      true,
-    )
+    setZoomLevelIndex(defaultZoomLevelIndex)
+    applyView(defaultMapView, true)
   }
 
-  const getSvgPoint = (clientX: number, clientY: number) => {
+  const getSvgRenderMetrics = () => {
     const svg = svgRef.current
 
     if (!svg) {
@@ -538,8 +531,23 @@ export function TerritoryMapPage() {
     const top = rect.top + (rect.height - renderedHeight) / 2
 
     return {
-      x: (clientX - left) / scale + viewBox.x,
-      y: (clientY - top) / scale + viewBox.y,
+      left,
+      scale,
+      top,
+      viewBox,
+    }
+  }
+
+  const getSvgPoint = (clientX: number, clientY: number) => {
+    const metrics = getSvgRenderMetrics()
+
+    if (!metrics) {
+      return null
+    }
+
+    return {
+      x: (clientX - metrics.left) / metrics.scale + metrics.viewBox.x,
+      y: (clientY - metrics.top) / metrics.scale + metrics.viewBox.y,
     }
   }
 
@@ -549,7 +557,6 @@ export function TerritoryMapPage() {
     nextZoom: number,
     shouldCommit = false,
   ) => {
-    const nextClampedZoom = clampZoom(nextZoom)
     const point = getSvgPoint(clientX, clientY)
     const currentView = liveViewRef.current
 
@@ -557,7 +564,7 @@ export function TerritoryMapPage() {
       applyView(
         {
           ...currentView,
-          zoom: nextClampedZoom,
+          zoom: nextZoom,
         },
         shouldCommit,
       )
@@ -570,12 +577,38 @@ export function TerritoryMapPage() {
     applyView(
       {
         offset: {
-          x: point.x - mapX * nextClampedZoom,
-          y: point.y - mapY * nextClampedZoom,
+          x: point.x - mapX * nextZoom,
+          y: point.y - mapY * nextZoom,
         },
-        zoom: nextClampedZoom,
+        zoom: nextZoom,
       },
       shouldCommit,
+    )
+  }
+
+  const applyZoomLevel = (nextZoomLevelIndex: number) => {
+    const nextZoom = mapZoomLevels[nextZoomLevelIndex]
+    const svg = svgRef.current
+
+    setZoomLevelIndex(nextZoomLevelIndex)
+
+    if (!svg) {
+      applyView(
+        {
+          ...liveViewRef.current,
+          zoom: nextZoom,
+        },
+        true,
+      )
+      return
+    }
+
+    const rect = svg.getBoundingClientRect()
+    applyZoomAt(
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2,
+      nextZoom,
+      true,
     )
   }
 
@@ -586,9 +619,8 @@ export function TerritoryMapPage() {
       activePointersRef.current.clear()
     }
 
-    lastPinchDistanceRef.current = null
     dragStartRef.current = null
-    pinchActiveRef.current = false
+    multiPointerActiveRef.current = false
     tapCandidateRef.current = null
     setIsMapDragging(false)
     commitLiveView()
@@ -683,7 +715,7 @@ export function TerritoryMapPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden bg-secondary">
           <CardHeader className="p-3 sm:p-4">
             <div className="flex min-w-0 items-center justify-between gap-2">
               <Tabs
@@ -691,26 +723,48 @@ export function TerritoryMapPage() {
                 className="min-w-0 flex-1"
                 onValueChange={handleMapChange}
               >
-                <TabsList className="h-10 max-w-full">
-                  <TabsTrigger value="world">Welt</TabsTrigger>
-                  <TabsTrigger value="germany">Deutschland</TabsTrigger>
+                <TabsList className="h-10 max-w-full border bg-muted/65 shadow-sm backdrop-blur">
+                  <TabsTrigger
+                    value="world"
+                    className="data-[state=active]:bg-background/75"
+                  >
+                    Welt
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="germany"
+                    className="data-[state=active]:bg-background/75"
+                  >
+                    Deutschland
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
 
               <Button
                 variant="outline"
                 size="icon"
-                className="size-10 shrink-0 sm:size-9"
-                aria-label="Ansicht zurücksetzen"
-                title="Ansicht zurücksetzen"
-                onClick={resetView}
+                className="size-10 shrink-0 bg-background/75 sm:size-9"
+                aria-label="Rauszoomen"
+                title="Rauszoomen"
+                disabled={zoomLevelIndex === 0}
+                onClick={() => applyZoomLevel(zoomLevelIndex - 1)}
               >
-                <MousePointer2 className="size-4" />
+                <Minus className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-10 shrink-0 bg-background/75 sm:size-9"
+                aria-label="Reinzoomen"
+                title="Reinzoomen"
+                disabled={zoomLevelIndex === mapZoomLevels.length - 1}
+                onClick={() => applyZoomLevel(zoomLevelIndex + 1)}
+              >
+                <Plus className="size-4" />
               </Button>
             </div>
           </CardHeader>
 
-          <CardContent className="p-0">
+          <CardContent className="bg-secondary p-0">
             <div
               className={[
                 'touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing',
@@ -718,15 +772,6 @@ export function TerritoryMapPage() {
                   ? 'h-[44svh] min-h-[300px] sm:h-[50svh] sm:min-h-[360px]'
                   : 'h-[56svh] min-h-[320px] sm:h-[62svh] sm:min-h-[420px]',
               ].join(' ')}
-              onWheel={(event) => {
-                event.preventDefault()
-                applyZoomAt(
-                  event.clientX,
-                  event.clientY,
-                  liveViewRef.current.zoom + (event.deltaY < 0 ? 0.28 : -0.28),
-                  true,
-                )
-              }}
               onPointerDown={(event) => {
                 if (event.pointerType === 'mouse' && event.button !== 0) {
                   return
@@ -734,10 +779,7 @@ export function TerritoryMapPage() {
 
                 event.currentTarget.setPointerCapture(event.pointerId)
                 setIsMapDragging(true)
-                activePointersRef.current.set(event.pointerId, {
-                  x: event.clientX,
-                  y: event.clientY,
-                })
+                activePointersRef.current.add(event.pointerId)
                 dragDistanceRef.current = 0
                 dragStartRef.current = {
                   pointerId: event.pointerId,
@@ -753,15 +795,10 @@ export function TerritoryMapPage() {
                   y: event.clientY,
                 }
 
-                if (activePointersRef.current.size === 2) {
-                  const pointers = [...activePointersRef.current.values()]
-                  pinchActiveRef.current = true
+                if (activePointersRef.current.size > 1) {
+                  multiPointerActiveRef.current = true
                   tapCandidateRef.current = null
                   dragStartRef.current = null
-                  lastPinchDistanceRef.current = Math.hypot(
-                    pointers[0].x - pointers[1].x,
-                    pointers[0].y - pointers[1].y,
-                  )
                 }
               }}
               onPointerMove={(event) => {
@@ -769,30 +806,9 @@ export function TerritoryMapPage() {
                   return
                 }
 
-                activePointersRef.current.set(event.pointerId, {
-                  x: event.clientX,
-                  y: event.clientY,
-                })
-
-                if (activePointersRef.current.size >= 2) {
-                  const pointers = [...activePointersRef.current.values()]
-                  const nextDistance = Math.hypot(
-                    pointers[0].x - pointers[1].x,
-                    pointers[0].y - pointers[1].y,
-                  )
-                  const previousDistance = lastPinchDistanceRef.current
-                  pinchActiveRef.current = true
+                if (activePointersRef.current.size > 1) {
+                  multiPointerActiveRef.current = true
                   tapCandidateRef.current = null
-
-                  if (previousDistance && nextDistance > 0) {
-                    applyZoomAt(
-                      (pointers[0].x + pointers[1].x) / 2,
-                      (pointers[0].y + pointers[1].y) / 2,
-                      liveViewRef.current.zoom * (nextDistance / previousDistance),
-                    )
-                  }
-
-                  lastPinchDistanceRef.current = nextDistance
                   return
                 }
 
@@ -806,7 +822,9 @@ export function TerritoryMapPage() {
                 const deltaY = event.clientY - dragStart.y
                 dragDistanceRef.current = Math.hypot(deltaX, deltaY)
                 const currentView = liveViewRef.current
-                const panFactor = event.pointerType === 'touch' ? 2.4 : 1.25
+                const metrics = getSvgRenderMetrics()
+                const svgDeltaX = metrics ? deltaX / metrics.scale : deltaX
+                const svgDeltaY = metrics ? deltaY / metrics.scale : deltaY
 
                 if (dragDistanceRef.current >= tapMoveThreshold) {
                   tapCandidateRef.current = null
@@ -814,8 +832,8 @@ export function TerritoryMapPage() {
 
                 applyView({
                   offset: {
-                    x: dragStart.offsetX + deltaX * panFactor,
-                    y: dragStart.offsetY + deltaY * panFactor,
+                    x: dragStart.offsetX + svgDeltaX,
+                    y: dragStart.offsetY + svgDeltaY,
                   },
                   zoom: currentView.zoom,
                 })
@@ -833,7 +851,7 @@ export function TerritoryMapPage() {
                   tapCandidate &&
                   tapCandidate.pointerId === event.pointerId &&
                   tapCandidate.territoryId &&
-                  !pinchActiveRef.current &&
+                  !multiPointerActiveRef.current &&
                   Math.hypot(
                     event.clientX - tapCandidate.x,
                     event.clientY - tapCandidate.y,
@@ -1059,81 +1077,82 @@ export function TerritoryMapPage() {
             )}
           </Card>
 
-          <Card>
-            <CardHeader className="p-4">
-              <div className="flex min-w-0 items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                    <Trophy className="size-4" />
-                  </div>
-                  <CardTitle>Achievements</CardTitle>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-10 shrink-0 sm:size-9"
-                  aria-label={
-                    isAchievementsOpen
-                      ? 'Achievements einklappen'
-                      : 'Achievements ausklappen'
-                  }
-                  title={
-                    isAchievementsOpen
-                      ? 'Achievements einklappen'
-                      : 'Achievements ausklappen'
-                  }
-                  onClick={() => setIsAchievementsOpen((current) => !current)}
-                >
-                  {isAchievementsOpen ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-            {isAchievementsOpen && (
-              <CardContent className="p-4 pt-0">
-                <ul className="grid gap-2">
-                  {achievements.map((achievement) => {
-                    const Icon = achievement.Icon
-                    const winnerLabel = achievement.winnerNames.join(', ')
-                    const isUnlocked = achievement.winnerNames.length > 0
-
-                    return (
-                      <li
-                        key={achievement.id}
-                        aria-label={`${achievement.title}: ${achievement.rule}`}
-                        className={[
-                          'group grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          isUnlocked
-                            ? 'text-foreground'
-                            : 'text-muted-foreground opacity-55 grayscale',
-                        ].join(' ')}
-                        tabIndex={0}
-                        title={achievement.rule}
-                      >
-                        <span className="min-w-0 truncate font-medium">
-                          {achievement.title}
-                        </span>
-                        <span className="flex size-8 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                          <Icon className="size-4" />
-                        </span>
-                        <span className="min-w-0 truncate text-right font-semibold">
-                          {winnerLabel || '-'}
-                        </span>
-                        <span className="col-span-3 hidden rounded-md bg-secondary/70 px-2 py-1 text-xs leading-snug text-secondary-foreground group-hover:block group-focus:block group-active:block">
-                          {achievement.rule}
-                        </span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </CardContent>
-            )}
-          </Card>
         </div>
       </section>
+
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                <Trophy className="size-4" />
+              </div>
+              <CardTitle>Achievements</CardTitle>
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-10 shrink-0 sm:size-9"
+              aria-label={
+                isAchievementsOpen
+                  ? 'Achievements einklappen'
+                  : 'Achievements ausklappen'
+              }
+              title={
+                isAchievementsOpen
+                  ? 'Achievements einklappen'
+                  : 'Achievements ausklappen'
+              }
+              onClick={() => setIsAchievementsOpen((current) => !current)}
+            >
+              {isAchievementsOpen ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        {isAchievementsOpen && (
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {achievements.map((achievement) => {
+                const Icon = achievement.Icon
+                const winnerLabel = achievement.winnerNames.join(', ')
+                const isUnlocked = achievement.winnerNames.length > 0
+
+                return (
+                  <li
+                    key={achievement.id}
+                    aria-label={`${achievement.title}: ${achievement.rule}`}
+                    className={[
+                      'group grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      isUnlocked
+                        ? 'text-foreground'
+                        : 'text-muted-foreground opacity-55 grayscale',
+                    ].join(' ')}
+                    tabIndex={0}
+                    title={achievement.rule}
+                  >
+                    <span className="min-w-0 truncate font-medium">
+                      {achievement.title}
+                    </span>
+                    <span className="flex size-8 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                      <Icon className="size-4" />
+                    </span>
+                    <span className="min-w-0 truncate text-right font-semibold">
+                      {winnerLabel || '-'}
+                    </span>
+                    <span className="col-span-3 hidden rounded-md bg-secondary/70 px-2 py-1 text-xs leading-snug text-secondary-foreground group-hover:block group-focus:block group-active:block">
+                      {achievement.rule}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </CardContent>
+        )}
+      </Card>
 
       <Card>
         <CardHeader className="p-4 sm:p-6">

@@ -5,12 +5,6 @@ export const mapLabels: Record<TerritoryMapId, string> = {
   germany: 'Deutschland',
 }
 
-const maxZoom = 8
-const minZoom = 0.7
-
 export const tapMoveThreshold = 8
 export const unclaimedValue = '__unclaimed'
-
-export function clampZoom(value: number) {
-  return Math.min(maxZoom, Math.max(minZoom, value))
-}
+export const mapZoomLevels = [1, 1.5, 2, 4] as const
