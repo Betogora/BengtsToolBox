@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 
-import { territoriesByMap } from '@/apps/territory-map/data/territories'
+import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import type {
   TerritoryClaim,
   TerritoryClaimOwner,
@@ -26,15 +26,8 @@ export const territoryColorPresets = [...participantColorPresets]
 
 const activeDatasetId = 'dataset-current'
 
-const emptyClaimsByMap: TerritoryClaimsByMap = {
-  world: {},
-  germany: {},
-}
-
 const initialState: TerritoryMapState = {
   activeMap: 'world',
-  claimsByMap: emptyClaimsByMap,
-  lastClaimAction: null,
 }
 
 const defaultPlayers: TerritoryPlayer[] = [
@@ -139,51 +132,6 @@ function normalizePlayer(
   }
 }
 
-function normalizeClaimsByMap(
-  claimsByMap: Partial<TerritoryClaimsByMap> | undefined,
-): TerritoryClaimsByMap {
-  return {
-    world: Object.fromEntries(
-      Object.entries(claimsByMap?.world ?? {}).map(([id, claim], index) => [
-        id,
-        {
-          ...claim,
-          owners: claim.owners ?? [
-            {
-              playerId: claim.playerId,
-              playerName: claim.playerName,
-              playerColor: claim.playerColor,
-            },
-          ],
-          playerColor: sanitizeColor(
-            claim.playerColor,
-            getTerritoryColorByIndex(index),
-          ),
-        },
-      ]),
-    ),
-    germany: Object.fromEntries(
-      Object.entries(claimsByMap?.germany ?? {}).map(([id, claim], index) => [
-        id,
-        {
-          ...claim,
-          owners: claim.owners ?? [
-            {
-              playerId: claim.playerId,
-              playerName: claim.playerName,
-              playerColor: claim.playerColor,
-            },
-          ],
-          playerColor: sanitizeColor(
-            claim.playerColor,
-            getTerritoryColorByIndex(index),
-          ),
-        },
-      ]),
-    ),
-  }
-}
-
 function normalizeState(state: TerritoryMapState): TerritoryMapState {
   const activeMap = state.activeMap === 'germany' ? 'germany' : 'world'
 
@@ -191,21 +139,14 @@ function normalizeState(state: TerritoryMapState): TerritoryMapState {
     ...initialState,
     ...state,
     activeMap,
-    claimsByMap: normalizeClaimsByMap(state.claimsByMap),
-    lastClaimAction: null,
   }
 }
 
 function getTerritoryName(mapId: TerritoryMapId, territoryId: string) {
   return (
-    territoriesByMap[mapId].find((territory) => territory.id === territoryId)
+    territoryOptionsByMap[mapId].find((territory) => territory.id === territoryId)
       ?.name ?? territoryId
   )
-}
-
-function getKnownTerritoryName(mapId: TerritoryMapId, territoryId: string) {
-  return territoriesByMap[mapId].find((territory) => territory.id === territoryId)
-    ?.name
 }
 
 function compareEventsAscending(
@@ -248,7 +189,7 @@ function normalizeEvent(
     ...event,
     mapId,
     territoryName:
-      getKnownTerritoryName(mapId, event.territoryId) ??
+      getTerritoryName(mapId, event.territoryId) ??
       event.territoryName ??
       event.territoryId,
     playerName: player?.name ?? event.playerName,
@@ -331,41 +272,6 @@ function getCurrentClaims(events: TerritoryVisitEvent[]): TerritoryClaimsByMap {
   })
 
   return claimsByMap
-}
-
-function createEventsFromLegacyClaims(
-  claimsByMap: TerritoryClaimsByMap,
-): TerritoryVisitEvent[] {
-  let position = 0
-
-  return (Object.entries(claimsByMap) as [TerritoryMapId, Record<string, TerritoryClaim>][])
-    .flatMap(([mapId, claims]) =>
-      Object.values(claims).map((claim) => {
-        position += 1
-        const createdAtClientIso =
-          claim.claimedAtClientIso || new Date().toISOString()
-
-        return {
-          id: `event-${createRandomId()}`,
-          mapId,
-          territoryId: claim.territoryId,
-          territoryName: getTerritoryName(mapId, claim.territoryId),
-          playerId: claim.playerId,
-          playerName: claim.playerName,
-          playerColor: claim.playerColor,
-          owners: claim.owners ?? [
-            {
-              playerId: claim.playerId,
-              playerName: claim.playerName,
-              playerColor: claim.playerColor,
-            },
-          ],
-          createdAtClientIso,
-          createdAtLabel: createdAtClientIso,
-          position,
-        }
-      }),
-    )
 }
 
 function getLatestEventIdsForTerritoryDay(
@@ -453,15 +359,13 @@ export function useTerritoryMap(sessionId = 'default') {
       return
     }
 
-    const legacyEvents = createEventsFromLegacyClaims(state.claimsByMap)
     const dataset = {
       ...createDataset(),
-      events: legacyEvents,
       lastUpdatedBy: session.userId,
     }
 
     datasetsStore.saveItems([dataset])
-  }, [datasetsStore, session.userId, state.claimsByMap])
+  }, [datasetsStore, session.userId])
 
   const saveActiveDataset = (partialValue: Partial<TerritoryDataset>) => {
     const nextDataset = {

@@ -103,11 +103,18 @@ function AppPreview({ appId }: { appId: string }) {
 }
 
 function AppTile({ app }: AppTileProps) {
+  const prefetchApp = () => {
+    void app.loadPage()
+  }
+
   return (
     <Link
       to={app.href}
       aria-label={`${app.title} oeffnen`}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      onFocus={prefetchApp}
+      onMouseEnter={prefetchApp}
+      onTouchStart={prefetchApp}
     >
       <Card className="relative h-40 overflow-hidden transition-colors group-hover:border-primary/55 group-hover:bg-card/95">
         <div

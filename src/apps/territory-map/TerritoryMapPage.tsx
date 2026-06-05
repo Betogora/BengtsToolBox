@@ -24,7 +24,10 @@ import {
   TerritoryEventTable,
   TerritoryShape,
 } from '@/apps/territory-map/components'
-import { mapViewBoxes, territoriesByMap } from '@/apps/territory-map/data/territories'
+import {
+  loadTerritories,
+  mapViewBoxes,
+} from '@/apps/territory-map/data/territories'
 import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
 import {
   clampZoom,
@@ -33,6 +36,7 @@ import {
   unclaimedValue,
 } from '@/apps/territory-map/mapConfig'
 import type {
+  Territory,
   TerritoryMapId,
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
@@ -66,6 +70,8 @@ type MapPointer = {
   y: number
 }
 
+const emptyTerritories: Territory[] = []
+
 function getMapTransform(view: MapView) {
   return `translate(${view.offset.x} ${view.offset.y}) scale(${view.zoom})`
 }
@@ -98,8 +104,14 @@ export function TerritoryMapPage() {
     updatePlayerColor,
     updatePlayerName,
   } = useTerritoryMap()
-  const [isDatasetOpen, setIsDatasetOpen] = useState(true)
+  const [isDatasetOpen, setIsDatasetOpen] = useState(false)
+  const [isMapDragging, setIsMapDragging] = useState(false)
+  const [isScoreOpen, setIsScoreOpen] = useState(true)
+  const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
+  const [territoriesByMap, setTerritoriesByMap] = useState<
+    Partial<Record<TerritoryMapId, Territory[]>>
+  >({})
   const [view, setView] = useState<MapView>({
     offset: { x: 0, y: 0 },
     zoom: 1,
@@ -125,7 +137,8 @@ export function TerritoryMapPage() {
     x: number
     y: number
   } | null>(null)
-  const territories = territoriesByMap[state.activeMap]
+  const territories = territoriesByMap[state.activeMap] ?? emptyTerritories
+  const isMapLoading = territories.length === 0
   const selectedTerritory = useMemo(
     () =>
       territories.find((territory) => territory.id === selectedTerritoryId) ??
@@ -275,6 +288,7 @@ export function TerritoryMapPage() {
     dragStartRef.current = null
     pinchActiveRef.current = false
     tapCandidateRef.current = null
+    setIsMapDragging(false)
     commitLiveView()
   }
 
@@ -291,6 +305,25 @@ export function TerritoryMapPage() {
     },
     [],
   )
+
+  useEffect(() => {
+    let isActive = true
+
+    loadTerritories(state.activeMap).then((nextTerritories) => {
+      if (!isActive) {
+        return
+      }
+
+      setTerritoriesByMap((current) => ({
+        ...current,
+        [state.activeMap]: nextTerritories,
+      }))
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [state.activeMap])
 
   const handleMapChange = (nextMap: string) => {
     setSelectedTerritoryId(null)
@@ -398,6 +431,7 @@ export function TerritoryMapPage() {
                 }
 
                 event.currentTarget.setPointerCapture(event.pointerId)
+                setIsMapDragging(true)
                 activePointersRef.current.set(event.pointerId, {
                   x: event.clientX,
                   y: event.clientY,
@@ -470,6 +504,7 @@ export function TerritoryMapPage() {
                 const deltaY = event.clientY - dragStart.y
                 dragDistanceRef.current = Math.hypot(deltaX, deltaY)
                 const currentView = liveViewRef.current
+                const panFactor = event.pointerType === 'touch' ? 2.4 : 1.25
 
                 if (dragDistanceRef.current >= tapMoveThreshold) {
                   tapCandidateRef.current = null
@@ -477,8 +512,8 @@ export function TerritoryMapPage() {
 
                 applyView({
                   offset: {
-                    x: dragStart.offsetX + (deltaX / currentView.zoom) * 1.25,
-                    y: dragStart.offsetY + (deltaY / currentView.zoom) * 1.25,
+                    x: dragStart.offsetX + (deltaX / currentView.zoom) * panFactor,
+                    y: dragStart.offsetY + (deltaY / currentView.zoom) * panFactor,
                   },
                   zoom: currentView.zoom,
                 })
@@ -534,27 +569,30 @@ export function TerritoryMapPage() {
                     <rect width="10" height="10" fill="var(--muted)" />
                     <rect width="3" height="10" fill="var(--border)" opacity="0.75" />
                   </pattern>
-                  <filter id="map-shadow" x="-10%" y="-10%" width="120%" height="120%">
-                    <feDropShadow
-                      dx="0"
-                      dy="10"
-                      stdDeviation="14"
-                      floodColor="var(--foreground)"
-                      floodOpacity="0.16"
-                    />
-                  </filter>
                 </defs>
                 <rect width="100%" height="100%" fill="var(--secondary)" />
                 <g
                   ref={mapLayerRef}
                   className="territory-map-layer"
                   transform={getMapTransform(view)}
-                  filter="url(#map-shadow)"
                 >
+                  {isMapLoading && territories.length === 0 && (
+                    <text
+                      x="50%"
+                      y="50%"
+                      dominantBaseline="middle"
+                      textAnchor="middle"
+                      fill="var(--muted-foreground)"
+                      fontSize="14"
+                    >
+                      Karte wird geladen...
+                    </text>
+                  )}
                   {territories.map((territory) => (
                     <TerritoryShape
                       key={territory.id}
                       claim={currentClaims[territory.id]}
+                      isInteractionActive={isMapDragging}
                       isSelected={selectedTerritoryId === territory.id}
                       onSelect={() => setSelectedTerritoryId(territory.id)}
                       players={players}
@@ -569,15 +607,40 @@ export function TerritoryMapPage() {
 
         <div className="grid content-start gap-4">
           <Card>
-            <CardHeader className="flex-row items-center gap-3 p-4">
-              <div className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                <Users className="size-4" />
-              </div>
-              <div>
-                <CardTitle>Sushi-Tourist</CardTitle>
+            <CardHeader className="p-4">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                    <Users className="size-4" />
+                  </div>
+                  <CardTitle>Sushi-Tourist</CardTitle>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0 sm:size-9"
+                  aria-label={
+                    isSushiTouristOpen
+                      ? 'Sushi-Tourist einklappen'
+                      : 'Sushi-Tourist ausklappen'
+                  }
+                  title={
+                    isSushiTouristOpen
+                      ? 'Sushi-Tourist einklappen'
+                      : 'Sushi-Tourist ausklappen'
+                  }
+                  onClick={() => setIsSushiTouristOpen((current) => !current)}
+                >
+                  {isSushiTouristOpen ? (
+                    <ChevronDown className="size-4" />
+                  ) : (
+                    <ChevronRight className="size-4" />
+                  )}
+                </Button>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-3 p-4 pt-0">
+            {isSushiTouristOpen && (
+              <CardContent className="grid gap-3 p-4 pt-0">
               {players.map((player) => (
                 <div
                   key={player.id}
@@ -623,22 +686,40 @@ export function TerritoryMapPage() {
                 </div>
               ))}
               <AddEaterCard onAdd={handleAddEater} />
-              {isLoading && (
-                <p className="text-sm text-muted-foreground">Lade Spielstand...</p>
+              {isLoading && players.length === 0 && (
+                <p className="text-sm text-muted-foreground">Synchronisiere...</p>
               )}
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
 
           <Card>
-            <CardHeader className="flex-row items-center gap-3 p-4">
-              <div className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                <ListOrdered className="size-4" />
-              </div>
-              <div>
-                <CardTitle>Punktzahl</CardTitle>
+            <CardHeader className="p-4">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                    <ListOrdered className="size-4" />
+                  </div>
+                  <CardTitle>Punktzahl</CardTitle>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0 sm:size-9"
+                  aria-label={isScoreOpen ? 'Punktzahl einklappen' : 'Punktzahl ausklappen'}
+                  title={isScoreOpen ? 'Punktzahl einklappen' : 'Punktzahl ausklappen'}
+                  onClick={() => setIsScoreOpen((current) => !current)}
+                >
+                  {isScoreOpen ? (
+                    <ChevronDown className="size-4" />
+                  ) : (
+                    <ChevronRight className="size-4" />
+                  )}
+                </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            {isScoreOpen && (
+              <CardContent className="p-4 pt-0">
               <ol className="grid gap-2">
                 {sushiScores.map((score) => (
                   <li
@@ -672,7 +753,8 @@ export function TerritoryMapPage() {
                   </li>
                 ))}
               </ol>
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
         </div>
       </section>

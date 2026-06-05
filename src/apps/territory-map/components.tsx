@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { memo, useRef, useState, type ReactNode } from 'react'
 
-import { territoriesByMap } from '@/apps/territory-map/data/territories'
+import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import { unclaimedValue } from '@/apps/territory-map/mapConfig'
 import type {
   Territory,
@@ -126,12 +126,14 @@ function getClaimColor(
 
 export const TerritoryShape = memo(function TerritoryShape({
   claim,
+  isInteractionActive,
   isSelected,
   onSelect,
   players,
   territory,
 }: {
   claim?: TerritoryClaim
+  isInteractionActive: boolean
   isSelected: boolean
   onSelect: () => void
   players: TerritoryPlayer[]
@@ -186,7 +188,10 @@ export const TerritoryShape = memo(function TerritoryShape({
         role="button"
         tabIndex={0}
         aria-label={`${territory.name}, ${ownerLabel}`}
-        className="cursor-pointer transition-[opacity,stroke-width] focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105"
+        className={[
+          'cursor-pointer focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105',
+          isInteractionActive ? '' : 'transition-[opacity,stroke-width]',
+        ].join(' ')}
         data-territory-id={territory.id}
         fill={ownerColor}
         opacity={claim ? 0.94 : 1}
@@ -457,7 +462,7 @@ export function TerritoryEventTable({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {territoriesByMap[event.mapId].map((territory) => (
+                    {territoryOptionsByMap[event.mapId].map((territory) => (
                       <SelectItem key={territory.id} value={territory.id}>
                         {territory.name}
                       </SelectItem>

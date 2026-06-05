@@ -22,15 +22,6 @@ export type TerritoryClaim = {
   claimedAtClientIso: string
 }
 
-export type TerritoryClaimAction = {
-  id: string
-  mapId: TerritoryMapId
-  territoryId: string
-  previousClaim: TerritoryClaim | null
-  nextClaim: TerritoryClaim | null
-  createdAtClientIso: string
-}
-
 export type TerritoryClaimsByMap = Record<
   TerritoryMapId,
   Record<string, TerritoryClaim>
@@ -38,8 +29,6 @@ export type TerritoryClaimsByMap = Record<
 
 export type TerritoryMapState = {
   activeMap: TerritoryMapId
-  claimsByMap: TerritoryClaimsByMap
-  lastClaimAction: TerritoryClaimAction | null
   updatedBy?: string
 }
 
