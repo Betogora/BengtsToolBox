@@ -335,7 +335,7 @@ export function TerritoryMapPage() {
             </div>
             <div>
               <h1 className="text-3xl font-semibold tracking-normal">
-                World Sushi Map
+                Sushi Map
               </h1>
             </div>
           </div>
@@ -680,10 +680,12 @@ export function TerritoryMapPage() {
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <CardTitle className="flex min-w-0 items-center gap-2 text-xl sm:text-2xl">
-              <BarChart3 className="size-5 shrink-0 text-primary" />
-              Datensatz
-            </CardTitle>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                <BarChart3 className="size-4" />
+              </div>
+              <CardTitle>Datensatz</CardTitle>
+            </div>
             <Button
               variant="outline"
               size="icon"
