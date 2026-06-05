@@ -7,4 +7,4 @@ export const mapLabels: Record<TerritoryMapId, string> = {
 
 export const tapMoveThreshold = 8
 export const unclaimedValue = '__unclaimed'
-export const mapZoomLevels = [1, 1.5, 2, 4] as const
+export const mapZoomLevels = [1, 2, 4] as const

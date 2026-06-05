@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -88,6 +89,20 @@ type MapView = {
     y: number
   }
   zoom: number
+}
+
+type SvgRenderMetrics = {
+  left: number
+  scale: number
+  top: number
+  viewBoxX: number
+  viewBoxY: number
+}
+
+type PendingDragMove = {
+  clientX: number
+  clientY: number
+  pointerId: number
 }
 
 const emptyTerritories: Territory[] = []
@@ -404,7 +419,6 @@ export function TerritoryMapPage() {
   } = useTerritoryMap()
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(true)
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
-  const [isMapDragging, setIsMapDragging] = useState(false)
   const [isScoreOpen, setIsScoreOpen] = useState(true)
   const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
@@ -424,7 +438,11 @@ export function TerritoryMapPage() {
   } | null>(null)
   const liveViewRef = useRef<MapView>(view)
   const mapLayerRef = useRef<SVGGElement | null>(null)
+  const mapViewportRef = useRef<HTMLDivElement | null>(null)
+  const gestureMetricsRef = useRef<SvgRenderMetrics | null>(null)
   const multiPointerActiveRef = useRef(false)
+  const pendingDragMoveRef = useRef<PendingDragMove | null>(null)
+  const panRafRef = useRef<number | null>(null)
   const rafRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const tapCandidateRef = useRef<{
@@ -534,7 +552,8 @@ export function TerritoryMapPage() {
       left,
       scale,
       top,
-      viewBox,
+      viewBoxX: viewBox.x,
+      viewBoxY: viewBox.y,
     }
   }
 
@@ -546,9 +565,70 @@ export function TerritoryMapPage() {
     }
 
     return {
-      x: (clientX - metrics.left) / metrics.scale + metrics.viewBox.x,
-      y: (clientY - metrics.top) / metrics.scale + metrics.viewBox.y,
+      x: (clientX - metrics.left) / metrics.scale + metrics.viewBoxX,
+      y: (clientY - metrics.top) / metrics.scale + metrics.viewBoxY,
     }
+  }
+
+  const setMapDragging = (isDragging: boolean) => {
+    const viewport = mapViewportRef.current
+
+    if (!viewport) {
+      return
+    }
+
+    viewport.dataset.mapDragging = String(isDragging)
+  }
+
+  const applyPendingDragMove = () => {
+    panRafRef.current = null
+
+    const pendingMove = pendingDragMoveRef.current
+    pendingDragMoveRef.current = null
+
+    if (!pendingMove || !activePointersRef.current.has(pendingMove.pointerId)) {
+      return
+    }
+
+    if (activePointersRef.current.size > 1) {
+      multiPointerActiveRef.current = true
+      tapCandidateRef.current = null
+      return
+    }
+
+    const dragStart = dragStartRef.current
+
+    if (!dragStart || dragStart.pointerId !== pendingMove.pointerId) {
+      return
+    }
+
+    const deltaX = pendingMove.clientX - dragStart.x
+    const deltaY = pendingMove.clientY - dragStart.y
+    dragDistanceRef.current = Math.hypot(deltaX, deltaY)
+
+    const metrics = gestureMetricsRef.current
+    const svgDeltaX = metrics ? deltaX / metrics.scale : deltaX
+    const svgDeltaY = metrics ? deltaY / metrics.scale : deltaY
+
+    if (dragDistanceRef.current >= tapMoveThreshold) {
+      tapCandidateRef.current = null
+    }
+
+    applyView({
+      offset: {
+        x: dragStart.offsetX + svgDeltaX,
+        y: dragStart.offsetY + svgDeltaY,
+      },
+      zoom: liveViewRef.current.zoom,
+    })
+  }
+
+  const schedulePendingDragMove = () => {
+    if (panRafRef.current !== null) {
+      return
+    }
+
+    panRafRef.current = window.requestAnimationFrame(applyPendingDragMove)
   }
 
   const applyZoomAt = (
@@ -619,10 +699,17 @@ export function TerritoryMapPage() {
       activePointersRef.current.clear()
     }
 
+    if (panRafRef.current !== null) {
+      window.cancelAnimationFrame(panRafRef.current)
+      applyPendingDragMove()
+    }
+
     dragStartRef.current = null
+    gestureMetricsRef.current = null
     multiPointerActiveRef.current = false
+    pendingDragMoveRef.current = null
     tapCandidateRef.current = null
-    setIsMapDragging(false)
+    setMapDragging(false)
     commitLiveView()
   }
 
@@ -635,6 +722,10 @@ export function TerritoryMapPage() {
     () => () => {
       if (rafRef.current !== null) {
         window.cancelAnimationFrame(rafRef.current)
+      }
+
+      if (panRafRef.current !== null) {
+        window.cancelAnimationFrame(panRafRef.current)
       }
     },
     [],
@@ -691,6 +782,10 @@ export function TerritoryMapPage() {
   const handleAddEater = async () => {
     await addPlayer()
   }
+
+  const handleTerritorySelect = useCallback((territoryId: string) => {
+    setSelectedTerritoryId(territoryId)
+  }, [])
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
@@ -766,6 +861,8 @@ export function TerritoryMapPage() {
 
           <CardContent className="bg-secondary p-0">
             <div
+              ref={mapViewportRef}
+              data-map-dragging="false"
               className={[
                 'touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing',
                 state.activeMap === 'germany'
@@ -778,9 +875,10 @@ export function TerritoryMapPage() {
                 }
 
                 event.currentTarget.setPointerCapture(event.pointerId)
-                setIsMapDragging(true)
+                setMapDragging(true)
                 activePointersRef.current.add(event.pointerId)
                 dragDistanceRef.current = 0
+                gestureMetricsRef.current = getSvgRenderMetrics()
                 dragStartRef.current = {
                   pointerId: event.pointerId,
                   x: event.clientX,
@@ -799,6 +897,7 @@ export function TerritoryMapPage() {
                   multiPointerActiveRef.current = true
                   tapCandidateRef.current = null
                   dragStartRef.current = null
+                  pendingDragMoveRef.current = null
                 }
               }}
               onPointerMove={(event) => {
@@ -809,40 +908,27 @@ export function TerritoryMapPage() {
                 if (activePointersRef.current.size > 1) {
                   multiPointerActiveRef.current = true
                   tapCandidateRef.current = null
+                  pendingDragMoveRef.current = null
                   return
                 }
 
-                const dragStart = dragStartRef.current
-
-                if (!dragStart || dragStart.pointerId !== event.pointerId) {
-                  return
+                pendingDragMoveRef.current = {
+                  clientX: event.clientX,
+                  clientY: event.clientY,
+                  pointerId: event.pointerId,
                 }
-
-                const deltaX = event.clientX - dragStart.x
-                const deltaY = event.clientY - dragStart.y
-                dragDistanceRef.current = Math.hypot(deltaX, deltaY)
-                const currentView = liveViewRef.current
-                const metrics = getSvgRenderMetrics()
-                const svgDeltaX = metrics ? deltaX / metrics.scale : deltaX
-                const svgDeltaY = metrics ? deltaY / metrics.scale : deltaY
-
-                if (dragDistanceRef.current >= tapMoveThreshold) {
-                  tapCandidateRef.current = null
-                }
-
-                applyView({
-                  offset: {
-                    x: dragStart.offsetX + svgDeltaX,
-                    y: dragStart.offsetY + svgDeltaY,
-                  },
-                  zoom: currentView.zoom,
-                })
+                schedulePendingDragMove()
               }}
               onPointerUp={(event) => {
                 const tapCandidate = tapCandidateRef.current
 
                 if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                   event.currentTarget.releasePointerCapture(event.pointerId)
+                }
+
+                if (panRafRef.current !== null) {
+                  window.cancelAnimationFrame(panRafRef.current)
+                  applyPendingDragMove()
                 }
 
                 activePointersRef.current.delete(event.pointerId)
@@ -867,6 +953,11 @@ export function TerritoryMapPage() {
               onPointerCancel={(event) => {
                 if (event.currentTarget.hasPointerCapture(event.pointerId)) {
                   event.currentTarget.releasePointerCapture(event.pointerId)
+                }
+
+                if (panRafRef.current !== null) {
+                  window.cancelAnimationFrame(panRafRef.current)
+                  applyPendingDragMove()
                 }
 
                 stopMapGesture(event.pointerId)
@@ -912,9 +1003,8 @@ export function TerritoryMapPage() {
                     <TerritoryShape
                       key={territory.id}
                       claim={currentClaims[territory.id]}
-                      isInteractionActive={isMapDragging}
                       isSelected={selectedTerritoryId === territory.id}
-                      onSelect={() => setSelectedTerritoryId(territory.id)}
+                      onSelect={handleTerritorySelect}
                       players={players}
                       territory={territory}
                     />

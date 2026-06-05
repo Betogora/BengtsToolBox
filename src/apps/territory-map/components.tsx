@@ -126,16 +126,14 @@ function getClaimColor(
 
 export const TerritoryShape = memo(function TerritoryShape({
   claim,
-  isInteractionActive,
   isSelected,
   onSelect,
   players,
   territory,
 }: {
   claim?: TerritoryClaim
-  isInteractionActive: boolean
   isSelected: boolean
-  onSelect: () => void
+  onSelect: (territoryId: string) => void
   players: TerritoryPlayer[]
   territory: Territory
 }) {
@@ -188,10 +186,7 @@ export const TerritoryShape = memo(function TerritoryShape({
         role="button"
         tabIndex={0}
         aria-label={`${territory.name}, ${ownerLabel}`}
-        className={[
-          'cursor-pointer focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105',
-          isInteractionActive ? '' : 'transition-[opacity,stroke-width]',
-        ].join(' ')}
+        className="territory-shape cursor-pointer transition-[opacity,stroke-width] focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105"
         data-territory-id={territory.id}
         fill={ownerColor}
         opacity={claim ? 0.94 : 1}
@@ -201,7 +196,7 @@ export const TerritoryShape = memo(function TerritoryShape({
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            onSelect()
+            onSelect(territory.id)
           }
         }}
       >
