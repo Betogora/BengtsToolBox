@@ -13,12 +13,10 @@ import {
   Mountain,
   ShipWheel,
   Snowflake,
-  Tent,
   Trash2,
   Trophy,
   UtensilsCrossed,
   Users,
-  Waves,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -75,11 +73,12 @@ type AchievementDefinition = {
   id: string
   title: string
   Icon: LucideIcon
+  rule: string
   matches: (event: TerritoryVisitEvent) => boolean
 }
 
 type AchievementResult = AchievementDefinition & {
-  winnerName: string | null
+  winnerNames: string[]
 }
 
 type MapView = {
@@ -156,55 +155,8 @@ const africanTerritoryIds = new Set([
   'zm',
   'zw',
 ])
-const islandTerritoryIds = new Set([
-  'ag',
-  'as',
-  'au',
-  'bb',
-  'bm',
-  'bs',
-  'ck',
-  'cu',
-  'cv',
-  'cy',
-  'dm',
-  'do',
-  'fj',
-  'fk',
-  'gd',
-  'gl',
-  'gu',
-  'ht',
-  'id',
-  'ie',
-  'im',
-  'is',
-  'jm',
-  'jp',
-  'ki',
-  'kn',
-  'lc',
-  'lk',
-  'mg',
-  'mh',
-  'mt',
-  'mu',
-  'mv',
-  'nc',
-  'nz',
-  'pg',
-  'ph',
-  'sb',
-  'sc',
-  'sg',
-  'to',
-  'tt',
-  'tv',
-  'vc',
-  'ws',
-])
 const nordicTerritoryIds = new Set(['dk', 'fi', 'fo', 'gl', 'is', 'nor', 'se'])
-const alpineTerritoryIds = new Set(['at', 'ch', 'de'])
+const alpineTerritoryIds = new Set(['at', 'ch'])
 const balkanTerritoryIds = new Set([
   'al',
   'ba',
@@ -289,29 +241,13 @@ const pacificTerritoryIds = new Set([
   'ws',
 ])
 const microstateTerritoryIds = new Set(['ad', 'li', 'mc', 'mt', 'sm', 'va'])
-const desertTerritoryIds = new Set([
-  'dz',
-  'eg',
-  'eh',
-  'jo',
-  'ly',
-  'ma',
-  'ml',
-  'mr',
-  'ne',
-  'om',
-  'sa',
-  'sd',
-  'td',
-  'tn',
-])
-const cityTerritoryIds = new Set(['hk', 'mo', 'sg', 'va'])
 
 const achievementDefinitions: AchievementDefinition[] = [
   {
     id: 'sushi-in-afrika',
     title: 'Sushi in Afrika',
     Icon: Globe2,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte mindestens ein afrikanisches Territorium bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && africanTerritoryIds.has(event.territoryId),
   },
@@ -319,21 +255,16 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'heimspiel',
     title: 'Heimspiel',
     Icon: Home,
+    rule: 'Dieses Achievement bekommt jede Person, die Deutschland auf der Weltkarte oder ein Bundesland auf der Deutschlandkarte bereist hat.',
     matches: (event) =>
       (event.mapId === 'world' && event.territoryId === 'de') ||
       event.mapId === 'germany',
   },
   {
-    id: 'inselhunger',
-    title: 'Inselhunger',
-    Icon: Waves,
-    matches: (event) =>
-      event.mapId === 'world' && islandTerritoryIds.has(event.territoryId),
-  },
-  {
     id: 'nordlicht',
     title: 'Nordlicht',
     Icon: Snowflake,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein nordisches Territorium bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && nordicTerritoryIds.has(event.territoryId),
   },
@@ -341,6 +272,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'alpengeschmack',
     title: 'Alpengeschmack',
     Icon: Mountain,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte Österreich oder die Schweiz bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && alpineTerritoryIds.has(event.territoryId),
   },
@@ -348,6 +280,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'balkan-rolle',
     title: 'Balkan-Rolle',
     Icon: MapPinned,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein Balkan-Territorium bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && balkanTerritoryIds.has(event.territoryId),
   },
@@ -355,6 +288,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'sushi-in-amerika',
     title: 'Sushi in Amerika',
     Icon: Compass,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein Territorium in Nord-, Mittel- oder Südamerika bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && americaTerritoryIds.has(event.territoryId),
   },
@@ -362,6 +296,7 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'pazifik-teller',
     title: 'Pazifik-Teller',
     Icon: ShipWheel,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte ein Territorium in Ozeanien oder im Pazifik bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && pacificTerritoryIds.has(event.territoryId),
   },
@@ -369,23 +304,23 @@ const achievementDefinitions: AchievementDefinition[] = [
     id: 'mikro-maki',
     title: 'Mikro-Maki',
     Icon: Landmark,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte einen Microstate bereist hat.',
     matches: (event) =>
       event.mapId === 'world' && microstateTerritoryIds.has(event.territoryId),
   },
   {
-    id: 'wuesten-wasabi',
-    title: 'Wüsten-Wasabi',
-    Icon: Tent,
-    matches: (event) =>
-      event.mapId === 'world' && desertTerritoryIds.has(event.territoryId),
+    id: 'land-der-sushi',
+    title: 'Land der Sushis',
+    Icon: UtensilsCrossed,
+    rule: 'Dieses Achievement bekommt jede Person, die auf der Weltkarte Japan bereist hat.',
+    matches: (event) => event.mapId === 'world' && event.territoryId === 'jp',
   },
   {
     id: 'hauptstadt-happen',
     title: 'Hauptstadt-Happen',
     Icon: Building2,
-    matches: (event) =>
-      (event.mapId === 'world' && cityTerritoryIds.has(event.territoryId)) ||
-      (event.mapId === 'germany' && event.territoryId === 'DE-BE'),
+    rule: 'Dieses Achievement bekommt jede Person, die Berlin auf der Deutschlandkarte bereist hat.',
+    matches: (event) => event.mapId === 'germany' && event.territoryId === 'DE-BE',
   },
 ]
 
@@ -423,11 +358,17 @@ function getAchievements(events: TerritoryVisitEvent[]): AchievementResult[] {
     .sort(compareEventsByAchievementTime)
 
   return achievementDefinitions.map((achievement) => {
-    const event = sortedEvents.find(achievement.matches)
+    const winners = new Map<string, string>()
+
+    sortedEvents.forEach((event) => {
+      if (achievement.matches(event) && !winners.has(event.playerId)) {
+        winners.set(event.playerId, event.playerName)
+      }
+    })
 
     return {
       ...achievement,
-      winnerName: event?.playerName ?? null,
+      winnerNames: [...winners.values()],
     }
   })
 }
@@ -1156,17 +1097,21 @@ export function TerritoryMapPage() {
                 <ul className="grid gap-2">
                   {achievements.map((achievement) => {
                     const Icon = achievement.Icon
-                    const isUnlocked = Boolean(achievement.winnerName)
+                    const winnerLabel = achievement.winnerNames.join(', ')
+                    const isUnlocked = achievement.winnerNames.length > 0
 
                     return (
                       <li
                         key={achievement.id}
+                        aria-label={`${achievement.title}: ${achievement.rule}`}
                         className={[
-                          'grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 text-sm transition-colors',
+                          'group grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           isUnlocked
                             ? 'text-foreground'
                             : 'text-muted-foreground opacity-55 grayscale',
                         ].join(' ')}
+                        tabIndex={0}
+                        title={achievement.rule}
                       >
                         <span className="min-w-0 truncate font-medium">
                           {achievement.title}
@@ -1175,7 +1120,10 @@ export function TerritoryMapPage() {
                           <Icon className="size-4" />
                         </span>
                         <span className="min-w-0 truncate text-right font-semibold">
-                          {achievement.winnerName ?? '-'}
+                          {winnerLabel || '-'}
+                        </span>
+                        <span className="col-span-3 hidden rounded-md bg-secondary/70 px-2 py-1 text-xs leading-snug text-secondary-foreground group-hover:block group-focus:block group-active:block">
+                          {achievement.rule}
                         </span>
                       </li>
                     )
