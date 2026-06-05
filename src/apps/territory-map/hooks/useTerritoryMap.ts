@@ -203,6 +203,11 @@ function getTerritoryName(mapId: TerritoryMapId, territoryId: string) {
   )
 }
 
+function getKnownTerritoryName(mapId: TerritoryMapId, territoryId: string) {
+  return territoriesByMap[mapId].find((territory) => territory.id === territoryId)
+    ?.name
+}
+
 function compareEventsAscending(
   left: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
   right: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
@@ -242,7 +247,10 @@ function normalizeEvent(
   return {
     ...event,
     mapId,
-    territoryName: event.territoryName || getTerritoryName(mapId, event.territoryId),
+    territoryName:
+      getKnownTerritoryName(mapId, event.territoryId) ??
+      event.territoryName ??
+      event.territoryId,
     playerName: player?.name ?? event.playerName,
     playerColor: player?.color ?? sanitizeColor(event.playerColor, fallbackColor),
     createdAtClientIso,

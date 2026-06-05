@@ -591,7 +591,7 @@ export function TerritoryMapPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <InlineTextEdit
-                        ariaLabel={`Name fuer ${player.name}`}
+                        ariaLabel={`Name für ${player.name}`}
                         fallback={`Sushi-Tourist ${player.position}`}
                         value={player.name}
                         onSave={(value) => updatePlayerName(player.id, value)}
