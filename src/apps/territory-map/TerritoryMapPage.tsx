@@ -1,12 +1,25 @@
 import {
   BarChart3,
+  Building2,
   ChevronDown,
   ChevronRight,
+  Compass,
+  Globe2,
+  Home,
+  Landmark,
   ListOrdered,
+  MapPinned,
   MousePointer2,
+  Mountain,
+  ShipWheel,
+  Snowflake,
+  Tent,
   Trash2,
+  Trophy,
   UtensilsCrossed,
   Users,
+  Waves,
+  type LucideIcon,
 } from 'lucide-react'
 import {
   useEffect,
@@ -39,6 +52,7 @@ import type {
   Territory,
   TerritoryMapId,
   TerritoryPlayer,
+  TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,6 +71,17 @@ type SushiScore = {
   total: number
 }
 
+type AchievementDefinition = {
+  id: string
+  title: string
+  Icon: LucideIcon
+  matches: (event: TerritoryVisitEvent) => boolean
+}
+
+type AchievementResult = AchievementDefinition & {
+  winnerName: string | null
+}
+
 type MapView = {
   offset: {
     x: number
@@ -72,8 +97,339 @@ type MapPointer = {
 
 const emptyTerritories: Territory[] = []
 
+const africanTerritoryIds = new Set([
+  'ao',
+  'bf',
+  'bi',
+  'bj',
+  'bw',
+  'cd',
+  'cf',
+  'cg',
+  'ci',
+  'cm',
+  'cv',
+  'dj',
+  'dz',
+  'eg',
+  'eh',
+  'er',
+  'et',
+  'ga',
+  'gh',
+  'gm',
+  'gn',
+  'gq',
+  'gw',
+  'ke',
+  'km',
+  'lr',
+  'ls',
+  'ly',
+  'ma',
+  'mg',
+  'ml',
+  'mr',
+  'mu',
+  'mw',
+  'mz',
+  'na',
+  'ne',
+  'ng',
+  'rw',
+  'sc',
+  'sd',
+  'sh',
+  'sl',
+  'sn',
+  'so',
+  'sol',
+  'ss',
+  'st',
+  'sz',
+  'td',
+  'tg',
+  'tn',
+  'tz',
+  'ug',
+  'za',
+  'zm',
+  'zw',
+])
+const islandTerritoryIds = new Set([
+  'ag',
+  'as',
+  'au',
+  'bb',
+  'bm',
+  'bs',
+  'ck',
+  'cu',
+  'cv',
+  'cy',
+  'dm',
+  'do',
+  'fj',
+  'fk',
+  'gd',
+  'gl',
+  'gu',
+  'ht',
+  'id',
+  'ie',
+  'im',
+  'is',
+  'jm',
+  'jp',
+  'ki',
+  'kn',
+  'lc',
+  'lk',
+  'mg',
+  'mh',
+  'mt',
+  'mu',
+  'mv',
+  'nc',
+  'nz',
+  'pg',
+  'ph',
+  'sb',
+  'sc',
+  'sg',
+  'to',
+  'tt',
+  'tv',
+  'vc',
+  'ws',
+])
+const nordicTerritoryIds = new Set(['dk', 'fi', 'fo', 'gl', 'is', 'nor', 'se'])
+const alpineTerritoryIds = new Set(['at', 'ch', 'de'])
+const balkanTerritoryIds = new Set([
+  'al',
+  'ba',
+  'bg',
+  'gr',
+  'hr',
+  'kos',
+  'me',
+  'mk',
+  'ro',
+  'rs',
+  'si',
+])
+const americaTerritoryIds = new Set([
+  'ag',
+  'ai',
+  'ar',
+  'aw',
+  'bb',
+  'bm',
+  'bo',
+  'br',
+  'bs',
+  'bz',
+  'ca',
+  'cl',
+  'co',
+  'cr',
+  'cu',
+  'cw',
+  'dm',
+  'do',
+  'ec',
+  'fk',
+  'gd',
+  'gt',
+  'gy',
+  'hn',
+  'ht',
+  'jm',
+  'kn',
+  'lc',
+  'mf',
+  'mx',
+  'ni',
+  'pa',
+  'pe',
+  'pr',
+  'py',
+  'sr',
+  'sx',
+  'tc',
+  'tt',
+  'us',
+  'uy',
+  'vc',
+  've',
+  'vg',
+  'vi',
+])
+const pacificTerritoryIds = new Set([
+  'as',
+  'au',
+  'ck',
+  'fj',
+  'fm',
+  'gu',
+  'ki',
+  'mh',
+  'nc',
+  'nr',
+  'nu',
+  'nz',
+  'pf',
+  'pg',
+  'pw',
+  'sb',
+  'to',
+  'tv',
+  'vu',
+  'wf',
+  'ws',
+])
+const microstateTerritoryIds = new Set(['ad', 'li', 'mc', 'mt', 'sm', 'va'])
+const desertTerritoryIds = new Set([
+  'dz',
+  'eg',
+  'eh',
+  'jo',
+  'ly',
+  'ma',
+  'ml',
+  'mr',
+  'ne',
+  'om',
+  'sa',
+  'sd',
+  'td',
+  'tn',
+])
+const cityTerritoryIds = new Set(['hk', 'mo', 'sg', 'va'])
+
+const achievementDefinitions: AchievementDefinition[] = [
+  {
+    id: 'sushi-in-afrika',
+    title: 'Sushi in Afrika',
+    Icon: Globe2,
+    matches: (event) =>
+      event.mapId === 'world' && africanTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'heimspiel',
+    title: 'Heimspiel',
+    Icon: Home,
+    matches: (event) =>
+      (event.mapId === 'world' && event.territoryId === 'de') ||
+      event.mapId === 'germany',
+  },
+  {
+    id: 'inselhunger',
+    title: 'Inselhunger',
+    Icon: Waves,
+    matches: (event) =>
+      event.mapId === 'world' && islandTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'nordlicht',
+    title: 'Nordlicht',
+    Icon: Snowflake,
+    matches: (event) =>
+      event.mapId === 'world' && nordicTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'alpengeschmack',
+    title: 'Alpengeschmack',
+    Icon: Mountain,
+    matches: (event) =>
+      event.mapId === 'world' && alpineTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'balkan-rolle',
+    title: 'Balkan-Rolle',
+    Icon: MapPinned,
+    matches: (event) =>
+      event.mapId === 'world' && balkanTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'sushi-in-amerika',
+    title: 'Sushi in Amerika',
+    Icon: Compass,
+    matches: (event) =>
+      event.mapId === 'world' && americaTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'pazifik-teller',
+    title: 'Pazifik-Teller',
+    Icon: ShipWheel,
+    matches: (event) =>
+      event.mapId === 'world' && pacificTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'mikro-maki',
+    title: 'Mikro-Maki',
+    Icon: Landmark,
+    matches: (event) =>
+      event.mapId === 'world' && microstateTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'wuesten-wasabi',
+    title: 'Wüsten-Wasabi',
+    Icon: Tent,
+    matches: (event) =>
+      event.mapId === 'world' && desertTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'hauptstadt-happen',
+    title: 'Hauptstadt-Happen',
+    Icon: Building2,
+    matches: (event) =>
+      (event.mapId === 'world' && cityTerritoryIds.has(event.territoryId)) ||
+      (event.mapId === 'germany' && event.territoryId === 'DE-BE'),
+  },
+]
+
 function getMapTransform(view: MapView) {
   return `translate(${view.offset.x} ${view.offset.y}) scale(${view.zoom})`
+}
+
+function getEventDateKey(event: TerritoryVisitEvent) {
+  const date = new Date(event.createdAtClientIso)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const year = String(date.getFullYear())
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function compareEventsByAchievementTime(
+  left: TerritoryVisitEvent,
+  right: TerritoryVisitEvent,
+) {
+  return (
+    getEventDateKey(left).localeCompare(getEventDateKey(right)) ||
+    left.position - right.position
+  )
+}
+
+function getAchievements(events: TerritoryVisitEvent[]): AchievementResult[] {
+  const sortedEvents = [...events]
+    .filter((event) => getEventDateKey(event))
+    .sort(compareEventsByAchievementTime)
+
+  return achievementDefinitions.map((achievement) => {
+    const event = sortedEvents.find(achievement.matches)
+
+    return {
+      ...achievement,
+      winnerName: event?.playerName ?? null,
+    }
+  })
 }
 
 function getTerritoryIdFromTarget(target: EventTarget | null) {
@@ -104,6 +460,7 @@ export function TerritoryMapPage() {
     updatePlayerColor,
     updatePlayerName,
   } = useTerritoryMap()
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(true)
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
   const [isMapDragging, setIsMapDragging] = useState(false)
   const [isScoreOpen, setIsScoreOpen] = useState(true)
@@ -180,6 +537,10 @@ export function TerritoryMapPage() {
           left.player.position - right.player.position,
       )
   }, [claimsByMap, players])
+  const achievements = useMemo(
+    () => getAchievements(activeDataset.events),
+    [activeDataset.events],
+  )
 
   const applyLiveTransform = () => {
     rafRef.current = null
@@ -512,8 +873,8 @@ export function TerritoryMapPage() {
 
                 applyView({
                   offset: {
-                    x: dragStart.offsetX + (deltaX / currentView.zoom) * panFactor,
-                    y: dragStart.offsetY + (deltaY / currentView.zoom) * panFactor,
+                    x: dragStart.offsetX + deltaX * panFactor,
+                    y: dragStart.offsetY + deltaY * panFactor,
                   },
                   zoom: currentView.zoom,
                 })
@@ -753,6 +1114,73 @@ export function TerritoryMapPage() {
                   </li>
                 ))}
               </ol>
+              </CardContent>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader className="p-4">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                    <Trophy className="size-4" />
+                  </div>
+                  <CardTitle>Achievements</CardTitle>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="size-10 shrink-0 sm:size-9"
+                  aria-label={
+                    isAchievementsOpen
+                      ? 'Achievements einklappen'
+                      : 'Achievements ausklappen'
+                  }
+                  title={
+                    isAchievementsOpen
+                      ? 'Achievements einklappen'
+                      : 'Achievements ausklappen'
+                  }
+                  onClick={() => setIsAchievementsOpen((current) => !current)}
+                >
+                  {isAchievementsOpen ? (
+                    <ChevronDown className="size-4" />
+                  ) : (
+                    <ChevronRight className="size-4" />
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            {isAchievementsOpen && (
+              <CardContent className="p-4 pt-0">
+                <ul className="grid gap-2">
+                  {achievements.map((achievement) => {
+                    const Icon = achievement.Icon
+                    const isUnlocked = Boolean(achievement.winnerName)
+
+                    return (
+                      <li
+                        key={achievement.id}
+                        className={[
+                          'grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 text-sm transition-colors',
+                          isUnlocked
+                            ? 'text-foreground'
+                            : 'text-muted-foreground opacity-55 grayscale',
+                        ].join(' ')}
+                      >
+                        <span className="min-w-0 truncate font-medium">
+                          {achievement.title}
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                          <Icon className="size-4" />
+                        </span>
+                        <span className="min-w-0 truncate text-right font-semibold">
+                          {achievement.winnerName ?? '-'}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
               </CardContent>
             )}
           </Card>
