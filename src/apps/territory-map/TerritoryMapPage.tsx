@@ -349,27 +349,29 @@ export function TerritoryMapPage() {
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="overflow-hidden">
-          <CardHeader className="gap-4 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <Tabs value={state.activeMap} onValueChange={handleMapChange}>
-                <TabsList>
+          <CardHeader className="p-3 sm:p-4">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <Tabs
+                value={state.activeMap}
+                className="min-w-0 flex-1"
+                onValueChange={handleMapChange}
+              >
+                <TabsList className="h-10 max-w-full">
                   <TabsTrigger value="world">Welt</TabsTrigger>
                   <TabsTrigger value="germany">Deutschland</TabsTrigger>
                 </TabsList>
               </Tabs>
 
-              <div className="flex flex-wrap gap-2 [&_button]:size-11 sm:[&_button]:size-9">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-11 sm:size-9"
-                  aria-label="Ansicht zurücksetzen"
-                  title="Ansicht zurücksetzen"
-                  onClick={resetView}
-                >
-                  <MousePointer2 className="size-4" />
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-10 shrink-0 sm:size-9"
+                aria-label="Ansicht zurücksetzen"
+                title="Ansicht zurücksetzen"
+                onClick={resetView}
+              >
+                <MousePointer2 className="size-4" />
+              </Button>
             </div>
           </CardHeader>
 
@@ -676,15 +678,16 @@ export function TerritoryMapPage() {
       </section>
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="size-5 text-primary" />
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <CardTitle className="flex min-w-0 items-center gap-2 text-xl sm:text-2xl">
+              <BarChart3 className="size-5 shrink-0 text-primary" />
               Datensatz
             </CardTitle>
             <Button
               variant="outline"
               size="icon"
+              className="size-10 shrink-0 sm:size-9"
               aria-label={isDatasetOpen ? 'Datensatz einklappen' : 'Datensatz ausklappen'}
               title={isDatasetOpen ? 'Datensatz einklappen' : 'Datensatz ausklappen'}
               onClick={() => setIsDatasetOpen((current) => !current)}
@@ -698,7 +701,7 @@ export function TerritoryMapPage() {
           </div>
         </CardHeader>
         {isDatasetOpen && (
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <TerritoryEventTable
               dataset={activeDataset}
               players={players}

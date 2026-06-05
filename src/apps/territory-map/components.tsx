@@ -3,7 +3,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react'
-import { memo, useState, type ReactNode } from 'react'
+import { memo, useRef, useState, type ReactNode } from 'react'
 
 import { territoriesByMap } from '@/apps/territory-map/data/territories'
 import { unclaimedValue } from '@/apps/territory-map/mapConfig'
@@ -158,7 +158,7 @@ export const TerritoryShape = memo(function TerritoryShape({
   const ownerLabel =
     owners.length > 0
       ? owners.map((owner) => owner.playerName).join(', ')
-      : 'nicht bereist'
+      : 'Unbereist'
 
   return (
     <>
@@ -278,6 +278,8 @@ export function ClaimDialog({
   const [selectedPlayerId, setSelectedPlayerId] = useState(
     claim?.playerId ?? players[0]?.id ?? unclaimedValue,
   )
+  const [isPlayerSelectOpen, setIsPlayerSelectOpen] = useState(false)
+  const ignoreImmediateSelectReopenRef = useRef(false)
 
   if (!territory) {
     return null
@@ -299,11 +301,29 @@ export function ClaimDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="grid gap-2">
+        <div className="flex flex-col gap-3 min-[34rem]:flex-row min-[34rem]:items-end">
+          <div className="grid min-w-0 flex-1 gap-2">
             <Label htmlFor="claim-player">Sushi-Tourist</Label>
-            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-              <SelectTrigger id="claim-player">
+            <Select
+              open={isPlayerSelectOpen}
+              value={selectedPlayerId}
+              onOpenChange={(open) => {
+                if (open && ignoreImmediateSelectReopenRef.current) {
+                  return
+                }
+
+                setIsPlayerSelectOpen(open)
+              }}
+              onValueChange={(value) => {
+                setSelectedPlayerId(value)
+                setIsPlayerSelectOpen(false)
+                ignoreImmediateSelectReopenRef.current = true
+                window.setTimeout(() => {
+                  ignoreImmediateSelectReopenRef.current = false
+                }, 250)
+              }}
+            >
+              <SelectTrigger id="claim-player" className="w-full">
                 <SelectValue placeholder="Sushi-Tourist wählen" />
               </SelectTrigger>
               <SelectContent>
@@ -312,11 +332,14 @@ export function ClaimDialog({
                     {player.name}
                   </SelectItem>
                 ))}
-                <SelectItem value={unclaimedValue}>Nicht bereist</SelectItem>
+                <SelectItem value={unclaimedValue}>Unbereist</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button className="sm:mb-0" onClick={() => onClaim(selectedPlayerId)}>
+          <Button
+            className="w-full min-[34rem]:w-auto"
+            onClick={() => onClaim(selectedPlayerId)}
+          >
             Nigiri gegessen
           </Button>
         </div>
