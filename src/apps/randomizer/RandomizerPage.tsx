@@ -1,5 +1,4 @@
 import { Dice5, History, RotateCcw } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
 import { Button } from '@/components/ui/button'
@@ -65,14 +64,15 @@ export function RandomizerPage() {
             <button
               type="button"
               aria-label="Würfeln"
-              className="rounded-lg bg-secondary p-6 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-              onClick={() => {
-                roll()
-                toast.success('Neue Zufallszahl erzeugt.')
-              }}
+              className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg bg-secondary p-6 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+              onClick={roll}
             >
               <div className="text-7xl font-semibold tabular-nums">
                 {data.lastRoll ?? '-'}
+              </div>
+              <div className="flex items-center justify-center gap-2 text-lg font-semibold leading-none tracking-normal">
+                <Dice5 className="size-5 text-primary" />
+                <span>Würfeln</span>
               </div>
             </button>
           </CardContent>
