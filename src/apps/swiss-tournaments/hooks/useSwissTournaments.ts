@@ -4,9 +4,12 @@ import {
   addPlayerAfterStart,
   createManualPairing,
   createTournament,
+  getCurrentDraftRound,
+  getNextAllowedRoundNumber,
   recalculateStandings,
+  removePlayerFromTournament,
+  resetTournamentProgress,
   setPlayerStatus,
-  setRoundStatus,
   standingsToCsv,
   updateResult,
   upsertRound,
@@ -34,9 +37,15 @@ function sanitizeTournament(tournament: Tournament): Tournament {
     players: [...(tournament.players ?? [])].sort(
       (left, right) => left.initialSeed - right.initialSeed,
     ),
-    rounds: [...(tournament.rounds ?? [])].sort(
-      (left, right) => left.roundNumber - right.roundNumber,
-    ),
+    rounds: [...(tournament.rounds ?? [])]
+      .map((round) => ({
+        ...round,
+        status:
+          (round.status as string) === 'published'
+            ? ('draft' as const)
+            : round.status,
+      }))
+      .sort((left, right) => left.roundNumber - right.roundNumber),
     settings: {
       initialSeedingMode: tournament.settings?.initialSeedingMode ?? 'rating',
       byeScore: tournament.settings?.byeScore ?? 1,
@@ -120,6 +129,23 @@ export function useSwissTournaments(sessionId = 'default') {
       updatedBy: session.userId,
     })
 
+  const deleteTournament = async (tournamentId = activeTournament?.id) => {
+    if (!tournamentId) {
+      return
+    }
+
+    await tournamentsStore.deleteItem(tournamentId)
+
+    if (stateStore.data.activeTournamentId === tournamentId) {
+      const nextTournament = tournaments.find((entry) => entry.id !== tournamentId)
+
+      await stateStore.merge({
+        activeTournamentId: nextTournament?.id ?? null,
+        updatedBy: session.userId,
+      })
+    }
+  }
+
   const updateActiveTournament = async (
     updater: (tournament: Tournament) => Tournament,
   ) => {
@@ -169,6 +195,11 @@ export function useSwissTournaments(sessionId = 'default') {
       addPlayerAfterStart(tournament, name, rating),
     )
 
+  const removePlayer = (playerId: string) =>
+    updateActiveTournament((tournament) =>
+      removePlayerFromTournament(tournament, playerId),
+    )
+
   const updatePlayer = (
     playerId: string,
     partial: { name?: string; rating?: number },
@@ -198,24 +229,24 @@ export function useSwissTournaments(sessionId = 'default') {
       setPlayerStatus(tournament, playerId, status, fromRound),
     )
 
-  const generateRound = (roundNumber?: number) =>
-    updateActiveTournament((tournament) =>
-      upsertRound(
-        tournament,
-        roundNumber ??
-          Math.min(tournament.numberOfRounds, Math.max(1, tournament.currentRound + 1)),
-      ),
-    )
-
-  const regenerateRound = (roundNumber: number) =>
+  const generateRound = () =>
     updateActiveTournament((tournament) => {
-      const existing = tournament.rounds.find(
-        (round) => round.roundNumber === roundNumber,
-      )
+      const nextRoundNumber = getNextAllowedRoundNumber(tournament)
+
+      return nextRoundNumber ? upsertRound(tournament, nextRoundNumber) : tournament
+    })
+
+  const regenerateRound = () =>
+    updateActiveTournament((tournament) => {
+      const existing = getCurrentDraftRound(tournament)
+
+      if (!existing) {
+        return tournament
+      }
 
       return upsertRound(
         tournament,
-        roundNumber,
+        existing.roundNumber,
         existing?.pairings.filter((pairing) => pairing.isManual) ?? [],
       )
     })
@@ -237,15 +268,18 @@ export function useSwissTournaments(sessionId = 'default') {
       return upsertRound(tournament, roundNumber, fixedPairings)
     })
 
-  const publishRound = (roundNumber: number) =>
-    updateActiveTournament((tournament) =>
-      setRoundStatus(tournament, roundNumber, 'published'),
-    )
-
   const completeRound = (roundNumber: number) =>
-    updateActiveTournament((tournament) =>
-      setRoundStatus(tournament, roundNumber, 'completed'),
-    )
+    updateActiveTournament((tournament) => ({
+      ...tournament,
+      rounds: tournament.rounds.map((round) =>
+        round.roundNumber === roundNumber
+          ? { ...round, status: 'completed' as const }
+          : round,
+      ),
+    }))
+
+  const resetTournament = () =>
+    updateActiveTournament((tournament) => resetTournamentProgress(tournament))
 
   const setResult = (
     roundNumber: number,
@@ -287,14 +321,16 @@ export function useSwissTournaments(sessionId = 'default') {
     changePlayerStatus,
     completeRound,
     createNewTournament,
+    deleteTournament,
     error: stateStore.error ?? tournamentsStore.error,
     exportStandingsCsv,
     exportTournamentJson,
     generateRound,
     isLoading: stateStore.isLoading || tournamentsStore.isLoading,
     isRealtime: stateStore.isRealtime && tournamentsStore.isRealtime,
-    publishRound,
     regenerateRound,
+    removePlayer,
+    resetTournament,
     selectTournament,
     session,
     setResult,

@@ -1,5 +1,4 @@
 import type {
-  BulkPlayerInput,
   ByeScore,
   Color,
   CreateTournamentInput,
@@ -7,6 +6,7 @@ import type {
   Pairing,
   PairingWarning,
   Player,
+  PlayerInput,
   PlayerScoreSummary,
   PlayerStatus,
   Round,
@@ -39,32 +39,21 @@ function stableHash(value: string) {
   return hash
 }
 
-export function parseBulkPlayers(text: string): BulkPlayerInput[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [rawName, rawRating] = line.split(',').map((part) => part.trim())
-      const rating = Number(rawRating)
-
-      return {
-        name: rawName,
-        rating:
-          rawRating && Number.isFinite(rating) && rating > 0
-            ? Math.round(rating)
-            : undefined,
-      }
-    })
-    .filter((player) => player.name.length > 0)
-}
-
 function seedPlayers(
-  players: BulkPlayerInput[],
+  players: PlayerInput[],
   mode: Tournament['settings']['initialSeedingMode'],
 ): Player[] {
-  const hasRatings = players.some((player) => Number.isFinite(player.rating))
-  const sorted = [...players].sort((left, right) => {
+  const cleanPlayers = players
+    .map((player) => ({
+      name: player.name.trim(),
+      rating:
+        player.rating === undefined || !Number.isFinite(player.rating)
+          ? undefined
+          : Math.round(player.rating),
+    }))
+    .filter((player) => player.name.length > 0)
+  const hasRatings = cleanPlayers.some((player) => Number.isFinite(player.rating))
+  const sorted = [...cleanPlayers].sort((left, right) => {
     if (mode === 'rating' && hasRatings) {
       return (
         (right.rating ?? Number.NEGATIVE_INFINITY) -
@@ -74,7 +63,7 @@ function seedPlayers(
     }
 
     if (mode === 'manual') {
-      return players.indexOf(left) - players.indexOf(right)
+      return cleanPlayers.indexOf(left) - cleanPlayers.indexOf(right)
     }
 
     return stableHash(`${left.name}-${left.rating ?? ''}`) -
@@ -103,7 +92,7 @@ export function createTournament(
     name,
     numberOfRounds,
     currentRound: 0,
-    players: seedPlayers(parseBulkPlayers(input.bulkPlayersText), input.initialSeedingMode),
+    players: seedPlayers(input.players, input.initialSeedingMode),
     rounds: [],
     settings: {
       ...defaultSettings,
@@ -171,15 +160,22 @@ function getPlayerStatusForRound(player: Player, roundNumber: number): PlayerSta
   return player.statusOverrides?.[roundNumber] ?? player.status
 }
 
-function playedEachOther(tournament: Tournament, leftId: string, rightId: string) {
-  return tournament.rounds.some((round) =>
-    round.pairings.some(
-      (pairing) =>
-        !pairing.isBye &&
-        ((pairing.whitePlayerId === leftId && pairing.blackPlayerId === rightId) ||
-          (pairing.whitePlayerId === rightId && pairing.blackPlayerId === leftId)),
-    ),
-  )
+function hasPlayedEachOtherBeforeRound(
+  tournament: Tournament,
+  leftId: string,
+  rightId: string,
+  beforeRoundNumber: number,
+) {
+  return tournament.rounds
+    .filter((round) => round.roundNumber < beforeRoundNumber)
+    .some((round) =>
+      round.pairings.some(
+        (pairing) =>
+          !pairing.isBye &&
+          ((pairing.whitePlayerId === leftId && pairing.blackPlayerId === rightId) ||
+            (pairing.whitePlayerId === rightId && pairing.blackPlayerId === leftId)),
+      ),
+    )
 }
 
 function getSummaryBeforeRound(
@@ -340,7 +336,7 @@ function validatePairing(
     }
   }
 
-  if (playedEachOther(tournament, white.id, black.id)) {
+  if (hasPlayedEachOtherBeforeRound(tournament, white.id, black.id, roundNumber)) {
     warnings.push(warning('repeat-pairing', 'Diese Spieler haben bereits gegeneinander gespielt.', 'hard'))
   }
 
@@ -389,7 +385,14 @@ function pairingScore(
   tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
 ) {
-  const repeatPenalty = playedEachOther(tournament, left.id, right.id) ? 10_000 : 0
+  const repeatPenalty = hasPlayedEachOtherBeforeRound(
+    tournament,
+    left.id,
+    right.id,
+    Number.POSITIVE_INFINITY,
+  )
+    ? 10_000
+    : 0
   const pointPenalty = Math.abs(summaries[left.id].points - summaries[right.id].points) * 100
   const color = assignColors(left, right, summaries)
   const white = color.whitePlayerId === left.id ? left : right
@@ -439,6 +442,50 @@ function findBestPairings(
   }
 
   return best
+}
+
+function hasNonRepeatPerfectPairing(
+  players: Player[],
+  tournament: Tournament,
+  roundNumber: number,
+): boolean {
+  if (players.length === 0) {
+    return true
+  }
+
+  const [first, ...rest] = players
+
+  return rest.some((candidate) => {
+    if (hasPlayedEachOtherBeforeRound(tournament, first.id, candidate.id, roundNumber)) {
+      return false
+    }
+
+    return hasNonRepeatPerfectPairing(
+      rest.filter((player) => player.id !== candidate.id),
+      tournament,
+      roundNumber,
+    )
+  })
+}
+
+function findStrictPairings(
+  players: Player[],
+  tournament: Tournament,
+  summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+) {
+  const canAvoidRepeats = hasNonRepeatPerfectPairing(players, tournament, roundNumber)
+
+  if (!canAvoidRepeats) {
+    return findBestPairings(players, tournament, summaries)
+  }
+
+  const tournamentWithoutPastPairings: Tournament = {
+    ...tournament,
+    rounds: tournament.rounds.filter((round) => round.roundNumber >= roundNumber),
+  }
+
+  return findBestPairings(players, tournamentWithoutPastPairings, summaries)
 }
 
 export function generatePairings(
@@ -491,7 +538,7 @@ export function generatePairings(
     pool = pool.filter((player) => player.id !== byePlayer.id)
   }
 
-  findBestPairings(pool, tournament, summaries).forEach(([left, right]) => {
+  findStrictPairings(pool, tournament, summaries, roundNumber).forEach(([left, right]) => {
     const colors = assignColors(left, right, summaries)
     const pairing: Pairing = {
       id: makeId('pairing'),
@@ -708,6 +755,50 @@ export function addPlayerAfterStart(
   }
 }
 
+export function removePlayerFromTournament(
+  tournament: Tournament,
+  playerId: string,
+): Tournament {
+  return {
+    ...tournament,
+    players: tournament.players.filter((player) => player.id !== playerId),
+  }
+}
+
+export function resetTournamentProgress(tournament: Tournament): Tournament {
+  return {
+    ...tournament,
+    currentRound: 0,
+    rounds: [],
+  }
+}
+
+export function getNextAllowedRoundNumber(tournament: Tournament) {
+  if (tournament.rounds.length === 0) {
+    return tournament.numberOfRounds >= 1 ? 1 : null
+  }
+
+  const latestRound = [...tournament.rounds].sort(
+    (left, right) => right.roundNumber - left.roundNumber,
+  )[0]
+
+  if (!latestRound || latestRound.status !== 'completed') {
+    return null
+  }
+
+  const nextRound = latestRound.roundNumber + 1
+
+  return nextRound <= tournament.numberOfRounds ? nextRound : null
+}
+
+export function getCurrentDraftRound(tournament: Tournament) {
+  return (
+    [...tournament.rounds]
+      .sort((left, right) => right.roundNumber - left.roundNumber)
+      .find((round) => round.status === 'draft') ?? null
+  )
+}
+
 export function upsertRound(
   tournament: Tournament,
   roundNumber: number,
@@ -733,19 +824,6 @@ export function upsertRound(
       ...tournament.rounds.filter((entry) => entry.roundNumber !== roundNumber),
       round,
     ].sort((left, right) => left.roundNumber - right.roundNumber),
-  }
-}
-
-export function setRoundStatus(
-  tournament: Tournament,
-  roundNumber: number,
-  status: Round['status'],
-): Tournament {
-  return {
-    ...tournament,
-    rounds: tournament.rounds.map((round) =>
-      round.roundNumber === roundNumber ? { ...round, status } : round,
-    ),
   }
 }
 

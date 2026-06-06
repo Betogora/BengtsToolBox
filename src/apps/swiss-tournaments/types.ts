@@ -16,7 +16,7 @@ export type SeedingMode = 'rating' | 'random' | 'manual'
 
 export type ByeScore = 1 | 0.5 | 0
 
-export type RoundStatus = 'draft' | 'published' | 'completed'
+export type RoundStatus = 'draft' | 'completed'
 
 export type PairingWarning = {
   id: string
@@ -95,7 +95,7 @@ export type SwissTournamentsState = {
   updatedBy?: string
 }
 
-export type BulkPlayerInput = {
+export type PlayerInput = {
   name: string
   rating?: number
 }
@@ -103,7 +103,7 @@ export type BulkPlayerInput = {
 export type CreateTournamentInput = {
   name: string
   numberOfRounds: number
-  bulkPlayersText: string
+  players: PlayerInput[]
   initialSeedingMode: SeedingMode
   byeScore: ByeScore
   allowMultipleByesPerPlayer: boolean

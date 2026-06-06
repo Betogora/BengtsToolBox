@@ -1,16 +1,17 @@
 import {
   Download,
   FileJson,
-  Flag,
   ListChecks,
   Plus,
   Printer,
   RefreshCw,
+  RotateCcw,
   Swords,
+  Trash2,
   Trophy,
   UsersRound,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { formatPoints } from '@/apps/swiss-tournaments/logic'
@@ -32,6 +33,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -42,6 +53,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 
 const resultOptions: Array<{ value: GameResult; label: string }> = [
   { value: '1-0', label: '1-0' },
@@ -79,6 +91,62 @@ function hasRealResult(pairing: Pairing) {
   return Boolean(pairing.result && !pairing.isBye)
 }
 
+function ConfirmButton({
+  confirmLabel,
+  description,
+  onConfirm,
+  title,
+  trigger,
+}: {
+  confirmLabel: string
+  description: string
+  onConfirm: () => void | Promise<void>
+  title: string
+  trigger: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Abbrechen</Button>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            onClick={async () => {
+              await onConfirm()
+              setOpen(false)
+            }}
+          >
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+type DraftPlayer = {
+  id: string
+  name: string
+  rating: string
+}
+
+function createDraftPlayer(index: number): DraftPlayer {
+  return {
+    id: `draft-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+    name: `Spieler ${index + 1}`,
+    rating: '',
+  }
+}
+
 function TournamentCreator({
   onCreate,
 }: {
@@ -86,9 +154,11 @@ function TournamentCreator({
 }) {
   const [name, setName] = useState('Vereinsturnier')
   const [numberOfRounds, setNumberOfRounds] = useState(5)
-  const [bulkPlayersText, setBulkPlayersText] = useState(
-    'Max Mustermann, 1820\nErika Beispiel, 1650\nSpieler Ohne Rating',
-  )
+  const [players, setPlayers] = useState<DraftPlayer[]>([
+    { id: 'draft-1', name: 'Max Mustermann', rating: '1820' },
+    { id: 'draft-2', name: 'Erika Beispiel', rating: '1650' },
+    { id: 'draft-3', name: 'Spieler Ohne Rating', rating: '' },
+  ])
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
   const [byeScore, setByeScore] = useState<ByeScore>(1)
@@ -99,9 +169,6 @@ function TournamentCreator({
     <Card>
       <CardHeader>
         <CardTitle>Turnier anlegen</CardTitle>
-        <CardDescription>
-          Bulk-Eingabe: ein Spieler pro Zeile, optional mit Rating nach Komma.
-        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-3 md:grid-cols-[1fr_10rem]">
@@ -176,22 +243,91 @@ function TournamentCreator({
           </label>
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="swiss-bulk">Spielerliste</Label>
-          <textarea
-            id="swiss-bulk"
-            className="min-h-44 rounded-md border bg-background p-3 text-sm outline-none focus:ring-[3px] focus:ring-ring/50"
-            value={bulkPlayersText}
-            onChange={(event) => setBulkPlayersText(event.currentTarget.value)}
-          />
+        <div className="grid gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <Label>Spieler</Label>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                setPlayers((currentPlayers) => [
+                  ...currentPlayers,
+                  createDraftPlayer(currentPlayers.length),
+                ])
+              }
+            >
+              <Plus className="size-4" />
+              Spieler
+            </Button>
+          </div>
+
+          <div className="grid gap-2">
+            {players.map((player) => (
+              <div
+                key={player.id}
+                className="grid gap-2 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:items-end"
+              >
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`swiss-create-name-${player.id}`}>Name</Label>
+                  <Input
+                    id={`swiss-create-name-${player.id}`}
+                    value={player.name}
+                    onChange={(event) =>
+                      setPlayers((currentPlayers) =>
+                        currentPlayers.map((entry) =>
+                          entry.id === player.id
+                            ? { ...entry, name: event.currentTarget.value }
+                            : entry,
+                        ),
+                      )
+                    }
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`swiss-create-rating-${player.id}`}>Rating</Label>
+                  <Input
+                    id={`swiss-create-rating-${player.id}`}
+                    type="number"
+                    value={player.rating}
+                    onChange={(event) =>
+                      setPlayers((currentPlayers) =>
+                        currentPlayers.map((entry) =>
+                          entry.id === player.id
+                            ? { ...entry, rating: event.currentTarget.value }
+                            : entry,
+                        ),
+                      )
+                    }
+                  />
+                </div>
+                <Button
+                  aria-label={`${player.name || 'Spieler'} entfernen`}
+                  className="self-end"
+                  size="icon"
+                  variant="outline"
+                  onClick={() =>
+                    setPlayers((currentPlayers) =>
+                      currentPlayers.filter((entry) => entry.id !== player.id),
+                    )
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <Button
+          disabled={players.every((player) => player.name.trim().length === 0)}
           onClick={async () => {
             await onCreate({
               name,
               numberOfRounds,
-              bulkPlayersText,
+              players: players.map((player) => ({
+                name: player.name,
+                rating: player.rating ? Number(player.rating) : undefined,
+              })),
               initialSeedingMode,
               byeScore,
               allowMultipleByesPerPlayer,
@@ -216,11 +352,34 @@ export function SwissTournamentsPage() {
   const [manualBlack, setManualBlack] = useState('')
   const currentRound = useMemo(
     () =>
-      tournament?.rounds.find((round) => round.roundNumber === tournament.currentRound) ??
-      tournament?.rounds[tournament.rounds.length - 1] ??
-      null,
+      tournament
+        ? [...tournament.rounds].sort(
+            (left, right) => right.roundNumber - left.roundNumber,
+          )[0] ?? null
+        : null,
     [tournament],
   )
+  const draftRound = useMemo(
+    () =>
+      tournament?.rounds.find((round) => round.status === 'draft') ?? null,
+    [tournament],
+  )
+  const canGenerateRound = useMemo(() => {
+    if (!tournament) {
+      return false
+    }
+
+    if (tournament.rounds.length === 0) {
+      return tournament.numberOfRounds > 0
+    }
+
+    return (
+      currentRound?.status === 'completed' &&
+      currentRound.roundNumber < tournament.numberOfRounds
+    )
+  }, [currentRound, tournament])
+  const canRegenerateRound =
+    Boolean(draftRound) && !draftRound?.pairings.some(hasRealResult)
   const overview = useMemo(() => {
     if (!tournament) {
       return null
@@ -294,6 +453,36 @@ export function SwissTournamentsPage() {
             <Printer className="size-4" />
             Drucken
           </Button>
+          <ConfirmButton
+            title="Turnier zuruecksetzen?"
+            description="Alle Runden und Ergebnisse werden geloescht. Spieler, Einstellungen und Turniername bleiben erhalten."
+            confirmLabel="Reset"
+            onConfirm={async () => {
+              await app.resetTournament()
+              toast.success('Turnier wurde zurueckgesetzt.')
+            }}
+            trigger={
+              <Button variant="outline">
+                <RotateCcw className="size-4" />
+                Reset
+              </Button>
+            }
+          />
+          <ConfirmButton
+            title="Turnier loeschen?"
+            description="Dieses Turnier wird dauerhaft aus der aktuellen Sammlung entfernt."
+            confirmLabel="Loeschen"
+            onConfirm={async () => {
+              await app.deleteTournament()
+              toast.success('Turnier wurde geloescht.')
+            }}
+            trigger={
+              <Button variant="destructive">
+                <Trash2 className="size-4" />
+                Loeschen
+              </Button>
+            }
+          />
         </div>
       </section>
 
@@ -448,24 +637,37 @@ export function SwissTournamentsPage() {
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Select
-                            value={player.status}
-                            onValueChange={(value) =>
-                              void app.changePlayerStatus(
-                                player.id,
-                                value as PlayerStatus,
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">aktiv</SelectItem>
-                              <SelectItem value="inactive">inaktiv</SelectItem>
-                              <SelectItem value="withdrawn">ausgeschieden</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={player.status}
+                              onValueChange={(value) =>
+                                void app.changePlayerStatus(
+                                  player.id,
+                                  value as PlayerStatus,
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-40">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">aktiv</SelectItem>
+                                <SelectItem value="inactive">inaktiv</SelectItem>
+                                <SelectItem value="withdrawn">ausgeschieden</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              aria-label={`${player.name} entfernen`}
+                              size="icon"
+                              variant="outline"
+                              onClick={async () => {
+                                await app.removePlayer(player.id)
+                                toast.success(`${player.name} wurde entfernt.`)
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -485,36 +687,26 @@ export function SwissTournamentsPage() {
                   Paarungen
                 </CardTitle>
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => void app.generateRound()}>
+                  <Button
+                    disabled={!canGenerateRound}
+                    onClick={() => void app.generateRound()}
+                  >
                     <Plus className="size-4" />
                     Neue Runde
                   </Button>
-                  {currentRound && (
-                    <>
-                      <Button
-                        variant="outline"
-                        disabled={currentRound.pairings.some(hasRealResult)}
-                        onClick={() =>
-                          void app.regenerateRound(currentRound.roundNumber)
-                        }
-                      >
-                        <RefreshCw className="size-4" />
-                        Neu erzeugen
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => void app.publishRound(currentRound.roundNumber)}
-                      >
-                        <Flag className="size-4" />
-                        Veröffentlichen
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    variant="outline"
+                    disabled={!canRegenerateRound}
+                    onClick={() => void app.regenerateRound()}
+                  >
+                    <RefreshCw className="size-4" />
+                    Neu erzeugen
+                  </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {currentRound && (
+              {draftRound && (
                 <div className="grid gap-3 rounded-md border bg-secondary/35 p-3 md:grid-cols-[1fr_1fr_auto]">
                   <Select value={manualWhite} onValueChange={setManualWhite}>
                     <SelectTrigger>
@@ -544,7 +736,7 @@ export function SwissTournamentsPage() {
                     disabled={!manualWhite || !manualBlack}
                     onClick={async () => {
                       await app.addManualPairing(
-                        currentRound.roundNumber,
+                        draftRound.roundNumber,
                         manualWhite,
                         manualBlack,
                       )
@@ -725,8 +917,6 @@ export function SwissTournamentsPage() {
               </div>
             </CardContent>
           </Card>
-
-          <TournamentCreator onCreate={app.createNewTournament} />
         </TabsContent>
       </Tabs>
     </div>
@@ -754,15 +944,21 @@ function PairingsTable({
         </thead>
         <tbody>
           {pairings.map((pairing) => (
-            <tr key={pairing.id} className="border-t align-top">
+            <tr
+              key={pairing.id}
+              className={cn(
+                'border-t align-top',
+                pairing.isManual && 'bg-primary/5',
+              )}
+            >
               <td className="p-3 tabular-nums">{pairing.boardNumber}</td>
               <td className="p-3">
                 {pairing.isBye
                   ? playerName(tournament, pairing.byePlayerId)
                   : playerName(tournament, pairing.whitePlayerId)}
                 {pairing.isManual && (
-                  <Badge className="ml-2" variant="secondary">
-                    manuell
+                  <Badge className="ml-2 border-primary/40" variant="secondary">
+                    fixiert
                   </Badge>
                 )}
               </td>
