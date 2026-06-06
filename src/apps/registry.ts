@@ -6,6 +6,7 @@ import {
   Dice5,
   ListOrdered,
   Stethoscope,
+  Trophy,
   UtensilsCrossed,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -118,6 +119,20 @@ export const apps: HubApp[] = [
     loadPage: () =>
       import('@/apps/territory-map').then(({ TerritoryMapPage }) => ({
         default: TerritoryMapPage,
+      })),
+  },
+  {
+    id: 'swiss-tournaments',
+    title: 'Swiss Tournaments',
+    description:
+      'Schachturniere nach Schweizer System mit Spielern, Paarungen, Ergebnissen, Tie-Breaks und Export.',
+    href: '/apps/swiss-tournaments',
+    routePath: 'apps/swiss-tournaments',
+    status: 'Live',
+    Icon: Trophy,
+    loadPage: () =>
+      import('@/apps/swiss-tournaments').then(({ SwissTournamentsPage }) => ({
+        default: SwissTournamentsPage,
       })),
   },
 ]

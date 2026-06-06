@@ -91,6 +91,27 @@ function AppPreview({ appId }: { appId: string }) {
           </div>
         </div>
       )
+    case 'swiss-tournaments':
+      return (
+        <div className="grid h-full gap-2 p-4 text-[#063852]">
+          <div className="grid grid-cols-[1.5rem_1fr_1fr] gap-1 text-[0.65rem] font-semibold">
+            <div>#</div>
+            <div>Weiss</div>
+            <div>Schwarz</div>
+          </div>
+          {[1, 2, 3].map((board) => (
+            <div
+              key={board}
+              className="grid grid-cols-[1.5rem_1fr_1fr] items-center gap-1 rounded-md border border-current/20 bg-white/85 px-2 py-1.5 text-[0.65rem] shadow-sm"
+            >
+              <div className="font-semibold tabular-nums">{board}</div>
+              <PreviewBar className="w-10" height="h-1.5" />
+              <PreviewBar className="w-12 opacity-55" height="h-1.5" />
+            </div>
+          ))}
+          <div className="mt-1 h-2 rounded-full bg-[#f0810f]/70" />
+        </div>
+      )
     default:
       return (
         <div className="flex h-full flex-col justify-center gap-3 p-4 text-[#063852]">

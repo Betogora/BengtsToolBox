@@ -1,0 +1,120 @@
+export type PlayerStatus = 'active' | 'inactive' | 'withdrawn'
+
+export type Color = 'W' | 'B' | '-'
+
+export type GameResult =
+  | '1-0'
+  | '0-1'
+  | '0.5-0.5'
+  | 'bye-1'
+  | 'bye-0.5'
+  | 'bye-0'
+  | 'forfeit-1-0'
+  | 'forfeit-0-1'
+
+export type SeedingMode = 'rating' | 'random' | 'manual'
+
+export type ByeScore = 1 | 0.5 | 0
+
+export type RoundStatus = 'draft' | 'published' | 'completed'
+
+export type PairingWarning = {
+  id: string
+  severity: 'hard' | 'soft'
+  message: string
+}
+
+export type Player = {
+  id: string
+  name: string
+  rating?: number
+  initialSeed: number
+  status: PlayerStatus
+  addedInRound: number
+  statusOverrides?: Record<number, PlayerStatus>
+}
+
+export type TournamentSettings = {
+  initialSeedingMode: SeedingMode
+  byeScore: ByeScore
+  roundByeScores?: Record<number, ByeScore>
+  allowMultipleByesPerPlayer: boolean
+}
+
+export type Pairing = {
+  id: string
+  roundNumber: number
+  boardNumber: number
+  whitePlayerId?: string
+  blackPlayerId?: string
+  result?: GameResult
+  isManual: boolean
+  isBye: boolean
+  byePlayerId?: string
+  warnings?: PairingWarning[]
+}
+
+export type Round = {
+  id: string
+  roundNumber: number
+  pairings: Pairing[]
+  status: RoundStatus
+}
+
+export type Tournament = {
+  id: string
+  name: string
+  numberOfRounds: number
+  currentRound: number
+  players: Player[]
+  rounds: Round[]
+  settings: TournamentSettings
+  position: number
+  createdAtClientIso: string
+  updatedBy?: string
+}
+
+export type StandingRow = {
+  playerId: string
+  rank: number
+  playerName: string
+  rating?: number
+  points: number
+  buchholz: number
+  sonnebornBerger: number
+  wins: number
+  directEncounterScore: number | null
+  initialSeed: number
+  colorHistory: Color[]
+  receivedByes: number
+  status: PlayerStatus
+}
+
+export type SwissTournamentsState = {
+  activeTournamentId: string | null
+  updatedBy?: string
+}
+
+export type BulkPlayerInput = {
+  name: string
+  rating?: number
+}
+
+export type CreateTournamentInput = {
+  name: string
+  numberOfRounds: number
+  bulkPlayersText: string
+  initialSeedingMode: SeedingMode
+  byeScore: ByeScore
+  allowMultipleByesPerPlayer: boolean
+}
+
+export type PlayerScoreSummary = {
+  points: number
+  wins: number
+  opponents: string[]
+  defeatedOpponents: string[]
+  drawnOpponents: string[]
+  colors: Color[]
+  byes: number
+}
