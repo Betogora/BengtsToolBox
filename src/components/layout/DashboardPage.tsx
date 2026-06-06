@@ -7,9 +7,6 @@ import { cn } from '@/lib/utils'
 
 const diagnosticAppId = 'diagnostics'
 const hubApps = apps.filter((app) => app.id !== diagnosticAppId)
-const hubHomeUrl = 'https://bengtstoolbox.web.app/'
-const hubQrCodeUrl =
-  'https://api.qrserver.com/v1/create-qr-code/?size=144x144&margin=8&color=063852&bgcolor=ffffff&data=https%3A%2F%2Fbengtstoolbox.web.app%2F'
 
 type AppTileProps = {
   app: HubApp
@@ -141,20 +138,6 @@ function AppTile({ app }: AppTileProps) {
   )
 }
 
-function DashboardQrCode() {
-  return (
-    <a
-      href={hubHomeUrl}
-      aria-label={`QR-Code zur App-Hub Homepage: ${hubHomeUrl}`}
-      className="block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-    >
-      <Card className="grid h-[72px] w-[72px] place-items-center overflow-hidden bg-white p-2 shadow-md transition-colors hover:border-primary/55">
-        <img src={hubQrCodeUrl} alt="" className="size-full rounded-md" />
-      </Card>
-    </a>
-  )
-}
-
 export function DashboardPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-8 sm:px-6 lg:py-12">
@@ -166,7 +149,13 @@ export function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-4 justify-self-start lg:justify-self-end">
-          <DashboardQrCode />
+          <Card className="grid h-[72px] w-[72px] place-items-center overflow-hidden bg-white p-2 shadow-md">
+            <img
+              src="/qrcode.svg"
+              alt="QR-Code zur App-Hub Homepage"
+              className="size-full rounded-md"
+            />
+          </Card>
 
           <Card className="h-[72px] w-fit bg-primary text-primary-foreground">
             <CardHeader className="flex h-full flex-row items-center gap-4 p-4">
