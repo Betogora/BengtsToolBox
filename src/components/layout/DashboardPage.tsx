@@ -141,14 +141,14 @@ function AppTile({ app }: AppTileProps) {
 export function DashboardPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-8 sm:px-6 lg:py-12">
-      <section className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
+      <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
+        <div className="min-w-0">
+          <h1 className="truncate text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
             App-Hub
           </h1>
         </div>
 
-        <div className="flex items-center gap-4 justify-self-start lg:justify-self-end">
+        <div className="flex shrink-0 items-center gap-3 justify-self-end max-[28rem]:justify-self-start">
           <Card className="grid h-[72px] w-[72px] place-items-center overflow-hidden bg-white p-2 shadow-md">
             <img
               src="/qrcode.svg"
