@@ -1,4 +1,5 @@
 import {
+  CirclePlus,
   Download,
   FileJson,
   ListChecks,
@@ -11,7 +12,7 @@ import {
   Trophy,
   UsersRound,
 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { formatPoints } from '@/apps/swiss-tournaments/logic'
@@ -91,6 +92,18 @@ function hasRealResult(pairing: Pairing) {
   return Boolean(pairing.result && !pairing.isBye)
 }
 
+function hasMissingGameResult(pairing: Pairing) {
+  return !pairing.isBye && !pairing.result
+}
+
+function resultLabel(result?: GameResult) {
+  if (!result) {
+    return 'offen'
+  }
+
+  return result.startsWith('bye-') ? result.replace('bye-', 'Bye ') : result
+}
+
 function ConfirmButton({
   confirmLabel,
   description,
@@ -133,6 +146,40 @@ function ConfirmButton({
   )
 }
 
+function RoundProgress({
+  currentRound,
+  numberOfRounds,
+}: {
+  currentRound: number
+  numberOfRounds: number
+}) {
+  const totalRounds = Math.max(1, numberOfRounds)
+  const visibleCurrentRound = Math.min(Math.max(currentRound, 1), totalRounds)
+
+  return (
+    <div
+      aria-label={`Rundenfortschritt ${visibleCurrentRound} von ${totalRounds}`}
+      className="grid grid-cols-[repeat(var(--round-count),minmax(0,1fr))] gap-1.5"
+      style={{ '--round-count': totalRounds } as CSSProperties}
+    >
+      {Array.from({ length: totalRounds }, (_, index) => {
+        const roundNumber = index + 1
+
+        return (
+          <span
+            key={roundNumber}
+            className={cn(
+              'h-2.5 rounded-full bg-muted',
+              roundNumber < visibleCurrentRound && 'bg-primary',
+              roundNumber === visibleCurrentRound && 'bg-yellow-400',
+            )}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 type DraftPlayer = {
   id: string
   name: string
@@ -145,6 +192,27 @@ function createDraftPlayer(index: number): DraftPlayer {
     name: `Spieler ${index + 1}`,
     rating: '',
   }
+}
+
+function AddPlayerCard({
+  label,
+  onAdd,
+}: {
+  label: string
+  onAdd: () => void | Promise<void>
+}) {
+  return (
+    <div className="rounded-md border border-dashed bg-background p-3">
+      <Button
+        className="h-9 w-full"
+        variant="outline"
+        onClick={() => void onAdd()}
+      >
+        <CirclePlus className="size-4" />
+        {label}
+      </Button>
+    </div>
+  )
 }
 
 function TournamentCreator({
@@ -244,21 +312,8 @@ function TournamentCreator({
         </div>
 
         <div className="grid gap-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center">
             <Label>Spieler</Label>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                setPlayers((currentPlayers) => [
-                  ...currentPlayers,
-                  createDraftPlayer(currentPlayers.length),
-                ])
-              }
-            >
-              <Plus className="size-4" />
-              Spieler
-            </Button>
           </div>
 
           <div className="grid gap-2">
@@ -315,6 +370,15 @@ function TournamentCreator({
                 </Button>
               </div>
             ))}
+            <AddPlayerCard
+              label="Spieler hinzufuegen"
+              onAdd={() =>
+                setPlayers((currentPlayers) => [
+                  ...currentPlayers,
+                  createDraftPlayer(currentPlayers.length),
+                ])
+              }
+            />
           </div>
         </div>
 
@@ -380,6 +444,19 @@ export function SwissTournamentsPage() {
   }, [currentRound, tournament])
   const canRegenerateRound =
     Boolean(draftRound) && !draftRound?.pairings.some(hasRealResult)
+  const displayedRounds = useMemo(
+    () =>
+      tournament
+        ? [...tournament.rounds].sort(
+            (left, right) => right.roundNumber - left.roundNumber,
+          )
+        : [],
+    [tournament],
+  )
+  const isCurrentDraftRound =
+    Boolean(currentRound) &&
+    Boolean(draftRound) &&
+    currentRound?.roundNumber === draftRound?.roundNumber
   const overview = useMemo(() => {
     if (!tournament) {
       return null
@@ -433,57 +510,6 @@ export function SwissTournamentsPage() {
           </h1>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={tournament.id}
-            onValueChange={(value) => void app.selectTournament(value)}
-          >
-            <SelectTrigger className="w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {app.tournaments.map((entry) => (
-                <SelectItem key={entry.id} value={entry.id}>
-                  {entry.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={printPage}>
-            <Printer className="size-4" />
-            Drucken
-          </Button>
-          <ConfirmButton
-            title="Turnier zuruecksetzen?"
-            description="Alle Runden und Ergebnisse werden geloescht. Spieler, Einstellungen und Turniername bleiben erhalten."
-            confirmLabel="Reset"
-            onConfirm={async () => {
-              await app.resetTournament()
-              toast.success('Turnier wurde zurueckgesetzt.')
-            }}
-            trigger={
-              <Button variant="outline">
-                <RotateCcw className="size-4" />
-                Reset
-              </Button>
-            }
-          />
-          <ConfirmButton
-            title="Turnier loeschen?"
-            description="Dieses Turnier wird dauerhaft aus der aktuellen Sammlung entfernt."
-            confirmLabel="Loeschen"
-            onConfirm={async () => {
-              await app.deleteTournament()
-              toast.success('Turnier wurde geloescht.')
-            }}
-            trigger={
-              <Button variant="destructive">
-                <Trash2 className="size-4" />
-                Loeschen
-              </Button>
-            }
-          />
-        </div>
       </section>
 
       {app.error && (
@@ -500,27 +526,41 @@ export function SwissTournamentsPage() {
           <TabsTrigger value="overview">Uebersicht</TabsTrigger>
           <TabsTrigger value="players">Spieler</TabsTrigger>
           <TabsTrigger value="pairings">Paarungen</TabsTrigger>
-          <TabsTrigger value="results">Ergebnisse</TabsTrigger>
           <TabsTrigger value="standings">Rangliste</TabsTrigger>
-          <TabsTrigger value="settings">Export</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="grid gap-4">
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            {[
-              ['Runde', `${tournament.currentRound}/${tournament.numberOfRounds}`],
-              ['Spieler', tournament.players.length],
-              ['Aktiv', overview?.active ?? 0],
-              ['Inaktiv', overview?.inactive ?? 0],
-              ['Ausgeschieden', overview?.withdrawn ?? 0],
-            ].map(([label, value]) => (
-              <Card key={label}>
-                <CardHeader className="p-4">
-                  <CardDescription>{label}</CardDescription>
-                  <CardTitle className="text-2xl">{value}</CardTitle>
-                </CardHeader>
-              </Card>
-            ))}
+          <section className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="gap-3 p-4">
+                <div>
+                  <CardDescription>Aktuelle Runde</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {tournament.currentRound}/{tournament.numberOfRounds}
+                  </CardTitle>
+                </div>
+                <RoundProgress
+                  currentRound={tournament.currentRound}
+                  numberOfRounds={tournament.numberOfRounds}
+                />
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="p-4">
+                <CardDescription>Gesamtspieler</CardDescription>
+                <CardTitle className="text-2xl">
+                  {tournament.players.length}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="p-4">
+                <CardDescription>Aktive Spieler</CardDescription>
+                <CardTitle className="text-2xl">
+                  {overview?.active ?? 0}
+                </CardTitle>
+              </CardHeader>
+            </Card>
           </section>
 
           <Card>
@@ -549,6 +589,110 @@ export function SwissTournamentsPage() {
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Einstellungen und Export</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="grid gap-3 md:grid-cols-4">
+                <div className="grid gap-2">
+                  <Label>Aktives Turnier</Label>
+                  <Select
+                    value={tournament.id}
+                    onValueChange={(value) => void app.selectTournament(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {app.tournaments.map((entry) => (
+                        <SelectItem key={entry.id} value={entry.id}>
+                          {entry.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Turniername</Label>
+                  <Input
+                    value={tournament.name}
+                    onChange={(event) =>
+                      void app.updateTournamentMeta({
+                        name: event.currentTarget.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Runden</Label>
+                  <Input
+                    min={1}
+                    type="number"
+                    value={tournament.numberOfRounds}
+                    onChange={(event) =>
+                      void app.updateTournamentMeta({
+                        numberOfRounds: Number(event.currentTarget.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Bye global</Label>
+                  <Select
+                    value={String(tournament.settings.byeScore)}
+                    onValueChange={(value) =>
+                      void app.updateSettings({
+                        byeScore: Number(value) as ByeScore,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {byeScoreOptions.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={printPage}>
+                  <Printer className="size-4" />
+                  Print/PDF
+                </Button>
+                <Button variant="outline" onClick={app.exportStandingsCsv}>
+                  <Download className="size-4" />
+                  Rangliste CSV
+                </Button>
+                <Button variant="outline" onClick={app.exportTournamentJson}>
+                  <FileJson className="size-4" />
+                  Turnier JSON
+                </Button>
+                <ConfirmButton
+                  title="Turnier zuruecksetzen?"
+                  description="Alle Runden und Ergebnisse werden geloescht. Spieler, Einstellungen und Turniername bleiben erhalten."
+                  confirmLabel="Reset"
+                  onConfirm={async () => {
+                    await app.resetTournament()
+                    toast.success('Turnier wurde zurueckgesetzt.')
+                  }}
+                  trigger={
+                    <Button variant="destructive">
+                      <RotateCcw className="size-4" />
+                      Reset
+                    </Button>
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="players" className="grid gap-4">
@@ -560,32 +704,37 @@ export function SwissTournamentsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-[1fr_10rem_auto]">
-                <Input
-                  placeholder="Name"
-                  value={newPlayerName}
-                  onChange={(event) => setNewPlayerName(event.currentTarget.value)}
-                />
-                <Input
-                  placeholder="Rating"
-                  type="number"
-                  value={newPlayerRating}
-                  onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
-                />
-                <Button
-                  onClick={async () => {
-                    await app.addPlayer(
-                      newPlayerName,
-                      newPlayerRating ? Number(newPlayerRating) : undefined,
-                    )
-                    setNewPlayerName('')
-                    setNewPlayerRating('')
-                    toast.success('Spieler wurde hinzugefuegt.')
-                  }}
-                >
-                  <Plus className="size-4" />
-                  Hinzufuegen
-                </Button>
+              <div className="rounded-md border border-dashed bg-background p-3">
+                <div className="grid gap-3 md:grid-cols-[1fr_10rem_auto]">
+                  <Input
+                    placeholder="Name"
+                    value={newPlayerName}
+                    onChange={(event) => setNewPlayerName(event.currentTarget.value)}
+                  />
+                  <Input
+                    placeholder="Rating"
+                    type="number"
+                    value={newPlayerRating}
+                    onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
+                  />
+                  <Button
+                    className="h-9 w-full md:w-auto"
+                    variant="outline"
+                    disabled={newPlayerName.trim().length === 0}
+                    onClick={async () => {
+                      await app.addPlayer(
+                        newPlayerName,
+                        newPlayerRating ? Number(newPlayerRating) : undefined,
+                      )
+                      setNewPlayerName('')
+                      setNewPlayerRating('')
+                      toast.success('Spieler wurde hinzugefuegt.')
+                    }}
+                  >
+                    <CirclePlus className="size-4" />
+                    Spieler hinzufuegen
+                  </Button>
+                </div>
               </div>
 
               <div className="overflow-x-auto rounded-md border">
@@ -696,7 +845,7 @@ export function SwissTournamentsPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={!canRegenerateRound}
+                    disabled={!isCurrentDraftRound || !canRegenerateRound}
                     onClick={() => void app.regenerateRound()}
                   >
                     <RefreshCw className="size-4" />
@@ -706,7 +855,7 @@ export function SwissTournamentsPage() {
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {draftRound && (
+              {isCurrentDraftRound && draftRound && (
                 <div className="grid gap-3 rounded-md border bg-secondary/35 p-3 md:grid-cols-[1fr_1fr_auto]">
                   <Select value={manualWhite} onValueChange={setManualWhite}>
                     <SelectTrigger>
@@ -750,8 +899,58 @@ export function SwissTournamentsPage() {
                 </div>
               )}
 
-              {currentRound ? (
-                <PairingsTable tournament={tournament} pairings={currentRound.pairings} />
+              {displayedRounds.length > 0 ? (
+                displayedRounds.map((round, index) => {
+                  const isCurrentRound = index === 0
+                  const isEditable = isCurrentRound && round.status === 'draft'
+                  const canCompleteRound =
+                    isEditable && !round.pairings.some(hasMissingGameResult)
+
+                  return (
+                    <Card
+                      key={round.id}
+                      className={cn(
+                        'overflow-hidden',
+                        isCurrentRound
+                          ? 'border-l-4 border-l-primary bg-primary/5'
+                          : 'bg-card/80 opacity-85',
+                      )}
+                    >
+                      <CardHeader>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <CardTitle>Runde {round.roundNumber}</CardTitle>
+                            <Badge variant={isCurrentRound ? 'default' : 'outline'}>
+                              {isCurrentRound ? 'aktuell' : 'archiviert'}
+                            </Badge>
+                            <Badge variant="secondary">{round.status}</Badge>
+                            <Badge variant="outline">
+                              {round.pairings.length} Bretter/Byes
+                            </Badge>
+                          </div>
+                          <Button
+                            variant="outline"
+                            disabled={!canCompleteRound}
+                            onClick={() => void app.completeRound(round.roundNumber)}
+                          >
+                            Runde abschliessen
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <PairingsTable
+                          editable={isEditable}
+                          pairings={round.pairings}
+                          showWarnings
+                          tournament={tournament}
+                          onResultChange={(pairingId, result) =>
+                            void app.setResult(round.roundNumber, pairingId, result)
+                          }
+                        />
+                      </CardContent>
+                    </Card>
+                  )
+                })
               ) : (
                 <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
                   Erzeuge die erste Runde, sobald Spieler angelegt sind.
@@ -761,174 +960,27 @@ export function SwissTournamentsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="results" className="grid gap-4">
-          {tournament.rounds.map((round) => (
-            <Card key={round.id}>
-              <CardHeader>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <CardTitle>Runde {round.roundNumber}</CardTitle>
-                  <Button
-                    variant="outline"
-                    onClick={() => void app.completeRound(round.roundNumber)}
-                  >
-                    Runde abschliessen
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full min-w-[42rem] text-sm">
-                    <thead className="bg-muted/70 text-left">
-                      <tr>
-                        <th className="p-3">Brett</th>
-                        <th className="p-3">Weiss</th>
-                        <th className="p-3">Schwarz</th>
-                        <th className="p-3">Ergebnis</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {round.pairings.map((pairing) => (
-                        <tr key={pairing.id} className="border-t">
-                          <td className="p-3 tabular-nums">{pairing.boardNumber}</td>
-                          <td className="p-3">
-                            {pairing.isBye
-                              ? playerName(tournament, pairing.byePlayerId)
-                              : playerName(tournament, pairing.whitePlayerId)}
-                          </td>
-                          <td className="p-3">
-                            {pairing.isBye
-                              ? 'Bye'
-                              : playerName(tournament, pairing.blackPlayerId)}
-                          </td>
-                          <td className="p-3">
-                            {pairing.isBye ? (
-                              <Badge variant="secondary">
-                                {pairing.result?.replace('bye-', 'Bye ') ?? 'Bye'}
-                              </Badge>
-                            ) : (
-                              <Select
-                                value={pairing.result ?? ''}
-                                onValueChange={(value) =>
-                                  void app.setResult(
-                                    round.roundNumber,
-                                    pairing.id,
-                                    value as GameResult,
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-40">
-                                  <SelectValue placeholder="offen" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {resultOptions.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
         <TabsContent value="standings">
           <StandingsTable standings={app.standings} />
         </TabsContent>
 
-        <TabsContent value="settings" className="grid gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Einstellungen und Export</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="grid gap-2">
-                  <Label>Turniername</Label>
-                  <Input
-                    value={tournament.name}
-                    onChange={(event) =>
-                      void app.updateTournamentMeta({
-                        name: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Runden</Label>
-                  <Input
-                    min={1}
-                    type="number"
-                    value={tournament.numberOfRounds}
-                    onChange={(event) =>
-                      void app.updateTournamentMeta({
-                        numberOfRounds: Number(event.currentTarget.value),
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Bye global</Label>
-                  <Select
-                    value={String(tournament.settings.byeScore)}
-                    onValueChange={(value) =>
-                      void app.updateSettings({
-                        byeScore: Number(value) as ByeScore,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {byeScoreOptions.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={printPage}>
-                  <Printer className="size-4" />
-                  Print/PDF
-                </Button>
-                <Button variant="outline" onClick={app.exportStandingsCsv}>
-                  <Download className="size-4" />
-                  Rangliste CSV
-                </Button>
-                <Button variant="outline" onClick={app.exportTournamentJson}>
-                  <FileJson className="size-4" />
-                  Turnier JSON
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   )
 }
 
 function PairingsTable({
+  editable = false,
+  onResultChange,
   tournament,
   pairings,
+  showWarnings = true,
 }: {
+  editable?: boolean
+  onResultChange?: (pairingId: string, result: GameResult) => void
   tournament: Tournament
   pairings: Pairing[]
+  showWarnings?: boolean
 }) {
   return (
     <div className="overflow-x-auto rounded-md border">
@@ -939,7 +991,7 @@ function PairingsTable({
             <th className="p-3">Weiss</th>
             <th className="p-3">Schwarz</th>
             <th className="p-3">Ergebnis</th>
-            <th className="p-3">Hinweise</th>
+            {showWarnings && <th className="p-3">Hinweise</th>}
           </tr>
         </thead>
         <tbody>
@@ -965,23 +1017,51 @@ function PairingsTable({
               <td className="p-3">
                 {pairing.isBye ? 'Bye' : playerName(tournament, pairing.blackPlayerId)}
               </td>
-              <td className="p-3">{pairing.result ?? 'offen'}</td>
               <td className="p-3">
-                <div className="flex flex-wrap gap-1">
-                  {(pairing.warnings ?? []).length === 0 ? (
-                    <Badge variant="outline">OK</Badge>
-                  ) : (
-                    pairing.warnings?.map((entry) => (
-                      <Badge
-                        key={entry.id}
-                        variant={entry.severity === 'hard' ? 'destructive' : 'secondary'}
-                      >
-                        {entry.message}
-                      </Badge>
-                    ))
-                  )}
-                </div>
+                {pairing.isBye ? (
+                  <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
+                ) : editable && onResultChange ? (
+                  <Select
+                    value={pairing.result ?? ''}
+                    onValueChange={(value) =>
+                      onResultChange(pairing.id, value as GameResult)
+                    }
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="offen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {resultOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge variant={pairing.result ? 'outline' : 'secondary'}>
+                    {resultLabel(pairing.result)}
+                  </Badge>
+                )}
               </td>
+              {showWarnings && (
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-1">
+                    {(pairing.warnings ?? []).length === 0 ? (
+                      <Badge variant="outline">OK</Badge>
+                    ) : (
+                      pairing.warnings?.map((entry) => (
+                        <Badge
+                          key={entry.id}
+                          variant={entry.severity === 'hard' ? 'destructive' : 'secondary'}
+                        >
+                          {entry.message}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

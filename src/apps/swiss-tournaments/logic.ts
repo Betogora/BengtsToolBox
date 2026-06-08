@@ -687,6 +687,18 @@ export function updateResult(
   pairingId: string,
   result: GameResult,
 ): Tournament {
+  const latestRound = [...tournament.rounds].sort(
+    (left, right) => right.roundNumber - left.roundNumber,
+  )[0]
+
+  if (
+    !latestRound ||
+    latestRound.roundNumber !== roundNumber ||
+    latestRound.status !== 'draft'
+  ) {
+    return tournament
+  }
+
   return {
     ...tournament,
     rounds: tournament.rounds.map((round) =>
@@ -805,6 +817,10 @@ export function upsertRound(
   fixedPairings: Pairing[] = [],
 ): Tournament {
   const existing = tournament.rounds.find((round) => round.roundNumber === roundNumber)
+
+  if (existing?.status === 'completed') {
+    return tournament
+  }
 
   if (existing?.pairings.some((pairing) => pairing.result && !pairing.isBye)) {
     return tournament

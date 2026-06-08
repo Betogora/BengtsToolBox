@@ -239,8 +239,11 @@ export function useSwissTournaments(sessionId = 'default') {
   const regenerateRound = () =>
     updateActiveTournament((tournament) => {
       const existing = getCurrentDraftRound(tournament)
+      const latestRound = [...tournament.rounds].sort(
+        (left, right) => right.roundNumber - left.roundNumber,
+      )[0]
 
-      if (!existing) {
+      if (!existing || existing.roundNumber !== latestRound?.roundNumber) {
         return tournament
       }
 
@@ -260,6 +263,19 @@ export function useSwissTournaments(sessionId = 'default') {
       const existing = tournament.rounds.find(
         (round) => round.roundNumber === roundNumber,
       )
+      const latestRound = [...tournament.rounds].sort(
+        (left, right) => right.roundNumber - left.roundNumber,
+      )[0]
+
+      if (
+        !existing ||
+        existing.status !== 'draft' ||
+        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
+        existing.roundNumber !== latestRound?.roundNumber
+      ) {
+        return tournament
+      }
+
       const fixedPairings = [
         ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
         createManualPairing(tournament, roundNumber, whitePlayerId, blackPlayerId),
@@ -269,14 +285,29 @@ export function useSwissTournaments(sessionId = 'default') {
     })
 
   const completeRound = (roundNumber: number) =>
-    updateActiveTournament((tournament) => ({
-      ...tournament,
-      rounds: tournament.rounds.map((round) =>
-        round.roundNumber === roundNumber
-          ? { ...round, status: 'completed' as const }
-          : round,
-      ),
-    }))
+    updateActiveTournament((tournament) => {
+      const latestRound = [...tournament.rounds].sort(
+        (left, right) => right.roundNumber - left.roundNumber,
+      )[0]
+
+      if (
+        !latestRound ||
+        latestRound.roundNumber !== roundNumber ||
+        latestRound.status !== 'draft' ||
+        latestRound.pairings.some((pairing) => !pairing.isBye && !pairing.result)
+      ) {
+        return tournament
+      }
+
+      return {
+        ...tournament,
+        rounds: tournament.rounds.map((round) =>
+          round.roundNumber === roundNumber
+            ? { ...round, status: 'completed' as const }
+            : round,
+        ),
+      }
+    })
 
   const resetTournament = () =>
     updateActiveTournament((tournament) => resetTournamentProgress(tournament))
