@@ -311,7 +311,20 @@ function validatePairing(
   if (pairing.isBye) {
     const player = tournament.players.find((entry) => entry.id === pairing.byePlayerId)
 
-    if (player && summaries[player.id].byes > 0) {
+    const activePlayers = tournament.players.filter(
+      (entry) =>
+        entry.addedInRound <= roundNumber &&
+        getPlayerStatusForRound(entry, roundNumber) === 'active',
+    )
+    const fewestByes = Math.min(
+      ...activePlayers.map((entry) => summaries[entry.id]?.byes ?? 0),
+    )
+
+    if (
+      player &&
+      !tournament.settings.allowMultipleByesPerPlayer &&
+      summaries[player.id].byes > fewestByes
+    ) {
       warnings.push(warning('multiple-byes', `${player.name} hat bereits ein Bye erhalten.`))
     }
 
@@ -367,14 +380,15 @@ function chooseByePlayer(
   summaries: Record<string, PlayerScoreSummary>,
   allowMultipleByes: boolean,
 ) {
-  return [...players].sort((left, right) => {
-    const leftByePenalty = !allowMultipleByes && summaries[left.id].byes > 0 ? 1000 : 0
-    const rightByePenalty = !allowMultipleByes && summaries[right.id].byes > 0 ? 1000 : 0
+  const lowestByeCount = Math.min(...players.map((player) => summaries[player.id].byes))
+  const eligiblePlayers = allowMultipleByes
+    ? players
+    : players.filter((player) => summaries[player.id].byes === lowestByeCount)
 
+  return [...eligiblePlayers].sort((left, right) => {
     return (
       summaries[left.id].points - summaries[right.id].points ||
-      leftByePenalty - rightByePenalty ||
-      left.initialSeed - right.initialSeed
+      right.initialSeed - left.initialSeed
     )
   })[0]
 }
@@ -444,6 +458,60 @@ function findBestPairings(
   return best
 }
 
+function findBestNonRepeatPairings(
+  players: Player[],
+  tournament: Tournament,
+  summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+): Array<[Player, Player]> | null {
+  if (players.length === 0) {
+    return []
+  }
+
+  const [first, ...rest] = players
+  const candidates = rest
+    .filter(
+      (candidate) =>
+        !hasPlayedEachOtherBeforeRound(tournament, first.id, candidate.id, roundNumber),
+    )
+    .map((candidate) => ({
+      candidate,
+      score: pairingScore(first, candidate, tournament, summaries),
+    }))
+    .sort((left, right) => left.score - right.score)
+
+  let best: Array<[Player, Player]> | null = null
+  let bestScore = Number.POSITIVE_INFINITY
+
+  for (const entry of candidates) {
+    const remaining = rest.filter((player) => player.id !== entry.candidate.id)
+    const tail = findBestNonRepeatPairings(
+      remaining,
+      tournament,
+      summaries,
+      roundNumber,
+    )
+
+    if (!tail) {
+      continue
+    }
+
+    const score =
+      entry.score +
+      tail.reduce(
+        (sum, [left, right]) => sum + pairingScore(left, right, tournament, summaries),
+        0,
+      )
+
+    if (score < bestScore) {
+      best = [[first, entry.candidate], ...tail]
+      bestScore = score
+    }
+  }
+
+  return best
+}
+
 function hasNonRepeatPerfectPairing(
   players: Player[],
   tournament: Tournament,
@@ -480,12 +548,7 @@ function findStrictPairings(
     return findBestPairings(players, tournament, summaries)
   }
 
-  const tournamentWithoutPastPairings: Tournament = {
-    ...tournament,
-    rounds: tournament.rounds.filter((round) => round.roundNumber >= roundNumber),
-  }
-
-  return findBestPairings(players, tournamentWithoutPastPairings, summaries)
+  return findBestNonRepeatPairings(players, tournament, summaries, roundNumber) ?? []
 }
 
 export function generatePairings(
@@ -518,23 +581,24 @@ export function generatePairings(
   }))
   let pool = activePlayers
 
+  let byePairing: Pairing | null = null
+
   if (pool.length % 2 === 1) {
     const byePlayer = chooseByePlayer(
       pool,
       summaries,
       tournament.settings.allowMultipleByesPerPlayer,
     )
-    const byePairing: Pairing = {
+    byePairing = {
       id: makeId('pairing'),
       roundNumber,
-      boardNumber: pairings.length + 1,
+      boardNumber: 0,
       result: byeResult(getRoundByeScore(tournament, roundNumber)),
       isManual: false,
       isBye: true,
       byePlayerId: byePlayer.id,
     }
     byePairing.warnings = validatePairing(tournament, byePairing, roundNumber, summaries)
-    pairings.push(byePairing)
     pool = pool.filter((player) => player.id !== byePlayer.id)
   }
 
@@ -551,6 +615,10 @@ export function generatePairings(
     pairing.warnings = validatePairing(tournament, pairing, roundNumber, summaries)
     pairings.push(pairing)
   })
+
+  if (byePairing) {
+    pairings.push(byePairing)
+  }
 
   const playerUseCounts = new Map<string, number>()
 
