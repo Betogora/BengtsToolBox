@@ -264,21 +264,24 @@ function colorPenalty(player: Player, color: Color, summary: PlayerScoreSummary)
   const whiteCount = summary.colors.filter((entry) => entry === 'W').length
   const blackCount = summary.colors.filter((entry) => entry === 'B').length
   const lastColors = summary.colors.filter((entry) => entry !== '-').slice(-2)
+  const nextWhiteCount = whiteCount + (color === 'W' ? 1 : 0)
+  const nextBlackCount = blackCount + (color === 'B' ? 1 : 0)
+  const nextColorDiff = nextWhiteCount - nextBlackCount
   let penalty = 0
 
+  if (Math.abs(nextColorDiff) > 2) {
+    penalty += 1000
+  }
+
   if (lastColors.length > 0 && lastColors[lastColors.length - 1] === color) {
-    penalty += 2
+    penalty += 4
   }
 
   if (lastColors.length === 2 && lastColors.every((entry) => entry === color)) {
-    penalty += 8
+    penalty += 1000
   }
 
-  if (color === 'W') {
-    penalty += Math.max(0, whiteCount + 1 - blackCount - 1)
-  } else {
-    penalty += Math.max(0, blackCount + 1 - whiteCount - 1)
-  }
+  penalty += Math.abs(nextColorDiff) * 20
 
   return penalty + player.initialSeed / 1000
 }
@@ -365,10 +368,19 @@ function validatePairing(
   ]
 
   nextColors.forEach(([player, color]) => {
-    const recent = summaries[player.id].colors.filter((entry) => entry !== '-').slice(-2)
+    const summary = summaries[player.id]
+    const recent = summary.colors.filter((entry) => entry !== '-').slice(-2)
+    const whiteCount = summary.colors.filter((entry) => entry === 'W').length
+    const blackCount = summary.colors.filter((entry) => entry === 'B').length
+    const nextColorDiff =
+      whiteCount + (color === 'W' ? 1 : 0) - blackCount - (color === 'B' ? 1 : 0)
 
     if (recent.length === 2 && recent.every((entry) => entry === color)) {
       warnings.push(warning('third-color', `${player.name} wuerde zum dritten Mal in Folge ${color === 'W' ? 'Weiss' : 'Schwarz'} erhalten.`))
+    }
+
+    if (Math.abs(nextColorDiff) > 2) {
+      warnings.push(warning('color-imbalance', `${player.name} haette eine Farbdifferenz groesser als 2.`))
     }
   })
 
@@ -393,123 +405,210 @@ function chooseByePlayer(
   })[0]
 }
 
-function pairingScore(
+type PlannedPairing = {
+  left: Player
+  right: Player
+  warnings?: PairingWarning[]
+}
+
+type BracketPairingResult = {
+  pairs: PlannedPairing[]
+  floaters: Player[]
+  score: number
+}
+
+function playerOrder(
+  left: Player,
+  right: Player,
+  summaries: Record<string, PlayerScoreSummary>,
+) {
+  return (
+    summaries[right.id].points - summaries[left.id].points ||
+    left.initialSeed - right.initialSeed
+  )
+}
+
+function seedOrder(left: Player, right: Player) {
+  return left.initialSeed - right.initialSeed
+}
+
+function pairPointDiff(
+  left: Player,
+  right: Player,
+  summaries: Record<string, PlayerScoreSummary>,
+) {
+  return Math.abs(summaries[left.id].points - summaries[right.id].points)
+}
+
+function pairSearchScore(
   left: Player,
   right: Player,
   tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+  allowRepeats: boolean,
 ) {
-  const repeatPenalty = hasPlayedEachOtherBeforeRound(
-    tournament,
-    left.id,
-    right.id,
-    Number.POSITIVE_INFINITY,
+  const repeatPenalty =
+    allowRepeats && hasPlayedEachOtherBeforeRound(tournament, left.id, right.id, roundNumber)
+      ? 10_000
+      : 0
+
+  return (
+    repeatPenalty +
+    pairPointDiff(left, right, summaries) * 100 +
+    (left.initialSeed + right.initialSeed) / 10_000
   )
-    ? 10_000
-    : 0
-  const pointPenalty = Math.abs(summaries[left.id].points - summaries[right.id].points) * 100
-  const color = assignColors(left, right, summaries)
-  const white = color.whitePlayerId === left.id ? left : right
-  const black = color.blackPlayerId === left.id ? left : right
-  const colorCost =
-    colorPenalty(white, 'W', summaries[white.id]) +
-    colorPenalty(black, 'B', summaries[black.id])
-
-  return repeatPenalty + pointPenalty + colorCost + (left.initialSeed + right.initialSeed) / 10_000
 }
 
-function findBestPairings(
-  players: Player[],
-  tournament: Tournament,
-  summaries: Record<string, PlayerScoreSummary>,
-) {
-  if (players.length === 0) {
-    return [] as Array<[Player, Player]>
-  }
-
-  const [first, ...rest] = players
-  const candidates = rest
-    .map((candidate) => ({
-      candidate,
-      score: pairingScore(first, candidate, tournament, summaries),
-    }))
-    .sort((left, right) => left.score - right.score)
-    .slice(0, Math.min(8, rest.length))
-
-  let best: Array<[Player, Player]> = []
-  let bestScore = Number.POSITIVE_INFINITY
-
-  for (const entry of candidates) {
-    const remaining = rest.filter((player) => player.id !== entry.candidate.id)
-    const tail = findBestPairings(remaining, tournament, summaries)
-    const score =
-      entry.score +
-      tail.reduce(
-        (sum, [left, right]) => sum + pairingScore(left, right, tournament, summaries),
-        0,
-      )
-
-    if (score < bestScore) {
-      best = [[first, entry.candidate], ...tail]
-      bestScore = score
-    }
-  }
-
-  return best
-}
-
-function findBestNonRepeatPairings(
+function findCompletePairing(
   players: Player[],
   tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
-): Array<[Player, Player]> | null {
+  allowRepeats: boolean,
+): BracketPairingResult | null {
   if (players.length === 0) {
-    return []
+    return { pairs: [], floaters: [], score: 0 }
   }
 
-  const [first, ...rest] = players
+  const [first, ...rest] = [...players].sort((left, right) =>
+    playerOrder(left, right, summaries),
+  )
   const candidates = rest
     .filter(
       (candidate) =>
+        allowRepeats ||
         !hasPlayedEachOtherBeforeRound(tournament, first.id, candidate.id, roundNumber),
     )
     .map((candidate) => ({
       candidate,
-      score: pairingScore(first, candidate, tournament, summaries),
+      score: pairSearchScore(
+        first,
+        candidate,
+        tournament,
+        summaries,
+        roundNumber,
+        allowRepeats,
+      ),
     }))
     .sort((left, right) => left.score - right.score)
+    .slice(0, Math.min(10, rest.length))
 
-  let best: Array<[Player, Player]> | null = null
-  let bestScore = Number.POSITIVE_INFINITY
+  let best: BracketPairingResult | null = null
 
   for (const entry of candidates) {
-    const remaining = rest.filter((player) => player.id !== entry.candidate.id)
-    const tail = findBestNonRepeatPairings(
-      remaining,
+    const tail = findCompletePairing(
+      rest.filter((player) => player.id !== entry.candidate.id),
       tournament,
       summaries,
       roundNumber,
+      allowRepeats,
     )
 
     if (!tail) {
       continue
     }
 
-    const score =
-      entry.score +
-      tail.reduce(
-        (sum, [left, right]) => sum + pairingScore(left, right, tournament, summaries),
-        0,
-      )
+    const score = entry.score + tail.score
+    const result = {
+      pairs: [{ left: first, right: entry.candidate }, ...tail.pairs],
+      floaters: [],
+      score,
+    }
 
-    if (score < bestScore) {
-      best = [[first, entry.candidate], ...tail]
-      bestScore = score
+    if (!best || result.score < best.score) {
+      best = result
     }
   }
 
   return best
+}
+
+function findBestBracketPairing(
+  players: Player[],
+  tournament: Tournament,
+  summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+  allowRepeats: boolean,
+): BracketPairingResult | null {
+  const sortedPlayers = [...players].sort((left, right) =>
+    playerOrder(left, right, summaries),
+  )
+
+  if (sortedPlayers.length < 2) {
+    return {
+      pairs: [],
+      floaters: sortedPlayers,
+      score: sortedPlayers.reduce(
+        (sum, player) => sum + summaries[player.id].points * 100 + player.initialSeed,
+        0,
+      ),
+    }
+  }
+
+  if (sortedPlayers.length % 2 === 0) {
+    return findCompletePairing(
+      sortedPlayers,
+      tournament,
+      summaries,
+      roundNumber,
+      allowRepeats,
+    )
+  }
+
+  const floaterCandidates = [...sortedPlayers]
+    .sort(
+      (left, right) =>
+        summaries[left.id].points - summaries[right.id].points ||
+        right.initialSeed - left.initialSeed,
+    )
+    .slice(0, Math.min(10, sortedPlayers.length))
+
+  let best: BracketPairingResult | null = null
+
+  for (const floater of floaterCandidates) {
+    const pairedPlayers = sortedPlayers.filter((player) => player.id !== floater.id)
+    const result = findCompletePairing(
+      pairedPlayers,
+      tournament,
+      summaries,
+      roundNumber,
+      allowRepeats,
+    )
+
+    if (!result) {
+      continue
+    }
+
+    const floaterScore = summaries[floater.id].points * 100 + floater.initialSeed / 100
+    const candidate = {
+      pairs: result.pairs,
+      floaters: [floater],
+      score: result.score + floaterScore,
+    }
+
+    if (!best || candidate.score < best.score) {
+      best = candidate
+    }
+  }
+
+  return best
+}
+
+function findBestGlobalPairings(
+  players: Player[],
+  tournament: Tournament,
+  summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+  allowRepeats: boolean,
+) {
+  return findCompletePairing(
+    players,
+    tournament,
+    summaries,
+    roundNumber,
+    allowRepeats,
+  )?.pairs ?? []
 }
 
 function hasNonRepeatPerfectPairing(
@@ -536,19 +635,150 @@ function hasNonRepeatPerfectPairing(
   })
 }
 
-function findStrictPairings(
+function createFirstRoundPairings(players: Player[]): PlannedPairing[] {
+  const sortedPlayers = [...players].sort(seedOrder)
+  const midpoint = Math.ceil(sortedPlayers.length / 2)
+  const topHalf = sortedPlayers.slice(0, Math.floor(sortedPlayers.length / 2))
+  const bottomHalf = sortedPlayers.slice(midpoint)
+
+  return topHalf
+    .map((player, index) => {
+      const opponent = bottomHalf[index]
+
+      return opponent ? { left: player, right: opponent } : null
+    })
+    .filter((pairing): pairing is PlannedPairing => Boolean(pairing))
+}
+
+function createSwissBracketPairings(
   players: Player[],
   tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
-) {
+): PlannedPairing[] {
   const canAvoidRepeats = hasNonRepeatPerfectPairing(players, tournament, roundNumber)
+  const groups = new Map<number, Player[]>()
+  const pairings: PlannedPairing[] = []
+  let downfloaters: Player[] = []
+  let usedFallback = false
 
-  if (!canAvoidRepeats) {
-    return findBestPairings(players, tournament, summaries)
+  ;[...players]
+    .sort((left, right) => playerOrder(left, right, summaries))
+    .forEach((player) => {
+      const score = summaries[player.id].points
+      groups.set(score, [...(groups.get(score) ?? []), player])
+    })
+
+  const scores = [...groups.keys()].sort((left, right) => right - left)
+
+  scores.forEach((score) => {
+    const bracketPlayers = [
+      ...downfloaters,
+      ...(groups.get(score) ?? []).sort((left, right) =>
+        playerOrder(left, right, summaries),
+      ),
+    ].sort((left, right) => playerOrder(left, right, summaries))
+
+    if (bracketPlayers.length === 0) {
+      downfloaters = []
+      return
+    }
+
+    const strictResult = findBestBracketPairing(
+      bracketPlayers,
+      tournament,
+      summaries,
+      roundNumber,
+      false,
+    )
+    const result =
+      strictResult ??
+      findBestBracketPairing(
+        bracketPlayers,
+        tournament,
+        summaries,
+        roundNumber,
+        true,
+      )
+
+    if (!strictResult) {
+      usedFallback = true
+    }
+
+    if (!result) {
+      downfloaters = bracketPlayers
+      usedFallback = true
+      return
+    }
+
+    result.pairs.forEach((pair) => {
+      const warnings: PairingWarning[] = []
+
+      if (pairPointDiff(pair.left, pair.right, summaries) > 0) {
+        warnings.push(warning('forced-floater', 'Diese Paarung nutzt einen Floater zwischen Scoregroups.'))
+      }
+
+      if (
+        usedFallback &&
+        hasPlayedEachOtherBeforeRound(tournament, pair.left.id, pair.right.id, roundNumber)
+      ) {
+        warnings.push(warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback moeglich.', 'hard'))
+      }
+
+      pairings.push({ ...pair, warnings })
+    })
+
+    downfloaters = result.floaters
+  })
+
+  if (downfloaters.length > 0) {
+    const fallbackPairs = findBestGlobalPairings(
+      downfloaters,
+      tournament,
+      summaries,
+      roundNumber,
+      !canAvoidRepeats,
+    )
+
+    fallbackPairs.forEach((pair) => {
+      pairings.push({
+        ...pair,
+        warnings: [
+          warning('forced-floater', 'Diese Paarung nutzt einen Floater zwischen Scoregroups.'),
+          ...(hasPlayedEachOtherBeforeRound(tournament, pair.left.id, pair.right.id, roundNumber)
+            ? [warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback moeglich.', 'hard')]
+            : []),
+        ],
+      })
+    })
   }
 
-  return findBestNonRepeatPairings(players, tournament, summaries, roundNumber) ?? []
+  const hasRepeat = pairings.some((pairing) =>
+    hasPlayedEachOtherBeforeRound(tournament, pairing.left.id, pairing.right.id, roundNumber),
+  )
+
+  if (hasRepeat && canAvoidRepeats) {
+    return findBestGlobalPairings(
+      players,
+      tournament,
+      summaries,
+      roundNumber,
+      false,
+    )
+  }
+
+  if (pairings.length === 0 && players.length >= 2) {
+    return findBestGlobalPairings(players, tournament, summaries, roundNumber, true).map(
+      (pairing) => ({
+        ...pairing,
+        warnings: [
+          warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback moeglich.', 'hard'),
+        ],
+      }),
+    )
+  }
+
+  return pairings
 }
 
 export function generatePairings(
@@ -566,11 +796,7 @@ export function generatePairings(
     .filter((player) => player.addedInRound <= roundNumber)
     .filter((player) => getPlayerStatusForRound(player, roundNumber) === 'active')
     .filter((player) => !usedPlayerIds.has(player.id))
-    .sort(
-      (left, right) =>
-        summaries[right.id].points - summaries[left.id].points ||
-        left.initialSeed - right.initialSeed,
-    )
+    .sort((left, right) => playerOrder(left, right, summaries))
 
   const pairings: Pairing[] = fixedPairings.map((pairing, index) => ({
     ...pairing,
@@ -598,11 +824,26 @@ export function generatePairings(
       isBye: true,
       byePlayerId: byePlayer.id,
     }
-    byePairing.warnings = validatePairing(tournament, byePairing, roundNumber, summaries)
+    const activeByeCounts = activePlayers.map((player) => summaries[player.id].byes)
+    const hasStartedNewByeCycle =
+      activeByeCounts.length > 0 &&
+      activeByeCounts.every((byeCount) => byeCount === activeByeCounts[0]) &&
+      activeByeCounts[0] > 0
+    byePairing.warnings = [
+      ...validatePairing(tournament, byePairing, roundNumber, summaries),
+      ...(hasStartedNewByeCycle
+        ? [warning('bye-cycle-restarted', 'Alle aktiven Spieler hatten bereits gleich viele Byes.')]
+        : []),
+    ]
     pool = pool.filter((player) => player.id !== byePlayer.id)
   }
 
-  findStrictPairings(pool, tournament, summaries, roundNumber).forEach(([left, right]) => {
+  const plannedPairings =
+    roundNumber === 1
+      ? createFirstRoundPairings(pool)
+      : createSwissBracketPairings(pool, tournament, summaries, roundNumber)
+
+  plannedPairings.forEach(({ left, right, warnings: pairingWarnings = [] }) => {
     const colors = assignColors(left, right, summaries)
     const pairing: Pairing = {
       id: makeId('pairing'),
@@ -612,7 +853,10 @@ export function generatePairings(
       isManual: false,
       isBye: false,
     }
-    pairing.warnings = validatePairing(tournament, pairing, roundNumber, summaries)
+    pairing.warnings = [
+      ...validatePairing(tournament, pairing, roundNumber, summaries),
+      ...pairingWarnings,
+    ]
     pairings.push(pairing)
   })
 
