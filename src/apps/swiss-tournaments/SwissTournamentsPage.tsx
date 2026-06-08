@@ -223,9 +223,16 @@ function TournamentCreator({
   const [name, setName] = useState('Vereinsturnier')
   const [numberOfRounds, setNumberOfRounds] = useState(5)
   const [players, setPlayers] = useState<DraftPlayer[]>([
-    { id: 'draft-1', name: 'Max Mustermann', rating: '1820' },
-    { id: 'draft-2', name: 'Erika Beispiel', rating: '1650' },
-    { id: 'draft-3', name: 'Spieler Ohne Rating', rating: '' },
+    { id: 'draft-1', name: 'Niklas', rating: '1922' },
+    { id: 'draft-2', name: 'Bengt', rating: '1818' },
+    { id: 'draft-3', name: 'Thomas', rating: '1697' },
+    { id: 'draft-4', name: 'Liam', rating: '1674' },
+    { id: 'draft-5', name: 'Ralph', rating: '1614' },
+    { id: 'draft-6', name: 'Uwe', rating: '1524' },
+    { id: 'draft-7', name: 'Quinn', rating: '1494' },
+    { id: 'draft-8', name: 'Matthias', rating: '1485' },
+    { id: 'draft-9', name: 'Armin', rating: '1434' },
+    { id: 'draft-10', name: 'Nikita', rating: '1311' },
   ])
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
