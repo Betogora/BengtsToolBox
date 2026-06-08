@@ -496,15 +496,6 @@ export function SwissTournamentsPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge className="gap-1">
-              <Swords className="size-3.5" />
-              Schweizer System
-            </Badge>
-            <Badge variant={app.isRealtime ? 'default' : 'secondary'}>
-              {app.isRealtime ? 'Firestore live' : 'Lokal'}
-            </Badge>
-          </div>
           <h1 className="truncate text-3xl font-semibold tracking-normal sm:text-4xl">
             Swiss Tournaments
           </h1>
