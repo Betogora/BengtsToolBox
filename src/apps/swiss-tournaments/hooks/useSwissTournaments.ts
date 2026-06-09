@@ -284,6 +284,31 @@ export function useSwissTournaments(sessionId = 'default') {
       return upsertRound(tournament, roundNumber, fixedPairings)
     })
 
+  const removeManualPairing = (roundNumber: number, pairingId: string) =>
+    updateActiveTournament((tournament) => {
+      const existing = tournament.rounds.find(
+        (round) => round.roundNumber === roundNumber,
+      )
+      const latestRound = [...tournament.rounds].sort(
+        (left, right) => right.roundNumber - left.roundNumber,
+      )[0]
+
+      if (
+        !existing ||
+        existing.status !== 'draft' ||
+        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
+        existing.roundNumber !== latestRound?.roundNumber
+      ) {
+        return tournament
+      }
+
+      const fixedPairings = existing.pairings.filter(
+        (pairing) => pairing.isManual && pairing.id !== pairingId,
+      )
+
+      return upsertRound(tournament, roundNumber, fixedPairings)
+    })
+
   const completeRound = (roundNumber: number) =>
     updateActiveTournament((tournament) => {
       const latestRound = [...tournament.rounds].sort(
@@ -360,6 +385,7 @@ export function useSwissTournaments(sessionId = 'default') {
     isLoading: stateStore.isLoading || tournamentsStore.isLoading,
     isRealtime: stateStore.isRealtime && tournamentsStore.isRealtime,
     regenerateRound,
+    removeManualPairing,
     removePlayer,
     resetTournament,
     selectTournament,

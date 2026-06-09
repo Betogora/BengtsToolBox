@@ -11,6 +11,7 @@ import {
   Trash2,
   Trophy,
   UsersRound,
+  X,
 } from 'lucide-react'
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
@@ -21,6 +22,7 @@ import type {
   ByeScore,
   GameResult,
   Pairing,
+  PairingWarning,
   PlayerStatus,
   SeedingMode,
   Tournament,
@@ -102,6 +104,74 @@ function resultLabel(result?: GameResult) {
   }
 
   return result.startsWith('bye-') ? result.replace('bye-', 'Bye ') : result
+}
+
+type PairingWarningBadgeMeta = {
+  label: string
+  className: string
+}
+
+const warningBadgeMeta: Record<string, PairingWarningBadgeMeta> = {
+  'bye-cycle-restarted': {
+    label: 'BYE',
+    className: 'border-amber-300 bg-amber-100 text-amber-950',
+  },
+  'color-imbalance': {
+    label: 'FARBE',
+    className: 'border-sky-300 bg-sky-100 text-sky-950',
+  },
+  'duplicate-round-player': {
+    label: 'DOPPELT',
+    className: 'border-red-300 bg-red-100 text-red-950',
+  },
+  'forced-floater': {
+    label: 'FLOATER',
+    className: 'border-violet-300 bg-violet-100 text-violet-950',
+  },
+  'inactive-player': {
+    label: 'INAKTIV',
+    className: 'border-slate-300 bg-slate-100 text-slate-950',
+  },
+  'large-point-gap': {
+    label: 'ABSTAND',
+    className: 'border-orange-300 bg-orange-100 text-orange-950',
+  },
+  'missing-player': {
+    label: 'FEHLT',
+    className: 'border-rose-300 bg-rose-100 text-rose-950',
+  },
+  'multiple-byes': {
+    label: 'BYE',
+    className: 'border-amber-300 bg-amber-100 text-amber-950',
+  },
+  'non-fide-fallback': {
+    label: 'FALLBACK',
+    className: 'border-fuchsia-300 bg-fuchsia-100 text-fuchsia-950',
+  },
+  'repeat-pairing': {
+    label: 'REPEAT',
+    className: 'border-red-300 bg-red-100 text-red-950',
+  },
+  'same-player': {
+    label: 'SPIELER',
+    className: 'border-red-300 bg-red-100 text-red-950',
+  },
+  'third-color': {
+    label: 'FARBE',
+    className: 'border-sky-300 bg-sky-100 text-sky-950',
+  },
+}
+
+function pairingWarningBadgeMeta(warning: PairingWarning): PairingWarningBadgeMeta {
+  return (
+    warningBadgeMeta[warning.id] ?? {
+      label: warning.severity === 'hard' ? 'STOPP' : 'HINWEIS',
+      className:
+        warning.severity === 'hard'
+          ? 'border-red-300 bg-red-100 text-red-950'
+          : 'border-lime-300 bg-lime-100 text-lime-950',
+    }
+  )
 }
 
 function ConfirmButton({
@@ -519,13 +589,18 @@ export function SwissTournamentsPage() {
         </Card>
       )}
 
-      <Tabs defaultValue="overview" className="gap-4">
+      <Tabs defaultValue="preview" className="gap-4">
         <TabsList className="flex h-auto w-full flex-wrap justify-start">
+          <TabsTrigger value="preview">Vorschau</TabsTrigger>
           <TabsTrigger value="overview">Uebersicht</TabsTrigger>
           <TabsTrigger value="players">Spieler</TabsTrigger>
           <TabsTrigger value="pairings">Paarungen</TabsTrigger>
           <TabsTrigger value="standings">Rangliste</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="preview" className="grid gap-4">
+          <TournamentCreator onCreate={app.createNewTournament} />
+        </TabsContent>
 
         <TabsContent value="overview" className="grid gap-4">
           <section className="grid gap-4 md:grid-cols-3">
@@ -941,6 +1016,9 @@ export function SwissTournamentsPage() {
                           pairings={round.pairings}
                           showWarnings
                           tournament={tournament}
+                          onManualPairingRemove={(pairingId) =>
+                            void app.removeManualPairing(round.roundNumber, pairingId)
+                          }
                           onResultChange={(pairingId, result) =>
                             void app.setResult(round.roundNumber, pairingId, result)
                           }
@@ -969,17 +1047,21 @@ export function SwissTournamentsPage() {
 
 function PairingsTable({
   editable = false,
+  onManualPairingRemove,
   onResultChange,
   tournament,
   pairings,
   showWarnings = true,
 }: {
   editable?: boolean
+  onManualPairingRemove?: (pairingId: string) => void
   onResultChange?: (pairingId: string, result: GameResult) => void
   tournament: Tournament
   pairings: Pairing[]
   showWarnings?: boolean
 }) {
+  const canChangePairings = editable && !pairings.some(hasRealResult)
+
   return (
     <div className="overflow-x-auto rounded-md border">
       <table className="w-full min-w-[48rem] text-sm">
@@ -1006,11 +1088,6 @@ function PairingsTable({
                 {pairing.isBye
                   ? playerName(tournament, pairing.byePlayerId)
                   : playerName(tournament, pairing.whitePlayerId)}
-                {pairing.isManual && (
-                  <Badge className="ml-2 border-primary/40" variant="secondary">
-                    fixiert
-                  </Badge>
-                )}
               </td>
               <td className="p-3">
                 {pairing.isBye ? 'Bye' : playerName(tournament, pairing.blackPlayerId)}
@@ -1022,7 +1099,7 @@ function PairingsTable({
                   <Select
                     value={pairing.result ?? ''}
                     onValueChange={(value) =>
-                      onResultChange(pairing.id, value as GameResult)
+                      onResultChange?.(pairing.id, value as GameResult)
                     }
                   >
                     <SelectTrigger className="w-40">
@@ -1045,17 +1122,44 @@ function PairingsTable({
               {showWarnings && (
                 <td className="p-3">
                   <div className="flex flex-wrap gap-1">
-                    {(pairing.warnings ?? []).length === 0 ? (
+                    {pairing.isManual && (
+                      <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
+                        <span className="px-2 py-0.5">FIXIERT</span>
+                        {editable && onManualPairingRemove && (
+                          <Button
+                            aria-label={`Fixierte Paarung ${playerName(
+                              tournament,
+                              pairing.whitePlayerId,
+                            )} gegen ${playerName(tournament, pairing.blackPlayerId)} loesen`}
+                            className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+                            disabled={!canChangePairings}
+                            size="icon"
+                            type="button"
+                            variant="ghost"
+                            onClick={() => onManualPairingRemove?.(pairing.id)}
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        )}
+                      </span>
+                    )}
+                    {(pairing.warnings ?? []).length === 0 && !pairing.isManual ? (
                       <Badge variant="outline">OK</Badge>
                     ) : (
-                      pairing.warnings?.map((entry) => (
-                        <Badge
-                          key={entry.id}
-                          variant={entry.severity === 'hard' ? 'destructive' : 'secondary'}
-                        >
-                          {entry.message}
-                        </Badge>
-                      ))
+                      pairing.warnings?.map((entry) => {
+                        const badgeMeta = pairingWarningBadgeMeta(entry)
+
+                        return (
+                          <Badge
+                            key={entry.id}
+                            className={cn('font-semibold', badgeMeta.className)}
+                            title={entry.message}
+                            variant="outline"
+                          >
+                            {badgeMeta.label}
+                          </Badge>
+                        )
+                      })
                     )}
                   </div>
                 </td>
