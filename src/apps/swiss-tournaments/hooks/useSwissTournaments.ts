@@ -382,7 +382,7 @@ export function useSwissTournaments(sessionId = 'default') {
   const setResult = (
     roundNumber: number,
     pairingId: string,
-    result: GameResult,
+    result?: GameResult,
   ) =>
     updateActiveTournament((tournament) =>
       updateResult(tournament, roundNumber, pairingId, result),

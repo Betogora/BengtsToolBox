@@ -66,6 +66,8 @@ const resultOptions: Array<{ value: GameResult; label: string }> = [
   { value: 'forfeit-1-0', label: 'kampflos 1-0' },
   { value: 'forfeit-0-1', label: 'kampflos 0-1' },
 ]
+const openResultValue = 'open'
+type ResultSelectValue = GameResult | typeof openResultValue
 
 const byeScoreOptions: Array<{ value: ByeScore; label: string }> = [
   { value: 1, label: '1 Punkt' },
@@ -96,10 +98,6 @@ function statusVariant(status: PlayerStatus) {
   }
 
   return status === 'inactive' ? ('secondary' as const) : ('outline' as const)
-}
-
-function hasRealResult(pairing: Pairing) {
-  return Boolean(pairing.result && !pairing.isBye)
 }
 
 function hasMissingGameResult(pairing: Pairing) {
@@ -569,8 +567,7 @@ export function SwissTournamentsPage() {
       currentRound.roundNumber < tournament.numberOfRounds
     )
   }, [currentRound, tournament])
-  const canRegenerateRound =
-    Boolean(draftRound) && !draftRound?.pairings.some(hasRealResult)
+  const canRegenerateRound = Boolean(draftRound)
   const hasTournamentStarted = Boolean(tournament && tournament.rounds.length > 0)
   const displayedRounds = useMemo(
     () =>
@@ -1146,12 +1143,18 @@ function PairingsTable({
 }: {
   editable?: boolean
   onManualPairingRemove?: (pairingId: string) => void
-  onResultChange?: (pairingId: string, result: GameResult) => void
+  onResultChange?: (pairingId: string, result?: GameResult) => void
   tournament: Tournament
   pairings: Pairing[]
   showWarnings?: boolean
 }) {
-  const canChangePairings = editable && !pairings.some(hasRealResult)
+  const canChangePairings = editable
+  const handleResultSelect = (pairingId: string, value: ResultSelectValue) => {
+    onResultChange?.(
+      pairingId,
+      value === openResultValue ? undefined : (value as GameResult),
+    )
+  }
 
   const renderMobileResult = (pairing: Pairing) => {
     if (pairing.isBye) {
@@ -1161,15 +1164,16 @@ function PairingsTable({
     if (editable && onResultChange) {
       return (
         <Select
-          value={pairing.result ?? ''}
+          value={pairing.result ?? openResultValue}
           onValueChange={(value) =>
-            onResultChange?.(pairing.id, value as GameResult)
+            handleResultSelect(pairing.id, value as ResultSelectValue)
           }
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="offen" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value={openResultValue}>offen</SelectItem>
             {resultOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -1315,15 +1319,16 @@ function PairingsTable({
                   <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
                 ) : editable && onResultChange ? (
                   <Select
-                    value={pairing.result ?? ''}
+                    value={pairing.result ?? openResultValue}
                     onValueChange={(value) =>
-                      onResultChange?.(pairing.id, value as GameResult)
+                      handleResultSelect(pairing.id, value as ResultSelectValue)
                     }
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="offen" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value={openResultValue}>offen</SelectItem>
                       {resultOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}

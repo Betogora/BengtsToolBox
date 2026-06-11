@@ -1168,7 +1168,7 @@ export function updateResult(
   tournament: Tournament,
   roundNumber: number,
   pairingId: string,
-  result: GameResult,
+  result?: GameResult,
 ): Tournament {
   const latestRound = [...tournament.rounds].sort(
     (left, right) => right.roundNumber - left.roundNumber,
@@ -1188,9 +1188,19 @@ export function updateResult(
       round.roundNumber === roundNumber
         ? {
             ...round,
-            pairings: round.pairings.map((pairing) =>
-              pairing.id === pairingId ? { ...pairing, result } : pairing,
-            ),
+            pairings: round.pairings.map((pairing) => {
+              if (pairing.id !== pairingId) {
+                return pairing
+              }
+
+              if (result) {
+                return { ...pairing, result }
+              }
+
+              const pairingWithoutResult = { ...pairing }
+              delete pairingWithoutResult.result
+              return pairingWithoutResult
+            }),
           }
         : round,
     ),
@@ -1309,14 +1319,15 @@ export function upsertRound(
     return tournament
   }
 
-  if (existing?.pairings.some((pairing) => pairing.result && !pairing.isBye)) {
-    return tournament
-  }
+  const pairings = preserveExistingResults(
+    generatePairings(tournament, roundNumber, fixedPairings),
+    existing?.pairings ?? [],
+  )
 
   const round: Round = {
     id: existing?.id ?? makeId('round'),
     roundNumber,
-    pairings: generatePairings(tournament, roundNumber, fixedPairings),
+    pairings,
     status: existing?.status ?? 'draft',
   }
 
@@ -1328,6 +1339,68 @@ export function upsertRound(
       round,
     ].sort((left, right) => left.roundNumber - right.roundNumber),
   }
+}
+
+function invertResult(result: GameResult): GameResult {
+  if (result === '1-0') {
+    return '0-1'
+  }
+
+  if (result === '0-1') {
+    return '1-0'
+  }
+
+  if (result === 'forfeit-1-0') {
+    return 'forfeit-0-1'
+  }
+
+  if (result === 'forfeit-0-1') {
+    return 'forfeit-1-0'
+  }
+
+  return result
+}
+
+function preserveExistingResults(pairings: Pairing[], existingPairings: Pairing[]) {
+  const existingGames = existingPairings.filter(
+    (pairing) =>
+      !pairing.isBye &&
+      pairing.result &&
+      pairing.whitePlayerId &&
+      pairing.blackPlayerId,
+  )
+
+  if (existingGames.length === 0) {
+    return pairings
+  }
+
+  return pairings.map((pairing) => {
+    if (pairing.isBye || !pairing.whitePlayerId || !pairing.blackPlayerId) {
+      return pairing
+    }
+
+    const sameColors = existingGames.find(
+      (existing) =>
+        existing.whitePlayerId === pairing.whitePlayerId &&
+        existing.blackPlayerId === pairing.blackPlayerId,
+    )
+
+    if (sameColors?.result) {
+      return { ...pairing, result: sameColors.result }
+    }
+
+    const swappedColors = existingGames.find(
+      (existing) =>
+        existing.whitePlayerId === pairing.blackPlayerId &&
+        existing.blackPlayerId === pairing.whitePlayerId,
+    )
+
+    if (swappedColors?.result) {
+      return { ...pairing, result: invertResult(swappedColors.result) }
+    }
+
+    return pairing
+  })
 }
 
 export function createManualPairing(
