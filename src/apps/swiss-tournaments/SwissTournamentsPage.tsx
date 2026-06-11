@@ -270,6 +270,35 @@ function createDraftPlayer(index: number): DraftPlayer {
   }
 }
 
+function defaultDraftPlayers(): DraftPlayer[] {
+  return [
+    { id: 'draft-1', name: 'Niklas', rating: '1922' },
+    { id: 'draft-2', name: 'Bengt', rating: '1818' },
+    { id: 'draft-3', name: 'Thomas', rating: '1697' },
+    { id: 'draft-4', name: 'Liam', rating: '1674' },
+    { id: 'draft-5', name: 'Ralph', rating: '1614' },
+    { id: 'draft-6', name: 'Uwe', rating: '1524' },
+    { id: 'draft-7', name: 'Quinn', rating: '1494' },
+    { id: 'draft-8', name: 'Matthias', rating: '1485' },
+    { id: 'draft-9', name: 'Armin', rating: '1434' },
+    { id: 'draft-10', name: 'Nikita', rating: '1311' },
+  ]
+}
+
+function tournamentPlayersToDraftPlayers(tournament?: Tournament | null): DraftPlayer[] {
+  if (!tournament?.players.length) {
+    return defaultDraftPlayers()
+  }
+
+  return [...tournament.players]
+    .sort((left, right) => left.initialSeed - right.initialSeed)
+    .map((player, index) => ({
+      id: `draft-${player.id}-${index}`,
+      name: player.name,
+      rating: player.rating === undefined ? '' : String(player.rating),
+    }))
+}
+
 function defaultTournamentName() {
   const formatter = new Intl.DateTimeFormat('de-DE', {
     day: '2-digit',
@@ -317,26 +346,19 @@ function AppTitleHeader() {
 }
 
 function TournamentCreator({
+  initialTournament,
   onCreated,
   onCreate,
 }: {
+  initialTournament?: Tournament | null
   onCreated?: () => void
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
 }) {
   const [name, setName] = useState(defaultTournamentName)
   const [numberOfRounds, setNumberOfRounds] = useState(5)
-  const [players, setPlayers] = useState<DraftPlayer[]>([
-    { id: 'draft-1', name: 'Niklas', rating: '1922' },
-    { id: 'draft-2', name: 'Bengt', rating: '1818' },
-    { id: 'draft-3', name: 'Thomas', rating: '1697' },
-    { id: 'draft-4', name: 'Liam', rating: '1674' },
-    { id: 'draft-5', name: 'Ralph', rating: '1614' },
-    { id: 'draft-6', name: 'Uwe', rating: '1524' },
-    { id: 'draft-7', name: 'Quinn', rating: '1494' },
-    { id: 'draft-8', name: 'Matthias', rating: '1485' },
-    { id: 'draft-9', name: 'Armin', rating: '1434' },
-    { id: 'draft-10', name: 'Nikita', rating: '1311' },
-  ])
+  const [players, setPlayers] = useState<DraftPlayer[]>(() =>
+    tournamentPlayersToDraftPlayers(initialTournament),
+  )
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
   const [byeScore, setByeScore] = useState<ByeScore>(1)
@@ -505,8 +527,10 @@ function TournamentCreator({
 }
 
 function NewTournamentDialog({
+  initialTournament,
   onCreate,
 }: {
+  initialTournament?: Tournament | null
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
 }) {
   const [open, setOpen] = useState(false)
@@ -526,7 +550,13 @@ function NewTournamentDialog({
             Turnierdaten, Sortierung, Byepunkte und Startspieler festlegen.
           </DialogDescription>
         </DialogHeader>
-        <TournamentCreator onCreate={onCreate} onCreated={() => setOpen(false)} />
+        {open && (
+          <TournamentCreator
+            initialTournament={initialTournament}
+            onCreate={onCreate}
+            onCreated={() => setOpen(false)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -606,10 +636,8 @@ export function SwissTournamentsPage() {
         <AppTitleHeader />
         <Card>
           <CardHeader>
-            <CardTitle>Daten werden vorbereitet</CardTitle>
-            <CardDescription>
-              Alte Turniere werden einmalig bereinigt.
-            </CardDescription>
+            <CardTitle>Daten werden geladen</CardTitle>
+            <CardDescription>Gespeicherte Turniere werden synchronisiert.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -628,7 +656,10 @@ export function SwissTournamentsPage() {
             </CardHeader>
           </Card>
         )}
-        <TournamentCreator onCreate={app.createNewTournament} />
+        <TournamentCreator
+          initialTournament={app.tournaments[0] ?? null}
+          onCreate={app.createNewTournament}
+        />
       </div>
     )
   }
@@ -719,7 +750,10 @@ export function SwissTournamentsPage() {
             <CardHeader>
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <CardTitle>Einstellungen und Export</CardTitle>
-                <NewTournamentDialog onCreate={app.createNewTournament} />
+                <NewTournamentDialog
+                  initialTournament={tournament}
+                  onCreate={app.createNewTournament}
+                />
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -1065,6 +1099,10 @@ export function SwissTournamentsPage() {
                   const isEditable = isCurrentRound && round.status === 'draft'
                   const canCompleteRound =
                     isEditable && !round.pairings.some(hasMissingGameResult)
+                  const canGoBackToRound =
+                    index === 1 &&
+                    round.status === 'completed' &&
+                    currentRound?.roundNumber === round.roundNumber + 1
 
                   return (
                     <Card
@@ -1088,14 +1126,35 @@ export function SwissTournamentsPage() {
                               {round.pairings.length} Bretter/Byes
                             </Badge>
                           </div>
-                          <Button
-                            className="w-full md:w-auto"
-                            variant="outline"
-                            disabled={!canCompleteRound}
-                            onClick={() => void app.completeRound(round.roundNumber)}
-                          >
-                            Runde abschließen
-                          </Button>
+                          <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+                            {canGoBackToRound && currentRound && (
+                              <ConfirmButton
+                                title={`Zu Runde ${round.roundNumber} zurückgehen?`}
+                                description={`Runde ${currentRound.roundNumber} wird gelöscht. Runde ${round.roundNumber} wird wieder geöffnet und kann bearbeitet werden.`}
+                                confirmLabel="Zurückgehen"
+                                onConfirm={async () => {
+                                  await app.goBackToPreviousRound()
+                                  toast.success(
+                                    `Runde ${round.roundNumber} wurde wieder geöffnet.`,
+                                  )
+                                }}
+                                trigger={
+                                  <Button className="w-full md:w-auto" variant="outline">
+                                    <RotateCcw className="size-4" />
+                                    Zurück zu Runde {round.roundNumber}
+                                  </Button>
+                                }
+                              />
+                            )}
+                            <Button
+                              className="w-full md:w-auto"
+                              variant="outline"
+                              disabled={!canCompleteRound}
+                              onClick={() => void app.completeRound(round.roundNumber)}
+                            >
+                              Runde abschließen
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent>

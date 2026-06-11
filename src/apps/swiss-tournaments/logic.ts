@@ -1278,7 +1278,37 @@ export function resetTournamentProgress(tournament: Tournament): Tournament {
   return {
     ...tournament,
     currentRound: 0,
+    players: tournament.players.map((player) => ({
+      ...player,
+      status: 'active',
+      addedInRound: 1,
+      statusOverrides: undefined,
+    })),
     rounds: [],
+  }
+}
+
+export function reopenPreviousRound(tournament: Tournament): Tournament {
+  const sortedRounds = [...tournament.rounds].sort(
+    (left, right) => left.roundNumber - right.roundNumber,
+  )
+  const latestRound = sortedRounds[sortedRounds.length - 1]
+  const previousRound = sortedRounds[sortedRounds.length - 2]
+
+  if (!latestRound || !previousRound || previousRound.status !== 'completed') {
+    return tournament
+  }
+
+  return {
+    ...tournament,
+    currentRound: previousRound.roundNumber,
+    rounds: sortedRounds
+      .filter((round) => round.roundNumber !== latestRound.roundNumber)
+      .map((round) =>
+        round.roundNumber === previousRound.roundNumber
+          ? { ...round, status: 'draft' as const }
+          : round,
+      ),
   }
 }
 

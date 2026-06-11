@@ -103,7 +103,6 @@ export type StandingRoundCell = {
 
 export type SwissTournamentsState = {
   activeTournamentId: string | null
-  cleanupVersion?: number
   updatedBy?: string
 }
 
