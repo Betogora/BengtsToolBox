@@ -363,7 +363,7 @@ function TournamentCreator({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="rating">nach Rating</SelectItem>
-                <SelectItem value="random">zufaellig</SelectItem>
+                <SelectItem value="random">zufällig</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -447,7 +447,7 @@ function TournamentCreator({
               </div>
             ))}
             <AddPlayerCard
-              label="Spieler hinzufuegen"
+              label="Spieler hinzufügen"
               onAdd={() =>
                 setPlayers((currentPlayers) => [
                   ...currentPlayers,
@@ -642,7 +642,7 @@ export function SwissTournamentsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
         <TabsList className="swiss-print-hidden flex h-auto w-full flex-wrap justify-start">
-          <TabsTrigger value="overview">Uebersicht</TabsTrigger>
+          <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="players">Spieler</TabsTrigger>
           <TabsTrigger value="pairings">Paarungen</TabsTrigger>
           <TabsTrigger value="standings">Rangliste</TabsTrigger>
@@ -798,12 +798,12 @@ export function SwissTournamentsPage() {
                   Turnier JSON
                 </Button>
                 <ConfirmButton
-                  title="Turnier zuruecksetzen?"
-                  description="Alle Runden und Ergebnisse werden geloescht. Spieler, Einstellungen und Turniername bleiben erhalten."
+                  title="Turnier zurücksetzen?"
+                  description="Alle Runden und Ergebnisse werden gelöscht. Spieler, Einstellungen und Turniername bleiben erhalten."
                   confirmLabel="Reset"
                   onConfirm={async () => {
                     await app.resetTournament()
-                    toast.success('Turnier wurde zurueckgesetzt.')
+                    toast.success('Turnier wurde zurückgesetzt.')
                   }}
                   trigger={
                     <Button variant="destructive">
@@ -850,11 +850,11 @@ export function SwissTournamentsPage() {
                       )
                       setNewPlayerName('')
                       setNewPlayerRating('')
-                      toast.success('Spieler wurde hinzugefuegt.')
+                      toast.success('Spieler wurde hinzugefügt.')
                     }}
                   >
                     <CirclePlus className="size-4" />
-                    Spieler hinzufuegen
+                    Spieler hinzufügen
                   </Button>
                 </div>
               </div>
@@ -1055,7 +1055,7 @@ export function SwissTournamentsPage() {
                             disabled={!canCompleteRound}
                             onClick={() => void app.completeRound(round.roundNumber)}
                           >
-                            Runde abschliessen
+                            Runde abschließen
                           </Button>
                         </div>
                       </CardHeader>
@@ -1117,7 +1117,7 @@ function PairingsTable({
         <thead className="bg-muted/70 text-left">
           <tr>
             <th className="p-3">Brett</th>
-            <th className="p-3">Weiss</th>
+            <th className="p-3">Weiß</th>
             <th className="p-3">Schwarz</th>
             <th className="p-3">Ergebnis</th>
             {showWarnings && <th className="p-3">Hinweise</th>}
@@ -1179,7 +1179,7 @@ function PairingsTable({
                             aria-label={`Fixierte Paarung ${playerName(
                               tournament,
                               pairing.whitePlayerId,
-                            )} gegen ${playerName(tournament, pairing.blackPlayerId)} loesen`}
+                            )} gegen ${playerName(tournament, pairing.blackPlayerId)} lösen`}
                             className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
                             disabled={!canChangePairings}
                             size="icon"

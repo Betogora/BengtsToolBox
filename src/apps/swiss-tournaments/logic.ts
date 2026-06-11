@@ -370,7 +370,7 @@ function validatePairing(
   const black = tournament.players.find((player) => player.id === pairing.blackPlayerId)
 
   if (!white || !black) {
-    warnings.push(warning('missing-player', 'Diese Paarung ist unvollstaendig.', 'hard'))
+    warnings.push(warning('missing-player', 'Diese Paarung ist unvollständig.', 'hard'))
     return warnings
   }
 
@@ -391,7 +391,7 @@ function validatePairing(
   const pointDiff = Math.abs(summaries[white.id].points - summaries[black.id].points)
 
   if (pointDiff > 1) {
-    warnings.push(warning('large-point-gap', 'Die Punktdifferenz ist ungewoehnlich hoch.'))
+    warnings.push(warning('large-point-gap', 'Die Punktdifferenz ist ungewöhnlich hoch.'))
   }
 
   const nextColors: Array<[Player, 'W' | 'B']> = [
@@ -408,11 +408,11 @@ function validatePairing(
       whiteCount + (color === 'W' ? 1 : 0) - blackCount - (color === 'B' ? 1 : 0)
 
     if (recent.length === 2 && recent.every((entry) => entry === color)) {
-      warnings.push(warning('third-color', `${player.name} wuerde zum dritten Mal in Folge ${color === 'W' ? 'Weiss' : 'Schwarz'} erhalten.`))
+      warnings.push(warning('third-color', `${player.name} würde zum dritten Mal in Folge ${color === 'W' ? 'Weiß' : 'Schwarz'} erhalten.`))
     }
 
     if (Math.abs(nextColorDiff) > 2) {
-      warnings.push(warning('color-imbalance', `${player.name} haette eine Farbdifferenz groesser als 2.`))
+      warnings.push(warning('color-imbalance', `${player.name} hätte eine Farbdifferenz größer als 2.`))
     }
   })
 
@@ -753,7 +753,7 @@ function createSwissBracketPairings(
         usedFallback &&
         hasPlayedEachOtherBeforeRound(tournament, pair.left.id, pair.right.id, roundNumber)
       ) {
-        warnings.push(warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback moeglich.', 'hard'))
+        warnings.push(warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback möglich.', 'hard'))
       }
 
       pairings.push({ ...pair, warnings })
@@ -777,7 +777,7 @@ function createSwissBracketPairings(
         warnings: [
           warning('forced-floater', 'Diese Paarung nutzt einen Floater zwischen Scoregroups.'),
           ...(hasPlayedEachOtherBeforeRound(tournament, pair.left.id, pair.right.id, roundNumber)
-            ? [warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback moeglich.', 'hard')]
+            ? [warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback möglich.', 'hard')]
             : []),
         ],
       })
@@ -803,7 +803,7 @@ function createSwissBracketPairings(
       (pairing) => ({
         ...pairing,
         warnings: [
-          warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback moeglich.', 'hard'),
+          warning('non-fide-fallback', 'Diese Paarung ist nur als Vereins-Fallback möglich.', 'hard'),
         ],
       }),
     )
@@ -1057,7 +1057,7 @@ function createRoundHistory(
     return {
       roundNumber,
       label,
-      title: `Runde ${roundNumber}: ${color === 'W' ? 'Weiss' : 'Schwarz'} gegen ${
+      title: `Runde ${roundNumber}: ${color === 'W' ? 'Weiß' : 'Schwarz'} gegen ${
         opponent?.name ?? 'unbekannt'
       }, Ergebnis ${resultTitle(pairing.result)}`,
       color,

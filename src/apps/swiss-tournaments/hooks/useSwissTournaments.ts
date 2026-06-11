@@ -66,6 +66,16 @@ function downloadText(filename: string, content: string, type: string) {
   URL.revokeObjectURL(url)
 }
 
+function sanitizeDownloadName(value: string) {
+  return (
+    value
+      .normalize('NFC')
+      .trim()
+      .replaceAll(/[^\p{L}\p{N}._-]+/gu, '-')
+      .replaceAll(/^-+|-+$/g, '') || 'turnier'
+  )
+}
+
 export function useSwissTournaments(sessionId = 'default') {
   const session = useAnonymousSession()
   const statePath = useMemo(
@@ -383,7 +393,7 @@ export function useSwissTournaments(sessionId = 'default') {
     }
 
     downloadText(
-      `${activeTournament.name.replaceAll(/\W+/g, '-')}-rangliste.csv`,
+      `${sanitizeDownloadName(activeTournament.name)}-rangliste.csv`,
       standingsToCsv(standings),
       'text/csv;charset=utf-8',
     )
@@ -395,7 +405,7 @@ export function useSwissTournaments(sessionId = 'default') {
     }
 
     downloadText(
-      `${activeTournament.name.replaceAll(/\W+/g, '-')}.json`,
+      `${sanitizeDownloadName(activeTournament.name)}.json`,
       JSON.stringify(activeTournament, null, 2),
       'application/json;charset=utf-8',
     )
