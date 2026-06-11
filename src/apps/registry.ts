@@ -123,7 +123,7 @@ export const apps: HubApp[] = [
   },
   {
     id: 'swiss-tournaments',
-    title: 'Swiss Tournaments',
+    title: 'SK Anderten Turnier-App',
     description:
       'Schachturniere nach Schweizer System mit Spielern, Paarungen, Ergebnissen, Tie-Breaks und Export.',
     href: '/apps/swiss-tournaments',

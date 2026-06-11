@@ -78,6 +78,8 @@ const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
   { value: 'lowestScore', label: 'Niedrigste Scoregruppe' },
 ]
 
+const appTitle = 'SK Anderten Turnier-App'
+
 const statusLabels: Record<PlayerStatus, string> = {
   active: 'aktiv',
   inactive: 'inaktiv',
@@ -591,7 +593,7 @@ export function SwissTournamentsPage() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
         <section>
           <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Swiss Tournaments
+            {appTitle}
           </h1>
         </section>
         <Card>
@@ -611,7 +613,7 @@ export function SwissTournamentsPage() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
         <section>
           <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Swiss Tournaments
+            {appTitle}
           </h1>
         </section>
         {app.error && (
@@ -632,7 +634,7 @@ export function SwissTournamentsPage() {
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           <h1 className="truncate text-3xl font-semibold tracking-normal sm:text-4xl">
-            Swiss Tournaments
+            {appTitle}
           </h1>
         </div>
 
@@ -1090,6 +1092,7 @@ export function SwissTournamentsPage() {
                             </Badge>
                           </div>
                           <Button
+                            className="w-full md:w-auto"
                             variant="outline"
                             disabled={!canCompleteRound}
                             onClick={() => void app.completeRound(round.roundNumber)}
@@ -1150,10 +1153,137 @@ function PairingsTable({
 }) {
   const canChangePairings = editable && !pairings.some(hasRealResult)
 
+  const renderMobileResult = (pairing: Pairing) => {
+    if (pairing.isBye) {
+      return <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
+    }
+
+    if (editable && onResultChange) {
+      return (
+        <Select
+          value={pairing.result ?? ''}
+          onValueChange={(value) =>
+            onResultChange?.(pairing.id, value as GameResult)
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="offen" />
+          </SelectTrigger>
+          <SelectContent>
+            {resultOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )
+    }
+
+    return (
+      <Badge variant={pairing.result ? 'outline' : 'secondary'}>
+        {resultLabel(pairing.result)}
+      </Badge>
+    )
+  }
+
+  const renderMobileWarnings = (pairing: Pairing) => (
+    <div className="flex flex-wrap gap-1">
+      {pairing.isManual && (
+        <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
+          <span className="px-2 py-0.5">FIXIERT</span>
+          {editable && onManualPairingRemove && (
+            <Button
+              aria-label={`Fixierte Paarung ${playerName(
+                tournament,
+                pairing.whitePlayerId,
+              )} gegen ${playerName(tournament, pairing.blackPlayerId)} loesen`}
+              className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+              disabled={!canChangePairings}
+              size="icon"
+              type="button"
+              variant="ghost"
+              onClick={() => onManualPairingRemove?.(pairing.id)}
+            >
+              <X className="size-3" />
+            </Button>
+          )}
+        </span>
+      )}
+      {(pairing.warnings ?? []).length === 0 && !pairing.isManual ? (
+        <Badge variant="outline">OK</Badge>
+      ) : (
+        pairing.warnings?.map((entry) => {
+          const badgeMeta = pairingWarningBadgeMeta(entry)
+
+          return (
+            <Badge
+              key={entry.id}
+              className={cn('font-semibold', badgeMeta.className)}
+              title={entry.message}
+              variant="outline"
+            >
+              {badgeMeta.label}
+            </Badge>
+          )
+        })
+      )}
+    </div>
+  )
+
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <table className="w-full min-w-[48rem] text-sm">
-        <thead className="bg-muted/70 text-left">
+    <>
+      <div className="grid gap-2 md:hidden">
+        {pairings.map((pairing) => {
+          const whiteName = pairing.isBye
+            ? playerName(tournament, pairing.byePlayerId)
+            : playerName(tournament, pairing.whitePlayerId)
+          const blackName = pairing.isBye
+            ? 'Bye'
+            : playerName(tournament, pairing.blackPlayerId)
+
+          return (
+            <div
+              key={pairing.id}
+              className={cn(
+                'rounded-md border bg-card p-3 text-sm',
+                pairing.isManual && 'bg-primary/5',
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-semibold tabular-nums">
+                  Brett {pairing.boardNumber}
+                </div>
+                {showWarnings && renderMobileWarnings(pairing)}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    Wei&szlig;
+                  </div>
+                  <div className="truncate font-medium">{whiteName}</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    Schwarz
+                  </div>
+                  <div className="truncate font-medium">{blackName}</div>
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  Ergebnis
+                </div>
+                {renderMobileResult(pairing)}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-md border md:block">
+        <table className="w-full min-w-[48rem] text-sm">
+          <thead className="bg-muted/70 text-left">
           <tr>
             <th className="p-3">Brett</th>
             <th className="p-3">Weiß</th>
@@ -1161,8 +1291,8 @@ function PairingsTable({
             <th className="p-3">Ergebnis</th>
             {showWarnings && <th className="p-3">Hinweise</th>}
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           {pairings.map((pairing) => (
             <tr
               key={pairing.id}
@@ -1254,9 +1384,10 @@ function PairingsTable({
               )}
             </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -1314,7 +1445,11 @@ function StandingsTable({
                 >
                   <td className="p-3 tabular-nums">{row.rank}</td>
                   <td className="p-3 font-medium">{row.playerName}</td>
-                  <td className="p-3 tabular-nums">{formatPoints(row.points)}</td>
+                  <td className="p-3 tabular-nums">
+                    <span className="inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                      {formatPoints(row.points)}
+                    </span>
+                  </td>
                   <td className="p-3 tabular-nums">{formatPoints(row.buchholz)}</td>
                   <td className="p-3 tabular-nums">
                     {formatPoints(row.sonnebornBerger)}
