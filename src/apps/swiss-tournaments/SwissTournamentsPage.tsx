@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { formatPoints } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
 import type {
+  ByePolicy,
   ByeScore,
   GameResult,
   Pairing,
@@ -70,6 +71,11 @@ const byeScoreOptions: Array<{ value: ByeScore; label: string }> = [
   { value: 1, label: '1 Punkt' },
   { value: 0.5, label: '0.5 Punkte' },
   { value: 0, label: '0 Punkte' },
+]
+
+const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
+  { value: 'protectLateEntrants', label: 'Späte Spieler schützen' },
+  { value: 'lowestScore', label: 'Niedrigste Scoregruppe' },
 ]
 
 const statusLabels: Record<PlayerStatus, string> = {
@@ -548,6 +554,7 @@ export function SwissTournamentsPage() {
   }, [currentRound, tournament])
   const canRegenerateRound =
     Boolean(draftRound) && !draftRound?.pairings.some(hasRealResult)
+  const hasTournamentStarted = Boolean(tournament && tournament.rounds.length > 0)
   const displayedRounds = useMemo(
     () =>
       tournament
@@ -782,6 +789,28 @@ export function SwissTournamentsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="grid gap-2">
+                  <Label>Bye-Vergabe</Label>
+                  <Select
+                    value={tournament.settings.byePolicy}
+                    onValueChange={(value) =>
+                      void app.updateSettings({
+                        byePolicy: value as ByePolicy,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {byePolicyOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -929,9 +958,19 @@ export function SwissTournamentsPage() {
                             </Select>
                             <Button
                               aria-label={`${player.name} entfernen`}
+                              disabled={hasTournamentStarted}
                               size="icon"
+                              title={
+                                hasTournamentStarted
+                                  ? 'Nach Turnierstart bitte Status auf inaktiv oder ausgeschieden setzen.'
+                                  : `${player.name} entfernen`
+                              }
                               variant="outline"
                               onClick={async () => {
+                                if (hasTournamentStarted) {
+                                  return
+                                }
+
                                 await app.removePlayer(player.id)
                                 toast.success(`${player.name} wurde entfernt.`)
                               }}

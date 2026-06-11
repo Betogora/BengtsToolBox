@@ -16,6 +16,8 @@ export type SeedingMode = 'rating' | 'random'
 
 export type ByeScore = 1 | 0.5 | 0
 
+export type ByePolicy = 'protectLateEntrants' | 'lowestScore'
+
 export type RoundStatus = 'draft' | 'completed'
 
 export type PairingWarning = {
@@ -37,6 +39,7 @@ export type Player = {
 export type TournamentSettings = {
   initialSeedingMode: SeedingMode
   byeScore: ByeScore
+  byePolicy: ByePolicy
   roundByeScores?: Record<number, ByeScore>
 }
 

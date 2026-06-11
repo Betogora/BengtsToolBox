@@ -19,6 +19,7 @@ import { createRandomId } from '@/apps/shared/utils'
 const defaultSettings = {
   initialSeedingMode: 'rating' as const,
   byeScore: 1 as const,
+  byePolicy: 'protectLateEntrants' as const,
 }
 
 function warning(id: string, message: string, severity: 'hard' | 'soft' = 'soft') {
@@ -422,11 +423,25 @@ function validatePairing(
 function chooseByePlayer(
   players: Player[],
   summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+  byePolicy: Tournament['settings']['byePolicy'],
 ) {
   const lowestByeCount = Math.min(...players.map((player) => summaries[player.id].byes))
-  const eligiblePlayers = players.filter(
+  const eligiblePlayersWithFewestByes = players.filter(
     (player) => summaries[player.id].byes === lowestByeCount,
   )
+  const protectedLateEntrants =
+    byePolicy === 'protectLateEntrants' && roundNumber > 1
+      ? eligiblePlayersWithFewestByes.filter(
+          (player) => player.addedInRound === roundNumber,
+        )
+      : []
+  const eligiblePlayers =
+    protectedLateEntrants.length < eligiblePlayersWithFewestByes.length
+      ? eligiblePlayersWithFewestByes.filter(
+          (player) => !protectedLateEntrants.some((late) => late.id === player.id),
+        )
+      : eligiblePlayersWithFewestByes
 
   return [...eligiblePlayers].sort((left, right) => {
     return (
@@ -841,7 +856,12 @@ export function generatePairings(
   let byePairing: Pairing | null = null
 
   if (pool.length % 2 === 1) {
-    const byePlayer = chooseByePlayer(pool, summaries)
+    const byePlayer = chooseByePlayer(
+      pool,
+      summaries,
+      roundNumber,
+      tournament.settings.byePolicy,
+    )
     byePairing = {
       id: makeId('pairing'),
       roundNumber,
@@ -1234,6 +1254,10 @@ export function removePlayerFromTournament(
   tournament: Tournament,
   playerId: string,
 ): Tournament {
+  if (tournament.rounds.length > 0 || tournament.currentRound > 0) {
+    return tournament
+  }
+
   return {
     ...tournament,
     players: tournament.players.filter((player) => player.id !== playerId),

@@ -50,6 +50,7 @@ function sanitizeTournament(tournament: Tournament): Tournament {
     settings: {
       initialSeedingMode: tournament.settings?.initialSeedingMode ?? 'rating',
       byeScore: tournament.settings?.byeScore ?? 1,
+      byePolicy: tournament.settings?.byePolicy ?? 'protectLateEntrants',
       roundByeScores: tournament.settings?.roundByeScores ?? {},
     },
   }
