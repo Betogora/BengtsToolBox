@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import {
   addPlayerAfterStart,
@@ -30,6 +30,7 @@ import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 const initialState: SwissTournamentsState = {
   activeTournamentId: null,
 }
+const cleanupVersion = 1
 
 function sanitizeTournament(tournament: Tournament): Tournament {
   return {
@@ -50,8 +51,6 @@ function sanitizeTournament(tournament: Tournament): Tournament {
       initialSeedingMode: tournament.settings?.initialSeedingMode ?? 'rating',
       byeScore: tournament.settings?.byeScore ?? 1,
       roundByeScores: tournament.settings?.roundByeScores ?? {},
-      allowMultipleByesPerPlayer:
-        tournament.settings?.allowMultipleByesPerPlayer ?? false,
     },
   }
 }
@@ -90,10 +89,42 @@ export function useSwissTournaments(sessionId = 'default') {
     () => tournamentsStore.data.map(sanitizeTournament),
     [tournamentsStore.data],
   )
+  const cleanupStarted = useRef(false)
+  const needsCleanup = stateStore.data.cleanupVersion !== cleanupVersion
+
+  useEffect(() => {
+    if (
+      cleanupStarted.current ||
+      stateStore.isLoading ||
+      tournamentsStore.isLoading ||
+      !needsCleanup
+    ) {
+      return
+    }
+
+    cleanupStarted.current = true
+    void (async () => {
+      await tournamentsStore.clearItems()
+      await stateStore.merge({
+        activeTournamentId: null,
+        cleanupVersion,
+        updatedBy: session.userId,
+      })
+    })()
+  }, [
+    needsCleanup,
+    session.userId,
+    stateStore,
+    tournamentsStore,
+  ])
   const activeTournament =
-    tournaments.find((tournament) => tournament.id === stateStore.data.activeTournamentId) ??
-    tournaments[0] ??
-    null
+    needsCleanup
+      ? null
+      : tournaments.find(
+          (tournament) => tournament.id === stateStore.data.activeTournamentId,
+        ) ??
+        tournaments[0] ??
+        null
   const standings = useMemo(
     () => (activeTournament ? recalculateStandings(activeTournament) : []),
     [activeTournament],
@@ -382,7 +413,7 @@ export function useSwissTournaments(sessionId = 'default') {
     exportStandingsCsv,
     exportTournamentJson,
     generateRound,
-    isLoading: stateStore.isLoading || tournamentsStore.isLoading,
+    isLoading: stateStore.isLoading || tournamentsStore.isLoading || needsCleanup,
     isRealtime: stateStore.isRealtime && tournamentsStore.isRealtime,
     regenerateRound,
     removeManualPairing,

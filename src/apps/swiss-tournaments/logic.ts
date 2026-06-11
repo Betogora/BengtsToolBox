@@ -10,6 +10,7 @@ import type {
   PlayerScoreSummary,
   PlayerStatus,
   Round,
+  StandingRoundCell,
   StandingRow,
   Tournament,
 } from '@/apps/swiss-tournaments/types'
@@ -18,7 +19,6 @@ import { createRandomId } from '@/apps/shared/utils'
 const defaultSettings = {
   initialSeedingMode: 'rating' as const,
   byeScore: 1 as const,
-  allowMultipleByesPerPlayer: false,
 }
 
 function warning(id: string, message: string, severity: 'hard' | 'soft' = 'soft') {
@@ -62,10 +62,6 @@ function seedPlayers(
       )
     }
 
-    if (mode === 'manual') {
-      return cleanPlayers.indexOf(left) - cleanPlayers.indexOf(right)
-    }
-
     return stableHash(`${left.name}-${left.rating ?? ''}`) -
       stableHash(`${right.name}-${right.rating ?? ''}`)
   })
@@ -98,7 +94,6 @@ export function createTournament(
       ...defaultSettings,
       initialSeedingMode: input.initialSeedingMode,
       byeScore: input.byeScore,
-      allowMultipleByesPerPlayer: input.allowMultipleByesPerPlayer,
     },
     position,
     createdAtClientIso: new Date().toISOString(),
@@ -286,17 +281,55 @@ function colorPenalty(player: Player, color: Color, summary: PlayerScoreSummary)
   return penalty + player.initialSeed / 1000
 }
 
+function previousColorAgainstBeforeRound(
+  tournament: Tournament,
+  playerId: string,
+  opponentId: string,
+  beforeRoundNumber: number,
+): Color | null {
+  const previousPairing = [...tournament.rounds]
+    .filter((round) => round.roundNumber < beforeRoundNumber)
+    .sort((left, right) => right.roundNumber - left.roundNumber)
+    .flatMap((round) => round.pairings)
+    .find(
+      (pairing) =>
+        !pairing.isBye &&
+        ((pairing.whitePlayerId === playerId &&
+          pairing.blackPlayerId === opponentId) ||
+          (pairing.whitePlayerId === opponentId &&
+            pairing.blackPlayerId === playerId)),
+    )
+
+  if (!previousPairing) {
+    return null
+  }
+
+  return previousPairing.whitePlayerId === playerId ? 'W' : 'B'
+}
+
 function assignColors(
   whiteCandidate: Player,
   blackCandidate: Player,
   summaries: Record<string, PlayerScoreSummary>,
+  tournament: Tournament,
+  roundNumber: number,
 ) {
+  const repeatedWhiteCandidateColor = previousColorAgainstBeforeRound(
+    tournament,
+    whiteCandidate.id,
+    blackCandidate.id,
+    roundNumber,
+  )
+  const repeatAsGivenPenalty = repeatedWhiteCandidateColor === 'W' ? 60 : 0
+  const repeatSwappedPenalty = repeatedWhiteCandidateColor === 'B' ? 60 : 0
   const asGiven =
     colorPenalty(whiteCandidate, 'W', summaries[whiteCandidate.id]) +
-    colorPenalty(blackCandidate, 'B', summaries[blackCandidate.id])
+    colorPenalty(blackCandidate, 'B', summaries[blackCandidate.id]) +
+    repeatAsGivenPenalty
   const swapped =
     colorPenalty(whiteCandidate, 'B', summaries[whiteCandidate.id]) +
-    colorPenalty(blackCandidate, 'W', summaries[blackCandidate.id])
+    colorPenalty(blackCandidate, 'W', summaries[blackCandidate.id]) +
+    repeatSwappedPenalty
 
   return asGiven <= swapped
     ? { whitePlayerId: whiteCandidate.id, blackPlayerId: blackCandidate.id }
@@ -325,7 +358,6 @@ function validatePairing(
 
     if (
       player &&
-      !tournament.settings.allowMultipleByesPerPlayer &&
       summaries[player.id].byes > fewestByes
     ) {
       warnings.push(warning('multiple-byes', `${player.name} hat bereits ein Bye erhalten.`))
@@ -390,12 +422,11 @@ function validatePairing(
 function chooseByePlayer(
   players: Player[],
   summaries: Record<string, PlayerScoreSummary>,
-  allowMultipleByes: boolean,
 ) {
   const lowestByeCount = Math.min(...players.map((player) => summaries[player.id].byes))
-  const eligiblePlayers = allowMultipleByes
-    ? players
-    : players.filter((player) => summaries[player.id].byes === lowestByeCount)
+  const eligiblePlayers = players.filter(
+    (player) => summaries[player.id].byes === lowestByeCount,
+  )
 
   return [...eligiblePlayers].sort((left, right) => {
     return (
@@ -810,11 +841,7 @@ export function generatePairings(
   let byePairing: Pairing | null = null
 
   if (pool.length % 2 === 1) {
-    const byePlayer = chooseByePlayer(
-      pool,
-      summaries,
-      tournament.settings.allowMultipleByesPerPlayer,
-    )
+    const byePlayer = chooseByePlayer(pool, summaries)
     byePairing = {
       id: makeId('pairing'),
       roundNumber,
@@ -844,7 +871,7 @@ export function generatePairings(
       : createSwissBracketPairings(pool, tournament, summaries, roundNumber)
 
   plannedPairings.forEach(({ left, right, warnings: pairingWarnings = [] }) => {
-    const colors = assignColors(left, right, summaries)
+    const colors = assignColors(left, right, summaries, tournament, roundNumber)
     const pairing: Pairing = {
       id: makeId('pairing'),
       roundNumber,
@@ -931,6 +958,120 @@ function getDirectScore(tournament: Tournament, playerId: string, tiedIds: strin
   return games > 0 ? score : null
 }
 
+function resultLabelForPlayer(pairing: Pairing, playerId: string) {
+  const points = resultPoints(pairing, playerId)
+
+  if (points === 1) {
+    return '1'
+  }
+
+  if (points === 0.5) {
+    return '½'
+  }
+
+  return '0'
+}
+
+function resultTitle(result?: GameResult) {
+  if (!result) {
+    return 'offen'
+  }
+
+  if (result === 'bye-0.5') {
+    return 'Bye 0.5'
+  }
+
+  if (result === 'bye-1') {
+    return 'Bye 1'
+  }
+
+  if (result === 'bye-0') {
+    return 'Bye 0'
+  }
+
+  return result.replaceAll('forfeit-', 'kampflos ')
+}
+
+function createOpenRoundCell(roundNumber: number): StandingRoundCell {
+  return {
+    roundNumber,
+    label: '-',
+    title: `Runde ${roundNumber}: keine Partie`,
+    color: '-',
+    outcome: 'open',
+  }
+}
+
+function createRoundHistory(
+  tournament: Tournament,
+  row: StandingRow,
+  rankByPlayerId: Map<string, number>,
+) {
+  const playerById = new Map(tournament.players.map((player) => [player.id, player]))
+
+  return Array.from({ length: tournament.numberOfRounds }, (_, index) => {
+    const roundNumber = index + 1
+    const round = tournament.rounds.find((entry) => entry.roundNumber === roundNumber)
+
+    if (!round) {
+      return createOpenRoundCell(roundNumber)
+    }
+
+    const pairing = round.pairings.find(
+      (entry) =>
+        entry.whitePlayerId === row.playerId ||
+        entry.blackPlayerId === row.playerId ||
+        entry.byePlayerId === row.playerId,
+    )
+
+    if (!pairing) {
+      return createOpenRoundCell(roundNumber)
+    }
+
+    if (pairing.isBye) {
+      const label = `BYE${resultLabelForPlayer(pairing, row.playerId)}`
+
+      return {
+        roundNumber,
+        label,
+        title: `Runde ${roundNumber}: Bye, Ergebnis ${resultTitle(pairing.result)}`,
+        color: '-' as const,
+        outcome: 'bye' as const,
+      }
+    }
+
+    const isWhite = pairing.whitePlayerId === row.playerId
+    const opponentId = isWhite ? pairing.blackPlayerId : pairing.whitePlayerId
+
+    if (!opponentId) {
+      return createOpenRoundCell(roundNumber)
+    }
+
+    const opponentRank = rankByPlayerId.get(opponentId)
+    const opponent = playerById.get(opponentId)
+    const color = isWhite ? 'W' : 'B'
+    const resultLabel = pairing.result ? resultLabelForPlayer(pairing, row.playerId) : '-'
+    const label = `${opponentRank ?? '?'}${color}${resultLabel}`
+    const points = resultPoints(pairing, row.playerId)
+
+    return {
+      roundNumber,
+      label,
+      title: `Runde ${roundNumber}: ${color === 'W' ? 'Weiss' : 'Schwarz'} gegen ${
+        opponent?.name ?? 'unbekannt'
+      }, Ergebnis ${resultTitle(pairing.result)}`,
+      color,
+      outcome: !pairing.result
+        ? 'open'
+        : points === 1
+          ? 'win'
+          : points === 0.5
+            ? 'draw'
+            : 'loss',
+    } satisfies StandingRoundCell
+  })
+}
+
 export function recalculateStandings(tournament: Tournament): StandingRow[] {
   const summaries = getSummaryBeforeRound(tournament)
   const rows = tournament.players.map((player) => {
@@ -961,6 +1102,7 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
       directEncounterScore: null,
       initialSeed: player.initialSeed,
       colorHistory: summary.colors,
+      roundHistory: [],
       receivedByes: summary.byes,
       status: player.status,
     } satisfies StandingRow
@@ -980,7 +1122,7 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
     ),
   }))
 
-  return rowsWithDirect
+  const rankedRows = rowsWithDirect
     .sort(
       (left, right) =>
         right.points - left.points ||
@@ -991,6 +1133,15 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
         left.initialSeed - right.initialSeed,
     )
     .map((row, index) => ({ ...row, rank: index + 1 }))
+
+  const rankByPlayerId = new Map(
+    rankedRows.map((row) => [row.playerId, row.rank] as const),
+  )
+
+  return rankedRows.map((row) => ({
+    ...row,
+    roundHistory: createRoundHistory(tournament, row, rankByPlayerId),
+  }))
 }
 
 export function updateResult(
@@ -1166,7 +1317,7 @@ export function createManualPairing(
   const black = tournament.players.find((player) => player.id === blackPlayerId)
   const colors =
     white && black
-      ? assignColors(white, black, summaries)
+      ? assignColors(white, black, summaries, tournament, roundNumber)
       : { whitePlayerId, blackPlayerId }
   const pairing: Pairing = {
     id: makeId('pairing'),
@@ -1195,8 +1346,7 @@ export function standingsToCsv(rows: StandingRow[]) {
     'Buchholz',
     'Sonneborn-Berger',
     'Siege',
-    'Direkter Vergleich',
-    'Farben',
+    'Runden',
     'Byes',
     'Status',
   ]
@@ -1213,8 +1363,7 @@ export function standingsToCsv(rows: StandingRow[]) {
         formatPoints(row.buchholz),
         formatPoints(row.sonnebornBerger),
         row.wins,
-        row.directEncounterScore === null ? '' : formatPoints(row.directEncounterScore),
-        row.colorHistory.join(' '),
+        row.roundHistory.map((entry) => entry.label).join(' '),
         row.receivedByes,
         row.status,
       ]

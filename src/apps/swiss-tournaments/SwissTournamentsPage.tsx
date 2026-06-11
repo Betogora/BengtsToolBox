@@ -264,6 +264,16 @@ function createDraftPlayer(index: number): DraftPlayer {
   }
 }
 
+function defaultTournamentName() {
+  const formatter = new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+
+  return `Turnier vom ${formatter.format(new Date())}`
+}
+
 function AddPlayerCard({
   label,
   onAdd,
@@ -286,11 +296,13 @@ function AddPlayerCard({
 }
 
 function TournamentCreator({
+  onCreated,
   onCreate,
 }: {
+  onCreated?: () => void
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
 }) {
-  const [name, setName] = useState('Vereinsturnier')
+  const [name, setName] = useState(defaultTournamentName)
   const [numberOfRounds, setNumberOfRounds] = useState(5)
   const [players, setPlayers] = useState<DraftPlayer[]>([
     { id: 'draft-1', name: 'Niklas', rating: '1922' },
@@ -307,8 +319,6 @@ function TournamentCreator({
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
   const [byeScore, setByeScore] = useState<ByeScore>(1)
-  const [allowMultipleByesPerPlayer, setAllowMultipleByesPerPlayer] =
-    useState(false)
 
   return (
     <Card>
@@ -341,7 +351,7 @@ function TournamentCreator({
 
         <div className="grid gap-3 md:grid-cols-3">
           <div className="grid gap-2">
-            <Label>Startliste</Label>
+            <Label>Sortierung</Label>
             <Select
               value={initialSeedingMode}
               onValueChange={(value) =>
@@ -354,12 +364,11 @@ function TournamentCreator({
               <SelectContent>
                 <SelectItem value="rating">nach Rating</SelectItem>
                 <SelectItem value="random">zufaellig</SelectItem>
-                <SelectItem value="manual">manuell</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label>Bye-Wertung</Label>
+            <Label>Byepunkte</Label>
             <Select
               value={String(byeScore)}
               onValueChange={(value) => setByeScore(Number(value) as ByeScore)}
@@ -376,16 +385,6 @@ function TournamentCreator({
               </SelectContent>
             </Select>
           </div>
-          <label className="flex items-end gap-2 rounded-md border p-3 text-sm">
-            <input
-              checked={allowMultipleByesPerPlayer}
-              type="checkbox"
-              onChange={(event) =>
-                setAllowMultipleByesPerPlayer(event.currentTarget.checked)
-              }
-            />
-            Mehrfach-Byes erlauben
-          </label>
         </div>
 
         <div className="grid gap-3">
@@ -471,9 +470,9 @@ function TournamentCreator({
               })),
               initialSeedingMode,
               byeScore,
-              allowMultipleByesPerPlayer,
             })
             toast.success('Turnier wurde angelegt.')
+            onCreated?.()
           }}
         >
           <Plus className="size-4" />
@@ -481,6 +480,34 @@ function TournamentCreator({
         </Button>
       </CardContent>
     </Card>
+  )
+}
+
+function NewTournamentDialog({
+  onCreate,
+}: {
+  onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="size-4" />
+          Neues Turnier
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
+        <DialogHeader>
+          <DialogTitle>Neues Turnier</DialogTitle>
+          <DialogDescription>
+            Turnierdaten, Sortierung, Byepunkte und Startspieler festlegen.
+          </DialogDescription>
+        </DialogHeader>
+        <TournamentCreator onCreate={onCreate} onCreated={() => setOpen(false)} />
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -546,7 +573,31 @@ export function SwissTournamentsPage() {
     }
   }, [tournament])
 
-  const printPage = () => window.print()
+  const [activeTab, setActiveTab] = useState('overview')
+  const printPage = () => {
+    setActiveTab('standings')
+    window.requestAnimationFrame(() => window.print())
+  }
+
+  if (app.isLoading) {
+    return (
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+        <section>
+          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
+            Swiss Tournaments
+          </h1>
+        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Daten werden vorbereitet</CardTitle>
+            <CardDescription>
+              Alte Turniere werden einmalig bereinigt.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
 
   if (!tournament) {
     return (
@@ -570,7 +621,7 @@ export function SwissTournamentsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           <h1 className="truncate text-3xl font-semibold tracking-normal sm:text-4xl">
@@ -589,18 +640,13 @@ export function SwissTournamentsPage() {
         </Card>
       )}
 
-      <Tabs defaultValue="preview" className="gap-4">
-        <TabsList className="flex h-auto w-full flex-wrap justify-start">
-          <TabsTrigger value="preview">Vorschau</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
+        <TabsList className="swiss-print-hidden flex h-auto w-full flex-wrap justify-start">
           <TabsTrigger value="overview">Uebersicht</TabsTrigger>
           <TabsTrigger value="players">Spieler</TabsTrigger>
           <TabsTrigger value="pairings">Paarungen</TabsTrigger>
           <TabsTrigger value="standings">Rangliste</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="preview" className="grid gap-4">
-          <TournamentCreator onCreate={app.createNewTournament} />
-        </TabsContent>
 
         <TabsContent value="overview" className="grid gap-4">
           <section className="grid gap-4 md:grid-cols-3">
@@ -665,7 +711,10 @@ export function SwissTournamentsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Einstellungen und Export</CardTitle>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <CardTitle>Einstellungen und Export</CardTitle>
+                <NewTournamentDialog onCreate={app.createNewTournament} />
+              </div>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-4">
@@ -712,7 +761,7 @@ export function SwissTournamentsPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Bye global</Label>
+                  <Label>Byepunkte</Label>
                   <Select
                     value={String(tournament.settings.byeScore)}
                     onValueChange={(value) =>
@@ -1177,8 +1226,25 @@ function StandingsTable({
 }: {
   standings: ReturnType<typeof useSwissTournaments>['standings']
 }) {
+  const podiumClass = (rank: number) =>
+    rank === 1
+      ? 'bg-[#f6e3a5]/65'
+      : rank === 2
+        ? 'bg-[#e6e8eb]/70'
+        : rank === 3
+          ? 'bg-[#e8c0a0]/55'
+          : ''
+  const roundCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
+    cn(
+      'inline-flex h-7 min-w-11 items-center justify-center rounded px-2 text-xs font-semibold tabular-nums',
+      cell.color === 'W' && 'border border-border bg-white text-foreground',
+      cell.color === 'B' && 'bg-primary text-primary-foreground',
+      cell.outcome === 'bye' && 'border border-dashed border-border bg-muted text-muted-foreground',
+      cell.outcome === 'open' && 'border border-border bg-background text-muted-foreground',
+    )
+
   return (
-    <Card>
+    <Card className="swiss-standings-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
@@ -1187,7 +1253,7 @@ function StandingsTable({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto rounded-md border">
-          <table className="w-full min-w-[64rem] text-sm">
+          <table className="w-full min-w-[68rem] text-sm">
             <thead className="bg-muted/70 text-left">
               <tr>
                 <th className="p-3">Platz</th>
@@ -1196,15 +1262,17 @@ function StandingsTable({
                 <th className="p-3">Buchholz</th>
                 <th className="p-3">SB</th>
                 <th className="p-3">Siege</th>
-                <th className="p-3">Direkt</th>
-                <th className="p-3">Farben</th>
+                <th className="p-3">Runden</th>
                 <th className="p-3">Byes</th>
                 <th className="p-3">Status</th>
               </tr>
             </thead>
             <tbody>
               {standings.map((row) => (
-                <tr key={row.playerId} className="border-t">
+                <tr
+                  key={row.playerId}
+                  className={cn('border-t', podiumClass(row.rank))}
+                >
                   <td className="p-3 tabular-nums">{row.rank}</td>
                   <td className="p-3 font-medium">{row.playerName}</td>
                   <td className="p-3 tabular-nums">{formatPoints(row.points)}</td>
@@ -1213,12 +1281,19 @@ function StandingsTable({
                     {formatPoints(row.sonnebornBerger)}
                   </td>
                   <td className="p-3 tabular-nums">{row.wins}</td>
-                  <td className="p-3 tabular-nums">
-                    {row.directEncounterScore === null
-                      ? '-'
-                      : formatPoints(row.directEncounterScore)}
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {row.roundHistory.map((cell) => (
+                        <span
+                          key={`${row.playerId}-${cell.roundNumber}`}
+                          className={roundCellClass(cell)}
+                          title={cell.title}
+                        >
+                          {cell.label}
+                        </span>
+                      ))}
+                    </div>
                   </td>
-                  <td className="p-3">{row.colorHistory.join(' ') || '-'}</td>
                   <td className="p-3 tabular-nums">{row.receivedByes}</td>
                   <td className="p-3">
                     <Badge variant={statusVariant(row.status)}>

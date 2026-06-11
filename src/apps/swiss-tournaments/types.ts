@@ -12,7 +12,7 @@ export type GameResult =
   | 'forfeit-1-0'
   | 'forfeit-0-1'
 
-export type SeedingMode = 'rating' | 'random' | 'manual'
+export type SeedingMode = 'rating' | 'random'
 
 export type ByeScore = 1 | 0.5 | 0
 
@@ -38,7 +38,6 @@ export type TournamentSettings = {
   initialSeedingMode: SeedingMode
   byeScore: ByeScore
   roundByeScores?: Record<number, ByeScore>
-  allowMultipleByesPerPlayer: boolean
 }
 
 export type Pairing = {
@@ -86,12 +85,22 @@ export type StandingRow = {
   directEncounterScore: number | null
   initialSeed: number
   colorHistory: Color[]
+  roundHistory: StandingRoundCell[]
   receivedByes: number
   status: PlayerStatus
 }
 
+export type StandingRoundCell = {
+  roundNumber: number
+  label: string
+  title: string
+  color: Color
+  outcome: 'win' | 'draw' | 'loss' | 'bye' | 'open'
+}
+
 export type SwissTournamentsState = {
   activeTournamentId: string | null
+  cleanupVersion?: number
   updatedBy?: string
 }
 
@@ -106,7 +115,6 @@ export type CreateTournamentInput = {
   players: PlayerInput[]
   initialSeedingMode: SeedingMode
   byeScore: ByeScore
-  allowMultipleByesPerPlayer: boolean
 }
 
 export type PlayerScoreSummary = {

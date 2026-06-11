@@ -132,6 +132,24 @@ export function useFirestoreCollection<T extends CollectionItem>(
     [localKey, orderField, path],
   )
 
+  const clearItems = useCallback(async () => {
+    const currentData = data
+
+    setData([])
+    writeLocalValue(localKey, [])
+
+    const services = getFirebaseServices()
+
+    if (!services) {
+      return
+    }
+
+    await ensureAnonymousUser()
+    await Promise.all(
+      currentData.map((item) => deleteDoc(doc(services.db, path, item.id))),
+    )
+  }, [data, localKey, path])
+
   const mergeItem = useCallback(
     async (id: string, value: Partial<T>) => {
       const nextData = data.map((item) =>
@@ -176,6 +194,7 @@ export function useFirestoreCollection<T extends CollectionItem>(
 
   return {
     data,
+    clearItems,
     deleteItem,
     error,
     isLoading,

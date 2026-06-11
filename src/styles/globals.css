@@ -105,3 +105,34 @@ select {
 [data-map-dragging="true"] .territory-shape {
   transition: none;
 }
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .swiss-print-hidden,
+  .swiss-tournaments-page > section {
+    display: none !important;
+  }
+
+  .swiss-tournaments-page {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .swiss-standings-card {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .swiss-standings-card table {
+    min-width: 0 !important;
+    font-size: 10px;
+  }
+
+  .swiss-standings-card th,
+  .swiss-standings-card td {
+    padding: 6px !important;
+  }
+}
