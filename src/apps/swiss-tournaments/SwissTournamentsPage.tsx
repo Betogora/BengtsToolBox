@@ -303,6 +303,21 @@ function AddPlayerCard({
   )
 }
 
+function AppTitleHeader() {
+  return (
+    <section className="flex min-w-0 items-center justify-between gap-3">
+      <h1 className="min-w-0 truncate text-3xl font-semibold tracking-normal sm:text-4xl">
+        {appTitle}
+      </h1>
+      <img
+        alt="SK Anderten"
+        className="h-8 w-auto shrink-0 object-contain sm:h-9"
+        src="/sk-anderten-logo.jpg"
+      />
+    </section>
+  )
+}
+
 function TournamentCreator({
   onCreated,
   onCreate,
@@ -591,11 +606,7 @@ export function SwissTournamentsPage() {
   if (app.isLoading) {
     return (
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
-        <section>
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            {appTitle}
-          </h1>
-        </section>
+        <AppTitleHeader />
         <Card>
           <CardHeader>
             <CardTitle>Daten werden vorbereitet</CardTitle>
@@ -611,11 +622,7 @@ export function SwissTournamentsPage() {
   if (!tournament) {
     return (
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
-        <section>
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            {appTitle}
-          </h1>
-        </section>
+        <AppTitleHeader />
         {app.error && (
           <Card className="border-destructive">
             <CardHeader>
@@ -631,14 +638,7 @@ export function SwissTournamentsPage() {
 
   return (
     <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0">
-          <h1 className="truncate text-3xl font-semibold tracking-normal sm:text-4xl">
-            {appTitle}
-          </h1>
-        </div>
-
-      </section>
+      <AppTitleHeader />
 
       {app.error && (
         <Card className="border-destructive">
