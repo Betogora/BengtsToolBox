@@ -182,6 +182,14 @@ select {
     border-radius: 6px !important;
   }
 
+  .swiss-standings-desktop {
+    display: block !important;
+  }
+
+  .swiss-standings-mobile {
+    display: none !important;
+  }
+
   .swiss-standings-card table {
     min-width: 0 !important;
     border-collapse: separate;

@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   CirclePlus,
   Download,
   FileJson,
@@ -13,7 +14,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { formatPoints } from '@/apps/swiss-tournaments/logic'
@@ -1477,6 +1478,7 @@ function StandingsTable({
   standings: ReturnType<typeof useSwissTournaments>['standings']
   tournamentName: string
 }) {
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
   const podiumClass = (rank: number) =>
     rank === 1
       ? 'swiss-podium-first bg-[#f6e3a5]/65'
@@ -1493,6 +1495,11 @@ function StandingsTable({
       cell.outcome === 'bye' && 'border border-dashed border-border bg-muted text-muted-foreground',
       cell.outcome === 'open' && 'border border-border bg-background text-muted-foreground',
     )
+  const toggleExpandedPlayer = (playerId: string) => {
+    setExpandedPlayerId((currentPlayerId) =>
+      currentPlayerId === playerId ? null : playerId,
+    )
+  }
 
   return (
     <Card className="swiss-standings-card">
@@ -1509,7 +1516,113 @@ function StandingsTable({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="swiss-standings-table-wrap overflow-x-auto rounded-md border">
+        <div className="swiss-standings-mobile rounded-md border md:hidden">
+          <table className="w-full table-fixed text-xs">
+            <colgroup>
+              <col className="w-9" />
+              <col />
+              <col className="w-12" />
+              <col className="w-[4.5rem]" />
+              <col className="w-10" />
+            </colgroup>
+            <thead className="bg-muted/70 text-left">
+              <tr>
+                <th className="px-2 py-2 font-semibold">Platz</th>
+                <th className="px-2 py-2 font-semibold">Name</th>
+                <th className="px-1.5 py-2 text-center font-semibold">Punkte</th>
+                <th className="px-1.5 py-2 text-center font-semibold">Buchholz</th>
+                <th className="px-1.5 py-2 text-center font-semibold">SB</th>
+              </tr>
+            </thead>
+            <tbody>
+              {standings.map((row) => {
+                const isExpanded = expandedPlayerId === row.playerId
+                const detailsId = `swiss-standing-details-${row.playerId}`
+
+                return (
+                  <Fragment key={row.playerId}>
+                    <tr
+                      aria-controls={detailsId}
+                      aria-expanded={isExpanded}
+                      className={cn(
+                        'cursor-pointer border-t align-middle outline-none transition-colors hover:bg-primary/5 focus-visible:bg-primary/10',
+                        podiumClass(row.rank),
+                      )}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => toggleExpandedPlayer(row.playerId)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          toggleExpandedPlayer(row.playerId)
+                        }
+                      }}
+                    >
+                      <td className="px-2 py-2 tabular-nums">{row.rank}</td>
+                      <td className="min-w-0 px-2 py-2 font-medium">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <ChevronDown
+                            aria-hidden="true"
+                            className={cn(
+                              'size-3.5 shrink-0 transition-transform',
+                              isExpanded && 'rotate-180',
+                            )}
+                          />
+                          <span className="min-w-0 truncate">{row.playerName}</span>
+                        </div>
+                      </td>
+                      <td className="px-1.5 py-2 text-center tabular-nums">
+                        <span className="inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
+                          {formatPoints(row.points)}
+                        </span>
+                      </td>
+                      <td className="px-1.5 py-2 text-center tabular-nums">
+                        {formatPoints(row.buchholz)}
+                      </td>
+                      <td className="px-1.5 py-2 text-center tabular-nums">
+                        {formatPoints(row.sonnebornBerger)}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr
+                        id={detailsId}
+                        className={cn('border-t bg-background/70', podiumClass(row.rank))}
+                      >
+                        <td className="px-2 pb-2 pt-0" colSpan={5}>
+                          <div className="grid gap-2 py-2">
+                            <div className="flex flex-wrap gap-1">
+                              {row.roundHistory.map((cell) => (
+                                <span
+                                  key={`${row.playerId}-${cell.roundNumber}`}
+                                  className={roundCellClass(cell)}
+                                  title={cell.title}
+                                >
+                                  {cell.label}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
+                              <span>Siege: {row.wins}</span>
+                              <span>Byes: {row.receivedByes}</span>
+                              <Badge
+                                className="h-5 px-1.5 text-[10px]"
+                                variant={statusVariant(row.status)}
+                              >
+                                {statusLabels[row.status]}
+                              </Badge>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="swiss-standings-table-wrap swiss-standings-desktop hidden overflow-x-auto rounded-md border md:block">
           <table className="swiss-standings-table w-full min-w-[68rem] text-sm">
             <thead className="bg-muted/70 text-left">
               <tr>
