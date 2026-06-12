@@ -1,4 +1,5 @@
 import {
+  Archive,
   CirclePlus,
   Download,
   FileJson,
@@ -16,7 +17,7 @@ import {
 import { Fragment, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
-import { formatPoints } from '@/apps/swiss-tournaments/logic'
+import { formatPoints, recalculateStandings } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
 import type {
   ByePolicy,
@@ -82,7 +83,7 @@ const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
 
 const appTitle = 'SK Anderten Turnier-App'
 const tournamentWebsiteUrl = 'https://bengtstoolbox.web.app/apps/swiss-tournaments'
-const tournamentWebsiteQrUrl = `https://api.qrserver.com/v1/create-qr-code/?format=svg&size=164x164&margin=8&data=${encodeURIComponent(tournamentWebsiteUrl)}`
+const tournamentWebsiteQrUrl = '/qrcode.svg'
 
 const statusLabels: Record<PlayerStatus, string> = {
   active: 'aktiv',
@@ -92,6 +93,19 @@ const statusLabels: Record<PlayerStatus, string> = {
 
 function playerName(tournament: Tournament, playerId?: string) {
   return tournament.players.find((player) => player.id === playerId)?.name ?? '-'
+}
+
+function printablePdfTitle(tournamentName: string) {
+  const safeName = tournamentName
+    .trim()
+    .split('')
+    .filter((character) => character.charCodeAt(0) >= 32)
+    .join('')
+    .replace(/[<>:"/\\|?*]/g, '-')
+    .replace(/\s+/g, ' ')
+    .replace(/\.+$/g, '')
+
+  return `${safeName || 'Turnier'}.pdf`
 }
 
 function statusVariant(status: PlayerStatus) {
@@ -112,6 +126,43 @@ function resultLabel(result?: GameResult) {
   }
 
   return result.startsWith('bye-') ? result.replace('bye-', 'Bye ') : result
+}
+
+function formatDateTime(value?: string) {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
+function completedRoundCount(tournament: Tournament) {
+  return tournament.rounds.filter((round) => round.status === 'completed').length
+}
+
+function archiveCategory(tournament: Tournament) {
+  if (
+    tournament.numberOfRounds > 0 &&
+    completedRoundCount(tournament) >= tournament.numberOfRounds
+  ) {
+    return 'abgeschlossen'
+  }
+
+  return tournament.archiveReason === 'reset'
+    ? 'vor Reset gesichert'
+    : 'durch neues Turnier ersetzt'
 }
 
 type PairingWarningBadgeMeta = {
@@ -564,6 +615,156 @@ function NewTournamentDialog({
   )
 }
 
+type ArchivedTournamentSummary = {
+  category: string
+  completedRounds: number
+  standings: ReturnType<typeof recalculateStandings>
+  tournament: Tournament
+}
+
+function ArchivedTournamentsList({
+  entries,
+  onDelete,
+  onExportCsv,
+  onExportJson,
+  onPrint,
+}: {
+  entries: ArchivedTournamentSummary[]
+  onDelete: (tournament: Tournament) => void | Promise<void>
+  onExportCsv: (tournament: Tournament) => void
+  onExportJson: (tournament: Tournament) => void
+  onPrint: (tournament: Tournament) => void
+}) {
+  const topPlayers = (entry: ArchivedTournamentSummary) =>
+    entry.standings
+      .slice(0, 3)
+      .map((row) => `${row.rank}. ${row.playerName} (${formatPoints(row.points)})`)
+      .join(', ') || '-'
+  const actions = (tournament: Tournament) => (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        aria-label={`${tournament.name} als PDF drucken`}
+        size="sm"
+        variant="outline"
+        onClick={() => onPrint(tournament)}
+      >
+        <Printer className="size-4" />
+        PDF
+      </Button>
+      <Button
+        aria-label={`${tournament.name} als Rangliste CSV exportieren`}
+        size="sm"
+        variant="outline"
+        onClick={() => onExportCsv(tournament)}
+      >
+        <Download className="size-4" />
+        CSV
+      </Button>
+      <Button
+        aria-label={`${tournament.name} als JSON exportieren`}
+        size="sm"
+        variant="outline"
+        onClick={() => onExportJson(tournament)}
+      >
+        <FileJson className="size-4" />
+        JSON
+      </Button>
+      <ConfirmButton
+        title="Vergangenes Turnier loeschen?"
+        description={`"${tournament.name}" wird dauerhaft aus der Liste vergangener Turniere entfernt.`}
+        confirmLabel="Loeschen"
+        onConfirm={() => onDelete(tournament)}
+        trigger={
+          <Button
+            aria-label={`${tournament.name} loeschen`}
+            size="sm"
+            variant="destructive"
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        }
+      />
+    </div>
+  )
+
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+        Noch keine vergangenen Turniere gespeichert.
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="grid gap-2 md:hidden">
+        {entries.map((entry) => (
+          <div
+            key={entry.tournament.id}
+            className="grid gap-3 rounded-md border bg-background p-3 text-sm"
+          >
+            <div className="min-w-0">
+              <div className="truncate font-semibold">{entry.tournament.name}</div>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                <Badge variant="secondary">{entry.category}</Badge>
+                <Badge variant="outline">
+                  {entry.completedRounds}/{entry.tournament.numberOfRounds} Runden
+                </Badge>
+                <Badge variant="outline">
+                  {entry.tournament.players.length} Spieler
+                </Badge>
+              </div>
+            </div>
+            <div className="grid gap-1 text-xs text-muted-foreground">
+              <span>{formatDateTime(entry.tournament.archivedAtClientIso)}</span>
+              <span className="line-clamp-2">Top 3: {topPlayers(entry)}</span>
+            </div>
+            {actions(entry.tournament)}
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-md border md:block">
+        <table className="w-full min-w-[58rem] text-sm">
+          <thead className="bg-muted/70 text-left">
+            <tr>
+              <th className="p-3">Turnier</th>
+              <th className="p-3">Archiviert</th>
+              <th className="p-3">Kategorie</th>
+              <th className="p-3">Umfang</th>
+              <th className="p-3">Top 3</th>
+              <th className="p-3">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr key={entry.tournament.id} className="border-t align-top">
+                <td className="max-w-56 p-3 font-medium">
+                  <span className="block truncate">{entry.tournament.name}</span>
+                </td>
+                <td className="p-3 whitespace-nowrap">
+                  {formatDateTime(entry.tournament.archivedAtClientIso)}
+                </td>
+                <td className="p-3">
+                  <Badge variant="secondary">{entry.category}</Badge>
+                </td>
+                <td className="p-3 whitespace-nowrap">
+                  {entry.tournament.players.length} Spieler, {entry.completedRounds}/
+                  {entry.tournament.numberOfRounds} Runden
+                </td>
+                <td className="max-w-72 p-3 text-muted-foreground">
+                  <span className="line-clamp-2">{topPlayers(entry)}</span>
+                </td>
+                <td className="p-3">{actions(entry.tournament)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
 export function SwissTournamentsPage() {
   const app = useSwissTournaments()
   const tournament = app.activeTournament
@@ -571,6 +772,7 @@ export function SwissTournamentsPage() {
   const [newPlayerRating, setNewPlayerRating] = useState('')
   const [manualWhite, setManualWhite] = useState('')
   const [manualBlack, setManualBlack] = useState('')
+  const [printTournament, setPrintTournament] = useState<Tournament | null>(null)
   const currentRound = useMemo(
     () =>
       tournament
@@ -624,18 +826,43 @@ export function SwissTournamentsPage() {
       withdrawn: tournament.players.filter((player) => player.status === 'withdrawn').length,
     }
   }, [tournament])
+  const archivedTournamentSummaries = useMemo(
+    () =>
+      app.archivedTournaments.map((entry) => ({
+        category: archiveCategory(entry),
+        completedRounds: completedRoundCount(entry),
+        standings: recalculateStandings(entry),
+        tournament: entry,
+      })),
+    [app.archivedTournaments],
+  )
+  const visibleStandingsTournament = printTournament ?? tournament
+  const visibleStandings = useMemo(
+    () => {
+      if (!visibleStandingsTournament) {
+        return []
+      }
+
+      return visibleStandingsTournament.id === tournament?.id
+        ? app.standings
+        : recalculateStandings(visibleStandingsTournament)
+    },
+    [app.standings, tournament?.id, visibleStandingsTournament],
+  )
 
   const [activeTab, setActiveTab] = useState('overview')
-  const printPage = () => {
+  const printPage = (targetTournament = tournament) => {
     const originalTitle = document.title
 
+    setPrintTournament(targetTournament)
     setActiveTab('standings')
     window.requestAnimationFrame(() => {
-      document.title = ' '
+      document.title = printablePdfTitle(targetTournament.name)
       window.addEventListener(
         'afterprint',
         () => {
           document.title = originalTitle
+          setPrintTournament(null)
         },
         { once: true },
       )
@@ -796,24 +1023,6 @@ export function SwissTournamentsPage() {
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-4">
                 <div className="grid gap-2">
-                  <Label>Aktives Turnier</Label>
-                  <Select
-                    value={tournament.id}
-                    onValueChange={(value) => void app.selectTournament(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {app.tournaments.map((entry) => (
-                        <SelectItem key={entry.id} value={entry.id}>
-                          {entry.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
                   <Label>Turniername</Label>
                   <Input
                     value={tournament.name}
@@ -884,15 +1093,15 @@ export function SwissTournamentsPage() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={printPage}>
+                <Button variant="outline" onClick={() => printPage()}>
                   <Printer className="size-4" />
                   Print/PDF
                 </Button>
-                <Button variant="outline" onClick={app.exportStandingsCsv}>
+                <Button variant="outline" onClick={() => app.exportStandingsCsv()}>
                   <Download className="size-4" />
                   Rangliste CSV
                 </Button>
-                <Button variant="outline" onClick={app.exportTournamentJson}>
+                <Button variant="outline" onClick={() => app.exportTournamentJson()}>
                   <FileJson className="size-4" />
                   Turnier JSON
                 </Button>
@@ -910,6 +1119,23 @@ export function SwissTournamentsPage() {
                       Reset
                     </Button>
                   }
+                />
+              </div>
+
+              <div className="grid gap-3 border-t pt-4">
+                <div className="flex items-center gap-2">
+                  <Archive className="size-5 text-primary" />
+                  <h3 className="text-base font-semibold">Vergangene Turniere</h3>
+                </div>
+                <ArchivedTournamentsList
+                  entries={archivedTournamentSummaries}
+                  onDelete={async (archivedTournament) => {
+                    await app.deleteTournament(archivedTournament.id)
+                    toast.success('Vergangenes Turnier wurde geloescht.')
+                  }}
+                  onExportCsv={app.exportStandingsCsv}
+                  onExportJson={app.exportTournamentJson}
+                  onPrint={printPage}
                 />
               </div>
             </CardContent>
@@ -1320,8 +1546,8 @@ export function SwissTournamentsPage() {
 
         <TabsContent value="standings">
           <StandingsTable
-            standings={app.standings}
-            tournamentName={tournament.name}
+            standings={visibleStandings}
+            tournamentName={visibleStandingsTournament.name}
           />
         </TabsContent>
 
@@ -1795,6 +2021,7 @@ function StandingsTable({
         <div className="swiss-export-qr hidden" aria-hidden="true">
           <img
             src={tournamentWebsiteQrUrl}
+            title={tournamentWebsiteUrl}
             alt=""
           />
         </div>

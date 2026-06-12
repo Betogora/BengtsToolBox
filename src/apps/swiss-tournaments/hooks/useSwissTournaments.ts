@@ -22,6 +22,7 @@ import type {
   PlayerStatus,
   SwissTournamentsState,
   Tournament,
+  TournamentArchiveReason,
 } from '@/apps/swiss-tournaments/types'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
@@ -77,6 +78,30 @@ function sanitizeDownloadName(value: string) {
   )
 }
 
+function createArchivePatch(reason: TournamentArchiveReason) {
+  return {
+    isArchived: true,
+    archivedAtClientIso: new Date().toISOString(),
+    archiveReason: reason,
+  } satisfies Pick<
+    Tournament,
+    'archiveReason' | 'archivedAtClientIso' | 'isArchived'
+  >
+}
+
+function createArchivedCopy(
+  tournament: Tournament,
+  position: number,
+  reason: TournamentArchiveReason,
+): Tournament {
+  return {
+    ...tournament,
+    ...createArchivePatch(reason),
+    id: `archive-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    position,
+  }
+}
+
 export function useSwissTournaments(sessionId = 'default') {
   const session = useAnonymousSession()
   const statePath = useMemo(
@@ -100,11 +125,26 @@ export function useSwissTournaments(sessionId = 'default') {
     () => tournamentsStore.data.map(sanitizeTournament),
     [tournamentsStore.data],
   )
+  const activeTournaments = useMemo(
+    () => tournaments.filter((tournament) => !tournament.isArchived),
+    [tournaments],
+  )
+  const archivedTournaments = useMemo(
+    () =>
+      tournaments
+        .filter((tournament) => tournament.isArchived)
+        .sort((left, right) =>
+          (right.archivedAtClientIso ?? right.createdAtClientIso).localeCompare(
+            left.archivedAtClientIso ?? left.createdAtClientIso,
+          ),
+        ),
+    [tournaments],
+  )
   const activeTournament =
-    tournaments.find(
+    activeTournaments.find(
       (tournament) => tournament.id === stateStore.data.activeTournamentId,
     ) ??
-    tournaments[0] ??
+    [...activeTournaments].sort((left, right) => right.position - left.position)[0] ??
     null
   const standings = useMemo(
     () => (activeTournament ? recalculateStandings(activeTournament) : []),
@@ -122,11 +162,18 @@ export function useSwissTournaments(sessionId = 'default') {
     const nextPosition =
       tournaments.reduce((max, tournament) => Math.max(max, tournament.position), 0) + 1
     const tournament = createTournament(input, nextPosition)
+    const archivePatch = createArchivePatch('newTournament')
+    const nextTournaments = [
+      ...tournaments.map((entry) =>
+        entry.isArchived ? entry : { ...entry, ...archivePatch, updatedBy: session.userId },
+      ),
+      {
+        ...tournament,
+        updatedBy: session.userId,
+      },
+    ]
 
-    await tournamentsStore.setItem(tournament.id, {
-      ...tournament,
-      updatedBy: session.userId,
-    })
+    await tournamentsStore.saveItems(nextTournaments)
     await stateStore.merge({
       activeTournamentId: tournament.id,
       updatedBy: session.userId,
@@ -149,7 +196,7 @@ export function useSwissTournaments(sessionId = 'default') {
     await tournamentsStore.deleteItem(tournamentId)
 
     if (stateStore.data.activeTournamentId === tournamentId) {
-      const nextTournament = tournaments.find((entry) => entry.id !== tournamentId)
+      const nextTournament = activeTournaments.find((entry) => entry.id !== tournamentId)
 
       await stateStore.merge({
         activeTournamentId: nextTournament?.id ?? null,
@@ -346,8 +393,27 @@ export function useSwissTournaments(sessionId = 'default') {
       }
     })
 
-  const resetTournament = () =>
-    updateActiveTournament((tournament) => resetTournamentProgress(tournament))
+  const resetTournament = async () => {
+    if (!activeTournament) {
+      return null
+    }
+
+    const nextPosition =
+      tournaments.reduce((max, tournament) => Math.max(max, tournament.position), 0) + 1
+    const archivedCopy = createArchivedCopy(activeTournament, nextPosition, 'reset')
+    const resetTournament = {
+      ...resetTournamentProgress(activeTournament),
+      updatedBy: session.userId,
+    }
+
+    await tournamentsStore.saveItems([
+      ...tournaments.filter((entry) => entry.id !== activeTournament.id),
+      archivedCopy,
+      resetTournament,
+    ])
+
+    return resetTournament
+  }
 
   const goBackToPreviousRound = () =>
     updateActiveTournament((tournament) => reopenPreviousRound(tournament))
@@ -361,26 +427,26 @@ export function useSwissTournaments(sessionId = 'default') {
       updateResult(tournament, roundNumber, pairingId, result),
     )
 
-  const exportStandingsCsv = () => {
-    if (!activeTournament) {
+  const exportStandingsCsv = (tournament = activeTournament) => {
+    if (!tournament) {
       return
     }
 
     downloadText(
-      `${sanitizeDownloadName(activeTournament.name)}-rangliste.csv`,
-      standingsToCsv(standings),
+      `${sanitizeDownloadName(tournament.name)}-rangliste.csv`,
+      standingsToCsv(recalculateStandings(tournament)),
       'text/csv;charset=utf-8',
     )
   }
 
-  const exportTournamentJson = () => {
-    if (!activeTournament) {
+  const exportTournamentJson = (tournament = activeTournament) => {
+    if (!tournament) {
       return
     }
 
     downloadText(
-      `${sanitizeDownloadName(activeTournament.name)}.json`,
-      JSON.stringify(activeTournament, null, 2),
+      `${sanitizeDownloadName(tournament.name)}.json`,
+      JSON.stringify(tournament, null, 2),
       'application/json;charset=utf-8',
     )
   }
@@ -389,6 +455,7 @@ export function useSwissTournaments(sessionId = 'default') {
     activeTournament,
     addManualPairing,
     addPlayer,
+    archivedTournaments,
     changePlayerStatus,
     completeRound,
     createNewTournament,

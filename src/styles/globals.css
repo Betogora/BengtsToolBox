@@ -108,7 +108,8 @@ select {
 
 @media print {
   @page {
-    margin: 12mm;
+    size: A4 portrait;
+    margin: 0;
   }
 
   * {
@@ -133,7 +134,8 @@ select {
   .swiss-tournaments-page {
     max-width: none !important;
     gap: 0 !important;
-    padding: 0 !important;
+    min-height: 100vh !important;
+    padding: 10mm !important;
   }
 
   .swiss-tournaments-page [data-slot="tabs"],
@@ -159,8 +161,8 @@ select {
   .swiss-export-qr {
     display: block !important;
     position: fixed;
-    right: 12mm;
-    bottom: 12mm;
+    right: 10mm;
+    bottom: 10mm;
     width: 26mm;
     height: 26mm;
     padding: 1.5mm;

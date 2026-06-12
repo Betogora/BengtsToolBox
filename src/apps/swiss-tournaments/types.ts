@@ -20,6 +20,8 @@ export type ByePolicy = 'protectLateEntrants' | 'lowestScore'
 
 export type RoundStatus = 'draft' | 'completed'
 
+export type TournamentArchiveReason = 'newTournament' | 'reset'
+
 export type PairingWarning = {
   id: string
   severity: 'hard' | 'soft'
@@ -73,6 +75,9 @@ export type Tournament = {
   settings: TournamentSettings
   position: number
   createdAtClientIso: string
+  isArchived?: boolean
+  archivedAtClientIso?: string
+  archiveReason?: TournamentArchiveReason
   updatedBy?: string
 }
 
