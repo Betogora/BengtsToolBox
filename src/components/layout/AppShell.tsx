@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 export function AppShell() {
   return (
     <div className="min-h-svh">
-      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
+      <header className="app-shell-header sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center">
             <span>

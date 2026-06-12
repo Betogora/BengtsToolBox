@@ -626,8 +626,20 @@ export function SwissTournamentsPage() {
 
   const [activeTab, setActiveTab] = useState('overview')
   const printPage = () => {
+    const originalTitle = document.title
+
     setActiveTab('standings')
-    window.requestAnimationFrame(() => window.print())
+    window.requestAnimationFrame(() => {
+      document.title = tournament.name
+      window.addEventListener(
+        'afterprint',
+        () => {
+          document.title = originalTitle
+        },
+        { once: true },
+      )
+      window.print()
+    })
   }
 
   if (app.isLoading) {
@@ -1184,7 +1196,10 @@ export function SwissTournamentsPage() {
         </TabsContent>
 
         <TabsContent value="standings">
-          <StandingsTable standings={app.standings} />
+          <StandingsTable
+            standings={app.standings}
+            tournamentName={tournament.name}
+          />
         </TabsContent>
 
       </Tabs>
@@ -1457,20 +1472,22 @@ function PairingsTable({
 
 function StandingsTable({
   standings,
+  tournamentName,
 }: {
   standings: ReturnType<typeof useSwissTournaments>['standings']
+  tournamentName: string
 }) {
   const podiumClass = (rank: number) =>
     rank === 1
-      ? 'bg-[#f6e3a5]/65'
+      ? 'swiss-podium-first bg-[#f6e3a5]/65'
       : rank === 2
-        ? 'bg-[#e6e8eb]/70'
+        ? 'swiss-podium-second bg-[#e6e8eb]/70'
         : rank === 3
-          ? 'bg-[#e8c0a0]/55'
+          ? 'swiss-podium-third bg-[#e8c0a0]/55'
           : ''
   const roundCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
     cn(
-      'inline-flex h-7 min-w-11 items-center justify-center rounded px-2 text-xs font-semibold tabular-nums',
+      'swiss-round-cell inline-flex h-7 min-w-11 items-center justify-center rounded px-2 text-xs font-semibold tabular-nums',
       cell.color === 'W' && 'border border-border bg-white text-foreground',
       cell.color === 'B' && 'bg-primary text-primary-foreground',
       cell.outcome === 'bye' && 'border border-dashed border-border bg-muted text-muted-foreground',
@@ -1480,14 +1497,20 @@ function StandingsTable({
   return (
     <Card className="swiss-standings-card">
       <CardHeader>
+        <div className="swiss-export-title hidden">
+          <div className="text-xs font-semibold uppercase tracking-normal text-primary">
+            Rangliste
+          </div>
+          <h1>{tournamentName}</h1>
+        </div>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
           Rangliste
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto rounded-md border">
-          <table className="w-full min-w-[68rem] text-sm">
+        <div className="swiss-standings-table-wrap overflow-x-auto rounded-md border">
+          <table className="swiss-standings-table w-full min-w-[68rem] text-sm">
             <thead className="bg-muted/70 text-left">
               <tr>
                 <th className="p-3">Platz</th>
@@ -1497,8 +1520,8 @@ function StandingsTable({
                 <th className="p-3">SB</th>
                 <th className="p-3">Siege</th>
                 <th className="p-3">Runden</th>
-                <th className="p-3">Byes</th>
-                <th className="p-3">Status</th>
+                <th className="swiss-export-hidden-column p-3">Byes</th>
+                <th className="swiss-export-hidden-column p-3">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -1532,8 +1555,10 @@ function StandingsTable({
                       ))}
                     </div>
                   </td>
-                  <td className="p-3 tabular-nums">{row.receivedByes}</td>
-                  <td className="p-3">
+                  <td className="swiss-export-hidden-column p-3 tabular-nums">
+                    {row.receivedByes}
+                  </td>
+                  <td className="swiss-export-hidden-column p-3">
                     <Badge variant={statusVariant(row.status)}>
                       {statusLabels[row.status]}
                     </Badge>

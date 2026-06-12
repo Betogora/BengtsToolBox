@@ -107,10 +107,24 @@ select {
 }
 
 @media print {
-  body {
+  @page {
+    margin: 12mm;
+  }
+
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  html {
     background: #ffffff;
   }
 
+  body {
+    background: #fbfae8 !important;
+  }
+
+  .app-shell-header,
   .swiss-print-hidden,
   .swiss-tournaments-page > section {
     display: none !important;
@@ -118,21 +132,100 @@ select {
 
   .swiss-tournaments-page {
     max-width: none !important;
+    gap: 0 !important;
     padding: 0 !important;
   }
 
+  .swiss-tournaments-page [data-slot="tabs"],
+  .swiss-tournaments-page [data-slot="tabs-content"] {
+    margin: 0 !important;
+  }
+
+  .swiss-export-title {
+    display: block !important;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  .swiss-export-title h1 {
+    margin: 2px 0 0;
+    color: var(--foreground);
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
   .swiss-standings-card {
-    border: 0 !important;
+    overflow: hidden;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
     box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .swiss-standings-card [data-slot="card-header"] {
+    padding: 16px 18px 8px !important;
+  }
+
+  .swiss-standings-card [data-slot="card-title"] {
+    display: none !important;
+  }
+
+  .swiss-standings-card [data-slot="card-content"] {
+    padding: 0 18px 18px !important;
+  }
+
+  .swiss-standings-table-wrap {
+    overflow: visible !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
   }
 
   .swiss-standings-card table {
     min-width: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .swiss-standings-card thead {
+    background: #e9ecdc !important;
   }
 
   .swiss-standings-card th,
   .swiss-standings-card td {
-    padding: 6px !important;
+    padding: 7px 8px !important;
+    border-color: #d7d8bd !important;
+  }
+
+  .swiss-standings-card th {
+    color: var(--foreground);
+    font-weight: 800;
+  }
+
+  .swiss-podium-first {
+    background: #f7e8b6 !important;
+  }
+
+  .swiss-podium-second {
+    background: #e9edf2 !important;
+  }
+
+  .swiss-podium-third {
+    background: #efd5bf !important;
+  }
+
+  .swiss-round-cell {
+    height: 22px !important;
+    min-width: 34px !important;
+    padding: 0 6px !important;
+    border-radius: 5px !important;
+    font-size: 9px !important;
+  }
+
+  .swiss-export-hidden-column {
+    display: none !important;
   }
 }
