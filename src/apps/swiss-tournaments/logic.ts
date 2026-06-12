@@ -1264,7 +1264,16 @@ export function removePlayerFromTournament(
   tournament: Tournament,
   playerId: string,
 ): Tournament {
-  if (tournament.rounds.length > 0 || tournament.currentRound > 0) {
+  const playerWasUsed = tournament.rounds.some((round) =>
+    round.pairings.some(
+      (pairing) =>
+        pairing.whitePlayerId === playerId ||
+        pairing.blackPlayerId === playerId ||
+        pairing.byePlayerId === playerId,
+    ),
+  )
+
+  if (playerWasUsed) {
     return tournament
   }
 

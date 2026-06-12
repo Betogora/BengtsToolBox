@@ -1,5 +1,4 @@
 import {
-  ChevronDown,
   CirclePlus,
   Download,
   FileJson,
@@ -82,6 +81,8 @@ const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
 ]
 
 const appTitle = 'SK Anderten Turnier-App'
+const tournamentWebsiteUrl = 'https://bengtstoolbox.web.app/apps/swiss-tournaments'
+const tournamentWebsiteQrUrl = `https://api.qrserver.com/v1/create-qr-code/?format=svg&size=164x164&margin=8&data=${encodeURIComponent(tournamentWebsiteUrl)}`
 
 const statusLabels: Record<PlayerStatus, string> = {
   active: 'aktiv',
@@ -599,7 +600,6 @@ export function SwissTournamentsPage() {
     )
   }, [currentRound, tournament])
   const canRegenerateRound = Boolean(draftRound)
-  const hasTournamentStarted = Boolean(tournament && tournament.rounds.length > 0)
   const displayedRounds = useMemo(
     () =>
       tournament
@@ -631,7 +631,7 @@ export function SwissTournamentsPage() {
 
     setActiveTab('standings')
     window.requestAnimationFrame(() => {
-      document.title = tournament.name
+      document.title = ' '
       window.addEventListener(
         'afterprint',
         () => {
@@ -676,6 +676,30 @@ export function SwissTournamentsPage() {
       </div>
     )
   }
+
+  const handleAddPlayer = async () => {
+    if (newPlayerName.trim().length === 0) {
+      return
+    }
+
+    await app.addPlayer(
+      newPlayerName,
+      newPlayerRating ? Number(newPlayerRating) : undefined,
+    )
+    setNewPlayerName('')
+    setNewPlayerRating('')
+    toast.success('Spieler wurde hinzugefügt.')
+  }
+
+  const canRemovePlayer = (playerId: string) =>
+    !tournament.rounds.some((round) =>
+      round.pairings.some(
+        (pairing) =>
+          pairing.whitePlayerId === playerId ||
+          pairing.blackPlayerId === playerId ||
+          pairing.byePlayerId === playerId,
+      ),
+    )
 
   return (
     <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
@@ -901,8 +925,14 @@ export function SwissTournamentsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="rounded-md border border-dashed bg-background p-3">
-                <div className="grid gap-3 md:grid-cols-[1fr_10rem_auto]">
+              <form
+                className="rounded-md border border-dashed bg-background p-3"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void handleAddPlayer()
+                }}
+              >
+                <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
                   <Input
                     placeholder="Name"
                     value={newPlayerName}
@@ -915,30 +945,118 @@ export function SwissTournamentsPage() {
                     onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
                   />
                   <Button
-                    className="h-9 w-full md:w-auto"
+                    className="col-span-2 h-9 w-full md:col-span-1 md:w-auto"
+                    type="submit"
                     variant="outline"
                     disabled={newPlayerName.trim().length === 0}
-                    onClick={async () => {
-                      await app.addPlayer(
-                        newPlayerName,
-                        newPlayerRating ? Number(newPlayerRating) : undefined,
-                      )
-                      setNewPlayerName('')
-                      setNewPlayerRating('')
-                      toast.success('Spieler wurde hinzugefügt.')
-                    }}
                   >
                     <CirclePlus className="size-4" />
                     Spieler hinzufügen
                   </Button>
                 </div>
+              </form>
+
+              <div className="grid gap-2 md:hidden">
+                {tournament.players.map((player, index) => {
+                  const canRemove = canRemovePlayer(player.id)
+
+                  return (
+                    <div
+                      key={player.id}
+                      className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="flex h-7 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold tabular-nums">
+                            #{index + 1}
+                          </span>
+                          <Badge variant={statusVariant(player.status)}>
+                            {statusLabels[player.status]}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          ab Runde {player.addedInRound}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2">
+                        <Input
+                          aria-label={`Name von ${player.name}`}
+                          value={player.name}
+                          onChange={(event) =>
+                            void app.updatePlayer(player.id, {
+                              name: event.currentTarget.value,
+                              rating: player.rating,
+                            })
+                          }
+                        />
+                        <Input
+                          aria-label={`Rating von ${player.name}`}
+                          type="number"
+                          value={player.rating ?? ''}
+                          onChange={(event) =>
+                            void app.updatePlayer(player.id, {
+                              name: player.name,
+                              rating: event.currentTarget.value
+                                ? Number(event.currentTarget.value)
+                                : undefined,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] gap-2">
+                        <Select
+                          value={player.status}
+                          onValueChange={(value) =>
+                            void app.changePlayerStatus(
+                              player.id,
+                              value as PlayerStatus,
+                            )
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">aktiv</SelectItem>
+                            <SelectItem value="inactive">inaktiv</SelectItem>
+                            <SelectItem value="withdrawn">ausgeschieden</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          aria-label={`${player.name} entfernen`}
+                          className="h-9 w-9"
+                          disabled={!canRemove}
+                          size="icon"
+                          title={
+                            canRemove
+                              ? `${player.name} entfernen`
+                              : 'Spieler ist bereits in einer Runde verwendet.'
+                          }
+                          variant="outline"
+                          onClick={async () => {
+                            if (!canRemove) {
+                              return
+                            }
+
+                            await app.removePlayer(player.id)
+                            toast.success(`${player.name} wurde entfernt.`)
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
 
-              <div className="overflow-x-auto rounded-md border">
+              <div className="hidden overflow-x-auto rounded-md border md:block">
                 <table className="w-full min-w-[52rem] text-sm">
                   <thead className="bg-muted/70 text-left">
                     <tr>
-                      <th className="p-3">Seed</th>
+                      <th className="p-3">#</th>
                       <th className="p-3">Name</th>
                       <th className="p-3">Rating</th>
                       <th className="p-3">Ab Runde</th>
@@ -947,9 +1065,12 @@ export function SwissTournamentsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {tournament.players.map((player) => (
+                    {tournament.players.map((player, index) => {
+                      const canRemove = canRemovePlayer(player.id)
+
+                      return (
                       <tr key={player.id} className="border-t">
-                        <td className="p-3 tabular-nums">{player.initialSeed}</td>
+                        <td className="p-3 tabular-nums">{index + 1}</td>
                         <td className="p-3">
                           <Input
                             value={player.name}
@@ -1004,16 +1125,16 @@ export function SwissTournamentsPage() {
                             </Select>
                             <Button
                               aria-label={`${player.name} entfernen`}
-                              disabled={hasTournamentStarted}
+                              disabled={!canRemove}
                               size="icon"
                               title={
-                                hasTournamentStarted
-                                  ? 'Nach Turnierstart bitte Status auf inaktiv oder ausgeschieden setzen.'
-                                  : `${player.name} entfernen`
+                                canRemove
+                                  ? `${player.name} entfernen`
+                                  : 'Spieler ist bereits in einer Runde verwendet.'
                               }
                               variant="outline"
                               onClick={async () => {
-                                if (hasTournamentStarted) {
+                                if (!canRemove) {
                                   return
                                 }
 
@@ -1026,7 +1147,8 @@ export function SwissTournamentsPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1501,13 +1623,11 @@ function StandingsTable({
     )
   }
 
+
   return (
     <Card className="swiss-standings-card">
       <CardHeader>
         <div className="swiss-export-title hidden">
-          <div className="text-xs font-semibold uppercase tracking-normal text-primary">
-            Rangliste
-          </div>
           <h1>{tournamentName}</h1>
         </div>
         <CardTitle className="flex items-center gap-2">
@@ -1517,21 +1637,21 @@ function StandingsTable({
       </CardHeader>
       <CardContent>
         <div className="swiss-standings-mobile rounded-md border md:hidden">
-          <table className="w-full table-fixed text-xs">
+          <table className="w-full table-fixed text-sm">
             <colgroup>
-              <col className="w-9" />
+              <col className="w-8" />
               <col />
-              <col className="w-12" />
-              <col className="w-[4.5rem]" />
-              <col className="w-10" />
+              <col className="w-14" />
+              <col className="w-16" />
+              <col className="w-9" />
             </colgroup>
             <thead className="bg-muted/70 text-left">
               <tr>
-                <th className="px-2 py-2 font-semibold">Platz</th>
-                <th className="px-2 py-2 font-semibold">Name</th>
-                <th className="px-1.5 py-2 text-center font-semibold">Punkte</th>
-                <th className="px-1.5 py-2 text-center font-semibold">Buchholz</th>
-                <th className="px-1.5 py-2 text-center font-semibold">SB</th>
+                <th className="px-1.5 py-2 font-semibold">Platz</th>
+                <th className="px-1.5 py-2 font-semibold">Name</th>
+                <th className="px-1 py-2 text-center font-semibold">Punkte</th>
+                <th className="px-1 py-2 text-center font-semibold">Buchholz</th>
+                <th className="px-1 py-2 text-center font-semibold">SB</th>
               </tr>
             </thead>
             <tbody>
@@ -1558,28 +1678,19 @@ function StandingsTable({
                         }
                       }}
                     >
-                      <td className="px-2 py-2 tabular-nums">{row.rank}</td>
-                      <td className="min-w-0 px-2 py-2 font-medium">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <ChevronDown
-                            aria-hidden="true"
-                            className={cn(
-                              'size-3.5 shrink-0 transition-transform',
-                              isExpanded && 'rotate-180',
-                            )}
-                          />
-                          <span className="min-w-0 truncate">{row.playerName}</span>
-                        </div>
+                      <td className="px-1.5 py-2 tabular-nums">{row.rank}</td>
+                      <td className="min-w-0 px-1.5 py-2 font-medium">
+                        <span className="block min-w-0 truncate">{row.playerName}</span>
                       </td>
-                      <td className="px-1.5 py-2 text-center tabular-nums">
+                      <td className="px-1 py-2 text-center tabular-nums">
                         <span className="inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
                           {formatPoints(row.points)}
                         </span>
                       </td>
-                      <td className="px-1.5 py-2 text-center tabular-nums">
+                      <td className="px-1 py-2 text-center tabular-nums">
                         {formatPoints(row.buchholz)}
                       </td>
-                      <td className="px-1.5 py-2 text-center tabular-nums">
+                      <td className="px-1 py-2 text-center tabular-nums">
                         {formatPoints(row.sonnebornBerger)}
                       </td>
                     </tr>
@@ -1680,6 +1791,12 @@ function StandingsTable({
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="swiss-export-qr hidden" aria-hidden="true">
+          <img
+            src={tournamentWebsiteQrUrl}
+            alt=""
+          />
         </div>
       </CardContent>
     </Card>
