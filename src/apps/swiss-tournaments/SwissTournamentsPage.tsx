@@ -365,7 +365,7 @@ function TournamentCreator({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle>Turnier anlegen</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -392,7 +392,7 @@ function TournamentCreator({
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 border-b pb-4 sm:grid-cols-2 md:grid-cols-3">
           <div className="grid gap-2">
             <Label>Sortierung</Label>
             <Select
@@ -439,7 +439,7 @@ function TournamentCreator({
             {players.map((player) => (
               <div
                 key={player.id}
-                className="grid gap-2 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:items-end"
+                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.25rem] items-end gap-2 rounded-md border bg-card/70 p-2.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:p-3"
               >
                 <div className="grid gap-1.5">
                   <Label htmlFor={`swiss-create-name-${player.id}`}>Name</Label>
@@ -476,7 +476,7 @@ function TournamentCreator({
                 </div>
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="self-end"
+                  className="h-9 w-9 self-end sm:h-10 sm:w-10"
                   size="icon"
                   variant="outline"
                   onClick={() =>
@@ -543,7 +543,7 @@ function NewTournamentDialog({
           Neues Turnier
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
+      <DialogContent className="max-h-[92vh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:max-w-5xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Neues Turnier</DialogTitle>
           <DialogDescription>
@@ -1126,8 +1126,8 @@ export function SwissTournamentsPage() {
                           : 'bg-card/80 opacity-85',
                       )}
                     >
-                      <CardHeader>
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                           <div className="flex flex-wrap items-center gap-2">
                             <CardTitle>Runde {round.roundNumber}</CardTitle>
                             <Badge variant={isCurrentRound ? 'default' : 'outline'}>
@@ -1138,7 +1138,7 @@ export function SwissTournamentsPage() {
                               {round.pairings.length} Bretter/Byes
                             </Badge>
                           </div>
-                          <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+                          <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                             {canGoBackToRound && currentRound && (
                               <ConfirmButton
                                 title={`Zu Runde ${round.roundNumber} zurückgehen?`}
@@ -1169,7 +1169,7 @@ export function SwissTournamentsPage() {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                         <PairingsTable
                           editable={isEditable}
                           pairings={round.pairings}
@@ -1324,17 +1324,17 @@ function PairingsTable({
             <div
               key={pairing.id}
               className={cn(
-                'rounded-md border bg-card p-3 text-sm',
+                'rounded-md border bg-card p-2.5 text-sm',
                 pairing.isManual && 'bg-primary/5',
               )}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-2">
                 <div className="font-semibold tabular-nums">
                   Brett {pairing.boardNumber}
                 </div>
                 {showWarnings && renderMobileWarnings(pairing)}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-muted-foreground">
                     Wei&szlig;
@@ -1348,7 +1348,7 @@ function PairingsTable({
                   <div className="truncate font-medium">{blackName}</div>
                 </div>
               </div>
-              <div className="mt-3">
+              <div className="mt-2.5">
                 <div className="mb-1.5 text-xs font-medium text-muted-foreground">
                   Ergebnis
                 </div>
