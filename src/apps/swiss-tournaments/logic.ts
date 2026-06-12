@@ -87,6 +87,7 @@ export function createTournament(
   return {
     id: makeId('tournament'),
     name,
+    format: 'swiss',
     numberOfRounds,
     currentRound: 0,
     players: seedPlayers(input.players, input.initialSeedingMode),

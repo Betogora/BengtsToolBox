@@ -36,6 +36,7 @@ const initialState: SwissTournamentsState = {
 function sanitizeTournament(tournament: Tournament): Tournament {
   return {
     ...tournament,
+    format: tournament.format ?? 'swiss',
     players: [...(tournament.players ?? [])].sort(
       (left, right) => left.initialSeed - right.initialSeed,
     ),

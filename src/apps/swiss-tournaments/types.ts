@@ -22,6 +22,8 @@ export type RoundStatus = 'draft' | 'completed'
 
 export type TournamentArchiveReason = 'newTournament' | 'reset'
 
+export type TournamentFormat = 'swiss' | 'roundRobin'
+
 export type PairingWarning = {
   id: string
   severity: 'hard' | 'soft'
@@ -68,6 +70,7 @@ export type Round = {
 export type Tournament = {
   id: string
   name: string
+  format?: TournamentFormat
   numberOfRounds: number
   currentRound: number
   players: Player[]
