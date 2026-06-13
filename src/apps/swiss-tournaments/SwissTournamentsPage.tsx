@@ -181,6 +181,34 @@ function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
   return (playerCount % 2 === 0 ? playerCount - 1 : playerCount) * cycles
 }
 
+function roundRobinEligiblePlayerCount(tournament: Tournament, roundNumber: number) {
+  return tournament.players.filter(
+    (player) =>
+      player.addedInRound <= roundNumber &&
+      (player.statusOverrides?.[roundNumber] ?? player.status) === 'active',
+  ).length
+}
+
+function roundRobinCycleCompletion(tournament: Tournament, roundNumber: number) {
+  if (tournament.format !== 'roundRobin') {
+    return null
+  }
+
+  const roundsPerCycle = roundRobinRoundsForPlayerCount(
+    roundRobinEligiblePlayerCount(tournament, roundNumber),
+    1,
+  )
+
+  if (roundNumber % roundsPerCycle !== 0) {
+    return null
+  }
+
+  return {
+    cycle: roundNumber / roundsPerCycle,
+    roundsPerCycle,
+  }
+}
+
 function archiveCategory(tournament: Tournament) {
   if (
     tournament.numberOfRounds > 0 &&
@@ -195,16 +223,20 @@ function archiveCategory(tournament: Tournament) {
 }
 
 function TournamentCompleteBanner({
+  completedRounds,
+  label,
   numberOfRounds,
 }: {
+  completedRounds: number
+  label: string
   numberOfRounds: number
 }) {
   return (
     <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-950">
       <CheckCircle2 className="size-5 shrink-0" />
-      <span>Turnier beendet</span>
+      <span>{label}</span>
       <Badge className="border-emerald-300 bg-emerald-50 text-emerald-950" variant="outline">
-        {numberOfRounds}/{numberOfRounds} Runden
+        {completedRounds}/{numberOfRounds} Runden
       </Badge>
     </div>
   )
@@ -1661,15 +1693,43 @@ export function SwissTournamentsPage() {
                     index === 1 &&
                     round.status === 'completed' &&
                     currentRound?.roundNumber === round.roundNumber + 1
-                  const showTournamentCompleteBanner =
+                  const roundRobinCompletion = roundRobinCycleCompletion(
+                    tournament,
+                    round.roundNumber,
+                  )
+                  const tournamentCompletionBanner =
                     isTournamentComplete &&
+                    round.status === 'completed' &&
                     round.roundNumber === tournament.numberOfRounds
+                      ? {
+                          completedRounds: tournament.numberOfRounds,
+                          label: 'Turnier beendet',
+                          numberOfRounds: tournament.numberOfRounds,
+                        }
+                      : null
+                  const roundRobinCompletionBanner =
+                    round.status === 'completed' && roundRobinCompletion
+                      ? {
+                          completedRounds: round.roundNumber,
+                          label:
+                            roundRobinCompletion.cycle === 1
+                              ? 'Turnier beendet'
+                              : `Durchgang ${roundRobinCompletion.cycle} beendet`,
+                          numberOfRounds: roundRobinCompletion.roundsPerCycle,
+                        }
+                      : null
+                  const completionBanner =
+                    tournament.format === 'roundRobin'
+                      ? roundRobinCompletionBanner
+                      : tournamentCompletionBanner
 
                   return (
                     <Fragment key={round.id}>
-                      {showTournamentCompleteBanner && (
+                      {completionBanner && (
                         <TournamentCompleteBanner
-                          numberOfRounds={tournament.numberOfRounds}
+                          completedRounds={completionBanner.completedRounds}
+                          label={completionBanner.label}
+                          numberOfRounds={completionBanner.numberOfRounds}
                         />
                       )}
                       <Card
