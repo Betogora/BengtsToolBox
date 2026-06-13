@@ -92,6 +92,19 @@ function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
   return (playerCount % 2 === 0 ? playerCount - 1 : playerCount) * cycles
 }
 
+export function getRoundDisplayLabel(tournament: Tournament, roundNumber: number) {
+  if (tournament.format !== 'roundRobin' || roundNumber <= tournament.numberOfRounds) {
+    return `Runde ${roundNumber}`
+  }
+
+  const activePlayerCount = getRoundRobinEligiblePlayers(tournament, roundNumber).length
+  const roundsPerCycle = roundRobinRoundsForPlayerCount(activePlayerCount, 1)
+  const cycleOffset = Math.floor((roundNumber - 1) / roundsPerCycle) + 1
+  const roundInCycle = ((roundNumber - 1) % roundsPerCycle) + 1
+
+  return `Durchgang ${cycleOffset}, Runde ${roundInCycle}`
+}
+
 export function createTournament(
   input: CreateTournamentInput,
   position: number,
@@ -1005,8 +1018,17 @@ function pairKey(leftId: string, rightId: string) {
   return [leftId, rightId].sort().join('::')
 }
 
-function getRoundRobinTargetGames(tournament: Tournament) {
-  return normalizeRoundRobinCycles(tournament.settings.roundRobinCycles)
+function getRoundRobinTargetGames(tournament: Tournament, roundNumber?: number) {
+  const configuredCycles = normalizeRoundRobinCycles(tournament.settings.roundRobinCycles)
+
+  if (!roundNumber || tournament.format !== 'roundRobin') {
+    return configuredCycles
+  }
+
+  const activePlayerCount = getRoundRobinEligiblePlayers(tournament, roundNumber).length
+  const roundsPerCycle = roundRobinRoundsForPlayerCount(activePlayerCount, 1)
+
+  return Math.max(configuredCycles, Math.ceil(roundNumber / roundsPerCycle))
 }
 
 function getRoundRobinEligiblePlayers(tournament: Tournament, roundNumber: number) {
@@ -1062,7 +1084,7 @@ function findBestRoundRobinPairings(
   roundNumber: number,
   scheduledPairs: RoundRobinScheduledPairing[],
 ) {
-  const targetGames = getRoundRobinTargetGames(tournament)
+  const targetGames = getRoundRobinTargetGames(tournament, roundNumber)
   const scheduledPairKeys = new Set(
     scheduledPairs.map((pairing) => pairKey(pairing.white.id, pairing.black.id)),
   )
@@ -1169,7 +1191,7 @@ function generateRoundRobinPairings(
   }))
   const schedule = createRoundRobinSchedule(
     activePlayers,
-    getRoundRobinTargetGames(tournament),
+    getRoundRobinTargetGames(tournament, roundNumber),
   )
   const scheduledRound = schedule[roundNumber - 1]
   let pool = activePlayers.filter((player) => !usedPlayerIds.has(player.id))
@@ -1677,15 +1699,7 @@ export function addPlayerAfterStart(
     players: [...tournament.players, player],
   }
 
-  return tournament.format === 'roundRobin'
-    ? {
-        ...nextTournament,
-        numberOfRounds: Math.max(
-          nextTournament.numberOfRounds,
-          getRoundRobinRequiredRoundCount(nextTournament),
-        ),
-      }
-    : nextTournament
+  return nextTournament
 }
 
 export function removePlayerFromTournament(
@@ -1749,6 +1763,26 @@ export function reopenPreviousRound(tournament: Tournament): Tournament {
   }
 }
 
+export function deleteLatestRound(tournament: Tournament): Tournament {
+  const sortedRounds = [...tournament.rounds].sort(
+    (left, right) => left.roundNumber - right.roundNumber,
+  )
+  const latestRound = sortedRounds[sortedRounds.length - 1]
+  const previousRound = sortedRounds[sortedRounds.length - 2]
+
+  if (!latestRound) {
+    return tournament
+  }
+
+  return {
+    ...tournament,
+    currentRound: previousRound?.roundNumber ?? 0,
+    rounds: sortedRounds.filter(
+      (round) => round.roundNumber !== latestRound.roundNumber,
+    ),
+  }
+}
+
 export function getNextAllowedRoundNumber(tournament: Tournament) {
   if (tournament.rounds.length === 0) {
     return tournament.numberOfRounds >= 1 ? 1 : null
@@ -1762,13 +1796,7 @@ export function getNextAllowedRoundNumber(tournament: Tournament) {
     return null
   }
 
-  const nextRound = latestRound.roundNumber + 1
-
-  if (tournament.format === 'roundRobin' && nextRound > tournament.numberOfRounds) {
-    return null
-  }
-
-  return nextRound
+  return latestRound.roundNumber + 1
 }
 
 export function getCurrentDraftRound(tournament: Tournament) {
@@ -1811,15 +1839,7 @@ export function upsertRound(
     ].sort((left, right) => left.roundNumber - right.roundNumber),
   }
 
-  return nextTournament.format === 'roundRobin'
-    ? {
-        ...nextTournament,
-        numberOfRounds: Math.max(
-          nextTournament.numberOfRounds,
-          getRoundRobinRequiredRoundCount(nextTournament),
-        ),
-      }
-    : nextTournament
+  return nextTournament
 }
 
 function invertResult(result: GameResult): GameResult {

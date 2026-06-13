@@ -7,6 +7,7 @@ import {
   Download,
   FileJson,
   GitBranch,
+  LayoutDashboard,
   ListChecks,
   Plus,
   Printer,
@@ -22,7 +23,11 @@ import {
 import { Fragment, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
-import { formatPoints, recalculateStandings } from '@/apps/swiss-tournaments/logic'
+import {
+  formatPoints,
+  getRoundDisplayLabel,
+  recalculateStandings,
+} from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
 import type {
   ByePolicy,
@@ -761,7 +766,7 @@ function NewTournamentDialog({
         {trigger ?? (
           <Button>
             <Plus className="size-4" />
-            Neues Turnier / Reset
+            Neues Turnier
           </Button>
         )}
       </DialogTrigger>
@@ -960,6 +965,7 @@ export function SwissTournamentsPage() {
     }
 
     if (
+      tournament.format !== 'roundRobin' &&
       tournament.numberOfRounds > 0 &&
       completedRoundCount(tournament) >= tournament.numberOfRounds
     ) {
@@ -987,9 +993,6 @@ export function SwissTournamentsPage() {
     Boolean(draftRound) &&
     currentRound?.roundNumber === draftRound?.roundNumber
   const completedRounds = tournament ? completedRoundCount(tournament) : 0
-  const minimumRoundCount = tournament
-    ? Math.max(1, highestCompletedRoundNumber(tournament))
-    : 1
   const isTournamentComplete =
     Boolean(tournament) &&
     tournament.numberOfRounds > 0 &&
@@ -1123,10 +1126,22 @@ export function SwissTournamentsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
         <TabsList className="swiss-print-hidden flex h-auto w-full flex-wrap justify-start">
-          <TabsTrigger value="overview">Übersicht</TabsTrigger>
-          <TabsTrigger value="players">Spieler</TabsTrigger>
-          <TabsTrigger value="pairings">Paarungen</TabsTrigger>
-          <TabsTrigger value="standings">Rangliste</TabsTrigger>
+          <TabsTrigger value="overview" className="font-semibold tracking-normal">
+            <LayoutDashboard className="size-5 text-primary" />
+            Übersicht
+          </TabsTrigger>
+          <TabsTrigger value="players" className="font-semibold tracking-normal">
+            <UsersRound className="size-5 text-primary" />
+            Spieler
+          </TabsTrigger>
+          <TabsTrigger value="pairings" className="font-semibold tracking-normal">
+            <Swords className="size-5 text-primary" />
+            Paarungen
+          </TabsTrigger>
+          <TabsTrigger value="standings" className="font-semibold tracking-normal">
+            <Trophy className="size-5 text-primary" />
+            Rangliste
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="grid gap-4">
@@ -1152,10 +1167,10 @@ export function SwissTournamentsPage() {
               initialTournament={tournament}
               onCreate={app.createNewTournament}
               trigger={
-                <Button className="h-full min-h-[8rem] w-full rounded-lg px-4 text-base shadow-sm">
+                <Button className="h-full min-h-0 w-full rounded-lg px-4 text-base shadow-sm">
                   <Plus className="size-5" />
                   <span className="min-w-0 truncate">
-                    Neues Turnier / Reset
+                    Neues Turnier
                   </span>
                 </Button>
               }
@@ -1209,35 +1224,16 @@ export function SwissTournamentsPage() {
                     }
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label>Runden</Label>
-                  <Input
-                    min={minimumRoundCount}
-                    type="number"
-                    value={tournament.numberOfRounds}
-                    onChange={(event) =>
-                      void app.updateTournamentMeta({
-                        numberOfRounds: Number(event.currentTarget.value),
-                      })
-                    }
-                  />
-                </div>
-                {(tournament.format ?? 'swiss') === 'roundRobin' && (
+                {(tournament.format ?? 'swiss') !== 'roundRobin' && (
                   <div className="grid gap-2">
-                    <Label>Durchg&auml;nge</Label>
+                    <Label>Runden</Label>
                     <Input
-                      min={Math.max(
-                        1,
-                        Math.ceil(
-                          completedRounds /
-                            roundRobinRoundsForPlayerCount(tournament.players.length, 1),
-                        ),
-                      )}
+                      min={Math.max(1, highestCompletedRoundNumber(tournament))}
                       type="number"
-                      value={tournament.settings.roundRobinCycles ?? 1}
+                      value={tournament.numberOfRounds}
                       onChange={(event) =>
-                        void app.updateSettings({
-                          roundRobinCycles: Number(event.currentTarget.value),
+                        void app.updateTournamentMeta({
+                          numberOfRounds: Number(event.currentTarget.value),
                         })
                       }
                     />
@@ -1658,6 +1654,7 @@ export function SwissTournamentsPage() {
                 displayedRounds.map((round, index) => {
                   const isCurrentRound = index === 0
                   const isEditable = isCurrentRound && round.status === 'draft'
+                  const roundLabel = getRoundDisplayLabel(tournament, round.roundNumber)
                   const canCompleteRound =
                     isEditable && !round.pairings.some(hasMissingGameResult)
                   const canGoBackToRound =
@@ -1686,7 +1683,7 @@ export function SwissTournamentsPage() {
                       <CardHeader className="p-4 sm:p-6">
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                           <div className="flex flex-wrap items-center gap-2">
-                            <CardTitle>Runde {round.roundNumber}</CardTitle>
+                            <CardTitle>{roundLabel}</CardTitle>
                             <Badge variant={isCurrentRound ? 'default' : 'outline'}>
                               {isCurrentRound ? 'aktuell' : 'archiviert'}
                             </Badge>
@@ -1723,6 +1720,27 @@ export function SwissTournamentsPage() {
                             >
                               Runde abschließen
                             </Button>
+                            {isCurrentRound && (
+                              <ConfirmButton
+                                title={`${roundLabel} löschen?`}
+                                description="Die aktuelle Runde und alle Paarungen darin werden gelöscht."
+                                confirmLabel="Löschen"
+                                onConfirm={async () => {
+                                  await app.deleteLatestRound()
+                                  toast.success(`${roundLabel} wurde gelöscht.`)
+                                }}
+                                trigger={
+                                  <Button
+                                    aria-label="Aktuelle Runde löschen"
+                                    className="w-full sm:w-auto"
+                                    title="Aktuelle Runde löschen"
+                                    variant="outline"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                }
+                              />
+                            )}
                           </div>
                         </div>
                       </CardHeader>

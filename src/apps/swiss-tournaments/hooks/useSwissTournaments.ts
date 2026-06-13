@@ -4,9 +4,9 @@ import {
   addPlayerAfterStart,
   createManualPairing,
   createTournament,
+  deleteLatestRound,
   getCurrentDraftRound,
   getNextAllowedRoundNumber,
-  getRoundRobinRequiredRoundCount,
   recalculateStandings,
   removePlayerFromTournament,
   reopenPreviousRound,
@@ -247,16 +247,7 @@ export function useSwissTournaments(sessionId = 'default') {
           : tournament.numberOfRounds,
       }
 
-      return nextTournament.format === 'roundRobin'
-        ? {
-            ...nextTournament,
-            numberOfRounds: Math.max(
-              tournament.rounds.length > 0 ? tournament.numberOfRounds : 1,
-              nextTournament.numberOfRounds,
-              getRoundRobinRequiredRoundCount(nextTournament),
-            ),
-          }
-        : nextTournament
+      return nextTournament
     })
 
   const updateSettings = (partial: Partial<Tournament['settings']>) =>
@@ -269,7 +260,7 @@ export function useSwissTournaments(sessionId = 'default') {
         tournament.format === 'roundRobin' && tournament.rounds.length > 0
           ? Math.max(tournament.settings.roundRobinCycles ?? 1, requestedRoundRobinCycles ?? 1)
           : requestedRoundRobinCycles
-      const nextTournament = {
+      return {
         ...tournament,
         settings: {
           ...tournament.settings,
@@ -277,16 +268,6 @@ export function useSwissTournaments(sessionId = 'default') {
           roundRobinCycles,
         },
       }
-
-      return nextTournament.format === 'roundRobin'
-        ? {
-            ...nextTournament,
-            numberOfRounds: Math.max(
-              nextTournament.numberOfRounds,
-              getRoundRobinRequiredRoundCount(nextTournament),
-            ),
-          }
-        : nextTournament
     })
 
   const setRoundByeScore = (roundNumber: number, byeScore: ByeScore) =>
@@ -336,19 +317,9 @@ export function useSwissTournaments(sessionId = 'default') {
     status: PlayerStatus,
     fromRound?: number,
   ) =>
-    updateActiveTournament((tournament) => {
-      const nextTournament = setPlayerStatus(tournament, playerId, status, fromRound)
-
-      return nextTournament.format === 'roundRobin'
-        ? {
-            ...nextTournament,
-            numberOfRounds: Math.max(
-              nextTournament.numberOfRounds,
-              getRoundRobinRequiredRoundCount(nextTournament),
-            ),
-          }
-        : nextTournament
-    })
+    updateActiveTournament((tournament) =>
+      setPlayerStatus(tournament, playerId, status, fromRound),
+    )
 
   const generateRound = () =>
     updateActiveTournament((tournament) => {
@@ -480,6 +451,9 @@ export function useSwissTournaments(sessionId = 'default') {
   const goBackToPreviousRound = () =>
     updateActiveTournament((tournament) => reopenPreviousRound(tournament))
 
+  const removeLatestRound = () =>
+    updateActiveTournament((tournament) => deleteLatestRound(tournament))
+
   const setResult = (
     roundNumber: number,
     pairingId: string,
@@ -522,6 +496,7 @@ export function useSwissTournaments(sessionId = 'default') {
     completeRound,
     createNewTournament,
     deleteTournament,
+    deleteLatestRound: removeLatestRound,
     error: stateStore.error ?? tournamentsStore.error,
     exportStandingsCsv,
     exportTournamentJson,
