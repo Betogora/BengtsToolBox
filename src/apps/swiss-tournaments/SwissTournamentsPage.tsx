@@ -1476,7 +1476,7 @@ export function SwissTournamentsPage() {
                         </Select>
                         <Button
                           aria-label={`${player.name} entfernen`}
-                          className="h-9 w-9"
+                          className={iconTrashButtonClass}
                           disabled={!canRemove}
                           size="icon"
                           title={
@@ -1484,7 +1484,7 @@ export function SwissTournamentsPage() {
                               ? `${player.name} entfernen`
                               : 'Spieler ist bereits in einer Runde verwendet.'
                           }
-                          variant="outline"
+                          variant="destructive"
                           onClick={async () => {
                             if (!canRemove) {
                               return
@@ -1575,6 +1575,7 @@ export function SwissTournamentsPage() {
                             </Select>
                             <Button
                               aria-label={`${player.name} entfernen`}
+                              className={iconTrashButtonClass}
                               disabled={!canRemove}
                               size="icon"
                               title={
@@ -1774,7 +1775,7 @@ export function SwissTournamentsPage() {
                             )}
                             <Button
                               className="w-full md:w-auto"
-                              variant="outline"
+                              variant="destructive"
                               disabled={!canCompleteRound}
                               onClick={() => void app.completeRound(round.roundNumber)}
                             >
@@ -1794,7 +1795,7 @@ export function SwissTournamentsPage() {
                                     aria-label="Aktuelle Runde löschen"
                                     className="w-full sm:w-auto"
                                     title="Aktuelle Runde löschen"
-                                    variant="outline"
+                                    variant="destructive"
                                   >
                                     <Trash2 className="size-4" />
                                   </Button>
