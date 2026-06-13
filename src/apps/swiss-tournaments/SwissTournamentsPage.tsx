@@ -2,6 +2,7 @@ import {
   Archive,
   ArrowRight,
   ChevronDown,
+  ChessKing,
   CheckCircle2,
   CirclePlus,
   Download,
@@ -534,15 +535,16 @@ function AddPlayerCard({
 
 function AppTitleHeader() {
   return (
-    <section className="flex min-w-0 items-center justify-between gap-3">
+    <section className="flex min-w-0 items-center gap-3">
+      <span
+        aria-hidden="true"
+        className="flex size-10 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary sm:size-11"
+      >
+        <ChessKing className="size-6 sm:size-7" />
+      </span>
       <h1 className="min-w-0 truncate text-3xl font-semibold tracking-normal sm:text-4xl">
         {appTitle}
       </h1>
-      <img
-        alt="SK Anderten"
-        className="h-8 w-auto shrink-0 object-contain sm:h-9"
-        src="/sk-anderten-logo.jpg"
-      />
     </section>
   )
 }
@@ -1092,7 +1094,7 @@ export function SwissTournamentsPage() {
 
   if (!tournament) {
     return (
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <div className="swiss-tournaments-page mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
         <AppTitleHeader />
         {app.error && (
           <Card className="border-destructive">

@@ -91,6 +91,31 @@ select {
   min-height: 100svh;
 }
 
+.swiss-tournaments-page {
+  position: relative;
+}
+
+.swiss-tournaments-page::before {
+  position: fixed;
+  top: 4.75rem;
+  right: 0;
+  z-index: 0;
+  width: min(66vw, 62rem);
+  height: min(66vh, 44rem);
+  pointer-events: none;
+  content: "";
+  background-image: url("/sk-anderten-watermark.png");
+  background-repeat: no-repeat;
+  background-position: top right;
+  background-size: contain;
+  opacity: 0.35;
+}
+
+.swiss-tournaments-page > * {
+  position: relative;
+  z-index: 1;
+}
+
 ::selection {
   color: var(--primary-foreground);
   background: var(--primary);
@@ -126,6 +151,7 @@ select {
   }
 
   .app-shell-header,
+  .swiss-tournaments-page::before,
   .swiss-print-hidden,
   .swiss-tournaments-page > section {
     display: none !important;
