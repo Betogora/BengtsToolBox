@@ -1189,20 +1189,20 @@ export function SwissTournamentsPage() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
-        <TabsList className="swiss-print-hidden flex h-auto w-full flex-wrap justify-start">
-          <TabsTrigger value="overview" className="font-semibold tracking-normal">
+        <TabsList className="swiss-print-hidden grid h-auto w-full grid-cols-2 sm:grid-cols-4">
+          <TabsTrigger value="overview" className="min-w-0 font-semibold tracking-normal">
             <LayoutDashboard className="size-5 text-primary" />
             Übersicht
           </TabsTrigger>
-          <TabsTrigger value="players" className="font-semibold tracking-normal">
+          <TabsTrigger value="players" className="min-w-0 font-semibold tracking-normal">
             <UsersRound className="size-5 text-primary" />
             Spieler
           </TabsTrigger>
-          <TabsTrigger value="pairings" className="font-semibold tracking-normal">
+          <TabsTrigger value="pairings" className="min-w-0 font-semibold tracking-normal">
             <Swords className="size-5 text-primary" />
             Paarungen
           </TabsTrigger>
-          <TabsTrigger value="standings" className="font-semibold tracking-normal">
+          <TabsTrigger value="standings" className="min-w-0 font-semibold tracking-normal">
             <Trophy className="size-5 text-primary" />
             Rangliste
           </TabsTrigger>
