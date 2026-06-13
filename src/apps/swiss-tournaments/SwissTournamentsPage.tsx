@@ -458,14 +458,6 @@ type DraftPlayer = {
   rating: string
 }
 
-function createDraftPlayer(index: number): DraftPlayer {
-  return {
-    id: `draft-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
-    name: `Spieler ${index + 1}`,
-    rating: '',
-  }
-}
-
 function defaultDraftPlayers(): DraftPlayer[] {
   return [
     { id: 'draft-1', name: 'Niklas', rating: '1922' },
@@ -514,27 +506,6 @@ function isDefaultTournamentName(value: string) {
   )
 }
 
-function AddPlayerCard({
-  label,
-  onAdd,
-}: {
-  label: string
-  onAdd: () => void | Promise<void>
-}) {
-  return (
-    <div className="rounded-md border border-dashed bg-background p-3">
-      <Button
-        className="h-9 w-full"
-        variant="outline"
-        onClick={() => void onAdd()}
-      >
-        <CirclePlus className="size-4" />
-        {label}
-      </Button>
-    </div>
-  )
-}
-
 function AppTitleHeader() {
   return (
     <section className="flex min-w-0 items-center gap-3">
@@ -562,6 +533,8 @@ function TournamentCreator({
   const [players, setPlayers] = useState<DraftPlayer[]>(() =>
     tournamentPlayersToDraftPlayers(initialTournament),
   )
+  const [newDraftPlayerName, setNewDraftPlayerName] = useState('')
+  const [newDraftPlayerRating, setNewDraftPlayerRating] = useState('')
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
   const [byeScore, setByeScore] = useState<ByeScore>(1)
@@ -580,16 +553,30 @@ function TournamentCreator({
     )
     setFormat(nextFormat)
   }
+  const handleAddDraftPlayer = () => {
+    const draftName = newDraftPlayerName.trim()
+
+    if (!draftName) {
+      return
+    }
+
+    setPlayers((currentPlayers) => [
+      ...currentPlayers,
+      {
+        id: `draft-${Date.now()}-${currentPlayers.length}-${Math.random()
+          .toString(36)
+          .slice(2)}`,
+        name: draftName,
+        rating: newDraftPlayerRating.trim(),
+      },
+    ])
+    setNewDraftPlayerName('')
+    setNewDraftPlayerRating('')
+  }
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <CirclePlus className="size-5 text-primary" />
-          Turnier anlegen
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="grid gap-4 p-6">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)]">
           <div className="grid gap-2">
             <Label htmlFor="swiss-name">Turniername</Label>
@@ -732,15 +719,40 @@ function TournamentCreator({
                 </Button>
               </div>
             ))}
-            <AddPlayerCard
-              label="Spieler hinzufügen"
-              onAdd={() =>
-                setPlayers((currentPlayers) => [
-                  ...currentPlayers,
-                  createDraftPlayer(currentPlayers.length),
-                ])
-              }
-            />
+            <form
+              className="rounded-md border border-dashed bg-background p-3"
+              onSubmit={(event) => {
+                event.preventDefault()
+                handleAddDraftPlayer()
+              }}
+            >
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
+                <Input
+                  placeholder="Name"
+                  value={newDraftPlayerName}
+                  onChange={(event) =>
+                    setNewDraftPlayerName(event.currentTarget.value)
+                  }
+                />
+                <Input
+                  placeholder="Rating"
+                  type="number"
+                  value={newDraftPlayerRating}
+                  onChange={(event) =>
+                    setNewDraftPlayerRating(event.currentTarget.value)
+                  }
+                />
+                <Button
+                  className="col-span-2 h-9 w-full md:col-span-1 md:w-auto"
+                  type="submit"
+                  variant="outline"
+                  disabled={newDraftPlayerName.trim().length === 0}
+                >
+                  <CirclePlus className="size-4" />
+                  Spieler hinzufügen
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
 
@@ -794,7 +806,10 @@ function NewTournamentDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:max-w-5xl sm:p-6">
         <DialogHeader>
-          <DialogTitle>Neues Turnier</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <CirclePlus className="size-5 text-primary" />
+            Neues Turnier anlegen
+          </DialogTitle>
         </DialogHeader>
         {open && (
           <TournamentCreator
@@ -1136,6 +1151,29 @@ export function SwissTournamentsPage() {
           pairing.byePlayerId === playerId,
       ),
     )
+  const manuallyUsedPlayerIds = new Set(
+    (draftRound?.pairings ?? [])
+      .filter((pairing) => pairing.isManual)
+      .flatMap((pairing) =>
+        [
+          pairing.whitePlayerId,
+          pairing.blackPlayerId,
+          pairing.byePlayerId,
+        ].filter((playerId): playerId is string => typeof playerId === 'string'),
+      ),
+  )
+  const manualWhiteOptions = tournament.players.filter(
+    (player) => !manuallyUsedPlayerIds.has(player.id) && player.id !== manualBlack,
+  )
+  const manualBlackOptions = tournament.players.filter(
+    (player) => !manuallyUsedPlayerIds.has(player.id) && player.id !== manualWhite,
+  )
+  const canAddManualPairing =
+    Boolean(manualWhite) &&
+    Boolean(manualBlack) &&
+    manualWhite !== manualBlack &&
+    !manuallyUsedPlayerIds.has(manualWhite) &&
+    !manuallyUsedPlayerIds.has(manualBlack)
 
   return (
     <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
@@ -1572,6 +1610,7 @@ export function SwissTournamentsPage() {
                             </Select>
                             <Button
                               aria-label={`${player.name} entfernen`}
+                              className="h-9"
                               disabled={!canRemove}
                               size="sm"
                               title={
@@ -1632,46 +1671,53 @@ export function SwissTournamentsPage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               {isCurrentDraftRound && draftRound && (
-                <div className="grid gap-3 rounded-md border bg-secondary/35 p-3 md:grid-cols-[1fr_1fr_auto]">
-                  <Select value={manualWhite} onValueChange={setManualWhite}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Spieler A" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tournament.players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={manualBlack} onValueChange={setManualBlack}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Spieler B" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tournament.players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    disabled={!manualWhite || !manualBlack}
-                    onClick={async () => {
-                      await app.addManualPairing(
-                        draftRound.roundNumber,
-                        manualWhite,
-                        manualBlack,
-                      )
-                      setManualWhite('')
-                      setManualBlack('')
-                      toast.success('Manuelle Paarung fixiert.')
-                    }}
-                  >
-                    Fixieren
-                  </Button>
+                <div className="rounded-md border border-dashed bg-background p-3">
+                  <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:gap-3">
+                    <Select value={manualWhite} onValueChange={setManualWhite}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Spieler A" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {manualWhiteOptions.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={manualBlack} onValueChange={setManualBlack}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Spieler B" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {manualBlackOptions.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      className="h-9 w-full md:w-auto"
+                      disabled={!canAddManualPairing}
+                      onClick={async () => {
+                        if (!canAddManualPairing) {
+                          return
+                        }
+
+                        await app.addManualPairing(
+                          draftRound.roundNumber,
+                          manualWhite,
+                          manualBlack,
+                        )
+                        setManualWhite('')
+                        setManualBlack('')
+                        toast.success('Manuelle Paarung fixiert.')
+                      }}
+                    >
+                      Fixieren
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -1760,7 +1806,7 @@ export function SwissTournamentsPage() {
                                 trigger={
                                   <Button
                                     aria-label="Runde wieder bearbeiten"
-                                    className="size-10 shrink-0 p-0"
+                                    className="h-8 w-10 shrink-0 p-0"
                                     title="Runde wieder bearbeiten"
                                     variant="outline"
                                   >
@@ -1770,8 +1816,7 @@ export function SwissTournamentsPage() {
                               />
                             )}
                             <Button
-                              className="w-full md:w-auto"
-                              variant="destructive"
+                              className="h-8 w-full md:w-auto"
                               disabled={!canCompleteRound}
                               onClick={() => void app.completeRound(round.roundNumber)}
                             >
@@ -1789,6 +1834,7 @@ export function SwissTournamentsPage() {
                                 trigger={
                                   <Button
                                     aria-label="Aktuelle Runde löschen"
+                                    className="h-8"
                                     size="sm"
                                     title="Aktuelle Runde löschen"
                                     variant="destructive"

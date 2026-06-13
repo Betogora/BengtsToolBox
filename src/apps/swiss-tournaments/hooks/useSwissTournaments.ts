@@ -368,6 +368,28 @@ export function useSwissTournaments(sessionId = 'default') {
         return tournament
       }
 
+      const fixedPlayerIds = new Set(
+        existing.pairings
+          .filter((pairing) => pairing.isManual)
+          .flatMap((pairing) =>
+            [
+              pairing.whitePlayerId,
+              pairing.blackPlayerId,
+              pairing.byePlayerId,
+            ].filter(
+              (playerId): playerId is string => typeof playerId === 'string',
+            ),
+          ),
+      )
+
+      if (
+        whitePlayerId === blackPlayerId ||
+        fixedPlayerIds.has(whitePlayerId) ||
+        fixedPlayerIds.has(blackPlayerId)
+      ) {
+        return tournament
+      }
+
       const fixedPairings = [
         ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
         createManualPairing(tournament, roundNumber, whitePlayerId, blackPlayerId),
