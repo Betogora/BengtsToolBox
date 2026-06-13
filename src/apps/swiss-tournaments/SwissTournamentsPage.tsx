@@ -1916,7 +1916,7 @@ function PairingsTable({
                 aria-label={`Fixierte Paarung ${playerName(
                   tournament,
                   pairing.whitePlayerId,
-                )} gegen ${playerName(tournament, pairing.blackPlayerId)} loesen`}
+                )} gegen ${playerName(tournament, pairing.blackPlayerId)} lösen`}
                 className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
                 disabled={!canChangePairings}
                 size="icon"
