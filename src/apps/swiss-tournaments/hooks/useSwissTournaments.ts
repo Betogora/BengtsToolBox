@@ -323,9 +323,38 @@ export function useSwissTournaments(sessionId = 'default') {
 
   const generateRound = () =>
     updateActiveTournament((tournament) => {
-      const nextRoundNumber = getNextAllowedRoundNumber(tournament)
+      const sortedRounds = [...tournament.rounds].sort(
+        (left, right) => left.roundNumber - right.roundNumber,
+      )
+      const latestRound = sortedRounds[sortedRounds.length - 1]
 
-      return nextRoundNumber ? upsertRound(tournament, nextRoundNumber) : tournament
+      if (!latestRound) {
+        const nextRoundNumber = getNextAllowedRoundNumber(tournament)
+
+        return nextRoundNumber ? upsertRound(tournament, nextRoundNumber) : tournament
+      }
+
+      if (latestRound.status === 'completed') {
+        return upsertRound(tournament, latestRound.roundNumber + 1)
+      }
+
+      if (
+        latestRound.status !== 'draft' ||
+        latestRound.pairings.some((pairing) => !pairing.isBye && !pairing.result)
+      ) {
+        return tournament
+      }
+
+      const completedTournament = {
+        ...tournament,
+        rounds: tournament.rounds.map((round) =>
+          round.roundNumber === latestRound.roundNumber
+            ? { ...round, status: 'completed' as const }
+            : round,
+        ),
+      }
+
+      return upsertRound(completedTournament, latestRound.roundNumber + 1)
     })
 
   const regenerateRound = () =>

@@ -1005,19 +1005,22 @@ export function SwissTournamentsPage() {
       return false
     }
 
-    if (
-      tournament.format !== 'roundRobin' &&
-      tournament.numberOfRounds > 0 &&
-      completedRoundCount(tournament) >= tournament.numberOfRounds
-    ) {
-      return false
-    }
-
     if (tournament.rounds.length === 0) {
       return tournament.numberOfRounds > 0
     }
 
-    return currentRound?.status === 'completed' && !draftRound
+    if (!currentRound) {
+      return false
+    }
+
+    if (currentRound.status === 'completed') {
+      return !draftRound
+    }
+
+    return (
+      currentRound.status === 'draft' &&
+      !currentRound.pairings.some(hasMissingGameResult)
+    )
   }, [currentRound, draftRound, tournament])
   const canRegenerateRound = Boolean(draftRound)
   const displayedRounds = useMemo(
@@ -1029,10 +1032,6 @@ export function SwissTournamentsPage() {
         : [],
     [tournament],
   )
-  const isCurrentDraftRound =
-    Boolean(currentRound) &&
-    Boolean(draftRound) &&
-    currentRound?.roundNumber === draftRound?.roundNumber
   const completedRounds = tournament ? completedRoundCount(tournament) : 0
   const isTournamentComplete =
     Boolean(tournament) &&
@@ -1650,84 +1649,19 @@ export function SwissTournamentsPage() {
                   <Swords className="size-5 text-primary" />
                   Paarungen
                 </CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={!canGenerateRound}
-                    onClick={() => void app.generateRound()}
-                  >
-                    <Plus className="size-4" />
-                    Neue Runde
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={!isCurrentDraftRound || !canRegenerateRound}
-                    onClick={() => void app.regenerateRound()}
-                  >
-                    <RefreshCw className="size-4" />
-                    Neu erzeugen
-                  </Button>
-                </div>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {isCurrentDraftRound && draftRound && (
-                <div className="rounded-md border border-dashed bg-background p-3">
-                  <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:gap-3">
-                    <Select value={manualWhite} onValueChange={setManualWhite}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Spieler A" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {manualWhiteOptions.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={manualBlack} onValueChange={setManualBlack}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Spieler B" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {manualBlackOptions.map((player) => (
-                          <SelectItem key={player.id} value={player.id}>
-                            {player.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      className="h-9 w-full md:w-auto"
-                      disabled={!canAddManualPairing}
-                      onClick={async () => {
-                        if (!canAddManualPairing) {
-                          return
-                        }
-
-                        await app.addManualPairing(
-                          draftRound.roundNumber,
-                          manualWhite,
-                          manualBlack,
-                        )
-                        setManualWhite('')
-                        setManualBlack('')
-                        toast.success('Manuelle Paarung fixiert.')
-                      }}
-                    >
-                      Fixieren
-                    </Button>
-                  </div>
-                </div>
-              )}
-
               {displayedRounds.length > 0 ? (
                 displayedRounds.map((round, index) => {
                   const isCurrentRound = index === 0
                   const isEditable = isCurrentRound && round.status === 'draft'
                   const roundLabel = getRoundDisplayLabel(tournament, round.roundNumber)
-                  const canCompleteRound =
-                    isEditable && !round.pairings.some(hasMissingGameResult)
+                  const canCreateNextRound =
+                    isCurrentRound &&
+                    (round.status === 'completed' ||
+                      (round.status === 'draft' &&
+                        !round.pairings.some(hasMissingGameResult)))
                   const canGoBackToRound =
                     index === 1 &&
                     round.status === 'completed' &&
@@ -1791,7 +1725,7 @@ export function SwissTournamentsPage() {
                               {round.pairings.length} Bretter/Byes
                             </Badge>
                           </div>
-                          <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                          <div className="flex w-full flex-col justify-end gap-2 sm:flex-row md:w-auto">
                             {canGoBackToRound && currentRound && (
                               <ConfirmButton
                                 title={`Zu Runde ${round.roundNumber} zurückgehen?`}
@@ -1815,15 +1749,28 @@ export function SwissTournamentsPage() {
                                 }
                               />
                             )}
-                            <Button
-                              className="h-8 w-full md:w-auto"
-                              disabled={!canCompleteRound}
-                              onClick={() => void app.completeRound(round.roundNumber)}
-                            >
-                              Runde abschließen
-                            </Button>
                             {isCurrentRound && (
-                              <ConfirmButton
+                              <>
+                                <Button
+                                  className="h-8 w-full md:w-auto"
+                                  disabled={!canCreateNextRound}
+                                  onClick={() => void app.generateRound()}
+                                >
+                                  <Plus className="size-4" />
+                                  Neue Runde
+                                </Button>
+                                {isEditable && (
+                                  <Button
+                                    className="h-8 w-full md:w-auto"
+                                    variant="outline"
+                                    disabled={!canRegenerateRound}
+                                    onClick={() => void app.regenerateRound()}
+                                  >
+                                    <RefreshCw className="size-4" />
+                                    Neu erzeugen
+                                  </Button>
+                                )}
+                                <ConfirmButton
                                 title={`${roundLabel} löschen?`}
                                 description="Die aktuelle Runde und alle Paarungen darin werden gelöscht."
                                 confirmLabel="Löschen"
@@ -1841,13 +1788,64 @@ export function SwissTournamentsPage() {
                                   >
                                     <Trash2 className="size-4" />
                                   </Button>
-                                }
-                              />
+                                  }
+                                />
+                              </>
                             )}
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                      <CardContent className="grid gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
+                        {isEditable && draftRound && (
+                          <div className="rounded-md border border-dashed bg-background p-3">
+                            <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:gap-3">
+                              <Select value={manualWhite} onValueChange={setManualWhite}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Spieler A" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {manualWhiteOptions.map((player) => (
+                                    <SelectItem key={player.id} value={player.id}>
+                                      {player.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select value={manualBlack} onValueChange={setManualBlack}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Spieler B" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {manualBlackOptions.map((player) => (
+                                    <SelectItem key={player.id} value={player.id}>
+                                      {player.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                className="h-9 w-full md:w-auto"
+                                disabled={!canAddManualPairing}
+                                onClick={async () => {
+                                  if (!canAddManualPairing) {
+                                    return
+                                  }
+
+                                  await app.addManualPairing(
+                                    draftRound.roundNumber,
+                                    manualWhite,
+                                    manualBlack,
+                                  )
+                                  setManualWhite('')
+                                  setManualBlack('')
+                                  toast.success('Manuelle Paarung fixiert.')
+                                }}
+                              >
+                                Fixieren
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         <PairingsTable
                           editable={isEditable}
                           pairings={round.pairings}
@@ -1866,8 +1864,16 @@ export function SwissTournamentsPage() {
                   )
                 })
               ) : (
-                <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-                  Erzeuge die erste Runde, sobald Spieler angelegt sind.
+                <div className="flex flex-col gap-3 rounded-md border border-dashed p-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                  <span>Erzeuge die erste Runde, sobald Spieler angelegt sind.</span>
+                  <Button
+                    className="w-full sm:w-auto"
+                    disabled={!canGenerateRound}
+                    onClick={() => void app.generateRound()}
+                  >
+                    <Plus className="size-4" />
+                    Neue Runde
+                  </Button>
                 </div>
               )}
             </CardContent>
