@@ -97,11 +97,11 @@ select {
 
 .swiss-tournaments-page::before {
   position: fixed;
-  top: 4.75rem;
-  right: 0;
+  top: 4rem;
+  right: clamp(1.5rem, 6vw, 6rem);
   z-index: 0;
-  width: min(66vw, 62rem);
-  height: min(66vh, 44rem);
+  width: clamp(11rem, 24vw, 20rem);
+  height: clamp(5.5rem, 12vw, 9rem);
   pointer-events: none;
   content: "";
   background-image: url("/sk-anderten-watermark.png");

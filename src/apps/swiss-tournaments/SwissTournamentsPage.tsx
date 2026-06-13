@@ -10,10 +10,10 @@ import {
   GitBranch,
   LayoutDashboard,
   ListChecks,
+  Pencil,
   Plus,
   Printer,
   RefreshCw,
-  RotateCcw,
   Settings,
   Swords,
   Trash2,
@@ -96,6 +96,10 @@ const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
 const appTitle = 'SK Anderten Turnier-App'
 const tournamentWebsiteUrl = 'https://bengtstoolbox.web.app/apps/swiss-tournaments'
 const tournamentWebsiteQrUrl = '/qrcode.svg'
+const iconTrashButtonClass = 'h-9 w-9 bg-destructive text-white hover:bg-destructive/90'
+const categoryBadgeClass = 'border-yellow-300 bg-yellow-100 text-yellow-950'
+const singleLineSelectTriggerClass =
+  'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
 
 const statusLabels: Record<PlayerStatus, string> = {
   active: 'aktiv',
@@ -412,7 +416,7 @@ function TournamentFormatPicker({
     cn(
       'flex h-9 min-w-0 items-center gap-1.5 rounded-md border px-2.5 text-left transition-colors',
       isActive
-        ? 'border-primary bg-primary/10 text-primary'
+        ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary ring-offset-1 ring-offset-background'
         : 'border-border bg-background text-muted-foreground',
       isDisabled && 'cursor-not-allowed opacity-55',
     )
@@ -536,12 +540,7 @@ function AddPlayerCard({
 function AppTitleHeader() {
   return (
     <section className="flex min-w-0 items-center gap-3">
-      <span
-        aria-hidden="true"
-        className="flex size-10 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary sm:size-11"
-      >
-        <ChessKing className="size-6 sm:size-7" />
-      </span>
+      <ChessKing aria-hidden="true" className="size-9 shrink-0 text-primary sm:size-10" />
       <h1 className="min-w-0 truncate text-3xl font-semibold tracking-normal sm:text-4xl">
         {appTitle}
       </h1>
@@ -722,9 +721,9 @@ function TournamentCreator({
                 </div>
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="self-end"
+                  className={cn('self-end', iconTrashButtonClass)}
                   size="icon"
-                  variant="outline"
+                  variant="destructive"
                   onClick={() =>
                     setPlayers((currentPlayers) =>
                       currentPlayers.filter((entry) => entry.id !== player.id),
@@ -902,7 +901,9 @@ function ArchivedTournamentsList({
             <div className="min-w-0">
               <div className="truncate font-semibold">{entry.tournament.name}</div>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                <Badge variant="outline">{entry.category}</Badge>
+                <Badge className={categoryBadgeClass} variant="outline">
+                  {entry.category}
+                </Badge>
                 <Badge variant="outline">
                   {entry.completedRounds}/{entry.tournament.numberOfRounds} Runden
                 </Badge>
@@ -942,7 +943,9 @@ function ArchivedTournamentsList({
                   {formatDateTime(entry.tournament.archivedAtClientIso)}
                 </td>
                 <td className="p-2.5">
-                  <Badge variant="outline">{entry.category}</Badge>
+                  <Badge className={categoryBadgeClass} variant="outline">
+                    {entry.category}
+                  </Badge>
                 </td>
                 <td className="p-2.5 whitespace-nowrap">
                   {entry.tournament.players.length} Spieler, {entry.completedRounds}/
@@ -1274,7 +1277,7 @@ export function SwissTournamentsPage() {
                       })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={singleLineSelectTriggerClass}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1296,7 +1299,7 @@ export function SwissTournamentsPage() {
                       })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={singleLineSelectTriggerClass}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1758,9 +1761,13 @@ export function SwissTournamentsPage() {
                                   )
                                 }}
                                 trigger={
-                                  <Button className="w-full md:w-auto" variant="outline">
-                                    <RotateCcw className="size-4" />
-                                    Zurück zu Runde {round.roundNumber}
+                                  <Button
+                                    aria-label="Runde wieder bearbeiten"
+                                    className="size-10 shrink-0 p-0"
+                                    title="Runde wieder bearbeiten"
+                                    variant="outline"
+                                  >
+                                    <Pencil className="size-4" />
                                   </Button>
                                 }
                               />

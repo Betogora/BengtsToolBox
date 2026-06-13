@@ -2,11 +2,11 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Bell,
   ChartNoAxesCombined,
+  ChessKing,
   CircleDot,
   Dice5,
   ListOrdered,
   Stethoscope,
-  Trophy,
   UtensilsCrossed,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -129,7 +129,7 @@ export const apps: HubApp[] = [
     href: '/apps/swiss-tournaments',
     routePath: 'apps/swiss-tournaments',
     status: 'Live',
-    Icon: Trophy,
+    Icon: ChessKing,
     loadPage: () =>
       import('@/apps/swiss-tournaments').then(({ SwissTournamentsPage }) => ({
         default: SwissTournamentsPage,
