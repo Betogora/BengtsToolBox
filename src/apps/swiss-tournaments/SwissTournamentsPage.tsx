@@ -96,8 +96,6 @@ const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
 const appTitle = 'SK Anderten Turnier-App'
 const tournamentWebsiteUrl = 'https://bengtstoolbox.web.app/apps/swiss-tournaments'
 const tournamentWebsiteQrUrl = '/qrcode.svg'
-const iconTrashButtonClass = 'h-9 w-9 bg-destructive text-white hover:bg-destructive/90'
-const categoryBadgeClass = 'border-yellow-300 bg-yellow-100 text-yellow-950'
 const singleLineSelectTriggerClass =
   'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
 
@@ -684,7 +682,7 @@ function TournamentCreator({
             {players.map((player) => (
               <div
                 key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.25rem] items-end gap-2 rounded-md border bg-card/70 p-2.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:p-3"
+                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-end gap-2 rounded-md border bg-card/70 p-2.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:p-3"
               >
                 <div className="grid gap-1.5">
                   <Label htmlFor={`swiss-create-name-${player.id}`}>Name</Label>
@@ -721,8 +719,8 @@ function TournamentCreator({
                 </div>
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className={cn('self-end', iconTrashButtonClass)}
-                  size="icon"
+                  className="self-end"
+                  size="sm"
                   variant="destructive"
                   onClick={() =>
                     setPlayers((currentPlayers) =>
@@ -865,13 +863,13 @@ function ArchivedTournamentsList({
         JSON
       </Button>
       <ConfirmButton
-        title="Vergangenes Turnier loeschen?"
+        title="Vergangenes Turnier löschen?"
         description={`"${tournament.name}" wird dauerhaft aus der Liste vergangener Turniere entfernt.`}
-        confirmLabel="Loeschen"
+        confirmLabel="Löschen"
         onConfirm={() => onDelete(tournament)}
         trigger={
           <Button
-            aria-label={`${tournament.name} loeschen`}
+            aria-label={`${tournament.name} löschen`}
             size="sm"
             variant="destructive"
           >
@@ -901,7 +899,7 @@ function ArchivedTournamentsList({
             <div className="min-w-0">
               <div className="truncate font-semibold">{entry.tournament.name}</div>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                <Badge className={categoryBadgeClass} variant="outline">
+                <Badge variant="secondary">
                   {entry.category}
                 </Badge>
                 <Badge variant="outline">
@@ -943,7 +941,7 @@ function ArchivedTournamentsList({
                   {formatDateTime(entry.tournament.archivedAtClientIso)}
                 </td>
                 <td className="p-2.5">
-                  <Badge className={categoryBadgeClass} variant="outline">
+                  <Badge variant="secondary">
                     {entry.category}
                   </Badge>
                 </td>
@@ -1476,9 +1474,8 @@ export function SwissTournamentsPage() {
                         </Select>
                         <Button
                           aria-label={`${player.name} entfernen`}
-                          className={iconTrashButtonClass}
                           disabled={!canRemove}
-                          size="icon"
+                          size="sm"
                           title={
                             canRemove
                               ? `${player.name} entfernen`
@@ -1575,15 +1572,14 @@ export function SwissTournamentsPage() {
                             </Select>
                             <Button
                               aria-label={`${player.name} entfernen`}
-                              className={iconTrashButtonClass}
                               disabled={!canRemove}
-                              size="icon"
+                              size="sm"
                               title={
                                 canRemove
                                   ? `${player.name} entfernen`
                                   : 'Spieler ist bereits in einer Runde verwendet.'
                               }
-                              variant="outline"
+                              variant="destructive"
                               onClick={async () => {
                                 if (!canRemove) {
                                   return
@@ -1793,7 +1789,7 @@ export function SwissTournamentsPage() {
                                 trigger={
                                   <Button
                                     aria-label="Aktuelle Runde löschen"
-                                    className="w-full sm:w-auto"
+                                    size="sm"
                                     title="Aktuelle Runde löschen"
                                     variant="destructive"
                                   >
