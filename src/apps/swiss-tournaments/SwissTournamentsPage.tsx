@@ -209,17 +209,8 @@ function roundRobinCycleCompletion(tournament: Tournament, roundNumber: number) 
   }
 }
 
-function archiveCategory(tournament: Tournament) {
-  if (
-    tournament.numberOfRounds > 0 &&
-    completedRoundCount(tournament) >= tournament.numberOfRounds
-  ) {
-    return 'abgeschlossen'
-  }
-
-  return tournament.archiveReason === 'reset'
-    ? 'vor Reset gesichert'
-    : 'durch neues Turnier ersetzt'
+function tournamentFormatLabel(format?: Tournament['format']) {
+  return format === 'roundRobin' ? 'Round Robin' : 'Swiss'
 }
 
 function TournamentCompleteBanner({
@@ -909,7 +900,7 @@ function ArchivedTournamentsList({
             <div className="min-w-0">
               <div className="truncate font-semibold">{entry.tournament.name}</div>
               <div className="mt-1 flex flex-wrap gap-1.5">
-                <Badge variant="secondary">{entry.category}</Badge>
+                <Badge variant="outline">{entry.category}</Badge>
                 <Badge variant="outline">
                   {entry.completedRounds}/{entry.tournament.numberOfRounds} Runden
                 </Badge>
@@ -949,7 +940,7 @@ function ArchivedTournamentsList({
                   {formatDateTime(entry.tournament.archivedAtClientIso)}
                 </td>
                 <td className="p-2.5">
-                  <Badge variant="secondary">{entry.category}</Badge>
+                  <Badge variant="outline">{entry.category}</Badge>
                 </td>
                 <td className="p-2.5 whitespace-nowrap">
                   {entry.tournament.players.length} Spieler, {entry.completedRounds}/
@@ -1032,7 +1023,7 @@ export function SwissTournamentsPage() {
   const archivedTournamentSummaries = useMemo(
     () =>
       app.archivedTournaments.map((entry) => ({
-        category: archiveCategory(entry),
+        category: tournamentFormatLabel(entry.format),
         completedRounds: completedRoundCount(entry),
         standings: recalculateStandings(entry),
         tournament: entry,
