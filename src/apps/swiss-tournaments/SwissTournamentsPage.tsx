@@ -1,6 +1,7 @@
 import {
   Archive,
   ChevronDown,
+  CheckCircle2,
   CirclePlus,
   Download,
   FileJson,
@@ -155,6 +156,16 @@ function completedRoundCount(tournament: Tournament) {
   return tournament.rounds.filter((round) => round.status === 'completed').length
 }
 
+function highestCompletedRoundNumber(tournament: Tournament) {
+  return tournament.rounds.reduce(
+    (highestRound, round) =>
+      round.status === 'completed'
+        ? Math.max(highestRound, round.roundNumber)
+        : highestRound,
+    0,
+  )
+}
+
 function archiveCategory(tournament: Tournament) {
   if (
     tournament.numberOfRounds > 0 &&
@@ -166,6 +177,22 @@ function archiveCategory(tournament: Tournament) {
   return tournament.archiveReason === 'reset'
     ? 'vor Reset gesichert'
     : 'durch neues Turnier ersetzt'
+}
+
+function TournamentCompleteBanner({
+  numberOfRounds,
+}: {
+  numberOfRounds: number
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-950">
+      <CheckCircle2 className="size-5 shrink-0" />
+      <span>Turnier beendet</span>
+      <Badge className="border-emerald-300 bg-emerald-50 text-emerald-950" variant="outline">
+        {numberOfRounds}/{numberOfRounds} Runden
+      </Badge>
+    </div>
+  )
 }
 
 type PairingWarningBadgeMeta = {
@@ -314,10 +341,31 @@ function RoundProgress({
 
 function TournamentFormatCard({
   format,
-  isLocked,
 }: {
   format: TournamentFormat
-  isLocked: boolean
+}) {
+  const label = format === 'roundRobin' ? 'Round Robin' : 'Swiss'
+  const Icon = format === 'roundRobin' ? GitBranch : Swords
+
+  return (
+    <Card>
+      <CardHeader className="gap-3 p-4">
+        <CardDescription>Turniermodus</CardDescription>
+        <div className="flex min-h-16 min-w-0 items-center gap-3 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
+          <Icon className="size-6 shrink-0" />
+          <CardTitle className="min-w-0 truncate text-2xl">{label}</CardTitle>
+        </div>
+      </CardHeader>
+    </Card>
+  )
+}
+
+function TournamentFormatPicker({
+  format,
+  onFormatChange,
+}: {
+  format: TournamentFormat
+  onFormatChange: (format: TournamentFormat) => void
 }) {
   const optionClass = (isActive: boolean, isDisabled = false) =>
     cn(
@@ -329,37 +377,33 @@ function TournamentFormatCard({
     )
 
   return (
-    <Card>
-      <CardHeader className="gap-3 p-4">
-        <CardDescription>Turniermodus</CardDescription>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            aria-pressed={format === 'swiss'}
-            className={optionClass(format === 'swiss', isLocked)}
-            disabled={isLocked}
-            type="button"
-          >
-            <Swords className="size-6 shrink-0" />
-            <span className="min-w-0">
-              <span className="block truncate text-base font-semibold">Swiss</span>
-              <span className="block truncate text-xs">aktiv</span>
-            </span>
-          </button>
-          <button
-            aria-disabled="true"
-            className={optionClass(format === 'roundRobin', true)}
-            disabled
-            type="button"
-          >
-            <GitBranch className="size-6 shrink-0" />
-            <span className="min-w-0">
-              <span className="block truncate text-base font-semibold">Round Robin</span>
-              <span className="block truncate text-xs">spater</span>
-            </span>
-          </button>
-        </div>
-      </CardHeader>
-    </Card>
+    <div className="grid gap-2">
+      <Label>Turniermodus</Label>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          aria-pressed={format === 'swiss'}
+          className={optionClass(format === 'swiss')}
+          type="button"
+          onClick={() => onFormatChange('swiss')}
+        >
+          <Swords className="size-6 shrink-0" />
+          <span className="min-w-0">
+            <span className="block truncate text-base font-semibold">Swiss</span>
+          </span>
+        </button>
+        <button
+          aria-disabled="true"
+          className={optionClass(format === 'roundRobin', true)}
+          disabled
+          type="button"
+        >
+          <GitBranch className="size-6 shrink-0" />
+          <span className="min-w-0">
+            <span className="block truncate text-base font-semibold">Round Robin</span>
+          </span>
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -463,6 +507,7 @@ function TournamentCreator({
 }) {
   const [name, setName] = useState(defaultTournamentName)
   const [numberOfRounds, setNumberOfRounds] = useState(5)
+  const [format, setFormat] = useState<TournamentFormat>('swiss')
   const [players, setPlayers] = useState<DraftPlayer[]>(() =>
     tournamentPlayersToDraftPlayers(initialTournament),
   )
@@ -496,6 +541,9 @@ function TournamentCreator({
                 setNumberOfRounds(Number(event.currentTarget.value))
               }
             />
+          </div>
+          <div className="md:hidden">
+            <TournamentFormatPicker format={format} onFormatChange={setFormat} />
           </div>
         </div>
 
@@ -534,6 +582,9 @@ function TournamentCreator({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="hidden md:block">
+            <TournamentFormatPicker format={format} onFormatChange={setFormat} />
           </div>
         </div>
 
@@ -613,6 +664,7 @@ function TournamentCreator({
           onClick={async () => {
             await onCreate({
               name,
+              format,
               numberOfRounds,
               players: players.map((player) => ({
                 name: player.name,
@@ -636,19 +688,23 @@ function TournamentCreator({
 function NewTournamentDialog({
   initialTournament,
   onCreate,
+  trigger,
 }: {
   initialTournament?: Tournament | null
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
+  trigger?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          Neues Turnier / Reset
-        </Button>
+        {trigger ?? (
+          <Button>
+            <Plus className="size-4" />
+            Neues Turnier / Reset
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[92vh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:max-w-5xl sm:p-6">
         <DialogHeader>
@@ -851,11 +907,8 @@ export function SwissTournamentsPage() {
       return tournament.numberOfRounds > 0
     }
 
-    return (
-      currentRound?.status === 'completed' &&
-      currentRound.roundNumber < tournament.numberOfRounds
-    )
-  }, [currentRound, tournament])
+    return currentRound?.status === 'completed' && !draftRound
+  }, [currentRound, draftRound, tournament])
   const canRegenerateRound = Boolean(draftRound)
   const displayedRounds = useMemo(
     () =>
@@ -870,6 +923,14 @@ export function SwissTournamentsPage() {
     Boolean(currentRound) &&
     Boolean(draftRound) &&
     currentRound?.roundNumber === draftRound?.roundNumber
+  const completedRounds = tournament ? completedRoundCount(tournament) : 0
+  const minimumRoundCount = tournament
+    ? Math.max(1, highestCompletedRoundNumber(tournament))
+    : 1
+  const isTournamentComplete =
+    Boolean(tournament) &&
+    tournament.numberOfRounds > 0 &&
+    completedRounds >= tournament.numberOfRounds
   const overview = useMemo(() => {
     if (!tournament) {
       return null
@@ -1034,14 +1095,28 @@ export function SwissTournamentsPage() {
             </Card>
             <TournamentFormatCard
               format={tournament.format ?? 'swiss'}
-              isLocked={tournament.currentRound > 0 || tournament.rounds.length > 0}
             />
             <Card>
-              <CardHeader className="p-4">
-                <CardDescription>Aktive Spieler</CardDescription>
-                <CardTitle className="text-2xl">
-                  {overview?.active ?? 0}
-                </CardTitle>
+              <CardHeader className="grid gap-3 p-4">
+                <div>
+                  <CardDescription>Aktive Spieler</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {overview?.active ?? 0}
+                  </CardTitle>
+                </div>
+                <NewTournamentDialog
+                  initialTournament={tournament}
+                  onCreate={app.createNewTournament}
+                  trigger={
+                    <Button className="min-h-16 w-full px-4 py-3 text-base">
+                      <Plus className="size-5" />
+                      <span className="grid min-w-0 text-left leading-tight">
+                        <span>Neues Turnier</span>
+                        <span>/ Reset</span>
+                      </span>
+                    </Button>
+                  }
+                />
               </CardHeader>
             </Card>
           </section>
@@ -1075,13 +1150,7 @@ export function SwissTournamentsPage() {
 
           <Card>
             <CardHeader>
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <CardTitle>Einstellungen und Export</CardTitle>
-                <NewTournamentDialog
-                  initialTournament={tournament}
-                  onCreate={app.createNewTournament}
-                />
-              </div>
+              <CardTitle>Einstellungen und Export</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-4">
@@ -1099,7 +1168,7 @@ export function SwissTournamentsPage() {
                 <div className="grid gap-2">
                   <Label>Runden</Label>
                   <Input
-                    min={1}
+                    min={minimumRoundCount}
                     type="number"
                     value={tournament.numberOfRounds}
                     onChange={(event) =>
@@ -1530,17 +1599,25 @@ export function SwissTournamentsPage() {
                     index === 1 &&
                     round.status === 'completed' &&
                     currentRound?.roundNumber === round.roundNumber + 1
+                  const showTournamentCompleteBanner =
+                    isTournamentComplete &&
+                    round.roundNumber === tournament.numberOfRounds
 
                   return (
-                    <Card
-                      key={round.id}
-                      className={cn(
-                        'overflow-hidden',
-                        isCurrentRound
-                          ? 'border-l-4 border-l-primary bg-primary/5'
-                          : 'bg-card/80 opacity-85',
+                    <Fragment key={round.id}>
+                      {showTournamentCompleteBanner && (
+                        <TournamentCompleteBanner
+                          numberOfRounds={tournament.numberOfRounds}
+                        />
                       )}
-                    >
+                      <Card
+                        className={cn(
+                          'overflow-hidden',
+                          isCurrentRound
+                            ? 'border-l-4 border-l-primary bg-primary/5'
+                            : 'bg-card/80 opacity-85',
+                        )}
+                      >
                       <CardHeader className="p-4 sm:p-6">
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                           <div className="flex flex-wrap items-center gap-2">
@@ -1598,7 +1675,8 @@ export function SwissTournamentsPage() {
                           }
                         />
                       </CardContent>
-                    </Card>
+                      </Card>
+                    </Fragment>
                   )
                 })
               ) : (

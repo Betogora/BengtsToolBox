@@ -121,6 +121,7 @@ export type PlayerInput = {
 
 export type CreateTournamentInput = {
   name: string
+  format: TournamentFormat
   numberOfRounds: number
   players: PlayerInput[]
   initialSeedingMode: SeedingMode

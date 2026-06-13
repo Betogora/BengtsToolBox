@@ -103,6 +103,16 @@ function createArchivedCopy(
   }
 }
 
+function highestCompletedRoundNumber(tournament: Tournament) {
+  return tournament.rounds.reduce(
+    (highestRound, round) =>
+      round.status === 'completed'
+        ? Math.max(highestRound, round.roundNumber)
+        : highestRound,
+    0,
+  )
+}
+
 export function useSwissTournaments(sessionId = 'default') {
   const session = useAnonymousSession()
   const statePath = useMemo(
@@ -225,7 +235,11 @@ export function useSwissTournaments(sessionId = 'default') {
       ...partial,
       name: partial.name?.trim() || tournament.name,
       numberOfRounds: partial.numberOfRounds
-        ? Math.max(1, Math.floor(partial.numberOfRounds))
+        ? Math.max(
+            1,
+            highestCompletedRoundNumber(tournament),
+            Math.floor(partial.numberOfRounds),
+          )
         : tournament.numberOfRounds,
     }))
 

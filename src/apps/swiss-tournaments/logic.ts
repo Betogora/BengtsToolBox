@@ -87,7 +87,7 @@ export function createTournament(
   return {
     id: makeId('tournament'),
     name,
-    format: 'swiss',
+    format: input.format ?? 'swiss',
     numberOfRounds,
     currentRound: 0,
     players: seedPlayers(input.players, input.initialSeedingMode),
@@ -1029,8 +1029,12 @@ function createRoundHistory(
   rankByPlayerId: Map<string, number>,
 ) {
   const playerById = new Map(tournament.players.map((player) => [player.id, player]))
+  const visibleRoundCount = Math.max(
+    tournament.numberOfRounds,
+    ...tournament.rounds.map((round) => round.roundNumber),
+  )
 
-  return Array.from({ length: tournament.numberOfRounds }, (_, index) => {
+  return Array.from({ length: visibleRoundCount }, (_, index) => {
     const roundNumber = index + 1
     const round = tournament.rounds.find((entry) => entry.roundNumber === roundNumber)
 
@@ -1337,7 +1341,7 @@ export function getNextAllowedRoundNumber(tournament: Tournament) {
 
   const nextRound = latestRound.roundNumber + 1
 
-  return nextRound <= tournament.numberOfRounds ? nextRound : null
+  return nextRound
 }
 
 export function getCurrentDraftRound(tournament: Tournament) {
