@@ -1,5 +1,6 @@
 import {
   Archive,
+  ArrowRight,
   ChevronDown,
   CheckCircle2,
   CirclePlus,
@@ -11,6 +12,7 @@ import {
   Printer,
   RefreshCw,
   RotateCcw,
+  Settings,
   Swords,
   Trash2,
   Trophy,
@@ -359,9 +361,11 @@ function TournamentFormatCard({
     <Card>
       <CardHeader className="gap-3 p-4">
         <CardDescription>Turniermodus</CardDescription>
-        <div className="flex min-h-16 min-w-0 items-center gap-3 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
-          <Icon className="size-6 shrink-0" />
-          <CardTitle className="min-w-0 truncate text-2xl">{label}</CardTitle>
+        <div className="flex min-h-12 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
+          <Icon className="size-5 shrink-0" />
+          <CardTitle className="min-w-0 truncate text-lg sm:text-xl">
+            {label}
+          </CardTitle>
         </div>
       </CardHeader>
     </Card>
@@ -460,14 +464,23 @@ function tournamentPlayersToDraftPlayers(tournament?: Tournament | null): DraftP
     }))
 }
 
-function defaultTournamentName() {
+function defaultTournamentName(format: TournamentFormat = 'swiss') {
   const formatter = new Intl.DateTimeFormat('de-DE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   })
 
-  return `Turnier vom ${formatter.format(new Date())}`
+  const label = format === 'roundRobin' ? 'Round Robin' : 'Swiss'
+
+  return `${label} vom ${formatter.format(new Date())}`
+}
+
+function isDefaultTournamentName(value: string) {
+  return (
+    value === defaultTournamentName('swiss') ||
+    value === defaultTournamentName('roundRobin')
+  )
 }
 
 function AddPlayerCard({
@@ -532,6 +545,14 @@ function TournamentCreator({
     format === 'roundRobin'
       ? roundRobinRoundsForPlayerCount(cleanPlayerCount, roundRobinCycles)
       : numberOfRounds
+  const handleFormatChange = (nextFormat: TournamentFormat) => {
+    setName((currentName) =>
+      isDefaultTournamentName(currentName)
+        ? defaultTournamentName(nextFormat)
+        : currentName,
+    )
+    setFormat(nextFormat)
+  }
 
   return (
     <Card>
@@ -551,7 +572,10 @@ function TournamentCreator({
               onChange={(event) => setName(event.currentTarget.value)}
             />
           </div>
-          <TournamentFormatPicker format={format} onFormatChange={setFormat} />
+          <TournamentFormatPicker
+            format={format}
+            onFormatChange={handleFormatChange}
+          />
         </div>
 
         <div className="grid gap-3 border-b pb-4 sm:grid-cols-2 md:grid-cols-3">
@@ -668,7 +692,7 @@ function TournamentCreator({
                 </div>
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="h-9 w-9 self-end sm:h-10 sm:w-10"
+                  className="self-end"
                   size="icon"
                   variant="outline"
                   onClick={() =>
@@ -712,8 +736,8 @@ function TournamentCreator({
             onCreated?.()
           }}
         >
-          <Plus className="size-4" />
-          Turnier erstellen
+          <ArrowRight className="size-4" />
+          Turnier starten
         </Button>
       </CardContent>
     </Card>
@@ -970,17 +994,6 @@ export function SwissTournamentsPage() {
     Boolean(tournament) &&
     tournament.numberOfRounds > 0 &&
     completedRounds >= tournament.numberOfRounds
-  const overview = useMemo(() => {
-    if (!tournament) {
-      return null
-    }
-
-    return {
-      active: tournament.players.filter((player) => player.status === 'active').length,
-      inactive: tournament.players.filter((player) => player.status === 'inactive').length,
-      withdrawn: tournament.players.filter((player) => player.status === 'withdrawn').length,
-    }
-  }, [tournament])
   const archivedTournamentSummaries = useMemo(
     () =>
       app.archivedTournaments.map((entry) => ({
@@ -1135,28 +1148,18 @@ export function SwissTournamentsPage() {
             <TournamentFormatCard
               format={tournament.format ?? 'swiss'}
             />
-            <Card>
-              <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4">
-                <div className="min-w-0">
-                  <CardDescription>Aktive Spieler</CardDescription>
-                  <CardTitle className="text-2xl">
-                    {overview?.active ?? 0}
-                  </CardTitle>
-                </div>
-                <NewTournamentDialog
-                  initialTournament={tournament}
-                  onCreate={app.createNewTournament}
-                  trigger={
-                    <Button className="h-10 w-[12.25rem] max-w-[52vw] px-3 text-sm">
-                      <Plus className="size-4" />
-                      <span className="min-w-0 truncate">
-                        Neues Turnier / Reset
-                      </span>
-                    </Button>
-                  }
-                />
-              </CardHeader>
-            </Card>
+            <NewTournamentDialog
+              initialTournament={tournament}
+              onCreate={app.createNewTournament}
+              trigger={
+                <Button className="h-full min-h-[8rem] w-full rounded-lg px-4 text-base shadow-sm">
+                  <Plus className="size-5" />
+                  <span className="min-w-0 truncate">
+                    Neues Turnier / Reset
+                  </span>
+                </Button>
+              }
+            />
           </section>
 
           <Card>
@@ -1188,7 +1191,10 @@ export function SwissTournamentsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Einstellungen und Export</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="size-5 text-primary" />
+                Einstellungen und Export
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">
@@ -1781,6 +1787,11 @@ function PairingsTable({
       value === openResultValue ? undefined : (value as GameResult),
     )
   }
+  const visibleWarningsForPairing = (pairing: Pairing) =>
+    (pairing.warnings ?? []).filter(
+      (warning) =>
+        tournament.format !== 'roundRobin' || warning.id !== 'large-point-gap',
+    )
 
   const renderMobileResult = (pairing: Pairing) => {
     if (pairing.isBye) {
@@ -1817,49 +1828,53 @@ function PairingsTable({
     )
   }
 
-  const renderMobileWarnings = (pairing: Pairing) => (
-    <div className="flex flex-wrap gap-1">
-      {pairing.isManual && (
-        <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
-          <span className="px-2 py-0.5">FIXIERT</span>
-          {editable && onManualPairingRemove && (
-            <Button
-              aria-label={`Fixierte Paarung ${playerName(
-                tournament,
-                pairing.whitePlayerId,
-              )} gegen ${playerName(tournament, pairing.blackPlayerId)} loesen`}
-              className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
-              disabled={!canChangePairings}
-              size="icon"
-              type="button"
-              variant="ghost"
-              onClick={() => onManualPairingRemove?.(pairing.id)}
-            >
-              <X className="size-3" />
-            </Button>
-          )}
-        </span>
-      )}
-      {(pairing.warnings ?? []).length === 0 && !pairing.isManual ? (
-        <Badge variant="outline">OK</Badge>
-      ) : (
-        pairing.warnings?.map((entry) => {
-          const badgeMeta = pairingWarningBadgeMeta(entry)
+  const renderMobileWarnings = (pairing: Pairing) => {
+    const visibleWarnings = visibleWarningsForPairing(pairing)
 
-          return (
-            <Badge
-              key={entry.id}
-              className={cn('font-semibold', badgeMeta.className)}
-              title={entry.message}
-              variant="outline"
-            >
-              {badgeMeta.label}
-            </Badge>
-          )
-        })
-      )}
-    </div>
-  )
+    return (
+      <div className="flex flex-wrap gap-1">
+        {pairing.isManual && (
+          <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
+            <span className="px-2 py-0.5">FIXIERT</span>
+            {editable && onManualPairingRemove && (
+              <Button
+                aria-label={`Fixierte Paarung ${playerName(
+                  tournament,
+                  pairing.whitePlayerId,
+                )} gegen ${playerName(tournament, pairing.blackPlayerId)} loesen`}
+                className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+                disabled={!canChangePairings}
+                size="icon"
+                type="button"
+                variant="ghost"
+                onClick={() => onManualPairingRemove?.(pairing.id)}
+              >
+                <X className="size-3" />
+              </Button>
+            )}
+          </span>
+        )}
+        {visibleWarnings.length === 0 && !pairing.isManual ? (
+          <Badge variant="outline">OK</Badge>
+        ) : (
+          visibleWarnings.map((entry) => {
+            const badgeMeta = pairingWarningBadgeMeta(entry)
+
+            return (
+              <Badge
+                key={entry.id}
+                className={cn('font-semibold', badgeMeta.className)}
+                title={entry.message}
+                variant="outline"
+              >
+                {badgeMeta.label}
+              </Badge>
+            )
+          })
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -1923,14 +1938,17 @@ function PairingsTable({
           </tr>
           </thead>
           <tbody>
-          {pairings.map((pairing) => (
-            <tr
-              key={pairing.id}
-              className={cn(
-                'border-t align-top',
-                pairing.isManual && 'bg-primary/5',
-              )}
-            >
+          {pairings.map((pairing) => {
+            const visibleWarnings = visibleWarningsForPairing(pairing)
+
+            return (
+              <tr
+                key={pairing.id}
+                className={cn(
+                  'border-t align-top',
+                  pairing.isManual && 'bg-primary/5',
+                )}
+              >
               <td className="p-3 tabular-nums">{pairing.boardNumber}</td>
               <td className="p-3">
                 {pairing.isBye
@@ -1992,10 +2010,10 @@ function PairingsTable({
                         )}
                       </span>
                     )}
-                    {(pairing.warnings ?? []).length === 0 && !pairing.isManual ? (
+                    {visibleWarnings.length === 0 && !pairing.isManual ? (
                       <Badge variant="outline">OK</Badge>
                     ) : (
-                      pairing.warnings?.map((entry) => {
+                      visibleWarnings.map((entry) => {
                         const badgeMeta = pairingWarningBadgeMeta(entry)
 
                         return (
@@ -2014,7 +2032,8 @@ function PairingsTable({
                 </td>
               )}
             </tr>
-          ))}
+            )
+          })}
           </tbody>
         </table>
       </div>
