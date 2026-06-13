@@ -44,6 +44,7 @@ export type TournamentSettings = {
   initialSeedingMode: SeedingMode
   byeScore: ByeScore
   byePolicy: ByePolicy
+  roundRobinCycles?: number
   roundByeScores?: Record<number, ByeScore>
 }
 
@@ -126,6 +127,7 @@ export type CreateTournamentInput = {
   players: PlayerInput[]
   initialSeedingMode: SeedingMode
   byeScore: ByeScore
+  roundRobinCycles?: number
 }
 
 export type PlayerScoreSummary = {

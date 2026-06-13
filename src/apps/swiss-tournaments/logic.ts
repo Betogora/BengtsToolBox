@@ -20,7 +20,10 @@ const defaultSettings = {
   initialSeedingMode: 'rating' as const,
   byeScore: 1 as const,
   byePolicy: 'protectLateEntrants' as const,
+  roundRobinCycles: 1,
 }
+
+const roundRobinDummyId = '__round-robin-bye__'
 
 function warning(id: string, message: string, severity: 'hard' | 'soft' = 'soft') {
   return { id, message, severity }
@@ -77,25 +80,47 @@ function seedPlayers(
   }))
 }
 
+function normalizeRoundRobinCycles(value: number | undefined) {
+  return Math.max(1, Math.floor(value ?? 1) || 1)
+}
+
+function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
+  if (playerCount <= 1) {
+    return 1
+  }
+
+  return (playerCount % 2 === 0 ? playerCount - 1 : playerCount) * cycles
+}
+
 export function createTournament(
   input: CreateTournamentInput,
   position: number,
 ): Tournament {
   const name = input.name.trim() || 'Neues Schachturnier'
-  const numberOfRounds = Math.max(1, Math.floor(input.numberOfRounds) || 1)
+  const format = input.format ?? 'swiss'
+  const seededPlayers = seedPlayers(
+    input.players,
+    format === 'roundRobin' ? 'random' : input.initialSeedingMode,
+  )
+  const roundRobinCycles = normalizeRoundRobinCycles(input.roundRobinCycles)
+  const numberOfRounds =
+    format === 'roundRobin'
+      ? roundRobinRoundsForPlayerCount(seededPlayers.length, roundRobinCycles)
+      : Math.max(1, Math.floor(input.numberOfRounds) || 1)
 
   return {
     id: makeId('tournament'),
     name,
-    format: input.format ?? 'swiss',
+    format,
     numberOfRounds,
     currentRound: 0,
-    players: seedPlayers(input.players, input.initialSeedingMode),
+    players: seededPlayers,
     rounds: [],
     settings: {
       ...defaultSettings,
       initialSeedingMode: input.initialSeedingMode,
       byeScore: input.byeScore,
+      roundRobinCycles,
     },
     position,
     createdAtClientIso: new Date().toISOString(),
@@ -163,16 +188,46 @@ function hasPlayedEachOtherBeforeRound(
   rightId: string,
   beforeRoundNumber: number,
 ) {
+  return countGamesBetweenBeforeRound(tournament, leftId, rightId, beforeRoundNumber) > 0
+}
+
+function countGamesBetweenBeforeRound(
+  tournament: Tournament,
+  leftId: string,
+  rightId: string,
+  beforeRoundNumber: number,
+) {
   return tournament.rounds
     .filter((round) => round.roundNumber < beforeRoundNumber)
-    .some((round) =>
-      round.pairings.some(
+    .reduce(
+      (count, round) =>
+        count +
+        round.pairings.filter(
+          (pairing) =>
+            !pairing.isBye &&
+            ((pairing.whitePlayerId === leftId && pairing.blackPlayerId === rightId) ||
+              (pairing.whitePlayerId === rightId && pairing.blackPlayerId === leftId)),
+        ).length,
+      0,
+    )
+}
+
+function countGamesBetween(
+  tournament: Tournament,
+  leftId: string,
+  rightId: string,
+) {
+  return tournament.rounds.reduce(
+    (count, round) =>
+      count +
+      round.pairings.filter(
         (pairing) =>
           !pairing.isBye &&
           ((pairing.whitePlayerId === leftId && pairing.blackPlayerId === rightId) ||
             (pairing.whitePlayerId === rightId && pairing.blackPlayerId === leftId)),
-      ),
-    )
+      ).length,
+    0,
+  )
 }
 
 function getSummaryBeforeRound(
@@ -386,7 +441,18 @@ function validatePairing(
     }
   }
 
-  if (hasPlayedEachOtherBeforeRound(tournament, white.id, black.id, roundNumber)) {
+  const previousGames = countGamesBetweenBeforeRound(
+    tournament,
+    white.id,
+    black.id,
+    roundNumber,
+  )
+  const targetGames =
+    tournament.format === 'roundRobin'
+      ? normalizeRoundRobinCycles(tournament.settings.roundRobinCycles)
+      : 1
+
+  if (previousGames >= targetGames) {
     warnings.push(warning('repeat-pairing', 'Diese Spieler haben bereits gegeneinander gespielt.', 'hard'))
   }
 
@@ -455,6 +521,10 @@ function chooseByePlayer(
 type PlannedPairing = {
   left: Player
   right: Player
+  colors?: {
+    whitePlayerId: string
+    blackPlayerId: string
+  }
   warnings?: PairingWarning[]
 }
 
@@ -828,11 +898,387 @@ function createSwissBracketPairings(
   return pairings
 }
 
+type RoundRobinSlot = Player | typeof roundRobinDummyId
+
+type RoundRobinScheduledPairing = {
+  white: Player
+  black: Player
+}
+
+type RoundRobinScheduledRound = {
+  pairings: RoundRobinScheduledPairing[]
+  byePlayer?: Player
+}
+
+function firstTableValue(rowIndex: number, columnIndex: number, playerSlotCount: number) {
+  const value = (rowIndex * (playerSlotCount / 2) + columnIndex) % (playerSlotCount - 1)
+
+  return value + 1
+}
+
+function createBergerCycle(players: Player[]) {
+  const sortedPlayers = [...players].sort(seedOrder)
+  const slotCount = sortedPlayers.length % 2 === 0
+    ? sortedPlayers.length
+    : sortedPlayers.length + 1
+  const playerByBergerNumber = new Map<number, RoundRobinSlot>()
+
+  for (let index = 1; index <= slotCount; index += 1) {
+    playerByBergerNumber.set(index, sortedPlayers[index - 1] ?? roundRobinDummyId)
+  }
+
+  return Array.from({ length: Math.max(1, slotCount - 1) }, (_, rowIndex) => {
+    const rowValues = Array.from({ length: slotCount / 2 }, (_, columnIndex) =>
+      firstTableValue(rowIndex, columnIndex, slotCount),
+    )
+    const nextRowValues = Array.from({ length: slotCount / 2 }, (_, columnIndex) =>
+      firstTableValue((rowIndex + 1) % (slotCount - 1), columnIndex, slotCount),
+    ).reverse()
+    const round: RoundRobinScheduledRound = {
+      pairings: [],
+    }
+
+    rowValues.forEach((leftNumber, columnIndex) => {
+      let rightNumber = nextRowValues[columnIndex]
+
+      if (leftNumber === rightNumber) {
+        if (rowIndex % 2 === 0) {
+          rightNumber = slotCount
+        } else {
+          leftNumber = slotCount
+        }
+      }
+
+      const left = playerByBergerNumber.get(leftNumber)
+      const right = playerByBergerNumber.get(rightNumber)
+
+      if (!left || !right) {
+        return
+      }
+
+      if (left === roundRobinDummyId && right !== roundRobinDummyId) {
+        round.byePlayer = right
+        return
+      }
+
+      if (right === roundRobinDummyId && left !== roundRobinDummyId) {
+        round.byePlayer = left
+        return
+      }
+
+      if (left !== roundRobinDummyId && right !== roundRobinDummyId) {
+        round.pairings.push({ white: left, black: right })
+      }
+    })
+
+    return round
+  })
+}
+
+function invertScheduledRound(round: RoundRobinScheduledRound): RoundRobinScheduledRound {
+  return {
+    byePlayer: round.byePlayer,
+    pairings: round.pairings.map((pairing) => ({
+      white: pairing.black,
+      black: pairing.white,
+    })),
+  }
+}
+
+function createRoundRobinSchedule(players: Player[], cycles: number) {
+  const baseCycle = createBergerCycle(players)
+  const firstCycle =
+    cycles >= 2 && baseCycle.length >= 2
+      ? [
+          ...baseCycle.slice(0, -2),
+          baseCycle[baseCycle.length - 1],
+          baseCycle[baseCycle.length - 2],
+        ]
+      : baseCycle
+
+  return Array.from({ length: cycles }, (_, cycleIndex) =>
+    (cycleIndex % 2 === 0 ? firstCycle : firstCycle.map(invertScheduledRound)),
+  ).flat()
+}
+
+function pairKey(leftId: string, rightId: string) {
+  return [leftId, rightId].sort().join('::')
+}
+
+function getRoundRobinTargetGames(tournament: Tournament) {
+  return normalizeRoundRobinCycles(tournament.settings.roundRobinCycles)
+}
+
+function getRoundRobinEligiblePlayers(tournament: Tournament, roundNumber: number) {
+  return tournament.players
+    .filter((player) => player.addedInRound <= roundNumber)
+    .filter((player) => getPlayerStatusForRound(player, roundNumber) === 'active')
+    .sort(seedOrder)
+}
+
+export function getRoundRobinRequiredRoundCount(tournament: Tournament) {
+  if (tournament.format !== 'roundRobin') {
+    return tournament.numberOfRounds
+  }
+
+  const cycles = getRoundRobinTargetGames(tournament)
+  const players = tournament.players.filter((player) => player.status === 'active')
+  const boardCount = Math.floor(players.length / 2)
+
+  if (players.length <= 1 || boardCount === 0) {
+    return Math.max(1, ...tournament.rounds.map((round) => round.roundNumber))
+  }
+
+  let remainingGames = 0
+
+  players.forEach((left, leftIndex) => {
+    players.slice(leftIndex + 1).forEach((right) => {
+      remainingGames += Math.max(
+        0,
+        cycles - countGamesBetween(tournament, left.id, right.id),
+      )
+    })
+  })
+
+  const highestCompletedRound = tournament.rounds.reduce(
+    (highestRound, round) =>
+      round.status === 'completed'
+        ? Math.max(highestRound, round.roundNumber)
+        : highestRound,
+    0,
+  )
+
+  return Math.max(
+    roundRobinRoundsForPlayerCount(players.length, cycles),
+    highestCompletedRound + Math.ceil(remainingGames / boardCount),
+    ...tournament.rounds.map((round) => round.roundNumber),
+  )
+}
+
+function findBestRoundRobinPairings(
+  players: Player[],
+  tournament: Tournament,
+  summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+  scheduledPairs: RoundRobinScheduledPairing[],
+) {
+  const targetGames = getRoundRobinTargetGames(tournament)
+  const scheduledPairKeys = new Set(
+    scheduledPairs.map((pairing) => pairKey(pairing.white.id, pairing.black.id)),
+  )
+  const scheduledPairByKey = new Map(
+    scheduledPairs.map((pairing) => [
+      pairKey(pairing.white.id, pairing.black.id),
+      pairing,
+    ] as const),
+  )
+
+  function search(availablePlayers: Player[]): { pairs: PlannedPairing[]; score: number } {
+    if (availablePlayers.length < 2) {
+      return { pairs: [], score: 0 }
+    }
+
+    const [first, ...rest] = [...availablePlayers].sort(seedOrder)
+    let best: { pairs: PlannedPairing[]; score: number } | null = null
+
+    rest.forEach((candidate) => {
+      const gameCount = countGamesBetweenBeforeRound(
+        tournament,
+        first.id,
+        candidate.id,
+        roundNumber,
+      )
+
+      if (gameCount >= targetGames) {
+        return
+      }
+
+      const key = pairKey(first.id, candidate.id)
+      const scheduledPair = scheduledPairByKey.get(key)
+      const colors = scheduledPair
+        ? {
+            whitePlayerId: scheduledPair.white.id,
+            blackPlayerId: scheduledPair.black.id,
+          }
+        : assignColors(first, candidate, summaries, tournament, roundNumber)
+      const tail = search(rest.filter((player) => player.id !== candidate.id))
+      const score =
+        tail.score +
+        (scheduledPairKeys.has(key) ? 0 : 500) +
+        gameCount * 100 +
+        colorPenalty(
+          tournament.players.find((player) => player.id === colors.whitePlayerId) ?? first,
+          'W',
+          summaries[colors.whitePlayerId],
+        ) +
+        colorPenalty(
+          tournament.players.find((player) => player.id === colors.blackPlayerId) ?? candidate,
+          'B',
+          summaries[colors.blackPlayerId],
+        )
+      const result = {
+        pairs: [{ left: first, right: candidate, colors }, ...tail.pairs],
+        score,
+      }
+
+      if (!best || result.score < best.score) {
+        best = result
+      }
+    })
+
+    return best ?? { pairs: [], score: 0 }
+  }
+
+  return search(players).pairs
+}
+
+function chooseRoundRobinByePlayer(
+  players: Player[],
+  scheduledByePlayer: Player | undefined,
+  summaries: Record<string, PlayerScoreSummary>,
+) {
+  if (scheduledByePlayer && players.some((player) => player.id === scheduledByePlayer.id)) {
+    return scheduledByePlayer
+  }
+
+  return [...players].sort(
+    (left, right) =>
+      summaries[left.id].byes - summaries[right.id].byes ||
+      right.initialSeed - left.initialSeed,
+  )[0]
+}
+
+function generateRoundRobinPairings(
+  tournament: Tournament,
+  roundNumber: number,
+  fixedPairings: Pairing[] = [],
+): Pairing[] {
+  const summaries = getSummaryBeforeRound(tournament, roundNumber)
+  const usedPlayerIds = new Set(
+    fixedPairings.flatMap((pairing) =>
+      [pairing.whitePlayerId, pairing.blackPlayerId, pairing.byePlayerId].filter(Boolean),
+    ) as string[],
+  )
+  const activePlayers = getRoundRobinEligiblePlayers(tournament, roundNumber)
+  const pairings: Pairing[] = fixedPairings.map((pairing, index) => ({
+    ...pairing,
+    boardNumber: index + 1,
+    roundNumber,
+    isManual: true,
+    warnings: validatePairing(tournament, pairing, roundNumber, summaries),
+  }))
+  const schedule = createRoundRobinSchedule(
+    activePlayers,
+    getRoundRobinTargetGames(tournament),
+  )
+  const scheduledRound = schedule[roundNumber - 1]
+  let pool = activePlayers.filter((player) => !usedPlayerIds.has(player.id))
+  let byePairing: Pairing | null = null
+
+  if (pool.length % 2 === 1) {
+    const byePlayer = chooseRoundRobinByePlayer(
+      pool,
+      scheduledRound?.byePlayer,
+      summaries,
+    )
+
+    byePairing = {
+      id: makeId('pairing'),
+      roundNumber,
+      boardNumber: 0,
+      result: byeResult(getRoundByeScore(tournament, roundNumber)),
+      isManual: false,
+      isBye: true,
+      byePlayerId: byePlayer.id,
+    }
+    byePairing.warnings = validatePairing(tournament, byePairing, roundNumber, summaries)
+    pool = pool.filter((player) => player.id !== byePlayer.id)
+  }
+
+  const scheduledPairs = (scheduledRound?.pairings ?? []).filter(
+    (pairing) =>
+      pool.some((player) => player.id === pairing.white.id) &&
+      pool.some((player) => player.id === pairing.black.id),
+  )
+  const plannedPairings = findBestRoundRobinPairings(
+    pool,
+    tournament,
+    summaries,
+    roundNumber,
+    scheduledPairs,
+  )
+
+  plannedPairings.forEach(({ left, right, colors, warnings: pairingWarnings = [] }) => {
+    const pairing: Pairing = {
+      id: makeId('pairing'),
+      roundNumber,
+      boardNumber: pairings.length + 1,
+      ...(colors ?? assignColors(left, right, summaries, tournament, roundNumber)),
+      isManual: false,
+      isBye: false,
+    }
+    pairing.warnings = [
+      ...validatePairing(tournament, pairing, roundNumber, summaries),
+      ...pairingWarnings,
+    ]
+    pairings.push(pairing)
+  })
+
+  if (byePairing) {
+    pairings.push(byePairing)
+  }
+
+  return normalizeRoundPairings(pairings)
+}
+
+function normalizeRoundPairings(pairings: Pairing[]) {
+  const playerUseCounts = new Map<string, number>()
+
+  pairings.forEach((pairing) => {
+    ;[pairing.whitePlayerId, pairing.blackPlayerId, pairing.byePlayerId]
+      .filter((playerId): playerId is string => typeof playerId === 'string')
+      .forEach((playerId) => {
+        playerUseCounts.set(playerId, (playerUseCounts.get(playerId) ?? 0) + 1)
+      })
+  })
+
+  return pairings.map((pairing, index) => {
+    const duplicateIds = [
+      pairing.whitePlayerId,
+      pairing.blackPlayerId,
+      pairing.byePlayerId,
+    ].filter(
+      (playerId): playerId is string =>
+        typeof playerId === 'string' && (playerUseCounts.get(playerId) ?? 0) > 1,
+    )
+
+    return {
+      ...pairing,
+      boardNumber: index + 1,
+      warnings:
+        duplicateIds.length === 0
+          ? pairing.warnings
+          : [
+              ...(pairing.warnings ?? []),
+              warning(
+                'duplicate-round-player',
+                'Ein Spieler ist in dieser Runde mehrfach gepaart.',
+                'hard',
+              ),
+            ],
+    }
+  })
+}
+
 export function generatePairings(
   tournament: Tournament,
   roundNumber: number,
   fixedPairings: Pairing[] = [],
 ): Pairing[] {
+  if (tournament.format === 'roundRobin') {
+    return generateRoundRobinPairings(tournament, roundNumber, fixedPairings)
+  }
+
   const summaries = getSummaryBeforeRound(tournament, roundNumber)
   const usedPlayerIds = new Set(
     fixedPairings.flatMap((pairing) =>
@@ -912,42 +1358,7 @@ export function generatePairings(
     pairings.push(byePairing)
   }
 
-  const playerUseCounts = new Map<string, number>()
-
-  pairings.forEach((pairing) => {
-    ;[pairing.whitePlayerId, pairing.blackPlayerId, pairing.byePlayerId]
-      .filter((playerId): playerId is string => typeof playerId === 'string')
-      .forEach((playerId) => {
-        playerUseCounts.set(playerId, (playerUseCounts.get(playerId) ?? 0) + 1)
-      })
-  })
-
-  return pairings.map((pairing, index) => {
-    const duplicateIds = [
-      pairing.whitePlayerId,
-      pairing.blackPlayerId,
-      pairing.byePlayerId,
-    ].filter(
-      (playerId): playerId is string =>
-        typeof playerId === 'string' && (playerUseCounts.get(playerId) ?? 0) > 1,
-    )
-
-    return {
-      ...pairing,
-      boardNumber: index + 1,
-      warnings:
-        duplicateIds.length === 0
-          ? pairing.warnings
-          : [
-              ...(pairing.warnings ?? []),
-              warning(
-                'duplicate-round-player',
-                'Ein Spieler ist in dieser Runde mehrfach gepaart.',
-                'hard',
-              ),
-            ],
-    }
-  })
+  return normalizeRoundPairings(pairings)
 }
 
 function getDirectScore(tournament: Tournament, playerId: string, tiedIds: string[]) {
@@ -1249,7 +1660,9 @@ export function addPlayerAfterStart(
     tournament.players.reduce((max, player) => Math.max(max, player.initialSeed), 0) + 1
   const nextRound =
     tournament.rounds.find((round) => round.status === 'draft')?.roundNumber ??
-    Math.min(tournament.numberOfRounds, tournament.currentRound + 1 || 1)
+    (tournament.format === 'roundRobin'
+      ? tournament.currentRound + 1 || 1
+      : Math.min(tournament.numberOfRounds, tournament.currentRound + 1 || 1))
   const player: Player = {
     id: makeId('player'),
     name: name.trim() || `Spieler ${nextSeed}`,
@@ -1259,10 +1672,20 @@ export function addPlayerAfterStart(
     addedInRound: nextRound,
   }
 
-  return {
+  const nextTournament = {
     ...tournament,
     players: [...tournament.players, player],
   }
+
+  return tournament.format === 'roundRobin'
+    ? {
+        ...nextTournament,
+        numberOfRounds: Math.max(
+          nextTournament.numberOfRounds,
+          getRoundRobinRequiredRoundCount(nextTournament),
+        ),
+      }
+    : nextTournament
 }
 
 export function removePlayerFromTournament(
@@ -1341,6 +1764,10 @@ export function getNextAllowedRoundNumber(tournament: Tournament) {
 
   const nextRound = latestRound.roundNumber + 1
 
+  if (tournament.format === 'roundRobin' && nextRound > tournament.numberOfRounds) {
+    return null
+  }
+
   return nextRound
 }
 
@@ -1375,7 +1802,7 @@ export function upsertRound(
     status: existing?.status ?? 'draft',
   }
 
-  return {
+  const nextTournament = {
     ...tournament,
     currentRound: Math.max(tournament.currentRound, roundNumber),
     rounds: [
@@ -1383,6 +1810,16 @@ export function upsertRound(
       round,
     ].sort((left, right) => left.roundNumber - right.roundNumber),
   }
+
+  return nextTournament.format === 'roundRobin'
+    ? {
+        ...nextTournament,
+        numberOfRounds: Math.max(
+          nextTournament.numberOfRounds,
+          getRoundRobinRequiredRoundCount(nextTournament),
+        ),
+      }
+    : nextTournament
 }
 
 function invertResult(result: GameResult): GameResult {

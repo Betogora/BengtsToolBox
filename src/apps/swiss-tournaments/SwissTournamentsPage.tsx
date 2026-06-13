@@ -166,6 +166,14 @@ function highestCompletedRoundNumber(tournament: Tournament) {
   )
 }
 
+function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
+  if (playerCount <= 1) {
+    return 1
+  }
+
+  return (playerCount % 2 === 0 ? playerCount - 1 : playerCount) * cycles
+}
+
 function archiveCategory(tournament: Tournament) {
   if (
     tournament.numberOfRounds > 0 &&
@@ -369,7 +377,7 @@ function TournamentFormatPicker({
 }) {
   const optionClass = (isActive: boolean, isDisabled = false) =>
     cn(
-      'flex min-h-16 min-w-0 items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors',
+      'flex h-9 min-w-0 items-center gap-1.5 rounded-md border px-2.5 text-left transition-colors',
       isActive
         ? 'border-primary bg-primary/10 text-primary'
         : 'border-border bg-background text-muted-foreground',
@@ -386,20 +394,22 @@ function TournamentFormatPicker({
           type="button"
           onClick={() => onFormatChange('swiss')}
         >
-          <Swords className="size-6 shrink-0" />
+          <Swords className="size-4 shrink-0" />
           <span className="min-w-0">
-            <span className="block truncate text-base font-semibold">Swiss</span>
+            <span className="block whitespace-nowrap text-sm font-semibold">Swiss</span>
           </span>
         </button>
         <button
-          aria-disabled="true"
-          className={optionClass(format === 'roundRobin', true)}
-          disabled
+          aria-pressed={format === 'roundRobin'}
+          className={optionClass(format === 'roundRobin')}
           type="button"
+          onClick={() => onFormatChange('roundRobin')}
         >
-          <GitBranch className="size-6 shrink-0" />
+          <GitBranch className="size-4 shrink-0" />
           <span className="min-w-0">
-            <span className="block truncate text-base font-semibold">Round Robin</span>
+            <span className="block whitespace-nowrap text-sm font-semibold">
+              Round Robin
+            </span>
           </span>
         </button>
       </div>
@@ -508,20 +518,31 @@ function TournamentCreator({
   const [name, setName] = useState(defaultTournamentName)
   const [numberOfRounds, setNumberOfRounds] = useState(5)
   const [format, setFormat] = useState<TournamentFormat>('swiss')
+  const [roundRobinCycles, setRoundRobinCycles] = useState(1)
   const [players, setPlayers] = useState<DraftPlayer[]>(() =>
     tournamentPlayersToDraftPlayers(initialTournament),
   )
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
   const [byeScore, setByeScore] = useState<ByeScore>(1)
+  const cleanPlayerCount = players.filter(
+    (player) => player.name.trim().length > 0,
+  ).length
+  const effectiveNumberOfRounds =
+    format === 'roundRobin'
+      ? roundRobinRoundsForPlayerCount(cleanPlayerCount, roundRobinCycles)
+      : numberOfRounds
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle>Turnier anlegen</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <CirclePlus className="size-5 text-primary" />
+          Turnier anlegen
+        </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid gap-3 md:grid-cols-[1fr_10rem]">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)]">
           <div className="grid gap-2">
             <Label htmlFor="swiss-name">Turniername</Label>
             <Input
@@ -530,28 +551,28 @@ function TournamentCreator({
               onChange={(event) => setName(event.currentTarget.value)}
             />
           </div>
+          <TournamentFormatPicker format={format} onFormatChange={setFormat} />
+        </div>
+
+        <div className="grid gap-3 border-b pb-4 sm:grid-cols-2 md:grid-cols-3">
           <div className="grid gap-2">
             <Label htmlFor="swiss-rounds">Runden</Label>
             <Input
               id="swiss-rounds"
               min={1}
+              readOnly={format === 'roundRobin'}
               type="number"
-              value={numberOfRounds}
+              value={effectiveNumberOfRounds}
               onChange={(event) =>
                 setNumberOfRounds(Number(event.currentTarget.value))
               }
             />
           </div>
-          <div className="md:hidden">
-            <TournamentFormatPicker format={format} onFormatChange={setFormat} />
-          </div>
-        </div>
-
-        <div className="grid gap-3 border-b pb-4 sm:grid-cols-2 md:grid-cols-3">
           <div className="grid gap-2">
             <Label>Sortierung</Label>
             <Select
               value={initialSeedingMode}
+              disabled={format === 'roundRobin'}
               onValueChange={(value) =>
                 setInitialSeedingMode(value as SeedingMode)
               }
@@ -565,6 +586,22 @@ function TournamentCreator({
               </SelectContent>
             </Select>
           </div>
+          {format === 'roundRobin' && (
+            <div className="grid gap-2">
+              <Label htmlFor="round-robin-cycles">Durchg&auml;nge</Label>
+              <Input
+                id="round-robin-cycles"
+                min={1}
+                type="number"
+                value={roundRobinCycles}
+                onChange={(event) =>
+                  setRoundRobinCycles(
+                    Math.max(1, Math.floor(Number(event.currentTarget.value)) || 1),
+                  )
+                }
+              />
+            </div>
+          )}
           <div className="grid gap-2">
             <Label>Byepunkte</Label>
             <Select
@@ -582,9 +619,6 @@ function TournamentCreator({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="hidden md:block">
-            <TournamentFormatPicker format={format} onFormatChange={setFormat} />
           </div>
         </div>
 
@@ -665,13 +699,14 @@ function TournamentCreator({
             await onCreate({
               name,
               format,
-              numberOfRounds,
+              numberOfRounds: effectiveNumberOfRounds,
               players: players.map((player) => ({
                 name: player.name,
                 rating: player.rating ? Number(player.rating) : undefined,
               })),
               initialSeedingMode,
               byeScore,
+              roundRobinCycles,
             })
             toast.success('Turnier wurde angelegt.')
             onCreated?.()
@@ -709,9 +744,6 @@ function NewTournamentDialog({
       <DialogContent className="max-h-[92vh] w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:max-w-5xl sm:p-6">
         <DialogHeader>
           <DialogTitle>Neues Turnier</DialogTitle>
-          <DialogDescription>
-            Turnierdaten, Sortierung, Byepunkte und Startspieler festlegen.
-          </DialogDescription>
         </DialogHeader>
         {open && (
           <TournamentCreator
@@ -900,6 +932,13 @@ export function SwissTournamentsPage() {
   )
   const canGenerateRound = useMemo(() => {
     if (!tournament) {
+      return false
+    }
+
+    if (
+      tournament.numberOfRounds > 0 &&
+      completedRoundCount(tournament) >= tournament.numberOfRounds
+    ) {
       return false
     }
 
@@ -1097,8 +1136,8 @@ export function SwissTournamentsPage() {
               format={tournament.format ?? 'swiss'}
             />
             <Card>
-              <CardHeader className="grid gap-3 p-4">
-                <div>
+              <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4">
+                <div className="min-w-0">
                   <CardDescription>Aktive Spieler</CardDescription>
                   <CardTitle className="text-2xl">
                     {overview?.active ?? 0}
@@ -1108,11 +1147,10 @@ export function SwissTournamentsPage() {
                   initialTournament={tournament}
                   onCreate={app.createNewTournament}
                   trigger={
-                    <Button className="min-h-16 w-full px-4 py-3 text-base">
-                      <Plus className="size-5" />
-                      <span className="grid min-w-0 text-left leading-tight">
-                        <span>Neues Turnier</span>
-                        <span>/ Reset</span>
+                    <Button className="h-10 w-[12.25rem] max-w-[52vw] px-3 text-sm">
+                      <Plus className="size-4" />
+                      <span className="min-w-0 truncate">
+                        Neues Turnier / Reset
                       </span>
                     </Button>
                   }
@@ -1153,7 +1191,7 @@ export function SwissTournamentsPage() {
               <CardTitle>Einstellungen und Export</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-4">
+              <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">
                 <div className="grid gap-2">
                   <Label>Turniername</Label>
                   <Input
@@ -1178,6 +1216,27 @@ export function SwissTournamentsPage() {
                     }
                   />
                 </div>
+                {(tournament.format ?? 'swiss') === 'roundRobin' && (
+                  <div className="grid gap-2">
+                    <Label>Durchg&auml;nge</Label>
+                    <Input
+                      min={Math.max(
+                        1,
+                        Math.ceil(
+                          completedRounds /
+                            roundRobinRoundsForPlayerCount(tournament.players.length, 1),
+                        ),
+                      )}
+                      type="number"
+                      value={tournament.settings.roundRobinCycles ?? 1}
+                      onChange={(event) =>
+                        void app.updateSettings({
+                          roundRobinCycles: Number(event.currentTarget.value),
+                        })
+                      }
+                    />
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label>Byepunkte</Label>
                   <Select
