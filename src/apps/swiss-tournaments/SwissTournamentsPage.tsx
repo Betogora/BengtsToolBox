@@ -390,9 +390,9 @@ function TournamentFormatCard({
 
   return (
     <Card>
-      <CardHeader className="gap-3 p-4">
-        <CardDescription>Turniermodus</CardDescription>
-        <div className="flex min-h-12 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
+      <CardHeader className="grid grid-cols-[minmax(0,1fr)_minmax(6.5rem,auto)] items-center gap-3 p-4">
+        <CardDescription className="min-w-0">Turniermodus</CardDescription>
+        <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
           <Icon className="size-5 shrink-0" />
           <CardTitle className="min-w-0 truncate text-lg sm:text-xl">
             {label}
@@ -1211,7 +1211,7 @@ export function SwissTournamentsPage() {
           <section className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="gap-3 p-4">
-                <div>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
                   <CardDescription>Aktuelle Runde</CardDescription>
                   <CardTitle className="text-2xl">
                     {tournament.currentRound}/{tournament.numberOfRounds}
@@ -1417,7 +1417,7 @@ export function SwissTournamentsPage() {
                   void handleAddPlayer()
                 }}
               >
-                <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
                   <Input
                     placeholder="Name"
                     value={newPlayerName}
@@ -1452,10 +1452,10 @@ export function SwissTournamentsPage() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="flex h-7 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold tabular-nums">
+                          <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
                             #{index + 1}
                           </span>
-                          <Badge variant={statusVariant(player.status)}>
+                          <Badge className="h-6" variant={statusVariant(player.status)}>
                             {statusLabels[player.status]}
                           </Badge>
                         </div>
@@ -1511,8 +1511,8 @@ export function SwissTournamentsPage() {
                         </Select>
                         <Button
                           aria-label={`${player.name} entfernen`}
+                          className="size-9 px-0"
                           disabled={!canRemove}
-                          size="sm"
                           title={
                             canRemove
                               ? `${player.name} entfernen`
