@@ -1,7 +1,7 @@
 import {
   Archive,
   ArrowRight,
-  BrainCircuit,
+  Brain,
   ChevronDown,
   ChessKing,
   CheckCircle2,
@@ -128,7 +128,7 @@ function tournamentFormatLabel(format?: Tournament['format']) {
   }
 
   if (format === 'handAndBrain') {
-    return 'Hand and Brain'
+    return 'Hand / Brain'
   }
 
   return 'Swiss'
@@ -140,7 +140,7 @@ function renderTournamentFormatIcon(format?: Tournament['format']) {
   }
 
   if (format === 'handAndBrain') {
-    return <BrainCircuit className="size-5 shrink-0" />
+    return <Brain className="size-5 shrink-0" />
   }
 
   return <Swords className="size-5 shrink-0" />
@@ -435,11 +435,21 @@ function TournamentFormatCard({
   format: TournamentFormat
 }) {
   const label = tournamentFormatLabel(format)
+  const isHandBrain = format === 'handAndBrain'
 
   return (
     <Card>
-      <CardHeader className="grid grid-cols-[minmax(0,1fr)_minmax(6.5rem,auto)] items-center gap-3 p-4">
-        <CardDescription className="min-w-0">Turniermodus</CardDescription>
+      <CardHeader
+        className={cn(
+          'grid items-center gap-3 p-4',
+          isHandBrain
+            ? 'grid-cols-1'
+            : 'grid-cols-[minmax(0,1fr)_minmax(6.5rem,auto)]',
+        )}
+      >
+        <CardDescription className={cn('min-w-0', isHandBrain && 'sr-only')}>
+          Turniermodus
+        </CardDescription>
         <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
           {renderTournamentFormatIcon(format)}
           <CardTitle className="min-w-0 truncate text-lg sm:text-xl">
@@ -470,7 +480,7 @@ function TournamentFormatPicker({
   return (
     <div className="grid gap-2">
       <Label>Turniermodus</Label>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <button
           aria-pressed={format === 'swiss'}
           className={optionClass(format === 'swiss')}
@@ -501,10 +511,10 @@ function TournamentFormatPicker({
           type="button"
           onClick={() => onFormatChange('handAndBrain')}
         >
-          <BrainCircuit className="size-4 shrink-0" />
+          <Brain className="size-4 shrink-0" />
           <span className="min-w-0">
             <span className="block whitespace-nowrap text-sm font-semibold">
-              Hand and Brain
+              Hand / Brain
             </span>
           </span>
         </button>
@@ -1893,7 +1903,7 @@ export function SwissTournamentsPage() {
                             {tournament.format === 'handAndBrain' && (
                               <div className="grid gap-2">
                                 <div className="flex items-center gap-2 text-sm font-semibold">
-                                  <BrainCircuit className="size-4 text-primary" />
+                                  <Brain className="size-4 text-primary" />
                                   Hand-and-Brain-Brett fixieren
                                 </div>
                                 <div className="grid gap-2 lg:grid-cols-[1fr_1fr_auto]">
