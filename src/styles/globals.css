@@ -126,15 +126,20 @@ select {
 }
 
 .swiss-round-table-cell {
-  width: 1%;
-  padding-right: 0.375rem;
-  padding-left: 0.375rem;
+  width: auto;
   text-align: left;
-  white-space: nowrap;
+}
+
+.swiss-round-grid {
+  display: grid;
+  width: max-content;
+  grid-template-columns: repeat(var(--swiss-round-grid-columns, 1), var(--swiss-round-cell-width, minmax(2.75rem, max-content)));
+  gap: 0.5rem;
 }
 
 .swiss-round-cell {
   width: var(--swiss-round-cell-width, auto);
+  white-space: nowrap;
 }
 
 @media (pointer: coarse) {
@@ -277,10 +282,7 @@ select {
   }
 
   .swiss-standings-card td.swiss-round-table-cell {
-    width: 1%;
-    padding-right: 3px !important;
-    padding-left: 3px !important;
-    white-space: nowrap;
+    width: auto;
   }
 
   .swiss-podium-first {
