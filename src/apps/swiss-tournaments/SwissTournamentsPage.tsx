@@ -2214,7 +2214,7 @@ function StandingsTable({
         <div className="swiss-standings-mobile rounded-md border md:hidden">
           <table className="w-full table-fixed text-sm">
             <colgroup>
-              <col className="w-8" />
+              <col className="w-11" />
               <col />
               <col className="w-14" />
               <col className="w-16" />
@@ -2223,7 +2223,7 @@ function StandingsTable({
             <thead className="bg-muted/70 text-left">
               <tr>
                 <th className="px-1.5 py-2 font-semibold">Platz</th>
-                <th className="px-1.5 py-2 font-semibold">Name</th>
+                <th className="py-2 pl-4 pr-1.5 font-semibold">Name</th>
                 <th className="px-1 py-2 text-center font-semibold">Punkte</th>
                 <th className="px-1 py-2 text-center font-semibold">Buchholz</th>
                 <th className="px-1 py-2 text-center font-semibold">SB</th>
@@ -2254,7 +2254,7 @@ function StandingsTable({
                       }}
                     >
                       <td className="px-1.5 py-2 tabular-nums">{row.rank}</td>
-                      <td className="min-w-0 px-1.5 py-2 font-medium">
+                      <td className="min-w-0 py-2 pl-4 pr-1.5 font-medium">
                         <span className="block min-w-0 truncate">{row.playerName}</span>
                       </td>
                       <td className="px-1 py-2 text-center tabular-nums">
