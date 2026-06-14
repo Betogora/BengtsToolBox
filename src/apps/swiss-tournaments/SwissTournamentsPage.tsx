@@ -359,7 +359,7 @@ function RoundProgress({
   return (
     <div
       aria-label={`Rundenfortschritt ${visibleCurrentRound} von ${totalRounds}`}
-      className="grid grid-cols-[repeat(var(--round-count),minmax(0,1fr))] gap-1.5"
+      className="grid grid-cols-[repeat(var(--round-count),minmax(0,1fr))] gap-1.5 md:gap-1"
       style={{ '--round-count': totalRounds } as CSSProperties}
     >
       {Array.from({ length: totalRounds }, (_, index) => {
@@ -369,7 +369,7 @@ function RoundProgress({
           <span
             key={roundNumber}
             className={cn(
-              'h-2.5 rounded-full bg-muted',
+              'h-2.5 rounded-full bg-muted md:h-2',
               roundNumber < visibleCurrentRound && 'bg-primary',
               roundNumber === visibleCurrentRound && 'bg-yellow-400',
             )}
@@ -1210,7 +1210,7 @@ export function SwissTournamentsPage() {
         <TabsContent value="overview" className="grid gap-4">
           <section className="grid gap-4 md:grid-cols-3">
             <Card>
-              <CardHeader className="gap-3 p-4">
+              <CardHeader className="gap-3 p-4 md:gap-2">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
                   <CardDescription>Aktuelle Runde</CardDescription>
                   <CardTitle className="text-2xl">
