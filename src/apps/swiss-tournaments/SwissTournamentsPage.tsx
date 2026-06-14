@@ -617,6 +617,8 @@ function TournamentCreator({
   const [initialSeedingMode, setInitialSeedingMode] =
     useState<SeedingMode>('rating')
   const [byeScore, setByeScore] = useState<ByeScore>(1)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
   const cleanPlayerCount = players.filter(
     (player) => player.name.trim().length > 0,
   ).length
@@ -839,27 +841,50 @@ function TournamentCreator({
           </div>
         </div>
 
+        {createError && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {createError}
+          </div>
+        )}
+
         <Button
-          disabled={players.every((player) => player.name.trim().length === 0)}
+          disabled={
+            isCreating || players.every((player) => player.name.trim().length === 0)
+          }
           onClick={async () => {
-            await onCreate({
-              name,
-              format,
-              numberOfRounds: effectiveNumberOfRounds,
-              players: players.map((player) => ({
-                name: player.name,
-                rating: player.rating ? Number(player.rating) : undefined,
-              })),
-              initialSeedingMode,
-              byeScore,
-              roundRobinCycles,
-            })
-            toast.success('Turnier wurde angelegt.')
-            onCreated?.()
+            setCreateError(null)
+            setIsCreating(true)
+
+            try {
+              await onCreate({
+                name,
+                format,
+                numberOfRounds: effectiveNumberOfRounds,
+                players: players.map((player) => ({
+                  name: player.name,
+                  rating: player.rating ? Number(player.rating) : undefined,
+                })),
+                initialSeedingMode,
+                byeScore,
+                roundRobinCycles,
+              })
+              toast.success('Turnier wurde angelegt.')
+              onCreated?.()
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : 'Das Turnier konnte nicht angelegt werden.'
+
+              setCreateError(message)
+              toast.error('Turnier konnte nicht angelegt werden.')
+            } finally {
+              setIsCreating(false)
+            }
           }}
         >
           <ArrowRight className="size-4" />
-          Turnier starten
+          {isCreating ? 'Turnier wird gestartet' : 'Turnier starten'}
         </Button>
       </CardContent>
     </Card>
@@ -1206,10 +1231,22 @@ export function SwissTournamentsPage() {
             </CardHeader>
           </Card>
         )}
-        <TournamentCreator
-          initialTournament={app.tournaments[0] ?? null}
-          onCreate={app.createNewTournament}
-        />
+        <Card>
+          <CardHeader className="gap-4">
+            <div className="grid gap-1">
+              <CardTitle>Kein aktives Turnier</CardTitle>
+              <CardDescription>
+                Lege ein neues Turnier im Dialog an.
+              </CardDescription>
+            </div>
+            <div>
+              <NewTournamentDialog
+                initialTournament={app.tournaments[0] ?? null}
+                onCreate={app.createNewTournament}
+              />
+            </div>
+          </CardHeader>
+        </Card>
       </div>
     )
   }

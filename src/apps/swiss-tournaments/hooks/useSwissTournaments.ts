@@ -313,18 +313,24 @@ export function useSwissTournaments(sessionId = 'default') {
   ) =>
     updateActiveTournament((tournament) => ({
       ...tournament,
-      players: tournament.players.map((player) =>
-        player.id === playerId
-          ? {
-              ...player,
-              name: partial.name?.trim() || player.name,
-              rating:
-                partial.rating === undefined || !Number.isFinite(partial.rating)
-                  ? undefined
-                  : Math.round(partial.rating),
-            }
-          : player,
-      ),
+      players: tournament.players.map((player) => {
+        if (player.id !== playerId) {
+          return player
+        }
+
+        const nextPlayer = {
+          ...player,
+          name: partial.name?.trim() || player.name,
+        }
+
+        if (partial.rating === undefined || !Number.isFinite(partial.rating)) {
+          delete nextPlayer.rating
+        } else {
+          nextPlayer.rating = Math.round(partial.rating)
+        }
+
+        return nextPlayer
+      }),
     }))
 
   const changePlayerStatus = (

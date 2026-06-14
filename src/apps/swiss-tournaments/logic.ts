@@ -71,14 +71,21 @@ function seedPlayers(
       stableHash(`${right.name}-${right.rating ?? ''}`)
   })
 
-  return sorted.map((player, index) => ({
-    id: makeId('player'),
-    name: player.name,
-    rating: player.rating,
-    initialSeed: index + 1,
-    status: 'active',
-    addedInRound: 1,
-  }))
+  return sorted.map((player, index) => {
+    const seededPlayer: Player = {
+      id: makeId('player'),
+      name: player.name,
+      initialSeed: index + 1,
+      status: 'active',
+      addedInRound: 1,
+    }
+
+    if (player.rating !== undefined) {
+      seededPlayer.rating = player.rating
+    }
+
+    return seededPlayer
+  })
 }
 
 function normalizeRoundRobinCycles(value: number | undefined) {
@@ -2263,10 +2270,13 @@ export function addPlayerAfterStart(
   const player: Player = {
     id: makeId('player'),
     name: name.trim() || `Spieler ${nextSeed}`,
-    rating: Number.isFinite(rating) ? rating : undefined,
     initialSeed: nextSeed,
     status: 'active',
     addedInRound: nextRound,
+  }
+
+  if (typeof rating === 'number' && Number.isFinite(rating)) {
+    player.rating = Math.round(rating)
   }
 
   const nextTournament = {
