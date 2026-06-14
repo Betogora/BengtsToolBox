@@ -1777,9 +1777,15 @@ export function deleteLatestRound(tournament: Tournament): Tournament {
   return {
     ...tournament,
     currentRound: previousRound?.roundNumber ?? 0,
-    rounds: sortedRounds.filter(
-      (round) => round.roundNumber !== latestRound.roundNumber,
-    ),
+    rounds: sortedRounds
+      .filter((round) => round.roundNumber !== latestRound.roundNumber)
+      .map((round) =>
+        previousRound &&
+        round.roundNumber === previousRound.roundNumber &&
+        round.status === 'completed'
+          ? { ...round, status: 'draft' as const }
+          : round,
+      ),
   }
 }
 

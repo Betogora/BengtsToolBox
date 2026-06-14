@@ -1772,11 +1772,19 @@ export function SwissTournamentsPage() {
                                 )}
                                 <ConfirmButton
                                 title={`${roundLabel} löschen?`}
-                                description="Die aktuelle Runde und alle Paarungen darin werden gelöscht."
+                                description={
+                                  index + 1 < displayedRounds.length
+                                    ? 'Die aktuelle Runde und alle Paarungen darin werden gelöscht. Die vorherige Runde wird wieder geöffnet und kann bearbeitet werden.'
+                                    : 'Die aktuelle Runde und alle Paarungen darin werden gelöscht.'
+                                }
                                 confirmLabel="Löschen"
                                 onConfirm={async () => {
                                   await app.deleteLatestRound()
-                                  toast.success(`${roundLabel} wurde gelöscht.`)
+                                  toast.success(
+                                    index + 1 < displayedRounds.length
+                                      ? `${roundLabel} wurde gelöscht. Die vorherige Runde ist wieder bearbeitbar.`
+                                      : `${roundLabel} wurde gelöscht.`,
+                                  )
                                 }}
                                 trigger={
                                   <Button
