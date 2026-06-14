@@ -121,6 +121,18 @@ select {
   background: var(--primary);
 }
 
+.swiss-rounds-heading {
+  text-align: left;
+}
+
+.swiss-round-table-cell {
+  width: 1%;
+  padding-right: 0.375rem;
+  padding-left: 0.375rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
 @media (pointer: coarse) {
   .territory-map-layer {
     filter: none;
@@ -258,6 +270,13 @@ select {
   .swiss-standings-card th {
     color: var(--foreground);
     font-weight: 800;
+  }
+
+  .swiss-standings-card td.swiss-round-table-cell {
+    width: 1%;
+    padding-right: 3px !important;
+    padding-left: 3px !important;
+    white-space: nowrap;
   }
 
   .swiss-podium-first {

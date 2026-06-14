@@ -2496,6 +2496,11 @@ function StandingsTable({
       currentPlayerId === playerId ? null : playerId,
     )
   }
+  const roundColumnCount = Math.max(
+    0,
+    ...standings.map((row) => row.roundHistory.length),
+  )
+  const roundColumns = Array.from({ length: roundColumnCount }, (_, index) => index)
 
 
   return (
@@ -2617,7 +2622,12 @@ function StandingsTable({
                 <th className="p-3">Buchholz</th>
                 <th className="p-3">SB</th>
                 <th className="p-3">Siege</th>
-                <th className="p-3">Runden</th>
+                <th
+                  className="swiss-rounds-heading p-3"
+                  colSpan={Math.max(roundColumnCount, 1)}
+                >
+                  Runden
+                </th>
                 <th className="swiss-export-hidden-column p-3">Byes</th>
                 <th className="swiss-export-hidden-column p-3">Status</th>
               </tr>
@@ -2640,19 +2650,29 @@ function StandingsTable({
                     {formatPoints(row.sonnebornBerger)}
                   </td>
                   <td className="p-3 tabular-nums">{row.wins}</td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {row.roundHistory.map((cell) => (
-                        <span
-                          key={`${row.playerId}-${cell.roundNumber}`}
-                          className={roundCellClass(cell)}
-                          title={cell.title}
+                  {roundColumnCount === 0 ? (
+                    <td className="swiss-round-table-cell p-3" />
+                  ) : (
+                    roundColumns.map((roundIndex) => {
+                      const cell = row.roundHistory[roundIndex]
+
+                      return (
+                        <td
+                          key={`${row.playerId}-round-${roundIndex + 1}`}
+                          className="swiss-round-table-cell p-3"
                         >
-                          {cell.label}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+                          {cell ? (
+                            <span
+                              className={roundCellClass(cell)}
+                              title={cell.title}
+                            >
+                              {cell.label}
+                            </span>
+                          ) : null}
+                        </td>
+                      )
+                    })
+                  )}
                   <td className="swiss-export-hidden-column p-3 tabular-nums">
                     {row.receivedByes}
                   </td>
