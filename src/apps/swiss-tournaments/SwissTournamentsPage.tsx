@@ -1,6 +1,7 @@
 import {
   Archive,
   ArrowRight,
+  BrainCircuit,
   ChevronDown,
   ChessKing,
   CheckCircle2,
@@ -109,6 +110,42 @@ function playerName(tournament: Tournament, playerId?: string) {
   return tournament.players.find((player) => player.id === playerId)?.name ?? '-'
 }
 
+function pairingPlayerIds(pairing: Pairing) {
+  return [
+    pairing.whitePlayerId,
+    pairing.blackPlayerId,
+    pairing.byePlayerId,
+    pairing.handBrainSides?.white.brainPlayerId,
+    pairing.handBrainSides?.white.handPlayerId,
+    pairing.handBrainSides?.black.brainPlayerId,
+    pairing.handBrainSides?.black.handPlayerId,
+  ].filter((playerId): playerId is string => typeof playerId === 'string')
+}
+
+function tournamentFormatLabel(format?: Tournament['format']) {
+  if (format === 'roundRobin') {
+    return 'Round Robin'
+  }
+
+  if (format === 'handAndBrain') {
+    return 'Hand and Brain'
+  }
+
+  return 'Swiss'
+}
+
+function renderTournamentFormatIcon(format?: Tournament['format']) {
+  if (format === 'roundRobin') {
+    return <GitBranch className="size-5 shrink-0" />
+  }
+
+  if (format === 'handAndBrain') {
+    return <BrainCircuit className="size-5 shrink-0" />
+  }
+
+  return <Swords className="size-5 shrink-0" />
+}
+
 function printablePdfTitle(tournamentName: string) {
   const safeName = tournamentName
     .trim()
@@ -184,6 +221,10 @@ function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
   return (playerCount % 2 === 0 ? playerCount - 1 : playerCount) * cycles
 }
 
+function swissRoundsForPlayerCount(playerCount: number) {
+  return Math.max(1, playerCount - 1)
+}
+
 function roundRobinEligiblePlayerCount(tournament: Tournament, roundNumber: number) {
   return tournament.players.filter(
     (player) =>
@@ -210,10 +251,6 @@ function roundRobinCycleCompletion(tournament: Tournament, roundNumber: number) 
     cycle: roundNumber / roundsPerCycle,
     roundsPerCycle,
   }
-}
-
-function tournamentFormatLabel(format?: Tournament['format']) {
-  return format === 'roundRobin' ? 'Round Robin' : 'Swiss'
 }
 
 function TournamentCompleteBanner({
@@ -280,6 +317,18 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeMeta> = {
   },
   'repeat-pairing': {
     label: 'REPEAT',
+    className: 'border-red-300 bg-red-100 text-red-950',
+  },
+  'repeat-hand-brain-partner': {
+    label: 'DUO',
+    className: 'border-amber-300 bg-amber-100 text-amber-950',
+  },
+  'repeat-hand-brain-roles': {
+    label: 'ROLLE',
+    className: 'border-sky-300 bg-sky-100 text-sky-950',
+  },
+  'repeat-hand-brain-team': {
+    label: 'TEAM',
     className: 'border-red-300 bg-red-100 text-red-950',
   },
   'same-player': {
@@ -385,15 +434,14 @@ function TournamentFormatCard({
 }: {
   format: TournamentFormat
 }) {
-  const label = format === 'roundRobin' ? 'Round Robin' : 'Swiss'
-  const Icon = format === 'roundRobin' ? GitBranch : Swords
+  const label = tournamentFormatLabel(format)
 
   return (
     <Card>
       <CardHeader className="grid grid-cols-[minmax(0,1fr)_minmax(6.5rem,auto)] items-center gap-3 p-4">
         <CardDescription className="min-w-0">Turniermodus</CardDescription>
         <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
-          <Icon className="size-5 shrink-0" />
+          {renderTournamentFormatIcon(format)}
           <CardTitle className="min-w-0 truncate text-lg sm:text-xl">
             {label}
           </CardTitle>
@@ -422,7 +470,7 @@ function TournamentFormatPicker({
   return (
     <div className="grid gap-2">
       <Label>Turniermodus</Label>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button
           aria-pressed={format === 'swiss'}
           className={optionClass(format === 'swiss')}
@@ -444,6 +492,19 @@ function TournamentFormatPicker({
           <span className="min-w-0">
             <span className="block whitespace-nowrap text-sm font-semibold">
               Round Robin
+            </span>
+          </span>
+        </button>
+        <button
+          aria-pressed={format === 'handAndBrain'}
+          className={optionClass(format === 'handAndBrain')}
+          type="button"
+          onClick={() => onFormatChange('handAndBrain')}
+        >
+          <BrainCircuit className="size-4 shrink-0" />
+          <span className="min-w-0">
+            <span className="block whitespace-nowrap text-sm font-semibold">
+              Hand and Brain
             </span>
           </span>
         </button>
@@ -494,7 +555,7 @@ function defaultTournamentName(format: TournamentFormat = 'swiss') {
     year: 'numeric',
   })
 
-  const label = format === 'roundRobin' ? 'Round Robin' : 'Swiss'
+  const label = tournamentFormatLabel(format)
 
   return `${label} vom ${formatter.format(new Date())}`
 }
@@ -502,7 +563,8 @@ function defaultTournamentName(format: TournamentFormat = 'swiss') {
 function isDefaultTournamentName(value: string) {
   return (
     value === defaultTournamentName('swiss') ||
-    value === defaultTournamentName('roundRobin')
+    value === defaultTournamentName('roundRobin') ||
+    value === defaultTournamentName('handAndBrain')
   )
 }
 
@@ -527,7 +589,14 @@ function TournamentCreator({
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
 }) {
   const [name, setName] = useState(defaultTournamentName)
-  const [numberOfRounds, setNumberOfRounds] = useState(5)
+  const [numberOfRounds, setNumberOfRounds] = useState(() =>
+    swissRoundsForPlayerCount(
+      tournamentPlayersToDraftPlayers(initialTournament).filter(
+        (player) => player.name.trim().length > 0,
+      ).length,
+    ),
+  )
+  const [roundsManuallyEdited, setRoundsManuallyEdited] = useState(false)
   const [format, setFormat] = useState<TournamentFormat>('swiss')
   const [roundRobinCycles, setRoundRobinCycles] = useState(1)
   const [players, setPlayers] = useState<DraftPlayer[]>(() =>
@@ -541,10 +610,13 @@ function TournamentCreator({
   const cleanPlayerCount = players.filter(
     (player) => player.name.trim().length > 0,
   ).length
+  const automaticSwissRoundCount = swissRoundsForPlayerCount(cleanPlayerCount)
   const effectiveNumberOfRounds =
     format === 'roundRobin'
       ? roundRobinRoundsForPlayerCount(cleanPlayerCount, roundRobinCycles)
-      : numberOfRounds
+      : roundsManuallyEdited
+        ? numberOfRounds
+        : automaticSwissRoundCount
   const handleFormatChange = (nextFormat: TournamentFormat) => {
     setName((currentName) =>
       isDefaultTournamentName(currentName)
@@ -601,9 +673,10 @@ function TournamentCreator({
               readOnly={format === 'roundRobin'}
               type="number"
               value={effectiveNumberOfRounds}
-              onChange={(event) =>
+              onChange={(event) => {
+                setRoundsManuallyEdited(true)
                 setNumberOfRounds(Number(event.currentTarget.value))
-              }
+              }}
             />
           </div>
           <div className="grid gap-2">
@@ -985,6 +1058,10 @@ export function SwissTournamentsPage() {
   const [newPlayerRating, setNewPlayerRating] = useState('')
   const [manualWhite, setManualWhite] = useState('')
   const [manualBlack, setManualBlack] = useState('')
+  const [manualWhiteBrain, setManualWhiteBrain] = useState('')
+  const [manualWhiteHand, setManualWhiteHand] = useState('')
+  const [manualBlackBrain, setManualBlackBrain] = useState('')
+  const [manualBlackHand, setManualBlackHand] = useState('')
   const [printTournament, setPrintTournament] = useState<Tournament | null>(null)
   const currentRound = useMemo(
     () =>
@@ -1143,24 +1220,19 @@ export function SwissTournamentsPage() {
 
   const canRemovePlayer = (playerId: string) =>
     !tournament.rounds.some((round) =>
-      round.pairings.some(
-        (pairing) =>
-          pairing.whitePlayerId === playerId ||
-          pairing.blackPlayerId === playerId ||
-          pairing.byePlayerId === playerId,
-      ),
+      round.pairings.some((pairing) => pairingPlayerIds(pairing).includes(playerId)),
     )
   const manuallyUsedPlayerIds = new Set(
     (draftRound?.pairings ?? [])
       .filter((pairing) => pairing.isManual)
-      .flatMap((pairing) =>
-        [
-          pairing.whitePlayerId,
-          pairing.blackPlayerId,
-          pairing.byePlayerId,
-        ].filter((playerId): playerId is string => typeof playerId === 'string'),
-      ),
+      .flatMap(pairingPlayerIds),
   )
+  const manualHandBrainIds = [
+    manualWhiteBrain,
+    manualWhiteHand,
+    manualBlackBrain,
+    manualBlackHand,
+  ]
   const manualWhiteOptions = tournament.players.filter(
     (player) => !manuallyUsedPlayerIds.has(player.id) && player.id !== manualBlack,
   )
@@ -1173,6 +1245,18 @@ export function SwissTournamentsPage() {
     manualWhite !== manualBlack &&
     !manuallyUsedPlayerIds.has(manualWhite) &&
     !manuallyUsedPlayerIds.has(manualBlack)
+  const handBrainOptionFor = (currentPlayerId: string) =>
+    tournament.players.filter(
+      (player) =>
+        !manuallyUsedPlayerIds.has(player.id) &&
+        (player.id === currentPlayerId ||
+          !manualHandBrainIds.some((playerId) => playerId === player.id)),
+    )
+  const canAddManualHandBrainPairing =
+    tournament.format === 'handAndBrain' &&
+    manualHandBrainIds.every(Boolean) &&
+    new Set(manualHandBrainIds).size === 4 &&
+    manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
 
   return (
     <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
@@ -1805,11 +1889,100 @@ export function SwissTournamentsPage() {
                       </CardHeader>
                       <CardContent className="grid gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
                         {isEditable && draftRound && (
-                          <div className="rounded-md border border-dashed bg-background p-3">
+                          <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+                            {tournament.format === 'handAndBrain' && (
+                              <div className="grid gap-2">
+                                <div className="flex items-center gap-2 text-sm font-semibold">
+                                  <BrainCircuit className="size-4 text-primary" />
+                                  Hand-and-Brain-Brett fixieren
+                                </div>
+                                <div className="grid gap-2 lg:grid-cols-[1fr_1fr_auto]">
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Weiß Brain" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {handBrainOptionFor(manualWhiteBrain).map((player) => (
+                                          <SelectItem key={player.id} value={player.id}>
+                                            {player.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Weiß Hand" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {handBrainOptionFor(manualWhiteHand).map((player) => (
+                                          <SelectItem key={player.id} value={player.id}>
+                                            {player.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Schwarz Brain" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {handBrainOptionFor(manualBlackBrain).map((player) => (
+                                          <SelectItem key={player.id} value={player.id}>
+                                            {player.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Schwarz Hand" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {handBrainOptionFor(manualBlackHand).map((player) => (
+                                          <SelectItem key={player.id} value={player.id}>
+                                            {player.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <Button
+                                    className="h-9 w-full lg:w-auto"
+                                    disabled={!canAddManualHandBrainPairing}
+                                    onClick={async () => {
+                                      if (!canAddManualHandBrainPairing) {
+                                        return
+                                      }
+
+                                      await app.addManualHandBrainPairing(draftRound.roundNumber, {
+                                        white: {
+                                          brainPlayerId: manualWhiteBrain,
+                                          handPlayerId: manualWhiteHand,
+                                        },
+                                        black: {
+                                          brainPlayerId: manualBlackBrain,
+                                          handPlayerId: manualBlackHand,
+                                        },
+                                      })
+                                      setManualWhiteBrain('')
+                                      setManualWhiteHand('')
+                                      setManualBlackBrain('')
+                                      setManualBlackHand('')
+                                      toast.success('Hand-and-Brain-Brett fixiert.')
+                                    }}
+                                  >
+                                    H&B fixieren
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                             <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:gap-3">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Spieler A" />
+                                  <SelectValue placeholder={tournament.format === 'handAndBrain' ? 'Einzel Weiß' : 'Spieler A'} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {manualWhiteOptions.map((player) => (
@@ -1821,7 +1994,7 @@ export function SwissTournamentsPage() {
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Spieler B" />
+                                  <SelectValue placeholder={tournament.format === 'handAndBrain' ? 'Einzel Schwarz' : 'Spieler B'} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {manualBlackOptions.map((player) => (
@@ -1849,7 +2022,7 @@ export function SwissTournamentsPage() {
                                   toast.success('Manuelle Paarung fixiert.')
                                 }}
                               >
-                                Fixieren
+                                {tournament.format === 'handAndBrain' ? 'Einzel fixieren' : 'Fixieren'}
                               </Button>
                             </div>
                           </div>
@@ -1927,6 +2100,42 @@ function PairingsTable({
       (warning) =>
         tournament.format !== 'roundRobin' || warning.id !== 'large-point-gap',
     )
+  const sideLabel = (
+    side: NonNullable<Pairing['handBrainSides']>['white'] | undefined,
+  ) => {
+    if (!side) {
+      return '-'
+    }
+
+    return `Brain: ${playerName(tournament, side.brainPlayerId)} · Hand: ${playerName(
+      tournament,
+      side.handPlayerId,
+    )}`
+  }
+  const whiteLabel = (pairing: Pairing) => {
+    if (pairing.isBye) {
+      return playerName(tournament, pairing.byePlayerId)
+    }
+
+    if (pairing.kind === 'handAndBrain') {
+      return sideLabel(pairing.handBrainSides?.white)
+    }
+
+    return playerName(tournament, pairing.whitePlayerId)
+  }
+  const blackLabel = (pairing: Pairing) => {
+    if (pairing.isBye) {
+      return 'Bye'
+    }
+
+    if (pairing.kind === 'handAndBrain') {
+      return sideLabel(pairing.handBrainSides?.black)
+    }
+
+    return playerName(tournament, pairing.blackPlayerId)
+  }
+  const pairingRemoveLabel = (pairing: Pairing) =>
+    `Fixierte Paarung ${whiteLabel(pairing)} gegen ${blackLabel(pairing)} lösen`
 
   const renderMobileResult = (pairing: Pairing) => {
     if (pairing.isBye) {
@@ -1965,11 +2174,15 @@ function PairingsTable({
 
   const renderMobileWarnings = (pairing: Pairing) => {
     const visibleWarnings = visibleWarningsForPairing(pairing)
+    const removeLabel = pairingRemoveLabel(pairing)
 
     return (
       <div className="flex flex-wrap gap-1">
         {pairing.isManual && (
-          <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
+          <span
+            className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950"
+            title={removeLabel}
+          >
             <span className="px-2 py-0.5">FIXIERT</span>
             {editable && onManualPairingRemove && (
               <Button
@@ -2015,12 +2228,8 @@ function PairingsTable({
     <>
       <div className="grid gap-2 md:hidden">
         {pairings.map((pairing) => {
-          const whiteName = pairing.isBye
-            ? playerName(tournament, pairing.byePlayerId)
-            : playerName(tournament, pairing.whitePlayerId)
-          const blackName = pairing.isBye
-            ? 'Bye'
-            : playerName(tournament, pairing.blackPlayerId)
+          const whiteName = whiteLabel(pairing)
+          const blackName = blackLabel(pairing)
 
           return (
             <div
@@ -2033,6 +2242,11 @@ function PairingsTable({
               <div className="flex items-start justify-between gap-2">
                 <div className="font-semibold tabular-nums">
                   Brett {pairing.boardNumber}
+                  {pairing.kind === 'single' && (
+                    <Badge className="ml-2 align-middle" variant="secondary">
+                      Einzelpartie
+                    </Badge>
+                  )}
                 </div>
                 {showWarnings && renderMobileWarnings(pairing)}
               </div>
@@ -2041,13 +2255,13 @@ function PairingsTable({
                   <div className="text-xs font-medium text-muted-foreground">
                     Wei&szlig;
                   </div>
-                  <div className="truncate font-medium">{whiteName}</div>
+                  <div className="whitespace-normal font-medium">{whiteName}</div>
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-muted-foreground">
                     Schwarz
                   </div>
-                  <div className="truncate font-medium">{blackName}</div>
+                  <div className="whitespace-normal font-medium">{blackName}</div>
                 </div>
               </div>
               <div className="mt-2.5">
@@ -2084,14 +2298,19 @@ function PairingsTable({
                   pairing.isManual && 'bg-primary/5',
                 )}
               >
-              <td className="p-3 tabular-nums">{pairing.boardNumber}</td>
-              <td className="p-3">
-                {pairing.isBye
-                  ? playerName(tournament, pairing.byePlayerId)
-                  : playerName(tournament, pairing.whitePlayerId)}
+              <td className="p-3 tabular-nums">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span>{pairing.boardNumber}</span>
+                  {pairing.kind === 'single' && (
+                    <Badge variant="secondary">Einzelpartie</Badge>
+                  )}
+                </div>
               </td>
               <td className="p-3">
-                {pairing.isBye ? 'Bye' : playerName(tournament, pairing.blackPlayerId)}
+                {whiteLabel(pairing)}
+              </td>
+              <td className="p-3">
+                {blackLabel(pairing)}
               </td>
               <td className="p-3">
                 {pairing.isBye ? (

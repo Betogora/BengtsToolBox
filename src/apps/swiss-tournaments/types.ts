@@ -22,12 +22,19 @@ export type RoundStatus = 'draft' | 'completed'
 
 export type TournamentArchiveReason = 'newTournament' | 'reset'
 
-export type TournamentFormat = 'swiss' | 'roundRobin'
+export type TournamentFormat = 'swiss' | 'roundRobin' | 'handAndBrain'
+
+export type PairingKind = 'standard' | 'handAndBrain' | 'single'
 
 export type PairingWarning = {
   id: string
   severity: 'hard' | 'soft'
   message: string
+}
+
+export type HandBrainSide = {
+  handPlayerId: string
+  brainPlayerId: string
 }
 
 export type Player = {
@@ -52,8 +59,13 @@ export type Pairing = {
   id: string
   roundNumber: number
   boardNumber: number
+  kind?: PairingKind
   whitePlayerId?: string
   blackPlayerId?: string
+  handBrainSides?: {
+    white: HandBrainSide
+    black: HandBrainSide
+  }
   result?: GameResult
   isManual: boolean
   isBye: boolean
@@ -133,9 +145,10 @@ export type CreateTournamentInput = {
 export type PlayerScoreSummary = {
   points: number
   wins: number
-  opponents: string[]
-  defeatedOpponents: string[]
-  drawnOpponents: string[]
+  opponentGroups: string[][]
+  defeatedOpponentGroups: string[][]
+  drawnOpponentGroups: string[][]
   colors: Color[]
+  roles: Array<'hand' | 'brain' | '-'>
   byes: number
 }

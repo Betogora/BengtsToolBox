@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import {
   addPlayerAfterStart,
+  createManualHandBrainPairing,
   createManualPairing,
   createTournament,
   deleteLatestRound,
@@ -20,6 +21,8 @@ import type {
   ByeScore,
   CreateTournamentInput,
   GameResult,
+  HandBrainSide,
+  Pairing,
   PlayerStatus,
   SwissTournamentsState,
   Tournament,
@@ -113,6 +116,18 @@ function highestCompletedRoundNumber(tournament: Tournament) {
         : highestRound,
     0,
   )
+}
+
+function pairingPlayerIds(pairing: Pairing) {
+  return [
+    pairing.whitePlayerId,
+    pairing.blackPlayerId,
+    pairing.byePlayerId,
+    pairing.handBrainSides?.white.brainPlayerId,
+    pairing.handBrainSides?.white.handPlayerId,
+    pairing.handBrainSides?.black.brainPlayerId,
+    pairing.handBrainSides?.black.handPlayerId,
+  ].filter((playerId): playerId is string => typeof playerId === 'string')
 }
 
 export function useSwissTournaments(sessionId = 'default') {
@@ -400,15 +415,7 @@ export function useSwissTournaments(sessionId = 'default') {
       const fixedPlayerIds = new Set(
         existing.pairings
           .filter((pairing) => pairing.isManual)
-          .flatMap((pairing) =>
-            [
-              pairing.whitePlayerId,
-              pairing.blackPlayerId,
-              pairing.byePlayerId,
-            ].filter(
-              (playerId): playerId is string => typeof playerId === 'string',
-            ),
-          ),
+          .flatMap(pairingPlayerIds),
       )
 
       if (
@@ -422,6 +429,57 @@ export function useSwissTournaments(sessionId = 'default') {
       const fixedPairings = [
         ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
         createManualPairing(tournament, roundNumber, whitePlayerId, blackPlayerId),
+      ]
+
+      return upsertRound(tournament, roundNumber, fixedPairings)
+    })
+
+  const addManualHandBrainPairing = (
+    roundNumber: number,
+    handBrainSides: {
+      white: HandBrainSide
+      black: HandBrainSide
+    },
+  ) =>
+    updateActiveTournament((tournament) => {
+      const existing = tournament.rounds.find(
+        (round) => round.roundNumber === roundNumber,
+      )
+      const latestRound = [...tournament.rounds].sort(
+        (left, right) => right.roundNumber - left.roundNumber,
+      )[0]
+
+      if (
+        !existing ||
+        existing.status !== 'draft' ||
+        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
+        existing.roundNumber !== latestRound?.roundNumber
+      ) {
+        return tournament
+      }
+
+      const requestedPlayerIds = [
+        handBrainSides.white.brainPlayerId,
+        handBrainSides.white.handPlayerId,
+        handBrainSides.black.brainPlayerId,
+        handBrainSides.black.handPlayerId,
+      ]
+      const fixedPlayerIds = new Set(
+        existing.pairings
+          .filter((pairing) => pairing.isManual)
+          .flatMap(pairingPlayerIds),
+      )
+
+      if (
+        new Set(requestedPlayerIds).size !== 4 ||
+        requestedPlayerIds.some((playerId) => fixedPlayerIds.has(playerId))
+      ) {
+        return tournament
+      }
+
+      const fixedPairings = [
+        ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
+        createManualHandBrainPairing(tournament, roundNumber, handBrainSides),
       ]
 
       return upsertRound(tournament, roundNumber, fixedPairings)
@@ -540,6 +598,7 @@ export function useSwissTournaments(sessionId = 'default') {
 
   return {
     activeTournament,
+    addManualHandBrainPairing,
     addManualPairing,
     addPlayer,
     archivedTournaments,
