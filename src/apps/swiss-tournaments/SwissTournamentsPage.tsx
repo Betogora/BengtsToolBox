@@ -9,6 +9,7 @@ import {
   Download,
   FileJson,
   GitBranch,
+  Hand,
   LayoutDashboard,
   ListChecks,
   Pencil,
@@ -1922,10 +1923,10 @@ export function SwissTournamentsPage() {
                                   <Brain className="size-4 text-primary" />
                                   Hand-and-Brain-Brett fixieren
                                 </div>
-                                <div className="grid gap-2 lg:grid-cols-[1fr_1fr_auto]">
+                                <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
-                                      <SelectTrigger>
+                                      <SelectTrigger className={singleLineSelectTriggerClass}>
                                         <SelectValue placeholder="Weiß Brain" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1937,7 +1938,7 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
-                                      <SelectTrigger>
+                                      <SelectTrigger className={singleLineSelectTriggerClass}>
                                         <SelectValue placeholder="Weiß Hand" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1951,7 +1952,7 @@ export function SwissTournamentsPage() {
                                   </div>
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
-                                      <SelectTrigger>
+                                      <SelectTrigger className={singleLineSelectTriggerClass}>
                                         <SelectValue placeholder="Schwarz Brain" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1963,7 +1964,7 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
-                                      <SelectTrigger>
+                                      <SelectTrigger className={singleLineSelectTriggerClass}>
                                         <SelectValue placeholder="Schwarz Hand" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1976,7 +1977,7 @@ export function SwissTournamentsPage() {
                                     </Select>
                                   </div>
                                   <Button
-                                    className="h-9 w-full lg:w-auto"
+                                    className="h-9 w-full"
                                     disabled={!canAddManualHandBrainPairing}
                                     onClick={async () => {
                                       if (!canAddManualHandBrainPairing) {
@@ -2005,9 +2006,9 @@ export function SwissTournamentsPage() {
                                 </div>
                               </div>
                             )}
-                            <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:gap-3">
+                            <div className="grid gap-2 md:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
-                                <SelectTrigger>
+                                <SelectTrigger className={singleLineSelectTriggerClass}>
                                   <SelectValue placeholder={tournament.format === 'handAndBrain' ? 'Einzel Weiß' : 'Spieler A'} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2019,7 +2020,7 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
-                                <SelectTrigger>
+                                <SelectTrigger className={singleLineSelectTriggerClass}>
                                   <SelectValue placeholder={tournament.format === 'handAndBrain' ? 'Einzel Schwarz' : 'Spieler B'} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2031,7 +2032,7 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Button
-                                className="h-9 w-full md:w-auto"
+                                className="h-9 w-full"
                                 disabled={!canAddManualPairing}
                                 onClick={async () => {
                                   if (!canAddManualPairing) {
@@ -2138,6 +2139,32 @@ function PairingsTable({
       side.handPlayerId,
     )}`
   }
+  const renderSide = (
+    side: NonNullable<Pairing['handBrainSides']>['white'] | undefined,
+  ) => {
+    if (!side) {
+      return '-'
+    }
+
+    return (
+      <div className="grid gap-1 leading-tight">
+        <div className="grid min-w-0 grid-cols-[3rem_auto_minmax(0,1fr)] items-center gap-1.5">
+          <span className="text-xs font-semibold text-muted-foreground">Brain</span>
+          <Brain className="size-3.5 shrink-0 text-primary" />
+          <span className="min-w-0 truncate font-medium">
+            {playerName(tournament, side.brainPlayerId)}
+          </span>
+        </div>
+        <div className="grid min-w-0 grid-cols-[3rem_auto_minmax(0,1fr)] items-center gap-1.5">
+          <span className="text-xs font-semibold text-muted-foreground">Hand</span>
+          <Hand className="size-3.5 shrink-0 text-primary" />
+          <span className="min-w-0 truncate font-medium">
+            {playerName(tournament, side.handPlayerId)}
+          </span>
+        </div>
+      </div>
+    )
+  }
   const whiteLabel = (pairing: Pairing) => {
     if (pairing.isBye) {
       return playerName(tournament, pairing.byePlayerId)
@@ -2156,6 +2183,28 @@ function PairingsTable({
 
     if (pairing.kind === 'handAndBrain') {
       return sideLabel(pairing.handBrainSides?.black)
+    }
+
+    return playerName(tournament, pairing.blackPlayerId)
+  }
+  const renderWhite = (pairing: Pairing) => {
+    if (pairing.isBye) {
+      return playerName(tournament, pairing.byePlayerId)
+    }
+
+    if (pairing.kind === 'handAndBrain') {
+      return renderSide(pairing.handBrainSides?.white)
+    }
+
+    return playerName(tournament, pairing.whitePlayerId)
+  }
+  const renderBlack = (pairing: Pairing) => {
+    if (pairing.isBye) {
+      return 'Bye'
+    }
+
+    if (pairing.kind === 'handAndBrain') {
+      return renderSide(pairing.handBrainSides?.black)
     }
 
     return playerName(tournament, pairing.blackPlayerId)
@@ -2254,8 +2303,8 @@ function PairingsTable({
     <>
       <div className="grid gap-2 md:hidden">
         {pairings.map((pairing) => {
-          const whiteName = whiteLabel(pairing)
-          const blackName = blackLabel(pairing)
+          const whiteName = renderWhite(pairing)
+          const blackName = renderBlack(pairing)
 
           return (
             <div
@@ -2281,13 +2330,13 @@ function PairingsTable({
                   <div className="text-xs font-medium text-muted-foreground">
                     Wei&szlig;
                   </div>
-                  <div className="whitespace-normal font-medium">{whiteName}</div>
+                  <div className="whitespace-normal">{whiteName}</div>
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-muted-foreground">
                     Schwarz
                   </div>
-                  <div className="whitespace-normal font-medium">{blackName}</div>
+                  <div className="whitespace-normal">{blackName}</div>
                 </div>
               </div>
               <div className="mt-2.5">
@@ -2309,7 +2358,7 @@ function PairingsTable({
             <th className="p-3">Weiß</th>
             <th className="p-3">Schwarz</th>
             <th className="p-3">Ergebnis</th>
-            {showWarnings && <th className="p-3">Hinweise</th>}
+            {showWarnings && <th className="w-44 max-w-44 p-3">Hinweise</th>}
           </tr>
           </thead>
           <tbody>
@@ -2333,10 +2382,10 @@ function PairingsTable({
                 </div>
               </td>
               <td className="p-3">
-                {whiteLabel(pairing)}
+                {renderWhite(pairing)}
               </td>
               <td className="p-3">
-                {blackLabel(pairing)}
+                {renderBlack(pairing)}
               </td>
               <td className="p-3">
                 {pairing.isBye ? (
@@ -2367,17 +2416,14 @@ function PairingsTable({
                 )}
               </td>
               {showWarnings && (
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-1">
+                <td className="w-44 max-w-44 p-3">
+                  <div className="flex max-w-44 flex-wrap gap-1">
                     {pairing.isManual && (
                       <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
                         <span className="px-2 py-0.5">FIXIERT</span>
                         {editable && onManualPairingRemove && (
                           <Button
-                            aria-label={`Fixierte Paarung ${playerName(
-                              tournament,
-                              pairing.whitePlayerId,
-                            )} gegen ${playerName(tournament, pairing.blackPlayerId)} lösen`}
+                            aria-label={pairingRemoveLabel(pairing)}
                             className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
                             disabled={!canChangePairings}
                             size="icon"
