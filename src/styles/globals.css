@@ -133,6 +133,10 @@ select {
   white-space: nowrap;
 }
 
+.swiss-round-cell {
+  width: var(--swiss-round-cell-width, auto);
+}
+
 @media (pointer: coarse) {
   .territory-map-layer {
     filter: none;
@@ -292,6 +296,7 @@ select {
   }
 
   .swiss-round-cell {
+    width: var(--swiss-round-cell-width, auto) !important;
     height: 22px !important;
     min-width: 34px !important;
     padding: 0 6px !important;

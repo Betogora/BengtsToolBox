@@ -1538,6 +1538,26 @@ function roleCount(summary: PlayerScoreSummary, role: 'hand' | 'brain') {
   return summary.roles.filter((entry) => entry === role).length
 }
 
+function countSingleGamesBeforeRound(
+  tournament: Tournament,
+  playerId: string,
+  beforeRoundNumber: number,
+) {
+  return tournament.rounds
+    .filter((round) => round.roundNumber < beforeRoundNumber)
+    .reduce(
+      (count, round) =>
+        count +
+        round.pairings.filter(
+          (pairing) =>
+            !pairing.isBye &&
+            pairingKind(pairing) === 'single' &&
+            pairingPlayerIds(pairing).includes(playerId),
+        ).length,
+      0,
+    )
+}
+
 function assignHandBrainSide(
   first: Player,
   second: Player,
@@ -1590,10 +1610,16 @@ function chooseSinglePairing(
       const left = sorted[leftIndex]
       const right = sorted[rightIndex]
       const repeatPenalty = hasPlayedEachOtherBeforeRound(tournament, left.id, right.id, roundNumber)
-        ? 10_000
+        ? 1_000_000
         : 0
+      const leftSingleGames = countSingleGamesBeforeRound(tournament, left.id, roundNumber)
+      const rightSingleGames = countSingleGamesBeforeRound(tournament, right.id, roundNumber)
+      const repeatedSinglePenalty =
+        Math.max(leftSingleGames, rightSingleGames) * 100_000 +
+        (leftSingleGames + rightSingleGames) * 25_000
       const score =
         repeatPenalty +
+        repeatedSinglePenalty +
         pairPointDiff(left, right, summaries) * 100 +
         leftIndex +
         rightIndex / 100

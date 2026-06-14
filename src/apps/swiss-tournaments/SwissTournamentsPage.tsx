@@ -2148,16 +2148,16 @@ function PairingsTable({
 
     return (
       <div className="grid gap-1 leading-tight">
-        <div className="grid min-w-0 grid-cols-[3rem_auto_minmax(0,1fr)] items-center gap-1.5">
-          <span className="text-xs font-semibold text-muted-foreground">Brain</span>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5">
           <Brain className="size-3.5 shrink-0 text-primary" />
+          <span className="sr-only">Brain</span>
           <span className="min-w-0 truncate font-medium">
             {playerName(tournament, side.brainPlayerId)}
           </span>
         </div>
-        <div className="grid min-w-0 grid-cols-[3rem_auto_minmax(0,1fr)] items-center gap-1.5">
-          <span className="text-xs font-semibold text-muted-foreground">Hand</span>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5">
           <Hand className="size-3.5 shrink-0 text-primary" />
+          <span className="sr-only">Hand</span>
           <span className="min-w-0 truncate font-medium">
             {playerName(tournament, side.handPlayerId)}
           </span>
@@ -2315,7 +2315,7 @@ function PairingsTable({
               )}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="font-semibold tabular-nums">
+                <div className="font-semibold tabular-nums whitespace-nowrap">
                   Brett {pairing.boardNumber}
                   {pairing.kind === 'single' && (
                     <Badge className="ml-2 align-middle" variant="secondary">
@@ -2351,14 +2351,21 @@ function PairingsTable({
       </div>
 
       <div className="hidden overflow-x-auto rounded-md border md:block">
-        <table className="w-full min-w-[48rem] text-sm">
+        <table className="w-full min-w-[48rem] table-fixed text-sm">
+          <colgroup>
+            <col className="w-40" />
+            <col />
+            <col />
+            <col className="w-36" />
+            {showWarnings && <col className="w-56" />}
+          </colgroup>
           <thead className="bg-muted/70 text-left">
           <tr>
             <th className="p-3">Brett</th>
             <th className="p-3">Weiß</th>
             <th className="p-3">Schwarz</th>
             <th className="p-3">Ergebnis</th>
-            {showWarnings && <th className="w-44 max-w-44 p-3">Hinweise</th>}
+            {showWarnings && <th className="p-3">Hinweise</th>}
           </tr>
           </thead>
           <tbody>
@@ -2397,7 +2404,7 @@ function PairingsTable({
                       handleResultSelect(pairing.id, value as ResultSelectValue)
                     }
                   >
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-28">
                       <SelectValue placeholder="offen" />
                     </SelectTrigger>
                     <SelectContent>
@@ -2416,8 +2423,8 @@ function PairingsTable({
                 )}
               </td>
               {showWarnings && (
-                <td className="w-44 max-w-44 p-3">
-                  <div className="flex max-w-44 flex-wrap gap-1">
+                <td className="p-3">
+                  <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
                       <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
                         <span className="px-2 py-0.5">FIXIERT</span>
@@ -2485,7 +2492,7 @@ function StandingsTable({
           : ''
   const roundCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
     cn(
-      'swiss-round-cell inline-flex h-7 min-w-11 items-center justify-center rounded px-2 text-xs font-semibold tabular-nums',
+      'swiss-round-cell inline-flex h-7 min-w-11 items-center justify-start rounded px-2 text-xs font-semibold tabular-nums',
       cell.color === 'W' && 'border border-border bg-white text-foreground',
       cell.color === 'B' && 'bg-primary text-primary-foreground',
       cell.outcome === 'bye' && 'border border-dashed border-border bg-muted text-muted-foreground',
@@ -2501,6 +2508,13 @@ function StandingsTable({
     ...standings.map((row) => row.roundHistory.length),
   )
   const roundColumns = Array.from({ length: roundColumnCount }, (_, index) => index)
+  const roundCellLabelWidth = Math.max(
+    4,
+    ...standings.flatMap((row) => row.roundHistory.map((cell) => cell.label.length)),
+  )
+  const roundCellWidthStyle = {
+    '--swiss-round-cell-width': `${roundCellLabelWidth + 2}ch`,
+  } as CSSProperties
 
 
   return (
@@ -2514,7 +2528,7 @@ function StandingsTable({
           Rangliste
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent style={roundCellWidthStyle}>
         <div className="swiss-standings-mobile rounded-md border md:hidden">
           <table className="w-full table-fixed text-sm">
             <colgroup>
