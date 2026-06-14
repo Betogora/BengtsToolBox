@@ -128,7 +128,7 @@ function tournamentFormatLabel(format?: Tournament['format']) {
   }
 
   if (format === 'handAndBrain') {
-    return 'Hand / Brain'
+    return 'Hand and Brain'
   }
 
   return 'Swiss'
@@ -435,19 +435,11 @@ function TournamentFormatCard({
   format: TournamentFormat
 }) {
   const label = tournamentFormatLabel(format)
-  const isHandBrain = format === 'handAndBrain'
 
   return (
     <Card>
-      <CardHeader
-        className={cn(
-          'grid items-center gap-3 p-4',
-          isHandBrain
-            ? 'grid-cols-1'
-            : 'grid-cols-[minmax(0,1fr)_minmax(6.5rem,auto)]',
-        )}
-      >
-        <CardDescription className={cn('min-w-0', isHandBrain && 'sr-only')}>
+      <CardHeader className="grid grid-cols-1 items-center gap-3 p-4">
+        <CardDescription className="sr-only">
           Turniermodus
         </CardDescription>
         <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
@@ -489,7 +481,9 @@ function TournamentFormatPicker({
         >
           <Swords className="size-4 shrink-0" />
           <span className="min-w-0">
-            <span className="block whitespace-nowrap text-sm font-semibold">Swiss</span>
+            <span className="block whitespace-nowrap text-sm font-semibold">
+              {tournamentFormatLabel('swiss')}
+            </span>
           </span>
         </button>
         <button
@@ -501,7 +495,7 @@ function TournamentFormatPicker({
           <GitBranch className="size-4 shrink-0" />
           <span className="min-w-0">
             <span className="block whitespace-nowrap text-sm font-semibold">
-              Round Robin
+              {tournamentFormatLabel('roundRobin')}
             </span>
           </span>
         </button>
@@ -514,7 +508,7 @@ function TournamentFormatPicker({
           <Brain className="size-4 shrink-0" />
           <span className="min-w-0">
             <span className="block whitespace-nowrap text-sm font-semibold">
-              Hand / Brain
+              {tournamentFormatLabel('handAndBrain')}
             </span>
           </span>
         </button>
