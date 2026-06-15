@@ -528,6 +528,34 @@ function assignColors(
     : { whitePlayerId: blackCandidate.id, blackPlayerId: whiteCandidate.id }
 }
 
+function assignSinglePairingColors(
+  left: Player,
+  right: Player,
+  summaries: Record<string, PlayerScoreSummary>,
+) {
+  const leftWhiteCount = summaries[left.id].colors.filter((entry) => entry === 'W').length
+  const rightWhiteCount = summaries[right.id].colors.filter((entry) => entry === 'W').length
+
+  if (leftWhiteCount !== rightWhiteCount) {
+    return leftWhiteCount < rightWhiteCount
+      ? { whitePlayerId: left.id, blackPlayerId: right.id }
+      : { whitePlayerId: right.id, blackPlayerId: left.id }
+  }
+
+  const leftBlackCount = summaries[left.id].colors.filter((entry) => entry === 'B').length
+  const rightBlackCount = summaries[right.id].colors.filter((entry) => entry === 'B').length
+
+  if (leftBlackCount !== rightBlackCount) {
+    return leftBlackCount > rightBlackCount
+      ? { whitePlayerId: left.id, blackPlayerId: right.id }
+      : { whitePlayerId: right.id, blackPlayerId: left.id }
+  }
+
+  return left.initialSeed > right.initialSeed
+    ? { whitePlayerId: left.id, blackPlayerId: right.id }
+    : { whitePlayerId: right.id, blackPlayerId: left.id }
+}
+
 function colorAssignmentPenalty(
   white: Player,
   black: Player,
@@ -1890,7 +1918,7 @@ function createHandBrainPairings(
     const singlePair = chooseSinglePairing(pool, tournament, summaries, roundNumber)
 
     if (singlePair) {
-      const colors = assignColors(singlePair.left, singlePair.right, summaries, tournament, roundNumber)
+      const colors = assignSinglePairingColors(singlePair.left, singlePair.right, summaries)
       const pairing: Pairing = {
         id: makeId('pairing'),
         roundNumber,
