@@ -78,18 +78,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
 const resultOptions: Array<{ value: GameResult; label: string }> = [
-  { value: '1-0', label: '1-0' },
-  { value: '0-1', label: '0-1' },
-  { value: '0.5-0.5', label: '0,5-0,5' },
-  { value: 'forfeit-1-0', label: 'kampflos 1-0' },
-  { value: 'forfeit-0-1', label: 'kampflos 0-1' },
+  { value: '1-0', label: '1 - 0' },
+  { value: '0-1', label: '0 - 1' },
+  { value: '0.5-0.5', label: '1/2 - 1/2' },
+  { value: 'forfeit-1-0', label: 'kampflos 1 - 0' },
+  { value: 'forfeit-0-1', label: 'kampflos 0 - 1' },
 ]
 const openResultValue = 'open'
 type ResultSelectValue = GameResult | typeof openResultValue
 
 const byeScoreOptions: Array<{ value: ByeScore; label: string }> = [
   { value: 1, label: '1 Punkt' },
-  { value: 0.5, label: '0,5 Punkte' },
+  { value: 0.5, label: '1/2 Punkt' },
   { value: 0, label: '0 Punkte' },
 ]
 
@@ -189,11 +189,18 @@ function resultLabel(result?: GameResult) {
     return 'offen'
   }
 
-  const label = result.startsWith('bye-')
-    ? result.replace('bye-', 'Bye ')
-    : result.replaceAll('forfeit-', 'kampflos ')
+  if (result === 'bye-0.5') {
+    return 'Bye 1/2'
+  }
 
-  return label.replaceAll('.', ',')
+  if (result.startsWith('bye-')) {
+    return result.replace('bye-', 'Bye ')
+  }
+
+  return (
+    resultOptions.find((option) => option.value === result)?.label ??
+    result.replaceAll('forfeit-', 'kampflos ').replaceAll('-', ' - ')
+  )
 }
 
 function formatDateTime(value?: string) {

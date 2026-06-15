@@ -2139,10 +2139,26 @@ function resultLabelForPlayer(pairing: Pairing, playerId: string) {
   }
 
   if (points === 0.5) {
-    return '½'
+    return '1/2'
   }
 
   return '0'
+}
+
+function formatResult(result: GameResult) {
+  if (result === '0.5-0.5') {
+    return '1/2 - 1/2'
+  }
+
+  if (result === 'bye-0.5') {
+    return 'Bye 1/2'
+  }
+
+  if (result.startsWith('bye-')) {
+    return result.replace('bye-', 'Bye ')
+  }
+
+  return result.replaceAll('forfeit-', 'kampflos ').replaceAll('-', ' - ')
 }
 
 function resultTitle(result?: GameResult) {
@@ -2150,19 +2166,7 @@ function resultTitle(result?: GameResult) {
     return 'offen'
   }
 
-  if (result === 'bye-0.5') {
-    return 'Bye 0,5'
-  }
-
-  if (result === 'bye-1') {
-    return 'Bye 1'
-  }
-
-  if (result === 'bye-0') {
-    return 'Bye 0'
-  }
-
-  return result.replaceAll('forfeit-', 'kampflos ').replaceAll('.', ',')
+  return formatResult(result)
 }
 
 function createOpenRoundCell(roundNumber: number): StandingRoundCell {
@@ -2182,7 +2186,7 @@ function createRoundHistory(
 ) {
   const playerById = new Map(tournament.players.map((player) => [player.id, player]))
   const visibleRoundCount = Math.max(
-    tournament.numberOfRounds,
+    0,
     ...tournament.rounds.map((round) => round.roundNumber),
   )
 
