@@ -117,11 +117,11 @@ Wenn keine gute Farbverteilung mehr moeglich ist, entstehen `FARBE`-Hinweise.
 
 ### 11. Hand-and-Brain-Bretter bauen
 
-Im Hand-and-Brain-Modus werden zuerst virtuelle Schweizer Einzelpaarungen erzeugt. Die Schweizer Logik bleibt damit der erste Filter: Scoregroups, Gegnerwiederholungen, Floater und Punktabstaende der virtuellen Einzelpaarungen werden vor den Hand-and-Brain-Details entschieden.
+Im Hand-and-Brain-Modus wird der verbleibende Pool nach Bye und optionalem Einzelbrett nach Punkten absteigend und bei Gleichstand nach Startnummer aufsteigend sortiert. Danach entstehen die H&B-Bretter aus fortlaufenden Vierergruppen. Dadurch bleiben die Scoregroups zuerst zusammen: die oberen vier Spieler bilden ein Brett, danach die naechsten vier Spieler und so weiter.
 
-Danach werden die virtuellen Paarungen global zu Hand-and-Brain-Brettern kombiniert. Die Logik nimmt also nicht einfach das erste virtuelle Paar und sucht dafuer lokal das beste Gegenstueck, sondern bewertet die Gesamtaufteilung aller H&B-Bretter.
+Innerhalb jeder Vierergruppe werden die konkreten Teams, Farben und Brain/Hand-Rollen optimiert. Die Logik nimmt also die vier Spieler des Bretts als festen Rahmen, bewertet darin aber alle sinnvollen Team- und Rollenvarianten.
 
-Die Kombination zweier virtueller Paarungen bewertet:
+Die Varianten innerhalb eines H&B-Bretts bewerten:
 
 1. gleiche Team-gegen-Team-Konstellation sehr schlecht,
 2. direkte Duo-Wiederholungen aus der Vorrunde sehr schlecht,
@@ -131,7 +131,7 @@ Die Kombination zweier virtueller Paarungen bewertet:
 6. Punktabstand zwischen den Seiten schlecht,
 7. Farben und Rollentausch als nachrangige Qualitaetskriterien.
 
-Fuer jedes moegliche H&B-Brett werden beide Farb-/Seitenrichtungen und beide Brain/Hand-Verteilungen ausprobiert. Erst danach wird die beste Gesamtvariante gewaehlt. Dadurch darf eine reine Farb- oder Rollenpraeferenz nicht mehr dazu fuehren, dass ohne Not direkt wieder dieselben Spielpartner entstehen.
+Fuer jedes H&B-Brett werden beide Farb-/Seitenrichtungen und beide Brain/Hand-Verteilungen ausprobiert. Erst danach wird die beste Variante innerhalb der Vierergruppe gewaehlt. Dadurch darf eine reine Farb- oder Rollenpraeferenz nicht mehr dazu fuehren, dass die Scoreblock-Zuordnung veraendert wird.
 
 Bei der Brain/Hand-Verteilung wird die Rollenbalance bevorzugt und eine bereits identische Rollenverteilung innerhalb desselben Duos vermieden. Diese Rollenlogik ist aber zweitrangig gegenueber der Spielpartnerwahl: neue oder lange nicht wiederholte Duos sind wichtiger als eine perfekte Brain/Hand-Balance.
 

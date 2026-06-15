@@ -1846,22 +1846,36 @@ function createHandBrainBoardCandidate(
   return best
 }
 
+function createHandBrainBoardWarnings(
+  boardPlayers: Player[],
+  summaries: Record<string, PlayerScoreSummary>,
+) {
+  const scores = boardPlayers.map((player) => summaries[player.id].points)
+  const highestScore = Math.max(...scores)
+  const lowestScore = Math.min(...scores)
+
+  return highestScore > lowestScore
+    ? [warning('forced-floater', 'Dieses Hand-and-Brain-Brett verbindet mehrere Scoregroups.')]
+    : []
+}
+
 function findBestHandBrainBoardPlan(
-  virtualPairings: PlannedPairing[],
+  players: Player[],
   tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
 ): Pairing[] {
-  if (virtualPairings.length < 2) {
+  if (players.length < 4) {
     return []
   }
 
-  return Array.from({ length: Math.floor(virtualPairings.length / 2) }, (_, index) => {
-    const firstPair = virtualPairings[index * 2]
-    const secondPair = virtualPairings[index * 2 + 1]
+  const sortedPlayers = [...players].sort((left, right) => playerOrder(left, right, summaries))
+
+  return Array.from({ length: Math.floor(sortedPlayers.length / 4) }, (_, index) => {
+    const boardPlayers = sortedPlayers.slice(index * 4, index * 4 + 4)
     const candidate = createHandBrainBoardCandidate(
-      [firstPair.left, firstPair.right, secondPair.left, secondPair.right],
-      [...(firstPair.warnings ?? []), ...(secondPair.warnings ?? [])],
+      boardPlayers,
+      createHandBrainBoardWarnings(boardPlayers, summaries),
       tournament,
       summaries,
       roundNumber,
@@ -1936,12 +1950,8 @@ function createHandBrainPairings(
     }
   }
 
-  const virtualPairings =
-    roundNumber === 1
-      ? createFirstRoundPairings(pool)
-      : createSwissBracketPairings(pool, tournament, summaries, roundNumber)
   const handBrainPairings = findBestHandBrainBoardPlan(
-    virtualPairings,
+    pool,
     tournament,
     summaries,
     roundNumber,
