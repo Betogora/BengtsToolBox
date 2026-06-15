@@ -1962,8 +1962,8 @@ export function SwissTournamentsPage() {
                                   <Brain className="size-4 text-primary" />
                                   Hand-and-Brain-Brett fixieren
                                 </div>
-                                <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
-                                  <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
+                                  <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
                                       <SelectTrigger className={singleLineSelectTriggerClass}>
                                         <SelectValue
@@ -1999,7 +1999,7 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  <div className="grid gap-2 sm:grid-cols-2">
+                                  <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
                                       <SelectTrigger className={singleLineSelectTriggerClass}>
                                         <SelectValue
@@ -2065,9 +2065,9 @@ export function SwissTournamentsPage() {
                                 </div>
                               </div>
                             )}
-                            <div className="grid gap-2 md:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
+                            <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
-                                <SelectTrigger className={singleLineSelectTriggerClass}>
+                                <SelectTrigger className={cn(singleLineSelectTriggerClass, 'lg:col-span-2')}>
                                   <SelectValue
                                     placeholder={roleColorPlaceholder(
                                       <ChessKing className="size-4 shrink-0 text-primary" />,
@@ -2084,7 +2084,7 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
-                                <SelectTrigger className={singleLineSelectTriggerClass}>
+                                <SelectTrigger className={cn(singleLineSelectTriggerClass, 'lg:col-span-2')}>
                                   <SelectValue
                                     placeholder={roleColorPlaceholder(
                                       <ChessKing className="size-4 shrink-0 text-primary" />,
