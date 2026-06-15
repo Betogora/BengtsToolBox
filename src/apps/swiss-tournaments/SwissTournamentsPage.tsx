@@ -33,6 +33,7 @@ import {
   recalculateStandings,
 } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import type {
   ByePolicy,
   ByeScore,
@@ -79,7 +80,7 @@ import { cn } from '@/lib/utils'
 const resultOptions: Array<{ value: GameResult; label: string }> = [
   { value: '1-0', label: '1-0' },
   { value: '0-1', label: '0-1' },
-  { value: '0.5-0.5', label: '0.5-0.5' },
+  { value: '0.5-0.5', label: '0,5-0,5' },
   { value: 'forfeit-1-0', label: 'kampflos 1-0' },
   { value: 'forfeit-0-1', label: 'kampflos 0-1' },
 ]
@@ -88,7 +89,7 @@ type ResultSelectValue = GameResult | typeof openResultValue
 
 const byeScoreOptions: Array<{ value: ByeScore; label: string }> = [
   { value: 1, label: '1 Punkt' },
-  { value: 0.5, label: '0.5 Punkte' },
+  { value: 0.5, label: '0,5 Punkte' },
   { value: 0, label: '0 Punkte' },
 ]
 
@@ -188,7 +189,11 @@ function resultLabel(result?: GameResult) {
     return 'offen'
   }
 
-  return result.startsWith('bye-') ? result.replace('bye-', 'Bye ') : result
+  const label = result.startsWith('bye-')
+    ? result.replace('bye-', 'Bye ')
+    : result.replaceAll('forfeit-', 'kampflos ')
+
+  return label.replaceAll('.', ',')
 }
 
 function formatDateTime(value?: string) {
@@ -614,14 +619,7 @@ function isDefaultTournamentName(value: string) {
 }
 
 function AppTitleHeader() {
-  return (
-    <section className="flex min-w-0 items-center gap-3">
-      <ChessKing aria-hidden="true" className="size-9 shrink-0 text-primary sm:size-10" />
-      <h1 className="min-w-0 truncate text-3xl font-semibold tracking-normal sm:text-4xl">
-        {appTitle}
-      </h1>
-    </section>
-  )
+  return <AppPageTitle Icon={ChessKing} title={appTitle} />
 }
 
 function TournamentCreator({
@@ -816,7 +814,7 @@ function TournamentCreator({
                   aria-label={`${player.name || 'Spieler'} entfernen`}
                   className="self-end"
                   size="sm"
-                  variant="destructive"
+                  variant="delete"
                   onClick={() =>
                     setPlayers((currentPlayers) =>
                       currentPlayers.filter((entry) => entry.id !== player.id),
@@ -1017,7 +1015,7 @@ function ArchivedTournamentsList({
           <Button
             aria-label={`${tournament.name} löschen`}
             size="sm"
-            variant="destructive"
+            variant="delete"
           >
             <Trash2 className="size-4" />
           </Button>
@@ -1676,7 +1674,7 @@ export function SwissTournamentsPage() {
                               ? `${player.name} entfernen`
                               : 'Spieler ist bereits in einer Runde verwendet.'
                           }
-                          variant="destructive"
+                          variant="delete"
                           onClick={async () => {
                             if (!canRemove) {
                               return
@@ -1775,7 +1773,7 @@ export function SwissTournamentsPage() {
                                   ? `${player.name} entfernen`
                                   : 'Spieler ist bereits in einer Runde verwendet.'
                               }
-                              variant="destructive"
+                              variant="delete"
                               onClick={async () => {
                                 if (!canRemove) {
                                   return
@@ -1921,7 +1919,7 @@ export function SwissTournamentsPage() {
                                     className="h-8 w-full p-0 md:w-10"
                                     size="sm"
                                     title="Aktuelle Runde löschen"
-                                    variant="destructive"
+                                    variant="delete"
                                   >
                                     <Trash2 className="size-4" />
                                   </Button>

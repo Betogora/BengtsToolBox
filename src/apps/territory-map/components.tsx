@@ -472,7 +472,7 @@ export function TerritoryEventTable({
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
                     <Button
-                      variant="ghost"
+                      variant="delete"
                       size="icon"
                       aria-label="Bereisung löschen"
                     >

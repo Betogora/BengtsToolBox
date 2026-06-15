@@ -528,7 +528,7 @@ export function PlayerCard({
             onConfirm={() => onRemove(player.id)}
             trigger={
               <Button
-                variant="ghost"
+                variant="delete"
                 size="icon"
                 aria-label={`${player.name} entfernen`}
               >
@@ -720,7 +720,7 @@ export function EventTable({
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
-                    <Button variant="ghost" size="icon" aria-label="Ereignis löschen">
+                    <Button variant="delete" size="icon" aria-label="Ereignis löschen">
                       <Trash2 className="size-4" />
                     </Button>
                   }
@@ -777,7 +777,7 @@ export function ArchiveDatasetCard({
           description="Der archivierte Datensatz wird dauerhaft entfernt."
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="ghost" size="icon" aria-label="Archiv löschen">
+            <Button variant="delete" size="icon" aria-label="Archiv löschen">
               <Trash2 className="size-4" />
             </Button>
           }

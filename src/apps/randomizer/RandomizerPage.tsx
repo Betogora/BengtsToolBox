@@ -1,6 +1,7 @@
 import { Dice5, History, RotateCcw } from 'lucide-react'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,9 +14,7 @@ export function RandomizerPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section>
-        <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-          Random Number Generator
-        </h1>
+        <AppPageTitle Icon={Dice5} title="Random Number Generator" />
       </section>
 
       {error && (

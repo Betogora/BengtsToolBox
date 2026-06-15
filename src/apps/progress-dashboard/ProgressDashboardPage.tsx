@@ -1,6 +1,7 @@
 import {
   Archive,
   BarChart3,
+  ChartNoAxesCombined,
   ChevronDown,
   ChevronRight,
   Plus,
@@ -20,6 +21,7 @@ import {
   ProgressChart,
 } from '@/apps/progress-dashboard/components'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -65,9 +67,10 @@ export function ProgressDashboardPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Fortschritts-Dashboard
-          </h1>
+          <AppPageTitle
+            Icon={ChartNoAxesCombined}
+            title="Fortschritts-Dashboard"
+          />
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{players.length} Spieler</Badge>

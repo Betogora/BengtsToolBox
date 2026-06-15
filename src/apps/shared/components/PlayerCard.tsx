@@ -105,7 +105,7 @@ export function PlayerCard({
             </Button>
           )}
           <Button
-            variant="ghost"
+            variant="delete"
             size="icon"
             aria-label={`${player.name} entfernen`}
             onClick={onRemove}

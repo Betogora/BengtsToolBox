@@ -1,5 +1,6 @@
 import {
   History,
+  ListOrdered,
   Pencil,
   Plus,
   RotateCcw,
@@ -12,6 +13,7 @@ import { toast } from 'sonner'
 
 import type { ScoreboardEvent } from '@/apps/scoreboard/types'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -253,14 +255,16 @@ export function ScoreboardPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <InlineTextEdit
-            ariaLabel="Scoreboard-Titel"
-            className="text-3xl font-semibold tracking-normal sm:text-4xl"
-            fallback="Spieleabend"
-            inputClassName="h-12 text-3xl font-semibold sm:text-4xl"
-            value={state.title}
-            onSave={updateTitle}
-          />
+          <AppPageTitle Icon={ListOrdered}>
+            <InlineTextEdit
+              ariaLabel="Scoreboard-Titel"
+              className="text-3xl font-semibold tracking-normal sm:text-4xl"
+              fallback="Spieleabend"
+              inputClassName="h-12 text-3xl font-semibold sm:text-4xl"
+              value={state.title}
+              onSave={updateTitle}
+            />
+          </AppPageTitle>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
             <Badge variant="secondary" className="text-sm">
               {isRealtime ? 'Live-Sync' : 'Lokal'}

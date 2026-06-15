@@ -37,6 +37,7 @@ import {
   TerritoryEventTable,
   TerritoryShape,
 } from '@/apps/territory-map/components'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import {
   loadTerritories,
   mapViewBoxes,
@@ -395,17 +396,6 @@ function getTerritoryIdFromTarget(target: EventTarget | null) {
 
   return target.closest<SVGElement>('[data-territory-id]')?.dataset
     .territoryId ?? null
-}
-
-function AppTitleHeader() {
-  return (
-    <section className="flex min-w-0 items-center gap-3">
-      <UtensilsCrossed aria-hidden="true" className="size-9 shrink-0 text-primary sm:size-10" />
-      <h1 className="min-w-0 truncate text-3xl font-semibold tracking-normal sm:text-4xl">
-        Sushi Map
-      </h1>
-    </section>
-  )
 }
 
 function CollapsibleCardHeader({
@@ -837,7 +827,7 @@ export function TerritoryMapPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <AppTitleHeader />
+          <AppPageTitle Icon={UtensilsCrossed} title="Sushi Map" />
           {error && (
             <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error.message}
@@ -1092,7 +1082,7 @@ export function TerritoryMapPage() {
                     />
                     {player.position > 2 ? (
                       <Button
-                        variant="ghost"
+                        variant="delete"
                         size="icon"
                         className="size-11 sm:size-9"
                         aria-label={`${player.name} entfernen`}

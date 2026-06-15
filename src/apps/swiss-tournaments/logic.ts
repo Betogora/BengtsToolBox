@@ -2151,7 +2151,7 @@ function resultTitle(result?: GameResult) {
   }
 
   if (result === 'bye-0.5') {
-    return 'Bye 0.5'
+    return 'Bye 0,5'
   }
 
   if (result === 'bye-1') {
@@ -2162,7 +2162,7 @@ function resultTitle(result?: GameResult) {
     return 'Bye 0'
   }
 
-  return result.replaceAll('forfeit-', 'kampflos ')
+  return result.replaceAll('forfeit-', 'kampflos ').replaceAll('.', ',')
 }
 
 function createOpenRoundCell(roundNumber: number): StandingRoundCell {
@@ -2765,7 +2765,7 @@ export function createManualHandBrainPairing(
 }
 
 export function formatPoints(value: number) {
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1)
+  return Number.isInteger(value) ? `${value}` : value.toFixed(1).replace('.', ',')
 }
 
 export function standingsToCsv(rows: StandingRow[]) {

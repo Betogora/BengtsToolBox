@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 
 import type { BuzzerTimestamp } from '@/apps/live-buzzer/types'
 import { useLiveBuzzer } from '@/apps/live-buzzer/hooks/useLiveBuzzer'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -123,11 +124,7 @@ export function LiveBuzzerPage() {
     return (
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
         <section className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-4xl font-semibold tracking-normal sm:text-6xl">
-              Live-Buzzer
-            </h1>
-          </div>
+          <AppPageTitle Icon={Bell} title="Live-Buzzer" />
           <Button variant="outline" onClick={() => setIsPresenterMode(false)}>
             <Monitor className="size-4" />
             Zurück
@@ -203,11 +200,7 @@ export function LiveBuzzerPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Live-Buzzer
-          </h1>
-        </div>
+        <AppPageTitle Icon={Bell} title="Live-Buzzer" />
         <div className="flex flex-wrap gap-2">
           <Badge variant={sessionState.isOpen ? 'default' : 'secondary'}>
             Runde {roundNumber} -{' '}

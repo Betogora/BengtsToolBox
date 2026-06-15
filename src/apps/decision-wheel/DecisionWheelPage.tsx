@@ -20,6 +20,7 @@ import type {
   DecisionWheelEntry,
   DecisionWheelResult,
 } from '@/apps/decision-wheel/types'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -300,11 +301,7 @@ export function DecisionWheelPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
       <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-            Glücksrad
-          </h1>
-        </div>
+        <AppPageTitle Icon={CircleDot} title="Glücksrad" />
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{data.entries.length} Optionen</Badge>
         </div>
@@ -416,7 +413,7 @@ export function DecisionWheelPage() {
                       aria-label={`${getEntryDisplayText(entry, index)} löschen`}
                       className="self-end"
                       size="icon"
-                      variant="outline"
+                      variant="delete"
                       onClick={() => removeEntry(entry.id)}
                     >
                       <Trash2 className="size-4" />

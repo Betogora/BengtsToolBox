@@ -4,12 +4,14 @@ import {
   Database,
   Play,
   RefreshCw,
+  Stethoscope,
   TriangleAlert,
 } from 'lucide-react'
 
 import { apps } from '@/apps/registry'
 import { useDiagnostics } from '@/apps/diagnostics/hooks/useDiagnostics'
 import type { DiagnosticStatus } from '@/apps/diagnostics/types'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -72,9 +74,10 @@ export function DiagnosticsPage() {
             <Cloud className="size-3.5" />
             Plattform-Diagnose
           </Badge>
-          <h1 className="text-4xl font-semibold tracking-normal text-foreground">
-            Firebase- und Multi-Device-Checks
-          </h1>
+          <AppPageTitle
+            Icon={Stethoscope}
+            title="Firebase- und Multi-Device-Checks"
+          />
           <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
             Prüft Konfiguration, Anonymous Auth, Firestore-Lesen und Schreiben,
             Realtime-Snapshots und den lokalen Fallback der Toolbox.
