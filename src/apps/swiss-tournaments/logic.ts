@@ -1907,6 +1907,7 @@ function createHandBrainPairings(
   }))
   let pool = activePlayers
   let byePairing: Pairing | null = null
+  let singlePairing: Pairing | null = null
 
   if (pool.length % 4 === 1 || pool.length % 4 === 3) {
     const byePlayer = chooseByePlayer(
@@ -1943,7 +1944,7 @@ function createHandBrainPairings(
         isBye: false,
       }
       pairing.warnings = validatePairing(tournament, pairing, roundNumber, summaries)
-      pairings.push(pairing)
+      singlePairing = pairing
       pool = pool.filter(
         (player) => player.id !== singlePair.left.id && player.id !== singlePair.right.id,
       )
@@ -1965,6 +1966,10 @@ function createHandBrainPairings(
   }))
 
   pairings.push(...handBrainPairings)
+
+  if (singlePairing) {
+    pairings.push(singlePairing)
+  }
 
   if (byePairing) {
     pairings.push(byePairing)

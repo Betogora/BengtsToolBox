@@ -102,6 +102,15 @@ const tournamentWebsiteQrUrl = '/qrcode.svg'
 const singleLineSelectTriggerClass =
   'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
 
+function roleColorPlaceholder(icon: ReactNode, color: string) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      {icon}
+      <span className="truncate">{color}</span>
+    </span>
+  )
+}
+
 const statusLabels: Record<PlayerStatus, string> = {
   active: 'aktiv',
   inactive: 'inaktiv',
@@ -1925,6 +1934,18 @@ export function SwissTournamentsPage() {
                         </div>
                       </CardHeader>
                       <CardContent className="grid gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
+                        <PairingsTable
+                          editable={isEditable}
+                          pairings={round.pairings}
+                          showWarnings
+                          tournament={tournament}
+                          onManualPairingRemove={(pairingId) =>
+                            void app.removeManualPairing(round.roundNumber, pairingId)
+                          }
+                          onResultChange={(pairingId, result) =>
+                            void app.setResult(round.roundNumber, pairingId, result)
+                          }
+                        />
                         {isEditable && draftRound && (
                           <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
                             {tournament.format === 'handAndBrain' && (
@@ -1937,7 +1958,12 @@ export function SwissTournamentsPage() {
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
                                       <SelectTrigger className={singleLineSelectTriggerClass}>
-                                        <SelectValue placeholder="Weiß Brain" />
+                                        <SelectValue
+                                          placeholder={roleColorPlaceholder(
+                                            <Brain className="size-4 shrink-0 text-primary" />,
+                                            'Weiß',
+                                          )}
+                                        />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteBrain).map((player) => (
@@ -1949,7 +1975,12 @@ export function SwissTournamentsPage() {
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
                                       <SelectTrigger className={singleLineSelectTriggerClass}>
-                                        <SelectValue placeholder="Weiß Hand" />
+                                        <SelectValue
+                                          placeholder={roleColorPlaceholder(
+                                            <Hand className="size-4 shrink-0 text-primary" />,
+                                            'Weiß',
+                                          )}
+                                        />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteHand).map((player) => (
@@ -1963,7 +1994,12 @@ export function SwissTournamentsPage() {
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
                                       <SelectTrigger className={singleLineSelectTriggerClass}>
-                                        <SelectValue placeholder="Schwarz Brain" />
+                                        <SelectValue
+                                          placeholder={roleColorPlaceholder(
+                                            <Brain className="size-4 shrink-0 text-primary" />,
+                                            'Schwarz',
+                                          )}
+                                        />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackBrain).map((player) => (
@@ -1975,7 +2011,12 @@ export function SwissTournamentsPage() {
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
                                       <SelectTrigger className={singleLineSelectTriggerClass}>
-                                        <SelectValue placeholder="Schwarz Hand" />
+                                        <SelectValue
+                                          placeholder={roleColorPlaceholder(
+                                            <Hand className="size-4 shrink-0 text-primary" />,
+                                            'Schwarz',
+                                          )}
+                                        />
                                       </SelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackHand).map((player) => (
@@ -2019,7 +2060,16 @@ export function SwissTournamentsPage() {
                             <div className="grid gap-2 md:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
                                 <SelectTrigger className={singleLineSelectTriggerClass}>
-                                  <SelectValue placeholder={tournament.format === 'handAndBrain' ? 'Einzel Weiß' : 'Spieler A'} />
+                                  <SelectValue
+                                    placeholder={
+                                      tournament.format === 'handAndBrain'
+                                        ? roleColorPlaceholder(
+                                            <ChessKing className="size-4 shrink-0 text-primary" />,
+                                            'Weiß',
+                                          )
+                                        : 'Spieler A'
+                                    }
+                                  />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {manualWhiteOptions.map((player) => (
@@ -2031,7 +2081,16 @@ export function SwissTournamentsPage() {
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
                                 <SelectTrigger className={singleLineSelectTriggerClass}>
-                                  <SelectValue placeholder={tournament.format === 'handAndBrain' ? 'Einzel Schwarz' : 'Spieler B'} />
+                                  <SelectValue
+                                    placeholder={
+                                      tournament.format === 'handAndBrain'
+                                        ? roleColorPlaceholder(
+                                            <ChessKing className="size-4 shrink-0 text-primary" />,
+                                            'Schwarz',
+                                          )
+                                        : 'Spieler B'
+                                    }
+                                  />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {manualBlackOptions.map((player) => (
@@ -2064,18 +2123,6 @@ export function SwissTournamentsPage() {
                             </div>
                           </div>
                         )}
-                        <PairingsTable
-                          editable={isEditable}
-                          pairings={round.pairings}
-                          showWarnings
-                          tournament={tournament}
-                          onManualPairingRemove={(pairingId) =>
-                            void app.removeManualPairing(round.roundNumber, pairingId)
-                          }
-                          onResultChange={(pairingId, result) =>
-                            void app.setResult(round.roundNumber, pairingId, result)
-                          }
-                        />
                       </CardContent>
                       </Card>
                     </Fragment>
