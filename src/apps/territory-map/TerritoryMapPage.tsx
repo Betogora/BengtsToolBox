@@ -14,10 +14,12 @@ import {
   Plus,
   ShipWheel,
   Snowflake,
+  Tent,
   Trash2,
   Trophy,
   UtensilsCrossed,
   Users,
+  Waves,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -171,6 +173,53 @@ const africanTerritoryIds = new Set([
   'zm',
   'zw',
 ])
+const islandTerritoryIds = new Set([
+  'ag',
+  'as',
+  'au',
+  'bb',
+  'bm',
+  'bs',
+  'ck',
+  'cu',
+  'cv',
+  'cy',
+  'dm',
+  'do',
+  'fj',
+  'fk',
+  'gd',
+  'gl',
+  'gu',
+  'ht',
+  'id',
+  'ie',
+  'im',
+  'is',
+  'jm',
+  'jp',
+  'ki',
+  'kn',
+  'lc',
+  'lk',
+  'mg',
+  'mh',
+  'mt',
+  'mu',
+  'mv',
+  'nc',
+  'nz',
+  'pg',
+  'ph',
+  'sb',
+  'sc',
+  'sg',
+  'to',
+  'tt',
+  'tv',
+  'vc',
+  'ws',
+])
 const nordicTerritoryIds = new Set(['dk', 'fi', 'fo', 'gl', 'is', 'nor', 'se'])
 const alpineTerritoryIds = new Set(['at', 'ch'])
 const balkanTerritoryIds = new Set([
@@ -257,6 +306,22 @@ const pacificTerritoryIds = new Set([
   'ws',
 ])
 const microstateTerritoryIds = new Set(['ad', 'li', 'mc', 'mt', 'sm', 'va'])
+const desertTerritoryIds = new Set([
+  'dz',
+  'eg',
+  'eh',
+  'jo',
+  'ly',
+  'ma',
+  'ml',
+  'mr',
+  'ne',
+  'om',
+  'sa',
+  'sd',
+  'td',
+  'tn',
+])
 
 const achievementDefinitions: AchievementDefinition[] = [
   {
@@ -275,6 +340,14 @@ const achievementDefinitions: AchievementDefinition[] = [
     matches: (event) =>
       (event.mapId === 'world' && event.territoryId === 'de') ||
       event.mapId === 'germany',
+  },
+  {
+    id: 'inselhunger',
+    title: 'Inselhunger',
+    Icon: Waves,
+    rule: 'Bereise auf der Weltkarte mindestens ein Inselterritorium.',
+    matches: (event) =>
+      event.mapId === 'world' && islandTerritoryIds.has(event.territoryId),
   },
   {
     id: 'nordlicht',
@@ -323,6 +396,14 @@ const achievementDefinitions: AchievementDefinition[] = [
     rule: 'Bereise auf der Weltkarte einen Microstate.',
     matches: (event) =>
       event.mapId === 'world' && microstateTerritoryIds.has(event.territoryId),
+  },
+  {
+    id: 'wuesten-wasabi',
+    title: 'Wuesten-Wasabi',
+    Icon: Tent,
+    rule: 'Bereise auf der Weltkarte ein Wuesten-Territorium.',
+    matches: (event) =>
+      event.mapId === 'world' && desertTerritoryIds.has(event.territoryId),
   },
   {
     id: 'land-der-sushi',

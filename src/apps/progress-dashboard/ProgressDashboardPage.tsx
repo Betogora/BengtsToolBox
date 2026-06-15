@@ -1,12 +1,14 @@
 import {
   Archive,
   BarChart3,
+  ChevronDown,
+  ChevronRight,
   Plus,
   RotateCcw,
   Trophy,
   UsersRound,
 } from 'lucide-react'
-import { type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -54,6 +56,7 @@ export function ProgressDashboardPage() {
   const totalEvents = activeDataset.events.length
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
   const unitLabel = activeDataset.unit.trim()
+  const [isActiveDatasetOpen, setIsActiveDatasetOpen] = useState(false)
   const chartAccentStyle = {
     '--progress-accent': leader?.player.color ?? 'var(--primary)',
   } as CSSProperties
@@ -179,10 +182,21 @@ export function ProgressDashboardPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2">
+            <button
+              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              onClick={() => setIsActiveDatasetOpen((current) => !current)}
+            >
+              {isActiveDatasetOpen ? (
+                <ChevronDown className="size-4 shrink-0" />
+              ) : (
+                <ChevronRight className="size-4 shrink-0" />
+              )}
               <BarChart3 className="size-5 text-primary" />
-              Datensatz
-            </CardTitle>
+              <span className="font-semibold">Datensatz</span>
+              <span className="text-xs text-muted-foreground">
+                {formatNumber(totalEvents)} Ereignisse
+              </span>
+            </button>
             <ConfirmButton
               title="Datensatz archivieren und neu starten?"
               description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
@@ -199,7 +213,8 @@ export function ProgressDashboardPage() {
             />
           </div>
         </CardHeader>
-        <CardContent>
+        {isActiveDatasetOpen && (
+          <CardContent>
           <EventTable
             dataset={activeDataset}
             icons={progressEventIcons}
@@ -209,7 +224,8 @@ export function ProgressDashboardPage() {
             }}
             onUpdateEvent={(eventId, partialValue) => updateEvent(eventId, partialValue)}
           />
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       <Card>
