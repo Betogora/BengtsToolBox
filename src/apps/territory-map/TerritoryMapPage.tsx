@@ -2,7 +2,6 @@ import {
   BarChart3,
   Building2,
   ChevronDown,
-  ChevronRight,
   Compass,
   Globe2,
   Home,
@@ -27,6 +26,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
 
@@ -395,6 +395,53 @@ function getTerritoryIdFromTarget(target: EventTarget | null) {
 
   return target.closest<SVGElement>('[data-territory-id]')?.dataset
     .territoryId ?? null
+}
+
+function AppTitleHeader() {
+  return (
+    <section className="flex min-w-0 items-center gap-3">
+      <UtensilsCrossed aria-hidden="true" className="size-9 shrink-0 text-primary sm:size-10" />
+      <h1 className="min-w-0 truncate text-3xl font-semibold tracking-normal sm:text-4xl">
+        Sushi Map
+      </h1>
+    </section>
+  )
+}
+
+function CollapsibleCardHeader({
+  icon,
+  isOpen,
+  onToggle,
+  title,
+}: {
+  icon: ReactNode
+  isOpen: boolean
+  onToggle: () => void
+  title: string
+}) {
+  return (
+    <CardHeader className="p-4 sm:p-6">
+      <button
+        aria-expanded={isOpen}
+        className="flex w-full min-w-0 items-center justify-between gap-3 rounded-md px-0 py-1 text-left outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+        type="button"
+        onClick={onToggle}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 text-primary">{icon}</span>
+          <CardTitle className="min-w-0 truncate text-base">
+            {title}
+          </CardTitle>
+        </span>
+        <ChevronDown
+          className={[
+            'size-4 shrink-0 text-muted-foreground transition-transform',
+            isOpen ? 'rotate-180' : '',
+          ].join(' ')}
+        />
+      </button>
+    </CardHeader>
+  )
 }
 
 export function TerritoryMapPage() {
@@ -790,16 +837,7 @@ export function TerritoryMapPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <UtensilsCrossed className="size-5" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-normal">
-                Sushi Map
-              </h1>
-            </div>
-          </div>
+          <AppTitleHeader />
           {error && (
             <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error.message}
@@ -1016,38 +1054,12 @@ export function TerritoryMapPage() {
 
         <div className="grid content-start gap-4">
           <Card>
-            <CardHeader className="p-4">
-              <div className="flex min-w-0 items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                    <Users className="size-4" />
-                  </div>
-                  <CardTitle>Sushi-Tourist</CardTitle>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-10 shrink-0 sm:size-9"
-                  aria-label={
-                    isSushiTouristOpen
-                      ? 'Sushi-Tourist einklappen'
-                      : 'Sushi-Tourist ausklappen'
-                  }
-                  title={
-                    isSushiTouristOpen
-                      ? 'Sushi-Tourist einklappen'
-                      : 'Sushi-Tourist ausklappen'
-                  }
-                  onClick={() => setIsSushiTouristOpen((current) => !current)}
-                >
-                  {isSushiTouristOpen ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
+            <CollapsibleCardHeader
+              icon={<Users className="size-5" />}
+              isOpen={isSushiTouristOpen}
+              title="Sushi-Tourist"
+              onToggle={() => setIsSushiTouristOpen((current) => !current)}
+            />
             {isSushiTouristOpen && (
               <CardContent className="grid gap-3 p-4 pt-0">
               {players.map((player) => (
@@ -1103,30 +1115,12 @@ export function TerritoryMapPage() {
           </Card>
 
           <Card>
-            <CardHeader className="p-4">
-              <div className="flex min-w-0 items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                    <ListOrdered className="size-4" />
-                  </div>
-                  <CardTitle>Punktzahl</CardTitle>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-10 shrink-0 sm:size-9"
-                  aria-label={isScoreOpen ? 'Punktzahl einklappen' : 'Punktzahl ausklappen'}
-                  title={isScoreOpen ? 'Punktzahl einklappen' : 'Punktzahl ausklappen'}
-                  onClick={() => setIsScoreOpen((current) => !current)}
-                >
-                  {isScoreOpen ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
+            <CollapsibleCardHeader
+              icon={<ListOrdered className="size-5" />}
+              isOpen={isScoreOpen}
+              title="Punktzahl"
+              onToggle={() => setIsScoreOpen((current) => !current)}
+            />
             {isScoreOpen && (
               <CardContent className="p-4 pt-0">
               <ol className="grid gap-2">
@@ -1170,38 +1164,12 @@ export function TerritoryMapPage() {
       </section>
 
       <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <div className="flex min-w-0 items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                <Trophy className="size-4" />
-              </div>
-              <CardTitle>Achievements</CardTitle>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-10 shrink-0 sm:size-9"
-              aria-label={
-                isAchievementsOpen
-                  ? 'Achievements einklappen'
-                  : 'Achievements ausklappen'
-              }
-              title={
-                isAchievementsOpen
-                  ? 'Achievements einklappen'
-                  : 'Achievements ausklappen'
-              }
-              onClick={() => setIsAchievementsOpen((current) => !current)}
-            >
-              {isAchievementsOpen ? (
-                <ChevronDown className="size-4" />
-              ) : (
-                <ChevronRight className="size-4" />
-              )}
-            </Button>
-          </div>
-        </CardHeader>
+        <CollapsibleCardHeader
+          icon={<Trophy className="size-5" />}
+          isOpen={isAchievementsOpen}
+          title="Achievements"
+          onToggle={() => setIsAchievementsOpen((current) => !current)}
+        />
         {isAchievementsOpen && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -1226,8 +1194,8 @@ export function TerritoryMapPage() {
                     <span className="min-w-0 truncate font-medium">
                       {achievement.title}
                     </span>
-                    <span className="flex size-8 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                      <Icon className="size-4" />
+                    <span className="flex size-8 items-center justify-center text-primary">
+                      <Icon className="size-5" />
                     </span>
                     <span className="min-w-0 truncate text-right font-semibold">
                       {winnerLabel || '-'}
@@ -1244,30 +1212,12 @@ export function TerritoryMapPage() {
       </Card>
 
       <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <div className="flex min-w-0 items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                <BarChart3 className="size-4" />
-              </div>
-              <CardTitle>Datensatz</CardTitle>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-10 shrink-0 sm:size-9"
-              aria-label={isDatasetOpen ? 'Datensatz einklappen' : 'Datensatz ausklappen'}
-              title={isDatasetOpen ? 'Datensatz einklappen' : 'Datensatz ausklappen'}
-              onClick={() => setIsDatasetOpen((current) => !current)}
-            >
-              {isDatasetOpen ? (
-                <ChevronDown className="size-4" />
-              ) : (
-                <ChevronRight className="size-4" />
-              )}
-            </Button>
-          </div>
-        </CardHeader>
+        <CollapsibleCardHeader
+          icon={<BarChart3 className="size-5" />}
+          isOpen={isDatasetOpen}
+          title="Datensatz"
+          onToggle={() => setIsDatasetOpen((current) => !current)}
+        />
         {isDatasetOpen && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <TerritoryEventTable
