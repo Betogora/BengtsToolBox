@@ -1646,56 +1646,19 @@ function chooseSinglePairing(
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
 ) {
-  const fewestSingleGames = Math.min(
-    ...players.map((player) => countSingleGamesBeforeRound(tournament, player.id, roundNumber)),
-  )
-  const eligiblePlayers = players.filter(
-    (player) => countSingleGamesBeforeRound(tournament, player.id, roundNumber) === fewestSingleGames,
-  )
   const sorted = [...players].sort(
     (left, right) =>
+      countSingleGamesBeforeRound(tournament, left.id, roundNumber) -
+        countSingleGamesBeforeRound(tournament, right.id, roundNumber) ||
       summaries[left.id].points - summaries[right.id].points ||
       right.initialSeed - left.initialSeed,
   )
-  let best: PlannedPairing | null = null
-  let bestScore = Number.POSITIVE_INFINITY
 
-  for (let leftIndex = 0; leftIndex < sorted.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < sorted.length; rightIndex += 1) {
-      const left = sorted[leftIndex]
-      const right = sorted[rightIndex]
-      const leftSingleGames = countSingleGamesBeforeRound(tournament, left.id, roundNumber)
-      const rightSingleGames = countSingleGamesBeforeRound(tournament, right.id, roundNumber)
-
-      if (
-        leftSingleGames > fewestSingleGames &&
-        rightSingleGames > fewestSingleGames &&
-        eligiblePlayers.length >= 2
-      ) {
-        continue
-      }
-
-      const repeatPenalty = hasPlayedEachOtherBeforeRound(tournament, left.id, right.id, roundNumber)
-        ? 1_000_000
-        : 0
-      const repeatedSinglePenalty =
-        Math.max(leftSingleGames, rightSingleGames) * 100_000 +
-        (leftSingleGames + rightSingleGames) * 25_000
-      const score =
-        repeatPenalty +
-        repeatedSinglePenalty +
-        pairPointDiff(left, right, summaries) * 100 +
-        leftIndex +
-        rightIndex / 100
-
-      if (score < bestScore) {
-        best = { left, right }
-        bestScore = score
-      }
-    }
+  if (sorted.length < 2) {
+    return null
   }
 
-  return best
+  return { left: sorted[0], right: sorted[1] }
 }
 
 function handBrainSideRolePenalty(

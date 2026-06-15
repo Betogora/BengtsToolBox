@@ -193,6 +193,7 @@ select {
   .swiss-export-title {
     display: block !important;
     margin-bottom: 14px;
+    padding-right: 20mm;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--primary);
   }
@@ -207,12 +208,12 @@ select {
 
   .swiss-export-qr {
     display: block !important;
-    position: fixed;
-    right: 10mm;
-    bottom: 10mm;
-    width: 26mm;
-    height: 26mm;
-    padding: 1.5mm;
+    position: absolute;
+    right: 18px;
+    top: 12px;
+    width: 15mm;
+    height: 15mm;
+    padding: 1mm;
     border: 1px solid #d7d8bd;
     border-radius: 4px;
     background: #ffffff;
@@ -225,6 +226,7 @@ select {
   }
 
   .swiss-standings-card {
+    position: relative;
     overflow: hidden;
     border: 1px solid var(--border) !important;
     border-radius: 8px !important;

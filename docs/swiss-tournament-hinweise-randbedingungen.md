@@ -52,7 +52,7 @@ Nur Spieler, die in der Runde bereits hinzugefuegt und aktuell aktiv sind, komme
 
 ### 4. Bye vergeben
 
-Wenn die Spielerzahl fuer das Format nicht aufgeht, wird vor der eigentlichen Paarung ein Bye vergeben.
+Wenn die Spielerzahl fuer das Format nicht aufgeht, werden vor der eigentlichen Paarung Bye und Einzelbrett als Ausgleich vergeben.
 
 Beim normalen Schweizer System passiert das bei ungerader Poolgroesse. Bei Hand-and-Brain passiert es, wenn die Spielerzahl modulo 4 gleich 1 oder 3 ist.
 
@@ -61,6 +61,13 @@ Bye-Auswahl:
 1. Nur Spieler mit der niedrigsten bisherigen Bye-Zahl sind Kandidaten.
 2. Bei aktivierter Schutzregel fuer Spaeteinsteiger werden neue Spieler der aktuellen Runde nach Moeglichkeit geschuetzt.
 3. Unter den verbleibenden Kandidaten bekommt der Spieler mit der niedrigsten Punktzahl das Bye.
+4. Bei Punktgleichheit entscheidet die hoehere Startnummer.
+
+Einzelbrett-Auswahl im Hand-and-Brain-Modus:
+
+1. Wenn nach dem optionalen Bye noch zwei Spieler ueber eine Viererteilung hinaus uebrig bleiben, wird ein Einzelbrett erzeugt.
+2. Zuerst werden Spieler mit den wenigsten bisherigen Einzelbrettern bevorzugt.
+3. Innerhalb dieser Gruppe spielen die beiden punktniedrigsten Spieler.
 4. Bei Punktgleichheit entscheidet die hoehere Startnummer.
 
 ### 5. Erste Runde separat paaren
