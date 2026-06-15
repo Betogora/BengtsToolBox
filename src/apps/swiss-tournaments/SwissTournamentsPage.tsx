@@ -2534,7 +2534,7 @@ function StandingsTable({
     0,
     ...standings.map((row) => row.roundHistory.length),
   )
-  const visibleRoundGridColumns = Math.min(Math.max(roundColumnCount, 1), 8)
+  const visibleRoundGridColumns = Math.min(Math.max(roundColumnCount, 1), 6)
   const roundCellLabelWidth = Math.max(
     4,
     ...standings.flatMap((row) => row.roundHistory.map((cell) => cell.label.length)),
