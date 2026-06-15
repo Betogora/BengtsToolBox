@@ -508,26 +508,46 @@ function assignColors(
   tournament: Tournament,
   roundNumber: number,
 ) {
-  const repeatedWhiteCandidateColor = previousColorAgainstBeforeRound(
+  const asGiven = colorAssignmentPenalty(
+    whiteCandidate,
+    blackCandidate,
+    summaries,
     tournament,
-    whiteCandidate.id,
-    blackCandidate.id,
     roundNumber,
   )
-  const repeatAsGivenPenalty = repeatedWhiteCandidateColor === 'W' ? 60 : 0
-  const repeatSwappedPenalty = repeatedWhiteCandidateColor === 'B' ? 60 : 0
-  const asGiven =
-    colorPenalty(whiteCandidate, 'W', summaries[whiteCandidate.id]) +
-    colorPenalty(blackCandidate, 'B', summaries[blackCandidate.id]) +
-    repeatAsGivenPenalty
-  const swapped =
-    colorPenalty(whiteCandidate, 'B', summaries[whiteCandidate.id]) +
-    colorPenalty(blackCandidate, 'W', summaries[blackCandidate.id]) +
-    repeatSwappedPenalty
+  const swapped = colorAssignmentPenalty(
+    blackCandidate,
+    whiteCandidate,
+    summaries,
+    tournament,
+    roundNumber,
+  )
 
   return asGiven <= swapped
     ? { whitePlayerId: whiteCandidate.id, blackPlayerId: blackCandidate.id }
     : { whitePlayerId: blackCandidate.id, blackPlayerId: whiteCandidate.id }
+}
+
+function colorAssignmentPenalty(
+  white: Player,
+  black: Player,
+  summaries: Record<string, PlayerScoreSummary>,
+  tournament: Tournament,
+  roundNumber: number,
+) {
+  const repeatedWhiteCandidateColor = previousColorAgainstBeforeRound(
+    tournament,
+    white.id,
+    black.id,
+    roundNumber,
+  )
+  const repeatAsGivenPenalty = repeatedWhiteCandidateColor === 'W' ? 60 : 0
+
+  return (
+    colorPenalty(white, 'W', summaries[white.id]) +
+    colorPenalty(black, 'B', summaries[black.id]) +
+    repeatAsGivenPenalty
+  )
 }
 
 function sideAveragePoints(
@@ -1534,6 +1554,54 @@ function countTeammateGamesBeforeRound(
     )
 }
 
+function teammateRoundsBeforeRound(
+  tournament: Tournament,
+  leftId: string,
+  rightId: string,
+  beforeRoundNumber: number,
+) {
+  return tournament.rounds
+    .filter((round) => round.roundNumber < beforeRoundNumber)
+    .filter((round) =>
+      round.pairings.some(
+        (pairing) =>
+          !pairing.isBye &&
+          wereTeammates(pairing, leftId, rightId),
+      ),
+    )
+    .map((round) => round.roundNumber)
+}
+
+function teammateRepeatPenalty(
+  tournament: Tournament,
+  leftId: string,
+  rightId: string,
+  roundNumber: number,
+) {
+  const rounds = teammateRoundsBeforeRound(tournament, leftId, rightId, roundNumber)
+
+  if (rounds.length === 0) {
+    return 0
+  }
+
+  const latestRound = Math.max(...rounds)
+  const roundsSince = roundNumber - latestRound
+
+  if (roundsSince <= 1) {
+    return 200_000 + rounds.length * 10_000
+  }
+
+  if (roundsSince === 2) {
+    return 35_000 + rounds.length * 5_000
+  }
+
+  if (roundsSince === 3) {
+    return 5_000 + rounds.length * 1_000
+  }
+
+  return rounds.length * 250
+}
+
 function roleCount(summary: PlayerScoreSummary, role: 'hand' | 'brain') {
   return summary.roles.filter((entry) => entry === role).length
 }
@@ -1565,30 +1633,14 @@ function assignHandBrainSide(
   tournament: Tournament,
   roundNumber: number,
 ): HandBrainSide {
-  const asGivenPenalty =
-    Math.abs(roleCount(summaries[first.id], 'brain') + 1 - roleCount(summaries[first.id], 'hand')) +
-    Math.abs(roleCount(summaries[second.id], 'hand') + 1 - roleCount(summaries[second.id], 'brain')) +
-    (hasSameRoleWithTeammateBeforeRound(
-      tournament,
-      { brainPlayerId: first.id, handPlayerId: second.id },
-      roundNumber,
-    )
-      ? 100
-      : 0)
-  const swappedPenalty =
-    Math.abs(roleCount(summaries[first.id], 'hand') + 1 - roleCount(summaries[first.id], 'brain')) +
-    Math.abs(roleCount(summaries[second.id], 'brain') + 1 - roleCount(summaries[second.id], 'hand')) +
-    (hasSameRoleWithTeammateBeforeRound(
-      tournament,
-      { brainPlayerId: second.id, handPlayerId: first.id },
-      roundNumber,
-    )
-      ? 100
-      : 0)
+  const asGiven = { brainPlayerId: first.id, handPlayerId: second.id }
+  const swapped = { brainPlayerId: second.id, handPlayerId: first.id }
+  const asGivenPenalty = handBrainSideRolePenalty(asGiven, summaries, tournament, roundNumber)
+  const swappedPenalty = handBrainSideRolePenalty(swapped, summaries, tournament, roundNumber)
 
   return asGivenPenalty <= swappedPenalty
-    ? { brainPlayerId: first.id, handPlayerId: second.id }
-    : { brainPlayerId: second.id, handPlayerId: first.id }
+    ? asGiven
+    : swapped
 }
 
 function chooseSinglePairing(
@@ -1644,36 +1696,143 @@ function handBrainBoardPenalty(
   const teamRepeatPenalty = hasSameTeamBeforeRound(tournament, whiteIds, blackIds, roundNumber)
     ? 50_000
     : 0
-  const partnerPenalty = [...whiteIds, ...blackIds].reduce((sum, playerId) => {
-    return (
-      sum +
-      teammateIdsForPlayer(
-        {
-          id: 'candidate',
-          roundNumber,
-          boardNumber: 0,
-          isManual: false,
-          isBye: false,
-          kind: 'handAndBrain',
-          handBrainSides: {
-            white: { brainPlayerId: whiteIds[0], handPlayerId: whiteIds[1] },
-            black: { brainPlayerId: blackIds[0], handPlayerId: blackIds[1] },
-          },
-        },
-        playerId,
-      ).reduce(
-        (partnerSum, teammateId) =>
-          partnerSum +
-          countTeammateGamesBeforeRound(tournament, playerId, teammateId, roundNumber) * 5_000,
-        0,
-      )
-    )
-  }, 0)
+  const partnerPenalty =
+    teammateRepeatPenalty(tournament, whiteIds[0], whiteIds[1], roundNumber) +
+    teammateRepeatPenalty(tournament, blackIds[0], blackIds[1], roundNumber)
   const pointPenalty =
     Math.abs(sideAveragePoints(whiteIds, summaries) - sideAveragePoints(blackIds, summaries)) *
     250
 
   return teamRepeatPenalty + partnerPenalty + pointPenalty
+}
+
+function handBrainSideRolePenalty(
+  side: HandBrainSide,
+  summaries: Record<string, PlayerScoreSummary>,
+  tournament: Tournament,
+  roundNumber: number,
+) {
+  const brainSummary = summaries[side.brainPlayerId]
+  const handSummary = summaries[side.handPlayerId]
+  const balancePenalty =
+    Math.abs(roleCount(brainSummary, 'brain') + 1 - roleCount(brainSummary, 'hand')) +
+    Math.abs(roleCount(handSummary, 'hand') + 1 - roleCount(handSummary, 'brain'))
+  const repeatedRolePenalty = hasSameRoleWithTeammateBeforeRound(tournament, side, roundNumber)
+    ? 4_000
+    : 0
+
+  return repeatedRolePenalty + balancePenalty * 600
+}
+
+function handBrainSideRoleOptions(
+  first: Player,
+  second: Player,
+  summaries: Record<string, PlayerScoreSummary>,
+  tournament: Tournament,
+  roundNumber: number,
+) {
+  return [
+    { brainPlayerId: first.id, handPlayerId: second.id },
+    { brainPlayerId: second.id, handPlayerId: first.id },
+  ]
+    .map((side) => ({
+      side,
+      score: handBrainSideRolePenalty(side, summaries, tournament, roundNumber),
+    }))
+    .sort((left, right) => left.score - right.score)
+}
+
+function handBrainColorOptions(
+  pair: PlannedPairing,
+  summaries: Record<string, PlayerScoreSummary>,
+  tournament: Tournament,
+  roundNumber: number,
+) {
+  if (pair.colors) {
+    return [
+      {
+        whitePlayerId: pair.colors.whitePlayerId,
+        blackPlayerId: pair.colors.blackPlayerId,
+        score: 0,
+      },
+    ]
+  }
+
+  return [
+    {
+      whitePlayerId: pair.left.id,
+      blackPlayerId: pair.right.id,
+      score: colorAssignmentPenalty(pair.left, pair.right, summaries, tournament, roundNumber),
+    },
+    {
+      whitePlayerId: pair.right.id,
+      blackPlayerId: pair.left.id,
+      score: colorAssignmentPenalty(pair.right, pair.left, summaries, tournament, roundNumber),
+    },
+  ].sort((left, right) => left.score - right.score)
+}
+
+function playerById(tournament: Tournament, playerId: string, fallback: Player) {
+  return tournament.players.find((player) => player.id === playerId) ?? fallback
+}
+
+function createHandBrainPairingCandidate(
+  firstPair: PlannedPairing,
+  secondPair: PlannedPairing,
+  tournament: Tournament,
+  summaries: Record<string, PlayerScoreSummary>,
+  roundNumber: number,
+  boardNumber: number,
+) {
+  let best: { pairing: Pairing; score: number } | null = null
+
+  for (const firstColors of handBrainColorOptions(firstPair, summaries, tournament, roundNumber)) {
+    for (const secondColors of handBrainColorOptions(secondPair, summaries, tournament, roundNumber)) {
+      const firstWhite = playerById(tournament, firstColors.whitePlayerId, firstPair.left)
+      const firstBlack = playerById(tournament, firstColors.blackPlayerId, firstPair.right)
+      const secondWhite = playerById(tournament, secondColors.whitePlayerId, secondPair.left)
+      const secondBlack = playerById(tournament, secondColors.blackPlayerId, secondPair.right)
+      const boardScore = handBrainBoardPenalty(
+        [firstWhite.id, secondWhite.id],
+        [firstBlack.id, secondBlack.id],
+        tournament,
+        summaries,
+        roundNumber,
+      )
+      const colorScore = firstColors.score + secondColors.score
+
+      for (const whiteRole of handBrainSideRoleOptions(firstWhite, secondWhite, summaries, tournament, roundNumber)) {
+        for (const blackRole of handBrainSideRoleOptions(firstBlack, secondBlack, summaries, tournament, roundNumber)) {
+          const pairing: Pairing = {
+            id: makeId('pairing'),
+            roundNumber,
+            boardNumber,
+            kind: 'handAndBrain',
+            isManual: false,
+            isBye: false,
+            handBrainSides: {
+              white: whiteRole.side,
+              black: blackRole.side,
+            },
+          }
+          const score =
+            boardScore +
+            whiteRole.score +
+            blackRole.score +
+            colorScore +
+            (firstPair.left.initialSeed + firstPair.right.initialSeed +
+              secondPair.left.initialSeed + secondPair.right.initialSeed) /
+              100_000
+
+          if (!best || score < best.score) {
+            best = { pairing, score }
+          }
+        }
+      }
+    }
+  }
+
+  return best
 }
 
 function createHandBrainPairingFromVirtualPairings(
@@ -1684,13 +1843,15 @@ function createHandBrainPairingFromVirtualPairings(
   roundNumber: number,
   boardNumber: number,
 ): Pairing {
-  const firstColors = firstPair.colors ?? assignColors(firstPair.left, firstPair.right, summaries, tournament, roundNumber)
-  const secondColors = secondPair.colors ?? assignColors(secondPair.left, secondPair.right, summaries, tournament, roundNumber)
-  const firstWhite = tournament.players.find((player) => player.id === firstColors.whitePlayerId) ?? firstPair.left
-  const firstBlack = tournament.players.find((player) => player.id === firstColors.blackPlayerId) ?? firstPair.right
-  const secondWhite = tournament.players.find((player) => player.id === secondColors.whitePlayerId) ?? secondPair.left
-  const secondBlack = tournament.players.find((player) => player.id === secondColors.blackPlayerId) ?? secondPair.right
-  const pairing: Pairing = {
+  const candidate = createHandBrainPairingCandidate(
+    firstPair,
+    secondPair,
+    tournament,
+    summaries,
+    roundNumber,
+    boardNumber,
+  )
+  const pairing = candidate?.pairing ?? {
     id: makeId('pairing'),
     roundNumber,
     boardNumber,
@@ -1698,34 +1859,15 @@ function createHandBrainPairingFromVirtualPairings(
     isManual: false,
     isBye: false,
     handBrainSides: {
-      white: assignHandBrainSide(firstWhite, secondWhite, summaries, tournament, roundNumber),
-      black: assignHandBrainSide(firstBlack, secondBlack, summaries, tournament, roundNumber),
+      white: assignHandBrainSide(firstPair.left, secondPair.left, summaries, tournament, roundNumber),
+      black: assignHandBrainSide(firstPair.right, secondPair.right, summaries, tournament, roundNumber),
     },
-  }
-
-  const whiteIds = whiteSidePlayerIds(pairing)
-  const blackIds = blackSidePlayerIds(pairing)
-  const warnings: PairingWarning[] = []
-
-  if (hasSameTeamBeforeRound(tournament, whiteIds, blackIds, roundNumber)) {
-    warnings.push(warning('repeat-hand-brain-team', 'Diese Team-gegen-Team-Konstellation gab es bereits.', 'hard'))
-  }
-
-  if (
-    [...whiteIds, ...blackIds].some((playerId) =>
-      teammateIdsForPlayer(pairing, playerId).some(
-        (teammateId) => countTeammateGamesBeforeRound(tournament, playerId, teammateId, roundNumber) > 0,
-      ),
-    )
-  ) {
-    warnings.push(warning('repeat-hand-brain-partner', 'Mindestens ein Duo war bereits auf derselben Seite.'))
   }
 
   return {
     ...pairing,
     warnings: [
       ...validatePairing(tournament, pairing, roundNumber, summaries),
-      ...warnings,
       ...(firstPair.warnings ?? []),
       ...(secondPair.warnings ?? []),
     ],
@@ -1826,15 +1968,15 @@ function createHandBrainPairings(
     let bestScore = Number.POSITIVE_INFINITY
 
     remainingVirtualPairings.forEach((candidatePair, index) => {
-      const firstColors = firstPair.colors ?? assignColors(firstPair.left, firstPair.right, summaries, tournament, roundNumber)
-      const candidateColors = candidatePair.colors ?? assignColors(candidatePair.left, candidatePair.right, summaries, tournament, roundNumber)
-      const score = handBrainBoardPenalty(
-        [firstColors.whitePlayerId, candidateColors.whitePlayerId],
-        [firstColors.blackPlayerId, candidateColors.blackPlayerId],
+      const candidate = createHandBrainPairingCandidate(
+        firstPair,
+        candidatePair,
         tournament,
         summaries,
         roundNumber,
+        pairings.length + 1,
       )
+      const score = candidate?.score ?? Number.POSITIVE_INFINITY
 
       if (score < bestScore) {
         bestIndex = index

@@ -115,10 +115,16 @@ Im Hand-and-Brain-Modus werden zuerst virtuelle Schweizer Einzelpaarungen erzeug
 Die Kombination zweier virtueller Paarungen bewertet:
 
 1. gleiche Team-gegen-Team-Konstellation sehr schlecht,
-2. wiederholte Duos deutlich schlecht,
-3. Punktabstand zwischen den Seiten schlecht.
+2. direkte Duo-Wiederholungen aus der Vorrunde sehr schlecht,
+3. Duo-Wiederholungen mit nur einer Runde Abstand deutlich schlecht,
+4. Duo-Wiederholungen mit zwei Runden Abstand merklich schlecht,
+5. aeltere Duo-Wiederholungen nur noch leicht schlecht,
+6. Punktabstand zwischen den Seiten schlecht,
+7. Farben und Rollentausch als nachrangige Qualitaetskriterien.
 
-Anschliessend wird fuer jede Seite Brain/Hand verteilt. Dabei wird die Rollenbalance bevorzugt und eine bereits identische Rollenverteilung innerhalb desselben Duos vermieden.
+Fuer jedes moegliche H&B-Brett werden beide Farb-/Seitenrichtungen und beide Brain/Hand-Verteilungen ausprobiert. Erst danach wird die beste Variante gewaehlt. Dadurch darf eine reine Farb- oder Rollenpraeferenz nicht mehr dazu fuehren, dass ohne Not direkt wieder dieselben Spielpartner entstehen.
+
+Bei der Brain/Hand-Verteilung wird die Rollenbalance bevorzugt und eine bereits identische Rollenverteilung innerhalb desselben Duos vermieden. Diese Rollenlogik ist aber zweitrangig gegenueber der Spielpartnerwahl: neue oder lange nicht wiederholte Duos sind wichtiger als eine perfekte Brain/Hand-Balance.
 
 ### 12. Paarungen validieren
 
