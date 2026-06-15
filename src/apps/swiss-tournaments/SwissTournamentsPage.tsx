@@ -2060,14 +2060,10 @@ export function SwissTournamentsPage() {
                               <Select value={manualWhite} onValueChange={setManualWhite}>
                                 <SelectTrigger className={singleLineSelectTriggerClass}>
                                   <SelectValue
-                                    placeholder={
-                                      tournament.format === 'handAndBrain'
-                                        ? roleColorPlaceholder(
-                                            <ChessKing className="size-4 shrink-0 text-primary" />,
-                                            'Weiß',
-                                          )
-                                        : 'Spieler A'
-                                    }
+                                    placeholder={roleColorPlaceholder(
+                                      <ChessKing className="size-4 shrink-0 text-primary" />,
+                                      'Weiß',
+                                    )}
                                   />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2081,14 +2077,10 @@ export function SwissTournamentsPage() {
                               <Select value={manualBlack} onValueChange={setManualBlack}>
                                 <SelectTrigger className={singleLineSelectTriggerClass}>
                                   <SelectValue
-                                    placeholder={
-                                      tournament.format === 'handAndBrain'
-                                        ? roleColorPlaceholder(
-                                            <ChessKing className="size-4 shrink-0 text-primary" />,
-                                            'Schwarz',
-                                          )
-                                        : 'Spieler B'
-                                    }
+                                    placeholder={roleColorPlaceholder(
+                                      <ChessKing className="size-4 shrink-0 text-primary" />,
+                                      'Schwarz',
+                                    )}
                                   />
                                 </SelectTrigger>
                                 <SelectContent>
