@@ -259,9 +259,11 @@ select {
   }
 
   .swiss-standings-card table {
+    width: 100% !important;
     min-width: 0 !important;
     border-collapse: separate;
     border-spacing: 0;
+    table-layout: fixed;
     font-size: 10px;
     line-height: 1.25;
   }
@@ -283,6 +285,48 @@ select {
 
   .swiss-standings-card td.swiss-round-table-cell {
     width: auto;
+  }
+
+  .swiss-standings-card th:nth-child(1),
+  .swiss-standings-card td:nth-child(1) {
+    width: 6%;
+  }
+
+  .swiss-standings-card th:nth-child(2),
+  .swiss-standings-card td:nth-child(2) {
+    width: 14%;
+  }
+
+  .swiss-standings-card th:nth-child(3),
+  .swiss-standings-card td:nth-child(3) {
+    width: 9%;
+  }
+
+  .swiss-standings-card th:nth-child(4),
+  .swiss-standings-card td:nth-child(4) {
+    width: 9%;
+  }
+
+  .swiss-standings-card th:nth-child(5),
+  .swiss-standings-card td:nth-child(5) {
+    width: 8%;
+  }
+
+  .swiss-standings-card th:nth-child(6),
+  .swiss-standings-card td:nth-child(6) {
+    width: 7%;
+  }
+
+  .swiss-round-table-cell {
+    min-width: 0;
+  }
+
+  .swiss-round-grid {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
+    gap: 4px 6px;
   }
 
   .swiss-podium-first {

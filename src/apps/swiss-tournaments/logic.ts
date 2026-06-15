@@ -1934,7 +1934,6 @@ function createHandBrainPairings(
         boardNumber: pairings.length + 1,
         kind: 'single',
         ...colors,
-        result: '0.5-0.5',
         isManual: false,
         isBye: false,
       }
