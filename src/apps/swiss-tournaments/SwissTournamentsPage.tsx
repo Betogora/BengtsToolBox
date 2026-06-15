@@ -23,7 +23,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { Fragment, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -368,11 +368,39 @@ function ConfirmButton({
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const confirmButtonRef = useRef<HTMLButtonElement>(null)
+
+  const handleConfirm = async () => {
+    if (isConfirming) {
+      return
+    }
+
+    setIsConfirming(true)
+
+    try {
+      await onConfirm()
+      setOpen(false)
+    } finally {
+      setIsConfirming(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
+      <DialogContent
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.defaultPrevented) {
+            event.preventDefault()
+            void handleConfirm()
+          }
+        }}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          confirmButtonRef.current?.focus()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -382,11 +410,10 @@ function ConfirmButton({
             <Button variant="outline">Abbrechen</Button>
           </DialogClose>
           <Button
+            ref={confirmButtonRef}
+            disabled={isConfirming}
             variant="destructive"
-            onClick={async () => {
-              await onConfirm()
-              setOpen(false)
-            }}
+            onClick={() => void handleConfirm()}
           >
             {confirmLabel}
           </Button>
