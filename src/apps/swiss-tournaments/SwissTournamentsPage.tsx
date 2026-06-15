@@ -39,6 +39,7 @@ import type {
   Pairing,
   PairingWarning,
   PlayerStatus,
+  Round,
   SeedingMode,
   Tournament,
   TournamentFormat,
@@ -200,14 +201,28 @@ function formatDateTime(value?: string) {
   }).format(date)
 }
 
+function isRoundCompleteForProgress(round: Round) {
+  return (
+    round.status === 'completed' ||
+    (round.pairings.length > 0 && !round.pairings.some(hasMissingGameResult))
+  )
+}
+
 function completedRoundCount(tournament: Tournament) {
-  return tournament.rounds.filter((round) => round.status === 'completed').length
+  const completedRegularRounds = new Set(
+    tournament.rounds
+      .filter((round) => round.roundNumber <= tournament.numberOfRounds)
+      .filter(isRoundCompleteForProgress)
+      .map((round) => round.roundNumber),
+  )
+
+  return Math.min(completedRegularRounds.size, tournament.numberOfRounds)
 }
 
 function highestCompletedRoundNumber(tournament: Tournament) {
   return tournament.rounds.reduce(
     (highestRound, round) =>
-      round.status === 'completed'
+      isRoundCompleteForProgress(round)
         ? Math.max(highestRound, round.roundNumber)
         : highestRound,
     0,
@@ -240,34 +255,6 @@ function defaultRoundsForFormat(
   }
 
   return swissRoundsForPlayerCount(playerCount)
-}
-
-function roundRobinEligiblePlayerCount(tournament: Tournament, roundNumber: number) {
-  return tournament.players.filter(
-    (player) =>
-      player.addedInRound <= roundNumber &&
-      (player.statusOverrides?.[roundNumber] ?? player.status) === 'active',
-  ).length
-}
-
-function roundRobinCycleCompletion(tournament: Tournament, roundNumber: number) {
-  if (tournament.format !== 'roundRobin') {
-    return null
-  }
-
-  const roundsPerCycle = roundRobinRoundsForPlayerCount(
-    roundRobinEligiblePlayerCount(tournament, roundNumber),
-    1,
-  )
-
-  if (roundNumber % roundsPerCycle !== 0) {
-    return null
-  }
-
-  return {
-    cycle: roundNumber / roundsPerCycle,
-    roundsPerCycle,
-  }
 }
 
 function TournamentCompleteBanner({
@@ -675,6 +662,9 @@ function TournamentCreator({
         ? defaultTournamentName(nextFormat)
         : currentName,
     )
+    if (nextFormat === 'handAndBrain') {
+      setByeScore(0.5)
+    }
     setFormat(nextFormat)
   }
   const handleAddDraftPlayer = () => {
@@ -1808,6 +1798,13 @@ export function SwissTournamentsPage() {
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
+              {isTournamentComplete && (
+                <TournamentCompleteBanner
+                  completedRounds={tournament.numberOfRounds}
+                  label="Turnier beendet"
+                  numberOfRounds={tournament.numberOfRounds}
+                />
+              )}
               {displayedRounds.length > 0 ? (
                 displayedRounds.map((round, index) => {
                   const isCurrentRound = index === 0
@@ -1822,45 +1819,9 @@ export function SwissTournamentsPage() {
                     index === 1 &&
                     round.status === 'completed' &&
                     currentRound?.roundNumber === round.roundNumber + 1
-                  const roundRobinCompletion = roundRobinCycleCompletion(
-                    tournament,
-                    round.roundNumber,
-                  )
-                  const tournamentCompletionBanner =
-                    isTournamentComplete &&
-                    round.status === 'completed' &&
-                    round.roundNumber === tournament.numberOfRounds
-                      ? {
-                          completedRounds: tournament.numberOfRounds,
-                          label: 'Turnier beendet',
-                          numberOfRounds: tournament.numberOfRounds,
-                        }
-                      : null
-                  const roundRobinCompletionBanner =
-                    round.status === 'completed' && roundRobinCompletion
-                      ? {
-                          completedRounds: round.roundNumber,
-                          label:
-                            roundRobinCompletion.cycle === 1
-                              ? 'Turnier beendet'
-                              : `Durchgang ${roundRobinCompletion.cycle} beendet`,
-                          numberOfRounds: roundRobinCompletion.roundsPerCycle,
-                        }
-                      : null
-                  const completionBanner =
-                    tournament.format === 'roundRobin'
-                      ? roundRobinCompletionBanner
-                      : tournamentCompletionBanner
 
                   return (
                     <Fragment key={round.id}>
-                      {completionBanner && (
-                        <TournamentCompleteBanner
-                          completedRounds={completionBanner.completedRounds}
-                          label={completionBanner.label}
-                          numberOfRounds={completionBanner.numberOfRounds}
-                        />
-                      )}
                       <Card
                         className={cn(
                           'overflow-hidden',
