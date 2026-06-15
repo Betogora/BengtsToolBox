@@ -662,9 +662,7 @@ function TournamentCreator({
         ? defaultTournamentName(nextFormat)
         : currentName,
     )
-    if (nextFormat === 'handAndBrain') {
-      setByeScore(0.5)
-    }
+    setByeScore(nextFormat === 'handAndBrain' ? 0.5 : 1)
     setFormat(nextFormat)
   }
   const handleAddDraftPlayer = () => {
@@ -1164,6 +1162,12 @@ export function SwissTournamentsPage() {
     Boolean(tournament) &&
     tournament.numberOfRounds > 0 &&
     completedRounds >= tournament.numberOfRounds
+  const completionBannerBeforeRoundNumber =
+    tournament && isTournamentComplete
+      ? displayedRounds.find(
+          (round) => round.roundNumber <= tournament.numberOfRounds,
+        )?.roundNumber ?? null
+      : null
   const archivedTournamentSummaries = useMemo(
     () =>
       app.archivedTournaments.map((entry) => ({
@@ -1798,13 +1802,6 @@ export function SwissTournamentsPage() {
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {isTournamentComplete && (
-                <TournamentCompleteBanner
-                  completedRounds={tournament.numberOfRounds}
-                  label="Turnier beendet"
-                  numberOfRounds={tournament.numberOfRounds}
-                />
-              )}
               {displayedRounds.length > 0 ? (
                 displayedRounds.map((round, index) => {
                   const isCurrentRound = index === 0
@@ -1822,6 +1819,13 @@ export function SwissTournamentsPage() {
 
                   return (
                     <Fragment key={round.id}>
+                      {round.roundNumber === completionBannerBeforeRoundNumber && (
+                        <TournamentCompleteBanner
+                          completedRounds={tournament.numberOfRounds}
+                          label="Turnier beendet"
+                          numberOfRounds={tournament.numberOfRounds}
+                        />
+                      )}
                       <Card
                         className={cn(
                           'overflow-hidden',
