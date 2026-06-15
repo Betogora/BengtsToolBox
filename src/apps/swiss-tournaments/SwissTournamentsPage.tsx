@@ -1870,8 +1870,8 @@ export function SwissTournamentsPage() {
                         )}
                       >
                       <CardHeader className="p-4 sm:p-6">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                          <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <CardTitle>{roundLabel}</CardTitle>
                             <Badge variant={isCurrentRound ? 'default' : 'outline'}>
                               {isCurrentRound ? 'aktuell' : 'archiviert'}
@@ -1881,7 +1881,7 @@ export function SwissTournamentsPage() {
                               {round.pairings.length} Bretter/Byes
                             </Badge>
                           </div>
-                          <div className="flex w-full flex-col justify-end gap-2 sm:flex-row md:w-auto">
+                          <div className="flex w-full min-w-0 flex-col justify-end gap-2 md:w-auto md:flex-row">
                             {canGoBackToRound && currentRound && (
                               <ConfirmButton
                                 title={`Zu Runde ${round.roundNumber} zurückgehen?`}
@@ -1896,7 +1896,7 @@ export function SwissTournamentsPage() {
                                 trigger={
                                   <Button
                                     aria-label="Runde wieder bearbeiten"
-                                    className="h-8 w-10 shrink-0 p-0"
+                                    className="h-8 w-full shrink-0 p-0 md:w-10"
                                     title="Runde wieder bearbeiten"
                                     variant="outline"
                                   >
@@ -1945,7 +1945,7 @@ export function SwissTournamentsPage() {
                                 trigger={
                                   <Button
                                     aria-label="Aktuelle Runde löschen"
-                                    className="h-8"
+                                    className="h-8 w-full p-0 md:w-10"
                                     size="sm"
                                     title="Aktuelle Runde löschen"
                                     variant="destructive"
