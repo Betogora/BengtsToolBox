@@ -27,6 +27,7 @@ import { Fragment, useMemo, useRef, useState, type CSSProperties, type ReactNode
 import { toast } from 'sonner'
 
 import {
+  canRemovePlayerFromTournament,
   formatPoints,
   getRoundDisplayLabel,
   recalculateStandings,
@@ -1294,9 +1295,7 @@ export function SwissTournamentsPage() {
   }
 
   const canRemovePlayer = (playerId: string) =>
-    !tournament.rounds.some((round) =>
-      round.pairings.some((pairing) => pairingPlayerIds(pairing).includes(playerId)),
-    )
+    canRemovePlayerFromTournament(tournament, playerId)
   const manuallyUsedPlayerIds = new Set(
     (draftRound?.pairings ?? [])
       .filter((pairing) => pairing.isManual)

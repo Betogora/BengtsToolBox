@@ -2368,13 +2368,82 @@ export function updateResult(
   }
 }
 
+function getLatestRound(tournament: Tournament) {
+  return [...tournament.rounds].sort(
+    (left, right) => right.roundNumber - left.roundNumber,
+  )[0]
+}
+
+function hasGameResult(pairing: Pairing) {
+  return !pairing.isBye && Boolean(pairing.result)
+}
+
+function canRegenerateUnscoredDraftRound(tournament: Tournament, round: Round) {
+  const latestRound = getLatestRound(tournament)
+
+  return (
+    round.status === 'draft' &&
+    round.pairings.length > 0 &&
+    round.roundNumber === latestRound?.roundNumber &&
+    !round.pairings.some(hasGameResult)
+  )
+}
+
+function isValidManualPairingForRound(
+  tournament: Tournament,
+  pairing: Pairing,
+  roundNumber: number,
+) {
+  return pairingPlayerIds(pairing).every((playerId) => {
+    const player = tournament.players.find((entry) => entry.id === playerId)
+
+    return (
+      player &&
+      player.addedInRound <= roundNumber &&
+      getPlayerStatusForRound(player, roundNumber) === 'active'
+    )
+  })
+}
+
+export function canRemovePlayerFromTournament(
+  tournament: Tournament,
+  playerId: string,
+) {
+  return !tournament.rounds.some((round) => {
+    const playerUsedInRound = round.pairings.some((pairing) =>
+      pairingPlayerIds(pairing).includes(playerId),
+    )
+
+    return playerUsedInRound && !canRegenerateUnscoredDraftRound(tournament, round)
+  })
+}
+
+export function regenerateCurrentDraftRoundIfUnscored(
+  tournament: Tournament,
+): Tournament {
+  const existing = getCurrentDraftRound(tournament)
+
+  if (!existing || !canRegenerateUnscoredDraftRound(tournament, existing)) {
+    return tournament
+  }
+
+  const fixedPairings = existing.pairings.filter(
+    (pairing) =>
+      pairing.isManual &&
+      isValidManualPairingForRound(tournament, pairing, existing.roundNumber),
+  )
+
+  return upsertRound(tournament, existing.roundNumber, fixedPairings)
+}
+
 export function setPlayerStatus(
   tournament: Tournament,
   playerId: string,
   status: PlayerStatus,
   fromRound?: number,
 ): Tournament {
-  return {
+  let didChange = false
+  const nextTournament = {
     ...tournament,
     players: tournament.players.map((player) => {
       if (player.id !== playerId) {
@@ -2382,6 +2451,11 @@ export function setPlayerStatus(
       }
 
       if (fromRound && fromRound > tournament.currentRound) {
+        if (player.statusOverrides?.[fromRound] === status) {
+          return player
+        }
+
+        didChange = true
         return {
           ...player,
           statusOverrides: {
@@ -2391,9 +2465,16 @@ export function setPlayerStatus(
         }
       }
 
+      if (player.status === status) {
+        return player
+      }
+
+      didChange = true
       return { ...player, status }
     }),
   }
+
+  return didChange ? regenerateCurrentDraftRoundIfUnscored(nextTournament) : tournament
 }
 
 export function addPlayerAfterStart(
@@ -2425,25 +2506,23 @@ export function addPlayerAfterStart(
     players: [...tournament.players, player],
   }
 
-  return nextTournament
+  return regenerateCurrentDraftRoundIfUnscored(nextTournament)
 }
 
 export function removePlayerFromTournament(
   tournament: Tournament,
   playerId: string,
 ): Tournament {
-  const playerWasUsed = tournament.rounds.some((round) =>
-    round.pairings.some((pairing) => pairingPlayerIds(pairing).includes(playerId)),
-  )
-
-  if (playerWasUsed) {
+  if (!canRemovePlayerFromTournament(tournament, playerId)) {
     return tournament
   }
 
-  return {
+  const nextTournament = {
     ...tournament,
     players: tournament.players.filter((player) => player.id !== playerId),
   }
+
+  return regenerateCurrentDraftRoundIfUnscored(nextTournament)
 }
 
 export function resetTournamentProgress(tournament: Tournament): Tournament {
