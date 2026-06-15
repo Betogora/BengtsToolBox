@@ -110,7 +110,9 @@ Wenn keine gute Farbverteilung mehr moeglich ist, entstehen `FARBE`-Hinweise.
 
 ### 11. Hand-and-Brain-Bretter bauen
 
-Im Hand-and-Brain-Modus werden zuerst virtuelle Schweizer Einzelpaarungen erzeugt. Danach werden jeweils zwei virtuelle Paarungen zu einem Hand-and-Brain-Brett zusammengelegt.
+Im Hand-and-Brain-Modus werden zuerst virtuelle Schweizer Einzelpaarungen erzeugt. Die Schweizer Logik bleibt damit der erste Filter: Scoregroups, Gegnerwiederholungen, Floater und Punktabstaende der virtuellen Einzelpaarungen werden vor den Hand-and-Brain-Details entschieden.
+
+Danach werden die virtuellen Paarungen global zu Hand-and-Brain-Brettern kombiniert. Die Logik nimmt also nicht einfach das erste virtuelle Paar und sucht dafuer lokal das beste Gegenstueck, sondern bewertet die Gesamtaufteilung aller H&B-Bretter.
 
 Die Kombination zweier virtueller Paarungen bewertet:
 
@@ -122,7 +124,7 @@ Die Kombination zweier virtueller Paarungen bewertet:
 6. Punktabstand zwischen den Seiten schlecht,
 7. Farben und Rollentausch als nachrangige Qualitaetskriterien.
 
-Fuer jedes moegliche H&B-Brett werden beide Farb-/Seitenrichtungen und beide Brain/Hand-Verteilungen ausprobiert. Erst danach wird die beste Variante gewaehlt. Dadurch darf eine reine Farb- oder Rollenpraeferenz nicht mehr dazu fuehren, dass ohne Not direkt wieder dieselben Spielpartner entstehen.
+Fuer jedes moegliche H&B-Brett werden beide Farb-/Seitenrichtungen und beide Brain/Hand-Verteilungen ausprobiert. Erst danach wird die beste Gesamtvariante gewaehlt. Dadurch darf eine reine Farb- oder Rollenpraeferenz nicht mehr dazu fuehren, dass ohne Not direkt wieder dieselben Spielpartner entstehen.
 
 Bei der Brain/Hand-Verteilung wird die Rollenbalance bevorzugt und eine bereits identische Rollenverteilung innerhalb desselben Duos vermieden. Diese Rollenlogik ist aber zweitrangig gegenueber der Spielpartnerwahl: neue oder lange nicht wiederholte Duos sind wichtiger als eine perfekte Brain/Hand-Balance.
 

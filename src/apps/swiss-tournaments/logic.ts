@@ -1626,23 +1626,6 @@ function countSingleGamesBeforeRound(
     )
 }
 
-function assignHandBrainSide(
-  first: Player,
-  second: Player,
-  summaries: Record<string, PlayerScoreSummary>,
-  tournament: Tournament,
-  roundNumber: number,
-): HandBrainSide {
-  const asGiven = { brainPlayerId: first.id, handPlayerId: second.id }
-  const swapped = { brainPlayerId: second.id, handPlayerId: first.id }
-  const asGivenPenalty = handBrainSideRolePenalty(asGiven, summaries, tournament, roundNumber)
-  const swappedPenalty = handBrainSideRolePenalty(swapped, summaries, tournament, roundNumber)
-
-  return asGivenPenalty <= swappedPenalty
-    ? asGiven
-    : swapped
-}
-
 function chooseSinglePairing(
   players: Player[],
   tournament: Tournament,
@@ -1694,14 +1677,14 @@ function handBrainBoardPenalty(
   roundNumber: number,
 ) {
   const teamRepeatPenalty = hasSameTeamBeforeRound(tournament, whiteIds, blackIds, roundNumber)
-    ? 50_000
+    ? 1_000_000
     : 0
   const partnerPenalty =
     teammateRepeatPenalty(tournament, whiteIds[0], whiteIds[1], roundNumber) +
     teammateRepeatPenalty(tournament, blackIds[0], blackIds[1], roundNumber)
   const pointPenalty =
     Math.abs(sideAveragePoints(whiteIds, summaries) - sideAveragePoints(blackIds, summaries)) *
-    250
+    10_000
 
   return teamRepeatPenalty + partnerPenalty + pointPenalty
 }
@@ -1814,6 +1797,10 @@ function createHandBrainPairingCandidate(
               white: whiteRole.side,
               black: blackRole.side,
             },
+            warnings: [
+              ...(firstPair.warnings ?? []),
+              ...(secondPair.warnings ?? []),
+            ],
           }
           const score =
             boardScore +
@@ -1835,43 +1822,62 @@ function createHandBrainPairingCandidate(
   return best
 }
 
-function createHandBrainPairingFromVirtualPairings(
-  firstPair: PlannedPairing,
-  secondPair: PlannedPairing,
+function findBestHandBrainBoardPlan(
+  virtualPairings: PlannedPairing[],
   tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
-  boardNumber: number,
-): Pairing {
-  const candidate = createHandBrainPairingCandidate(
-    firstPair,
-    secondPair,
-    tournament,
-    summaries,
-    roundNumber,
-    boardNumber,
-  )
-  const pairing = candidate?.pairing ?? {
-    id: makeId('pairing'),
-    roundNumber,
-    boardNumber,
-    kind: 'handAndBrain',
-    isManual: false,
-    isBye: false,
-    handBrainSides: {
-      white: assignHandBrainSide(firstPair.left, secondPair.left, summaries, tournament, roundNumber),
-      black: assignHandBrainSide(firstPair.right, secondPair.right, summaries, tournament, roundNumber),
-    },
+): Pairing[] {
+  if (virtualPairings.length < 2) {
+    return []
   }
 
-  return {
-    ...pairing,
-    warnings: [
-      ...validatePairing(tournament, pairing, roundNumber, summaries),
-      ...(firstPair.warnings ?? []),
-      ...(secondPair.warnings ?? []),
-    ],
+  function search(remaining: PlannedPairing[]): { pairings: Pairing[]; score: number } | null {
+    if (remaining.length === 0) {
+      return { pairings: [], score: 0 }
+    }
+
+    const [firstPair, ...rest] = remaining
+    let best: { pairings: Pairing[]; score: number } | null = null
+
+    rest.forEach((secondPair, index) => {
+      const candidate = createHandBrainPairingCandidate(
+        firstPair,
+        secondPair,
+        tournament,
+        summaries,
+        roundNumber,
+        0,
+      )
+
+      if (!candidate) {
+        return
+      }
+
+      const tail = search(rest.filter((_, restIndex) => restIndex !== index))
+
+      if (!tail) {
+        return
+      }
+
+      const score = candidate.score + tail.score
+      const result = {
+        pairings: [candidate.pairing, ...tail.pairings],
+        score,
+      }
+
+      if (!best || score < best.score) {
+        best = result
+      }
+    })
+
+    return best
   }
+
+  return (search(virtualPairings)?.pairings ?? []).map((pairing, index) => ({
+    ...pairing,
+    boardNumber: index + 1,
+  }))
 }
 
 function createFirstRoundHandBrainVirtualPairings(players: Player[]): PlannedPairing[] {
@@ -1955,48 +1961,21 @@ function createHandBrainPairings(
     roundNumber === 1
       ? createFirstRoundHandBrainVirtualPairings(pool)
       : createSwissBracketPairings(pool, tournament, summaries, roundNumber)
-  const remainingVirtualPairings = [...virtualPairings]
+  const handBrainPairings = findBestHandBrainBoardPlan(
+    virtualPairings,
+    tournament,
+    summaries,
+    roundNumber,
+  ).map((pairing, index) => ({
+    ...pairing,
+    boardNumber: pairings.length + index + 1,
+    warnings: [
+      ...validatePairing(tournament, pairing, roundNumber, summaries),
+      ...(pairing.warnings ?? []),
+    ],
+  }))
 
-  while (remainingVirtualPairings.length >= 2) {
-    const firstPair = remainingVirtualPairings.shift()
-
-    if (!firstPair) {
-      break
-    }
-
-    let bestIndex = 0
-    let bestScore = Number.POSITIVE_INFINITY
-
-    remainingVirtualPairings.forEach((candidatePair, index) => {
-      const candidate = createHandBrainPairingCandidate(
-        firstPair,
-        candidatePair,
-        tournament,
-        summaries,
-        roundNumber,
-        pairings.length + 1,
-      )
-      const score = candidate?.score ?? Number.POSITIVE_INFINITY
-
-      if (score < bestScore) {
-        bestIndex = index
-        bestScore = score
-      }
-    })
-
-    const [secondPair] = remainingVirtualPairings.splice(bestIndex, 1)
-
-    pairings.push(
-      createHandBrainPairingFromVirtualPairings(
-        firstPair,
-        secondPair,
-        tournament,
-        summaries,
-        roundNumber,
-        pairings.length + 1,
-      ),
-    )
-  }
+  pairings.push(...handBrainPairings)
 
   if (byePairing) {
     pairings.push(byePairing)
