@@ -223,7 +223,23 @@ function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
 }
 
 function swissRoundsForPlayerCount(playerCount: number) {
-  return Math.max(1, playerCount - 1)
+  return Math.min(Math.max(1, playerCount - 1), 10)
+}
+
+function defaultRoundsForFormat(
+  format: TournamentFormat,
+  playerCount: number,
+  roundRobinCycles: number,
+) {
+  if (format === 'roundRobin') {
+    return roundRobinRoundsForPlayerCount(playerCount, roundRobinCycles)
+  }
+
+  if (format === 'handAndBrain') {
+    return 5
+  }
+
+  return swissRoundsForPlayerCount(playerCount)
 }
 
 function roundRobinEligiblePlayerCount(tournament: Tournament, roundNumber: number) {
@@ -644,13 +660,15 @@ function TournamentCreator({
   const cleanPlayerCount = players.filter(
     (player) => player.name.trim().length > 0,
   ).length
-  const automaticSwissRoundCount = swissRoundsForPlayerCount(cleanPlayerCount)
+  const automaticRoundCount = defaultRoundsForFormat(
+    format,
+    cleanPlayerCount,
+    roundRobinCycles,
+  )
   const effectiveNumberOfRounds =
-    format === 'roundRobin'
-      ? roundRobinRoundsForPlayerCount(cleanPlayerCount, roundRobinCycles)
-      : roundsManuallyEdited
-        ? numberOfRounds
-        : automaticSwissRoundCount
+    format === 'roundRobin' || !roundsManuallyEdited
+      ? automaticRoundCount
+      : numberOfRounds
   const handleFormatChange = (nextFormat: TournamentFormat) => {
     setName((currentName) =>
       isDefaultTournamentName(currentName)
