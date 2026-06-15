@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import {
   addPlayerAfterStart,
+  correctResult,
   createManualHandBrainPairing,
   createManualPairing,
   createTournament,
@@ -578,6 +579,15 @@ export function useSwissTournaments(sessionId = 'default') {
       updateResult(tournament, roundNumber, pairingId, result),
     )
 
+  const correctPairingResult = (
+    roundNumber: number,
+    pairingId: string,
+    result?: GameResult,
+  ) =>
+    updateActiveTournament((tournament) =>
+      correctResult(tournament, roundNumber, pairingId, result),
+    )
+
   const exportStandingsCsv = (tournament = activeTournament) => {
     if (!tournament) {
       return
@@ -610,6 +620,7 @@ export function useSwissTournaments(sessionId = 'default') {
     archivedTournaments,
     changePlayerStatus,
     completeRound,
+    correctResult: correctPairingResult,
     createNewTournament,
     deleteTournament,
     deleteLatestRound: removeLatestRound,

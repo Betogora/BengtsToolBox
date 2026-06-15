@@ -1934,10 +1934,14 @@ export function SwissTournamentsPage() {
                         <PairingsTable
                           editable={isEditable}
                           pairings={round.pairings}
+                          resultCorrectionEnabled={!isEditable && round.status === 'completed'}
                           showWarnings
                           tournament={tournament}
                           onManualPairingRemove={(pairingId) =>
                             void app.removeManualPairing(round.roundNumber, pairingId)
+                          }
+                          onResultCorrection={(pairingId, result) =>
+                            app.correctResult(round.roundNumber, pairingId, result)
                           }
                           onResultChange={(pairingId, result) =>
                             void app.setResult(round.roundNumber, pairingId, result)
@@ -2146,19 +2150,78 @@ export function SwissTournamentsPage() {
   )
 }
 
+function ResultCorrectionBadge({
+  onCorrect,
+  pairing,
+}: {
+  onCorrect: (pairingId: string, result?: GameResult) => unknown
+  pairing: Pairing
+}) {
+  const [isSaving, setIsSaving] = useState(false)
+  const handleCorrection = async (value: ResultSelectValue) => {
+    if (isSaving) {
+      return
+    }
+
+    const result = value === openResultValue ? undefined : (value as GameResult)
+
+    setIsSaving(true)
+
+    try {
+      await onCorrect(pairing.id, result)
+      toast.success('Ergebnis wurde korrigiert.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Select
+      disabled={isSaving}
+      value={pairing.result ?? openResultValue}
+      onValueChange={(value) => void handleCorrection(value as ResultSelectValue)}
+    >
+      <SelectTrigger
+        aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
+        className={cn(
+          'inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold shadow-none',
+          'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
+          '[&>span]:truncate [&>svg]:hidden',
+          !pairing.result && 'bg-muted text-muted-foreground',
+        )}
+        title="Ergebnis korrigieren"
+      >
+        <SelectValue placeholder="offen" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={openResultValue}>offen</SelectItem>
+        {resultOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 function PairingsTable({
   editable = false,
   onManualPairingRemove,
+  onResultCorrection,
   onResultChange,
   tournament,
   pairings,
+  resultCorrectionEnabled = false,
   showWarnings = true,
 }: {
   editable?: boolean
   onManualPairingRemove?: (pairingId: string) => void
+  onResultCorrection?: (pairingId: string, result?: GameResult) => unknown
   onResultChange?: (pairingId: string, result?: GameResult) => void
   tournament: Tournament
   pairings: Pairing[]
+  resultCorrectionEnabled?: boolean
   showWarnings?: boolean
 }) {
   const canChangePairings = editable
@@ -2258,6 +2321,9 @@ function PairingsTable({
   const pairingRemoveLabel = (pairing: Pairing) =>
     `Fixierte Paarung ${whiteLabel(pairing)} gegen ${blackLabel(pairing)} lösen`
 
+  const canCorrectResult = (pairing: Pairing) =>
+    resultCorrectionEnabled && !pairing.isBye && Boolean(onResultCorrection)
+
   const renderMobileResult = (pairing: Pairing) => {
     if (pairing.isBye) {
       return <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
@@ -2283,6 +2349,15 @@ function PairingsTable({
             ))}
           </SelectContent>
         </Select>
+      )
+    }
+
+    if (canCorrectResult(pairing) && onResultCorrection) {
+      return (
+        <ResultCorrectionBadge
+          pairing={pairing}
+          onCorrect={onResultCorrection}
+        />
       )
     }
 
@@ -2462,6 +2537,11 @@ function PairingsTable({
                       ))}
                     </SelectContent>
                   </Select>
+                ) : canCorrectResult(pairing) && onResultCorrection ? (
+                  <ResultCorrectionBadge
+                    pairing={pairing}
+                    onCorrect={onResultCorrection}
+                  />
                 ) : (
                   <Badge variant={pairing.result ? 'outline' : 'secondary'}>
                     {resultLabel(pairing.result)}

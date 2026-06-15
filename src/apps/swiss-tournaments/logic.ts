@@ -2368,6 +2368,46 @@ export function updateResult(
   }
 }
 
+export function correctResult(
+  tournament: Tournament,
+  roundNumber: number,
+  pairingId: string,
+  result?: GameResult,
+): Tournament {
+  let didChange = false
+  const nextTournament = {
+    ...tournament,
+    rounds: tournament.rounds.map((round) =>
+      round.roundNumber === roundNumber
+        ? {
+            ...round,
+            pairings: round.pairings.map((pairing) => {
+              if (pairing.id !== pairingId || pairing.isBye) {
+                return pairing
+              }
+
+              if (pairing.result === result) {
+                return pairing
+              }
+
+              didChange = true
+
+              if (result) {
+                return { ...pairing, result }
+              }
+
+              const pairingWithoutResult = { ...pairing }
+              delete pairingWithoutResult.result
+              return pairingWithoutResult
+            }),
+          }
+        : round,
+    ),
+  }
+
+  return didChange ? regenerateCurrentDraftRoundIfUnscored(nextTournament) : tournament
+}
+
 function getLatestRound(tournament: Tournament) {
   return [...tournament.rounds].sort(
     (left, right) => right.roundNumber - left.roundNumber,
