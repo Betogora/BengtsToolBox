@@ -595,7 +595,7 @@ export function useSwissTournaments(sessionId = 'default') {
 
     downloadText(
       `${sanitizeDownloadName(tournament.name)}-rangliste.csv`,
-      standingsToCsv(recalculateStandings(tournament)),
+      standingsToCsv(recalculateStandings(tournament), tournament.format),
       'text/csv;charset=utf-8',
     )
   }

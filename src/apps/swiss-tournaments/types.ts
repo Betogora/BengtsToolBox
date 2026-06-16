@@ -111,6 +111,7 @@ export type StandingRow = {
   colorHistory: Color[]
   roundHistory: StandingRoundCell[]
   receivedByes: number
+  receivedSingleGames: number
   status: PlayerStatus
 }
 
@@ -151,4 +152,5 @@ export type PlayerScoreSummary = {
   colors: Color[]
   roles: Array<'hand' | 'brain' | '-'>
   byes: number
+  singleGames: number
 }

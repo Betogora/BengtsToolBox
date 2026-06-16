@@ -386,6 +386,7 @@ function getSummaryBeforeRound(
       colors: [],
       roles: [],
       byes: 0,
+      singleGames: 0,
     }
   })
 
@@ -425,6 +426,10 @@ function getSummaryBeforeRound(
 
         summaries[player.id].colors.push(playerColor(pairing, player.id))
         summaries[player.id].roles.push(playerRole(pairing, player.id))
+
+        if (pairingKind(pairing) === 'single') {
+          summaries[player.id].singleGames += 1
+        }
 
         if (isWin(pairing, player.id)) {
           summaries[player.id].wins += 1
@@ -814,23 +819,24 @@ function chooseByePlayer(
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
   byePolicy: Tournament['settings']['byePolicy'],
+  hardshipCount: (playerId: string) => number = (playerId) => summaries[playerId].byes,
 ) {
-  const lowestByeCount = Math.min(...players.map((player) => summaries[player.id].byes))
-  const eligiblePlayersWithFewestByes = players.filter(
-    (player) => summaries[player.id].byes === lowestByeCount,
+  const lowestHardshipCount = Math.min(...players.map((player) => hardshipCount(player.id)))
+  const eligiblePlayersWithFewestHardships = players.filter(
+    (player) => hardshipCount(player.id) === lowestHardshipCount,
   )
   const protectedLateEntrants =
     byePolicy === 'protectLateEntrants' && roundNumber > 1
-      ? eligiblePlayersWithFewestByes.filter(
+      ? eligiblePlayersWithFewestHardships.filter(
           (player) => player.addedInRound === roundNumber,
         )
       : []
   const eligiblePlayers =
-    protectedLateEntrants.length < eligiblePlayersWithFewestByes.length
-      ? eligiblePlayersWithFewestByes.filter(
+    protectedLateEntrants.length < eligiblePlayersWithFewestHardships.length
+      ? eligiblePlayersWithFewestHardships.filter(
           (player) => !protectedLateEntrants.some((late) => late.id === player.id),
         )
-      : eligiblePlayersWithFewestByes
+      : eligiblePlayersWithFewestHardships
 
   return [...eligiblePlayers].sort((left, right) => {
     return (
@@ -1634,24 +1640,18 @@ function roleCount(summary: PlayerScoreSummary, role: 'hand' | 'brain') {
   return summary.roles.filter((entry) => entry === role).length
 }
 
-function countSingleGamesBeforeRound(
-  tournament: Tournament,
+function handBrainHardshipCount(
   playerId: string,
-  beforeRoundNumber: number,
+  summaries: Record<string, PlayerScoreSummary>,
+  currentRoundByes = new Set<string>(),
 ) {
-  return tournament.rounds
-    .filter((round) => round.roundNumber < beforeRoundNumber)
-    .reduce(
-      (count, round) =>
-        count +
-        round.pairings.filter(
-          (pairing) =>
-            !pairing.isBye &&
-            pairingKind(pairing) === 'single' &&
-            pairingPlayerIds(pairing).includes(playerId),
-        ).length,
-      0,
-    )
+  const summary = summaries[playerId]
+
+  return (
+    (summary?.byes ?? 0) +
+    (summary?.singleGames ?? 0) +
+    (currentRoundByes.has(playerId) ? 1 : 0)
+  )
 }
 
 function compareNumberLists(left: number[], right: number[]) {
@@ -1670,14 +1670,13 @@ function compareNumberLists(left: number[], right: number[]) {
 
 function chooseSinglePairing(
   players: Player[],
-  tournament: Tournament,
   summaries: Record<string, PlayerScoreSummary>,
-  roundNumber: number,
+  currentRoundByes = new Set<string>(),
 ) {
   const sorted = [...players].sort(
     (left, right) =>
-      countSingleGamesBeforeRound(tournament, left.id, roundNumber) -
-        countSingleGamesBeforeRound(tournament, right.id, roundNumber) ||
+      handBrainHardshipCount(left.id, summaries, currentRoundByes) -
+        handBrainHardshipCount(right.id, summaries, currentRoundByes) ||
       summaries[left.id].points - summaries[right.id].points ||
       right.initialSeed - left.initialSeed,
   )
@@ -1908,6 +1907,7 @@ function createHandBrainPairings(
   let pool = activePlayers
   let byePairing: Pairing | null = null
   let singlePairing: Pairing | null = null
+  const currentRoundByeIds = new Set<string>()
 
   if (pool.length % 4 === 1 || pool.length % 4 === 3) {
     const byePlayer = chooseByePlayer(
@@ -1915,6 +1915,7 @@ function createHandBrainPairings(
       summaries,
       roundNumber,
       tournament.settings.byePolicy,
+      (playerId) => handBrainHardshipCount(playerId, summaries),
     )
     byePairing = {
       id: makeId('pairing'),
@@ -1926,11 +1927,16 @@ function createHandBrainPairings(
       byePlayerId: byePlayer.id,
     }
     byePairing.warnings = validatePairing(tournament, byePairing, roundNumber, summaries)
+    currentRoundByeIds.add(byePlayer.id)
     pool = pool.filter((player) => player.id !== byePlayer.id)
   }
 
   if (pool.length % 4 === 2) {
-    const singlePair = chooseSinglePairing(pool, tournament, summaries, roundNumber)
+    const singlePair = chooseSinglePairing(
+      pool,
+      summaries,
+      currentRoundByeIds,
+    )
 
     if (singlePair) {
       const colors = assignSinglePairingColors(singlePair.left, singlePair.right, summaries)
@@ -2289,6 +2295,7 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
       colorHistory: summary.colors,
       roundHistory: [],
       receivedByes: summary.byes,
+      receivedSingleGames: summary.singleGames,
       status: player.status,
     } satisfies StandingRow
   })
@@ -2430,6 +2437,27 @@ function canRegenerateUnscoredDraftRound(tournament: Tournament, round: Round) {
     round.pairings.length > 0 &&
     round.roundNumber === latestRound?.roundNumber &&
     !round.pairings.some(hasGameResult)
+  )
+}
+
+export function willResultCorrectionRegenerateCurrentDraftRound(
+  tournament: Tournament,
+  roundNumber: number,
+  pairingId: string,
+  result?: GameResult,
+) {
+  const pairing = tournament.rounds
+    .find((round) => round.roundNumber === roundNumber)
+    ?.pairings.find((entry) => entry.id === pairingId)
+
+  if (!pairing || pairing.isBye || pairing.result === result) {
+    return false
+  }
+
+  const draftRound = getCurrentDraftRound(tournament)
+
+  return Boolean(
+    draftRound && canRegenerateUnscoredDraftRound(tournament, draftRound),
   )
 }
 
@@ -2812,7 +2840,10 @@ export function formatPoints(value: number) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1).replace('.', ',')
 }
 
-export function standingsToCsv(rows: StandingRow[]) {
+export function standingsToCsv(rows: StandingRow[], format: Tournament['format'] = 'swiss') {
+  const hardshipLabel = format === 'handAndBrain' ? 'Pech' : 'Byes'
+  const hardshipCount = (row: StandingRow) =>
+    format === 'handAndBrain' ? row.receivedByes + row.receivedSingleGames : row.receivedByes
   const header = [
     'Platz',
     'Name',
@@ -2821,7 +2852,7 @@ export function standingsToCsv(rows: StandingRow[]) {
     'Sonneborn-Berger',
     'Siege',
     'Runden',
-    'Byes',
+    hardshipLabel,
     'Status',
   ]
   const escape = (value: string | number | null) =>
@@ -2838,7 +2869,7 @@ export function standingsToCsv(rows: StandingRow[]) {
         formatPoints(row.sonnebornBerger),
         row.wins,
         row.roundHistory.map((entry) => entry.label).join(' '),
-        row.receivedByes,
+        hardshipCount(row),
         row.status,
       ]
         .map(escape)

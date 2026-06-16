@@ -31,6 +31,7 @@ import {
   formatPoints,
   getRoundDisplayLabel,
   recalculateStandings,
+  willResultCorrectionRegenerateCurrentDraftRound,
 } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
@@ -677,7 +678,7 @@ function TournamentCreator({
         ? defaultTournamentName(nextFormat)
         : currentName,
     )
-    setByeScore(nextFormat === 'handAndBrain' ? 0.5 : 1)
+    setByeScore(1)
     setFormat(nextFormat)
   }
   const handleAddDraftPlayer = () => {
@@ -1950,6 +1951,14 @@ export function SwissTournamentsPage() {
                           onResultCorrection={(pairingId, result) =>
                             app.correctResult(round.roundNumber, pairingId, result)
                           }
+                          shouldConfirmResultCorrection={(pairingId, result) =>
+                            willResultCorrectionRegenerateCurrentDraftRound(
+                              tournament,
+                              round.roundNumber,
+                              pairingId,
+                              result,
+                            )
+                          }
                           onResultChange={(pairingId, result) =>
                             void app.setResult(round.roundNumber, pairingId, result)
                           }
@@ -2148,6 +2157,7 @@ export function SwissTournamentsPage() {
         <TabsContent value="standings">
           <StandingsTable
             standings={visibleStandings}
+            tournamentFormat={visibleStandingsTournament.format}
             tournamentName={visibleStandingsTournament.name}
           />
         </TabsContent>
@@ -2160,17 +2170,24 @@ export function SwissTournamentsPage() {
 function ResultCorrectionBadge({
   onCorrect,
   pairing,
+  shouldConfirmRegeneration,
 }: {
   onCorrect: (pairingId: string, result?: GameResult) => unknown
   pairing: Pairing
+  shouldConfirmRegeneration?: (pairingId: string, result?: GameResult) => boolean
 }) {
+  const confirmButtonRef = useRef<HTMLButtonElement>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const handleCorrection = async (value: ResultSelectValue) => {
+  const [pendingValue, setPendingValue] = useState<ResultSelectValue | null>(null)
+
+  const resultFromValue = (value: ResultSelectValue) =>
+    value === openResultValue ? undefined : (value as GameResult)
+
+  const saveCorrection = async (result?: GameResult) => {
     if (isSaving) {
       return
     }
-
-    const result = value === openResultValue ? undefined : (value as GameResult)
 
     setIsSaving(true)
 
@@ -2182,33 +2199,108 @@ function ResultCorrectionBadge({
     }
   }
 
+  const handleCorrection = async (value: ResultSelectValue) => {
+    const result = resultFromValue(value)
+
+    if (shouldConfirmRegeneration?.(pairing.id, result)) {
+      setPendingValue(value)
+      setConfirmOpen(true)
+      return
+    }
+
+    await saveCorrection(result)
+  }
+
+  const handleConfirmCorrection = async () => {
+    if (pendingValue === null) {
+      setConfirmOpen(false)
+      return
+    }
+
+    await saveCorrection(resultFromValue(pendingValue))
+    setPendingValue(null)
+    setConfirmOpen(false)
+  }
+
+  const handleConfirmOpenChange = (open: boolean) => {
+    if (isSaving) {
+      return
+    }
+
+    setConfirmOpen(open)
+
+    if (!open) {
+      setPendingValue(null)
+    }
+  }
+
   return (
-    <Select
-      disabled={isSaving}
-      value={pairing.result ?? openResultValue}
-      onValueChange={(value) => void handleCorrection(value as ResultSelectValue)}
-    >
-      <SelectTrigger
-        aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
-        className={cn(
-          'inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold shadow-none',
-          'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
-          '[&>span]:truncate [&>svg]:hidden',
-          !pairing.result && 'bg-muted text-muted-foreground',
-        )}
-        title="Ergebnis korrigieren"
+    <>
+      <Select
+        disabled={isSaving || confirmOpen}
+        value={pairing.result ?? openResultValue}
+        onValueChange={(value) => void handleCorrection(value as ResultSelectValue)}
       >
-        <SelectValue placeholder="offen" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={openResultValue}>offen</SelectItem>
-        {resultOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectTrigger
+          aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
+          className={cn(
+            'inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold shadow-none',
+            'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
+            '[&>span]:truncate [&>svg]:hidden',
+            !pairing.result && 'bg-muted text-muted-foreground',
+          )}
+          title="Ergebnis korrigieren"
+        >
+          <SelectValue placeholder="offen" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={openResultValue}>offen</SelectItem>
+          {resultOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Dialog open={confirmOpen} onOpenChange={handleConfirmOpenChange}>
+        <DialogContent
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.defaultPrevented) {
+              event.preventDefault()
+              void handleConfirmCorrection()
+            }
+          }}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            confirmButtonRef.current?.focus()
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Paarungen neu erzeugen?</DialogTitle>
+            <DialogDescription>
+              Diese Ergebnis-Korrektur erzeugt die Paarungen der aktuellen Runde
+              neu, weil dort noch keine Ergebnisse eingetragen sind. Bereits
+              laufende Partien können dadurch andere Gegner oder Farben bekommen.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button disabled={isSaving} variant="outline">
+                Abbrechen
+              </Button>
+            </DialogClose>
+            <Button
+              ref={confirmButtonRef}
+              disabled={isSaving}
+              variant="destructive"
+              onClick={() => void handleConfirmCorrection()}
+            >
+              Neu erzeugen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -2217,6 +2309,7 @@ function PairingsTable({
   onManualPairingRemove,
   onResultCorrection,
   onResultChange,
+  shouldConfirmResultCorrection,
   tournament,
   pairings,
   resultCorrectionEnabled = false,
@@ -2226,6 +2319,10 @@ function PairingsTable({
   onManualPairingRemove?: (pairingId: string) => void
   onResultCorrection?: (pairingId: string, result?: GameResult) => unknown
   onResultChange?: (pairingId: string, result?: GameResult) => void
+  shouldConfirmResultCorrection?: (
+    pairingId: string,
+    result?: GameResult,
+  ) => boolean
   tournament: Tournament
   pairings: Pairing[]
   resultCorrectionEnabled?: boolean
@@ -2364,6 +2461,7 @@ function PairingsTable({
         <ResultCorrectionBadge
           pairing={pairing}
           onCorrect={onResultCorrection}
+          shouldConfirmRegeneration={shouldConfirmResultCorrection}
         />
       )
     }
@@ -2548,6 +2646,7 @@ function PairingsTable({
                   <ResultCorrectionBadge
                     pairing={pairing}
                     onCorrect={onResultCorrection}
+                    shouldConfirmRegeneration={shouldConfirmResultCorrection}
                   />
                 ) : (
                   <Badge variant={pairing.result ? 'outline' : 'secondary'}>
@@ -2609,9 +2708,11 @@ function PairingsTable({
 
 function StandingsTable({
   standings,
+  tournamentFormat,
   tournamentName,
 }: {
   standings: ReturnType<typeof useSwissTournaments>['standings']
+  tournamentFormat: Tournament['format']
   tournamentName: string
 }) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
@@ -2649,7 +2750,11 @@ function StandingsTable({
     '--swiss-round-cell-width': `${roundCellLabelWidth * 0.45 + 1.85}rem`,
     '--swiss-round-grid-columns': visibleRoundGridColumns,
   } as CSSProperties
-
+  const hardshipLabel = tournamentFormat === 'handAndBrain' ? 'Pech' : 'Byes'
+  const hardshipCount = (row: (typeof standings)[number]) =>
+    tournamentFormat === 'handAndBrain'
+      ? row.receivedByes + row.receivedSingleGames
+      : row.receivedByes
 
   return (
     <Card className="swiss-standings-card">
@@ -2741,7 +2846,7 @@ function StandingsTable({
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
                               <span>Siege: {row.wins}</span>
-                              <span>Byes: {row.receivedByes}</span>
+                              <span>{hardshipLabel}: {hardshipCount(row)}</span>
                               <Badge
                                 className="h-5 px-1.5 text-[10px]"
                                 variant={statusVariant(row.status)}
@@ -2771,7 +2876,7 @@ function StandingsTable({
                 <th className="p-3">SB</th>
                 <th className="p-3">Siege</th>
                 <th className="swiss-rounds-heading p-3">Runden</th>
-                <th className="swiss-export-hidden-column p-3">Byes</th>
+                <th className="swiss-export-hidden-column p-3">{hardshipLabel}</th>
                 <th className="swiss-export-hidden-column p-3">Status</th>
               </tr>
             </thead>
@@ -2807,7 +2912,7 @@ function StandingsTable({
                     </div>
                   </td>
                   <td className="swiss-export-hidden-column p-3 tabular-nums">
-                    {row.receivedByes}
+                    {hardshipCount(row)}
                   </td>
                   <td className="swiss-export-hidden-column p-3">
                     <Badge variant={statusVariant(row.status)}>
