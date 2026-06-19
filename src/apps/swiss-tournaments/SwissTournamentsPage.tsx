@@ -67,6 +67,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -711,33 +712,28 @@ function TournamentCreator({
         />
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="swiss-name">Turniername</Label>
-            <Input
-              id="swiss-name"
-              value={name}
-              onChange={(event) => setName(event.currentTarget.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="swiss-rounds">Runden</Label>
-            <Input
-              id="swiss-rounds"
-              min={1}
-              readOnly={format === 'roundRobin'}
-              type="number"
-              value={effectiveNumberOfRounds}
-              onChange={(event) => {
-                setRoundsManuallyEdited(true)
-                setNumberOfRounds(Number(event.currentTarget.value))
-              }}
-            />
-          </div>
+          <IftaInput
+            id="swiss-name"
+            label="Turniername"
+            value={name}
+            onChange={(event) => setName(event.currentTarget.value)}
+          />
+          <IftaInput
+            id="swiss-rounds"
+            label="Runden"
+            min={1}
+            readOnly={format === 'roundRobin'}
+            type="number"
+            value={effectiveNumberOfRounds}
+            onChange={(event) => {
+              setRoundsManuallyEdited(true)
+              setNumberOfRounds(Number(event.currentTarget.value))
+            }}
+          />
         </div>
 
         <div className="grid gap-3 border-b pb-4 md:grid-cols-2">
-          <div className="grid gap-2">
-            <Label>Sortierung</Label>
+          <div>
             <Select
               value={initialSeedingMode}
               disabled={format === 'roundRobin'}
@@ -745,24 +741,23 @@ function TournamentCreator({
                 setInitialSeedingMode(value as SeedingMode)
               }
             >
-              <SelectTrigger>
+              <IftaSelectTrigger label="Sortierung">
                 <SelectValue />
-              </SelectTrigger>
+              </IftaSelectTrigger>
               <SelectContent>
                 <SelectItem value="rating">nach Rating</SelectItem>
                 <SelectItem value="random">zufällig</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label>Punkte pro Bye</Label>
+          <div>
             <Select
               value={String(byeScore)}
               onValueChange={(value) => setByeScore(Number(value) as ByeScore)}
             >
-              <SelectTrigger>
+              <IftaSelectTrigger label="Punkte pro Bye">
                 <SelectValue />
-              </SelectTrigger>
+              </IftaSelectTrigger>
               <SelectContent>
                 {byeScoreOptions.map((option) => (
                   <SelectItem key={option.value} value={String(option.value)}>
@@ -779,48 +774,49 @@ function TournamentCreator({
             <Label>Spieler</Label>
           </div>
 
-          <div className="grid gap-2">
-            {players.map((player) => (
+          <div className="grid gap-1.5">
+            <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] gap-2 px-2 text-[0.68rem] font-semibold uppercase leading-none text-muted-foreground sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem]">
+              <span>Name</span>
+              <span>Rating</span>
+              <span className="sr-only">Aktion</span>
+            </div>
+            {players.map((player, index) => (
               <div
                 key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-end gap-2 rounded-md border bg-card/70 p-2.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:p-3"
+                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-center gap-2 rounded-md border bg-card/70 p-2 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem]"
               >
-                <div className="grid gap-1.5">
-                  <Label htmlFor={`swiss-create-name-${player.id}`}>Name</Label>
-                  <Input
-                    id={`swiss-create-name-${player.id}`}
-                    value={player.name}
-                    onChange={(event) =>
-                      setPlayers((currentPlayers) =>
-                        currentPlayers.map((entry) =>
-                          entry.id === player.id
-                            ? { ...entry, name: event.currentTarget.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor={`swiss-create-rating-${player.id}`}>Rating</Label>
-                  <Input
-                    id={`swiss-create-rating-${player.id}`}
-                    type="number"
-                    value={player.rating}
-                    onChange={(event) =>
-                      setPlayers((currentPlayers) =>
-                        currentPlayers.map((entry) =>
-                          entry.id === player.id
-                            ? { ...entry, rating: event.currentTarget.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                  />
-                </div>
+                <Input
+                  id={`swiss-create-name-${player.id}`}
+                  aria-label={`Name von Spieler ${index + 1}`}
+                  value={player.name}
+                  onChange={(event) =>
+                    setPlayers((currentPlayers) =>
+                      currentPlayers.map((entry) =>
+                        entry.id === player.id
+                          ? { ...entry, name: event.currentTarget.value }
+                          : entry,
+                      ),
+                    )
+                  }
+                />
+                <Input
+                  id={`swiss-create-rating-${player.id}`}
+                  aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                  type="number"
+                  value={player.rating}
+                  onChange={(event) =>
+                    setPlayers((currentPlayers) =>
+                      currentPlayers.map((entry) =>
+                        entry.id === player.id
+                          ? { ...entry, rating: event.currentTarget.value }
+                          : entry,
+                      ),
+                    )
+                  }
+                />
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="self-end"
+                  className="self-center"
                   size="sm"
                   variant="delete"
                   onClick={() =>
@@ -841,15 +837,19 @@ function TournamentCreator({
               }}
             >
               <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
-                <Input
-                  placeholder="Name"
+                <IftaInput
+                  aria-label="Neuer Spielername"
+                  label="Name"
+                  placeholder="Neuer Spieler"
                   value={newDraftPlayerName}
                   onChange={(event) =>
                     setNewDraftPlayerName(event.currentTarget.value)
                   }
                 />
-                <Input
-                  placeholder="Rating"
+                <IftaInput
+                  aria-label="Neues Spielerrating"
+                  label="Rating"
+                  placeholder="DWZ"
                   type="number"
                   value={newDraftPlayerRating}
                   onChange={(event) =>
@@ -1440,76 +1440,72 @@ export function SwissTournamentsPage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">
-                <div className="grid gap-2">
-                  <Label>Turniername</Label>
-                  <Input
-                    value={tournament.name}
+                <IftaInput
+                  label="Turniername"
+                  value={tournament.name}
+                  onChange={(event) =>
+                    void app.updateTournamentMeta({
+                      name: event.currentTarget.value,
+                    })
+                  }
+                />
+                {(tournament.format ?? 'swiss') !== 'roundRobin' && (
+                  <IftaInput
+                    label="Runden"
+                    min={Math.max(1, highestCompletedRoundNumber(tournament))}
+                    type="number"
+                    value={tournament.numberOfRounds}
                     onChange={(event) =>
                       void app.updateTournamentMeta({
-                        name: event.currentTarget.value,
+                        numberOfRounds: Number(event.currentTarget.value),
                       })
                     }
                   />
-                </div>
-                {(tournament.format ?? 'swiss') !== 'roundRobin' && (
-                  <div className="grid gap-2">
-                    <Label>Runden</Label>
-                    <Input
-                      min={Math.max(1, highestCompletedRoundNumber(tournament))}
-                      type="number"
-                      value={tournament.numberOfRounds}
-                      onChange={(event) =>
-                        void app.updateTournamentMeta({
-                          numberOfRounds: Number(event.currentTarget.value),
-                        })
-                      }
-                    />
-                  </div>
                 )}
-                <div className="grid gap-2">
-                  <Label>Punkte pro Bye</Label>
-                  <Select
-                    value={String(tournament.settings.byeScore)}
-                    onValueChange={(value) =>
-                      void app.updateSettings({
-                        byeScore: Number(value) as ByeScore,
-                      })
-                    }
+                <Select
+                  value={String(tournament.settings.byeScore)}
+                  onValueChange={(value) =>
+                    void app.updateSettings({
+                      byeScore: Number(value) as ByeScore,
+                    })
+                  }
+                >
+                  <IftaSelectTrigger
+                    className={singleLineSelectTriggerClass}
+                    label="Punkte pro Bye"
                   >
-                    <SelectTrigger className={singleLineSelectTriggerClass}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {byeScoreOptions.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Bye-Vergabe</Label>
-                  <Select
-                    value={tournament.settings.byePolicy}
-                    onValueChange={(value) =>
-                      void app.updateSettings({
-                        byePolicy: value as ByePolicy,
-                      })
-                    }
+                    <SelectValue />
+                  </IftaSelectTrigger>
+                  <SelectContent>
+                    {byeScoreOptions.map((option) => (
+                      <SelectItem key={option.value} value={String(option.value)}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={tournament.settings.byePolicy}
+                  onValueChange={(value) =>
+                    void app.updateSettings({
+                      byePolicy: value as ByePolicy,
+                    })
+                  }
+                >
+                  <IftaSelectTrigger
+                    className={singleLineSelectTriggerClass}
+                    label="Bye-Vergabe"
                   >
-                    <SelectTrigger className={singleLineSelectTriggerClass}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {byePolicyOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <SelectValue />
+                  </IftaSelectTrigger>
+                  <SelectContent>
+                    {byePolicyOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -1582,13 +1578,15 @@ export function SwissTournamentsPage() {
                 }}
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
-                  <Input
-                    placeholder="Name"
+                  <IftaInput
+                    label="Name"
+                    placeholder="Neuer Spieler"
                     value={newPlayerName}
                     onChange={(event) => setNewPlayerName(event.currentTarget.value)}
                   />
-                  <Input
-                    placeholder="Rating"
+                  <IftaInput
+                    label="Rating"
+                    placeholder="DWZ"
                     type="number"
                     value={newPlayerRating}
                     onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
@@ -1606,6 +1604,10 @@ export function SwissTournamentsPage() {
               </form>
 
               <div className="grid gap-2 md:hidden">
+                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-[0.68rem] font-semibold uppercase leading-none text-muted-foreground">
+                  <span>Name</span>
+                  <span>Rating</span>
+                </div>
                 {tournament.players.map((player, index) => {
                   const canRemove = canRemovePlayer(player.id)
 
@@ -1664,9 +1666,9 @@ export function SwissTournamentsPage() {
                             )
                           }
                         >
-                          <SelectTrigger>
+                          <IftaSelectTrigger label="Status">
                             <SelectValue />
-                          </SelectTrigger>
+                          </IftaSelectTrigger>
                           <SelectContent>
                             <SelectItem value="active">aktiv</SelectItem>
                             <SelectItem value="inactive">inaktiv</SelectItem>
@@ -1721,6 +1723,7 @@ export function SwissTournamentsPage() {
                         <td className="p-3 tabular-nums">{index + 1}</td>
                         <td className="p-3">
                           <Input
+                            aria-label={`Name von ${player.name}`}
                             value={player.name}
                             onChange={(event) =>
                               void app.updatePlayer(player.id, {
@@ -1732,6 +1735,7 @@ export function SwissTournamentsPage() {
                         </td>
                         <td className="p-3">
                           <Input
+                            aria-label={`Rating von ${player.name}`}
                             className="w-28"
                             type="number"
                             value={player.rating ?? ''}
@@ -1762,7 +1766,10 @@ export function SwissTournamentsPage() {
                                 )
                               }
                             >
-                              <SelectTrigger className="w-40">
+                              <SelectTrigger
+                                aria-label={`Status von ${player.name}`}
+                                className="w-40"
+                              >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -1974,14 +1981,17 @@ export function SwissTournamentsPage() {
                                 <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                                   <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <IftaSelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Weiß Brain"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Brain className="size-4 shrink-0 text-primary" />,
                                             'Weiß',
                                           )}
                                         />
-                                      </SelectTrigger>
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteBrain).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -1991,14 +2001,17 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <IftaSelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Weiß Hand"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Hand className="size-4 shrink-0 text-primary" />,
                                             'Weiß',
                                           )}
                                         />
-                                      </SelectTrigger>
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteHand).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -2010,14 +2023,17 @@ export function SwissTournamentsPage() {
                                   </div>
                                   <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <IftaSelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Schwarz Brain"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Brain className="size-4 shrink-0 text-primary" />,
                                             'Schwarz',
                                           )}
                                         />
-                                      </SelectTrigger>
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackBrain).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -2027,14 +2043,17 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <IftaSelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Schwarz Hand"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Hand className="size-4 shrink-0 text-primary" />,
                                             'Schwarz',
                                           )}
                                         />
-                                      </SelectTrigger>
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackHand).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -2076,14 +2095,18 @@ export function SwissTournamentsPage() {
                             )}
                             <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
-                                <SelectTrigger className={cn(singleLineSelectTriggerClass, 'lg:col-span-2')}>
+                                <IftaSelectTrigger
+                                  className={singleLineSelectTriggerClass}
+                                  containerClassName="lg:col-span-2"
+                                  label="Weiß"
+                                >
                                   <SelectValue
                                     placeholder={roleColorPlaceholder(
                                       <ChessKing className="size-4 shrink-0 text-primary" />,
                                       'Weiß',
                                     )}
                                   />
-                                </SelectTrigger>
+                                </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualWhiteOptions.map((player) => (
                                     <SelectItem key={player.id} value={player.id}>
@@ -2093,14 +2116,18 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
-                                <SelectTrigger className={cn(singleLineSelectTriggerClass, 'lg:col-span-2')}>
+                                <IftaSelectTrigger
+                                  className={singleLineSelectTriggerClass}
+                                  containerClassName="lg:col-span-2"
+                                  label="Schwarz"
+                                >
                                   <SelectValue
                                     placeholder={roleColorPlaceholder(
                                       <ChessKing className="size-4 shrink-0 text-primary" />,
                                       'Schwarz',
                                     )}
                                   />
-                                </SelectTrigger>
+                                </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualBlackOptions.map((player) => (
                                     <SelectItem key={player.id} value={player.id}>
