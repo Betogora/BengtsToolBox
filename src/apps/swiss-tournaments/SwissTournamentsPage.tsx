@@ -65,7 +65,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Input, LabeledInput } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -703,18 +703,18 @@ function TournamentCreator({
         />
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="swiss-name">Turniername</Label>
-            <Input
+          <div>
+            <LabeledInput
               id="swiss-name"
+              label="Turniername"
               value={name}
               onChange={(event) => setName(event.currentTarget.value)}
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="swiss-rounds">Runden</Label>
-            <Input
+          <div>
+            <LabeledInput
               id="swiss-rounds"
+              label="Runden"
               min={1}
               readOnly={format === 'roundRobin'}
               type="number"
@@ -728,8 +728,7 @@ function TournamentCreator({
         </div>
 
         <div className="grid gap-3 border-b pb-4 md:grid-cols-2">
-          <div className="grid gap-2">
-            <Label>Sortierung</Label>
+          <div>
             <Select
               value={initialSeedingMode}
               disabled={format === 'roundRobin'}
@@ -737,7 +736,7 @@ function TournamentCreator({
                 setInitialSeedingMode(value as SeedingMode)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger label="Sortierung">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -746,13 +745,12 @@ function TournamentCreator({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label>Punkte pro Bye</Label>
+          <div>
             <Select
               value={String(byeScore)}
               onValueChange={(value) => setByeScore(Number(value) as ByeScore)}
             >
-              <SelectTrigger>
+              <SelectTrigger label="Punkte pro Bye">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -771,15 +769,19 @@ function TournamentCreator({
             <Label>Spieler</Label>
           </div>
 
-          <div className="grid gap-2">
+          <div className="overflow-hidden rounded-md border bg-card/70">
+            <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] gap-2 border-b bg-muted/60 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:px-3">
+              <span>Name</span>
+              <span>Rating</span>
+              <span className="sr-only">Aktion</span>
+            </div>
             {players.map((player) => (
               <div
                 key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-end gap-2 rounded-md border bg-card/70 p-2.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:p-3"
+                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-center gap-2 border-b px-2.5 py-1.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:px-3"
               >
-                <div className="grid gap-1.5">
-                  <Label htmlFor={`swiss-create-name-${player.id}`}>Name</Label>
-                  <Input
+                <Input
+                    aria-label={`Name von ${player.name || 'Spieler'}`}
                     id={`swiss-create-name-${player.id}`}
                     value={player.name}
                     onChange={(event) =>
@@ -791,11 +793,9 @@ function TournamentCreator({
                         ),
                       )
                     }
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor={`swiss-create-rating-${player.id}`}>Rating</Label>
-                  <Input
+                />
+                <Input
+                    aria-label={`Rating von ${player.name || 'Spieler'}`}
                     id={`swiss-create-rating-${player.id}`}
                     type="number"
                     value={player.rating}
@@ -808,11 +808,10 @@ function TournamentCreator({
                         ),
                       )
                     }
-                  />
-                </div>
+                />
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="self-end"
+                  className="h-9"
                   size="sm"
                   variant="delete"
                   onClick={() =>
@@ -826,14 +825,15 @@ function TournamentCreator({
               </div>
             ))}
             <form
-              className="rounded-md border border-dashed bg-background p-3"
+              className="border-t border-dashed bg-background px-2.5 py-2 sm:px-3"
               onSubmit={(event) => {
                 event.preventDefault()
                 handleAddDraftPlayer()
               }}
             >
-              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] md:grid-cols-[1fr_8rem_auto]">
                 <Input
+                  aria-label="Name des neuen Spielers"
                   placeholder="Name"
                   value={newDraftPlayerName}
                   onChange={(event) =>
@@ -841,6 +841,7 @@ function TournamentCreator({
                   }
                 />
                 <Input
+                  aria-label="Rating des neuen Spielers"
                   placeholder="Rating"
                   type="number"
                   value={newDraftPlayerRating}
@@ -849,13 +850,14 @@ function TournamentCreator({
                   }
                 />
                 <Button
-                  className="col-span-2 h-9 w-full md:col-span-1 md:w-auto"
+                  aria-label="Spieler hinzufügen"
+                  className="col-span-2 h-9 w-full sm:col-span-1 sm:w-10 md:w-auto"
                   type="submit"
                   variant="outline"
                   disabled={newDraftPlayerName.trim().length === 0}
                 >
                   <CirclePlus className="size-4" />
-                  Spieler hinzufügen
+                  <span className="sm:sr-only md:not-sr-only">Spieler hinzufügen</span>
                 </Button>
               </div>
             </form>
@@ -939,6 +941,9 @@ function NewTournamentDialog({
             <CirclePlus className="size-5 text-primary" />
             Neues Turnier anlegen
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Turniermodus, Einstellungen und Spieler für ein neues Turnier festlegen.
+          </DialogDescription>
         </DialogHeader>
         {open && (
           <TournamentCreator
@@ -1432,9 +1437,9 @@ export function SwissTournamentsPage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">
-                <div className="grid gap-2">
-                  <Label>Turniername</Label>
-                  <Input
+                <div>
+                  <LabeledInput
+                    label="Turniername"
                     value={tournament.name}
                     onChange={(event) =>
                       void app.updateTournamentMeta({
@@ -1444,9 +1449,9 @@ export function SwissTournamentsPage() {
                   />
                 </div>
                 {(tournament.format ?? 'swiss') !== 'roundRobin' && (
-                  <div className="grid gap-2">
-                    <Label>Runden</Label>
-                    <Input
+                  <div>
+                    <LabeledInput
+                      label="Runden"
                       min={Math.max(1, highestCompletedRoundNumber(tournament))}
                       type="number"
                       value={tournament.numberOfRounds}
@@ -1458,8 +1463,7 @@ export function SwissTournamentsPage() {
                     />
                   </div>
                 )}
-                <div className="grid gap-2">
-                  <Label>Punkte pro Bye</Label>
+                <div>
                   <Select
                     value={String(tournament.settings.byeScore)}
                     onValueChange={(value) =>
@@ -1468,7 +1472,10 @@ export function SwissTournamentsPage() {
                       })
                     }
                   >
-                    <SelectTrigger className={singleLineSelectTriggerClass}>
+                    <SelectTrigger
+                      className={singleLineSelectTriggerClass}
+                      label="Punkte pro Bye"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1480,8 +1487,7 @@ export function SwissTournamentsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Bye-Vergabe</Label>
+                <div>
                   <Select
                     value={tournament.settings.byePolicy}
                     onValueChange={(value) =>
@@ -1490,7 +1496,10 @@ export function SwissTournamentsPage() {
                       })
                     }
                   >
-                    <SelectTrigger className={singleLineSelectTriggerClass}>
+                    <SelectTrigger
+                      className={singleLineSelectTriggerClass}
+                      label="Bye-Vergabe"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1574,13 +1583,13 @@ export function SwissTournamentsPage() {
                 }}
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
-                  <Input
-                    placeholder="Name"
+                  <LabeledInput
+                    label="Name"
                     value={newPlayerName}
                     onChange={(event) => setNewPlayerName(event.currentTarget.value)}
                   />
-                  <Input
-                    placeholder="Rating"
+                  <LabeledInput
+                    label="Rating"
                     type="number"
                     value={newPlayerRating}
                     onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
@@ -1598,6 +1607,10 @@ export function SwissTournamentsPage() {
               </form>
 
               <div className="grid gap-2 md:hidden">
+                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2.5 text-xs font-semibold text-muted-foreground">
+                  <span>Name</span>
+                  <span>Rating</span>
+                </div>
                 {tournament.players.map((player, index) => {
                   const canRemove = canRemovePlayer(player.id)
 
@@ -1656,7 +1669,7 @@ export function SwissTournamentsPage() {
                             )
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger label="Status">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1958,7 +1971,10 @@ export function SwissTournamentsPage() {
                                 <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <SelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Weiß · Brain"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Brain className="size-4 shrink-0 text-primary" />,
@@ -1975,7 +1991,10 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <SelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Weiß · Hand"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Hand className="size-4 shrink-0 text-primary" />,
@@ -1994,7 +2013,10 @@ export function SwissTournamentsPage() {
                                   </div>
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <SelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Schwarz · Brain"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Brain className="size-4 shrink-0 text-primary" />,
@@ -2011,7 +2033,10 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
-                                      <SelectTrigger className={singleLineSelectTriggerClass}>
+                                      <SelectTrigger
+                                        className={singleLineSelectTriggerClass}
+                                        label="Schwarz · Hand"
+                                      >
                                         <SelectValue
                                           placeholder={roleColorPlaceholder(
                                             <Hand className="size-4 shrink-0 text-primary" />,
@@ -2060,7 +2085,10 @@ export function SwissTournamentsPage() {
                             )}
                             <div className="grid gap-2 md:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
-                                <SelectTrigger className={singleLineSelectTriggerClass}>
+                                <SelectTrigger
+                                  className={singleLineSelectTriggerClass}
+                                  label="Weiß"
+                                >
                                   <SelectValue
                                     placeholder={roleColorPlaceholder(
                                       <ChessKing className="size-4 shrink-0 text-primary" />,
@@ -2077,7 +2105,10 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
-                                <SelectTrigger className={singleLineSelectTriggerClass}>
+                                <SelectTrigger
+                                  className={singleLineSelectTriggerClass}
+                                  label="Schwarz"
+                                >
                                   <SelectValue
                                     placeholder={roleColorPlaceholder(
                                       <ChessKing className="size-4 shrink-0 text-primary" />,
@@ -2337,7 +2368,7 @@ function PairingsTable({
             handleResultSelect(pairing.id, value as ResultSelectValue)
           }
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" label="Ergebnis">
             <SelectValue placeholder="offen" />
           </SelectTrigger>
           <SelectContent>
@@ -2461,9 +2492,11 @@ function PairingsTable({
                 </div>
               </div>
               <div className="mt-2.5">
-                <div className="mb-1.5 text-xs font-medium text-muted-foreground">
-                  Ergebnis
-                </div>
+                {(!editable || !onResultChange) && (
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Ergebnis
+                  </div>
+                )}
                 {renderMobileResult(pairing)}
               </div>
             </div>

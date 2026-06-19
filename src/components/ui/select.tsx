@@ -13,18 +13,31 @@ function Select({
 function SelectTrigger({
   className,
   children,
+  label,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
+}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
+  label?: React.ReactNode
+}) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
         'flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus:ring-[3px] focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+        label && 'h-12 py-1',
         className,
       )}
       {...props}
     >
-      {children}
+      {label ? (
+        <span className="flex min-w-0 flex-1 flex-col items-start justify-center text-left">
+          <span className="block max-w-full truncate text-[10px] font-medium leading-3 text-muted-foreground">
+            {label}
+          </span>
+          <span className="block h-6 max-w-full leading-6 [&>span]:block [&>span]:truncate">
+            {children}
+          </span>
+        </span>
+      ) : children}
       <SelectPrimitive.Icon asChild>
         <ChevronDownIcon className="size-4 opacity-50" />
       </SelectPrimitive.Icon>
