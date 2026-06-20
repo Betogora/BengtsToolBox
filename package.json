@@ -1,7 +1,16 @@
 {
   "name": "bengtstoolbox",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Modularer App-Hub für Spieleabende, Gruppen und kleine Turniere.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Betogora/BengtsToolBox.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,188 +1,138 @@
-# Online-Hosting mit GitHub und Firebase
+# Online Hosting Guide
 
-Diese Anleitung bringt die App Schritt fuer Schritt online. Das Prinzip ist:
+BengtsToolBox wird als Vite-SPA über Firebase Hosting ausgeliefert. GitHub Actions baut bei Pushes auf `main` die Produktion und bei Pull Requests aus demselben Repository einen Preview Channel.
 
-1. Der Code liegt im GitHub-Repository `Betogora/BengtsToolBox`.
-2. GitHub Actions baut die React-App automatisch.
-3. Firebase Hosting veroeffentlicht den fertigen `dist`-Ordner.
+## Aktueller Deploy-Pfad
 
-## 1. Accounts erstellen
-
-### GitHub
-
-Du hast bereits das Ziel-Repository:
-
-`https://github.com/Betogora/BengtsToolBox`
-
-### Google/Firebase
-
-1. Oeffne `https://console.firebase.google.com/`.
-2. Melde dich mit einem Google-Konto an oder erstelle ein neues Google-Konto.
-3. Klicke auf `Projekt erstellen`.
-4. Projektname: `BengtsToolBox`.
-5. Google Analytics kannst du fuer den Start deaktivieren.
-6. Projekt erstellen.
-
-## 2. Firebase Web-App anlegen
-
-1. Im Firebase-Projekt auf das Web-Symbol `</>` klicken.
-2. App-Spitzname: `BengtsToolBox Web`.
-3. App registrieren.
-4. Firebase zeigt dir eine `firebaseConfig`.
-5. Kopiere die Werte spaeter in `.env.local` fuer lokale Tests und in GitHub Secrets/Variables fuer GitHub Actions.
-
-Die lokalen Variablen liegen in `.env.local`:
-
-```txt
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
+```mermaid
+flowchart LR
+  C["Commit / Pull Request"] --> G["GitHub Actions"]
+  G --> N["npm ci"]
+  N --> B["npm run build"]
+  B --> D["dist/"]
+  D --> H["Firebase Hosting"]
 ```
 
-## 3. Firestore und Anonymous Auth aktivieren
+| Datei | Aufgabe |
+| --- | --- |
+| `.github/workflows/firebase-hosting.yml` | Produktion bei Push auf `main` oder manuellem Start |
+| `.github/workflows/firebase-hosting-pull-request.yml` | Preview Channel für interne Pull Requests |
+| `firebase.json` | Hosting-Quelle `dist`, SPA-Rewrite, Rules- und Indexpfade |
+| `.firebaserc` | Firebase-Standardprojekt `bengtstoolbox` |
+| `firestore.rules` | Zugriff für authentifizierte Nutzer unter `apps/**` |
+| `firestore.indexes.json` | explizite Firestore-Indizes |
 
-### Anonymous Auth
+## Voraussetzungen
 
-1. Firebase Console oeffnen.
-2. `Authentication` oeffnen.
-3. `Loslegen` klicken.
-4. Reiter `Sign-in method`.
-5. `Anonym` aktivieren.
+- Firebase-Projekt `bengtstoolbox` mit aktivem Hosting und Firestore
+- aktivierter Firebase-Authentication-Anbieter **Anonymous**
+- GitHub-Repository `Betogora/BengtsToolBox`
+- Node.js 22+ für lokale Builds
+- Firebase CLI nur für manuelle Infrastruktur-Deployments
 
-### Firestore
+## Laufzeitkonfiguration
 
-1. `Firestore Database` oeffnen.
-2. `Datenbank erstellen`.
-3. Standort auswaehlen, z. B. `europe-west3`.
-4. Fuer den Start `Produktionsmodus` waehlen.
-5. Regeln spaeter aus diesem Repository deployen.
+Vite übernimmt die folgenden Werte beim Build. Lokal stehen sie in einer nicht versionierten `.env.local`; GitHub Actions liest sie aus Repository Secrets.
 
-## 4. Firebase Hosting aktivieren
+| Variable / Secret | Herkunft |
+| --- | --- |
+| `VITE_FIREBASE_API_KEY` | Firebase Web-App-Konfiguration |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Web-App-Konfiguration |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase Web-App-Konfiguration |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase Web-App-Konfiguration |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Web-App-Konfiguration |
+| `VITE_FIREBASE_APP_ID` | Firebase Web-App-Konfiguration |
 
-1. Firebase Console oeffnen.
-2. `Hosting` oeffnen.
-3. `Loslegen` klicken.
-4. Die lokalen CLI-Schritte in der Console kannst du ueberspringen, weil `firebase.json` schon im Repository liegt.
-5. Merke dir die Projekt-ID, z. B. `bengtstoolbox-12345`.
+Lokales Setup:
 
-## 5. GitHub Secrets und Variables eintragen
-
-Oeffne in GitHub:
-
-`Betogora/BengtsToolBox` -> `Settings` -> `Secrets and variables` -> `Actions`
-
-### Variable
-
-Unter `Variables`:
-
-```txt
-FIREBASE_PROJECT_ID = deine-firebase-projekt-id
+```powershell
+Copy-Item .env.example .env.local
 ```
 
-### Secrets fuer die Web-App
+Die Platzhalter anschließend durch die Werte aus **Firebase Console → Project settings → Your apps → Web app** ersetzen. Firebase Web-API-Keys sind Client-Konfiguration, trotzdem gehören die konkreten Projektwerte in diesem Repository ausschließlich in die vorgesehenen Umgebungsvariablen.
 
-Unter `Secrets`:
+## GitHub-Konfiguration
 
-```txt
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN
-VITE_FIREBASE_PROJECT_ID
-VITE_FIREBASE_STORAGE_BUCKET
-VITE_FIREBASE_MESSAGING_SENDER_ID
-VITE_FIREBASE_APP_ID
-```
+Unter **Settings → Secrets and variables → Actions** werden benötigt:
 
-Die Werte kommen aus der Firebase Web-App-Konfiguration.
-Im Feld `Secret` darf jeweils nur der reine Wert stehen, nicht der Name:
+### Repository Secrets
 
-```txt
-Richtig: AIzaSy...
-Falsch: VITE_FIREBASE_API_KEY = AIzaSy...
-```
+- alle sechs `VITE_FIREBASE_*`-Werte aus der Tabelle
+- `FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX`: JSON des Service Accounts für Firebase Hosting
 
-## 6. Firebase Service Account fuer GitHub Actions
+In ein Secret gehört nur der Wert, nicht `NAME=value`.
 
-GitHub Actions braucht einen technischen Zugang zu Firebase.
+### Repository Variable
 
-Der einfachste Weg:
+- `FIREBASE_PROJECT_ID=bengtstoolbox`
 
-1. Installiere lokal Node.js, falls noch nicht vorhanden.
-2. Im Projektordner ausfuehren:
+Der Produktionsworkflow liest die Projekt-ID aus dieser Variable. Der Preview-Workflow verwendet derzeit dieselbe Projekt-ID direkt.
+
+## Erstinstallation oder Neuverknüpfung
+
+Dieser Abschnitt ist nur nötig, wenn Firebase oder die GitHub-Verknüpfung neu aufgesetzt wird.
 
 ```powershell
 npx firebase-tools login
+npx firebase-tools use bengtstoolbox
 npx firebase-tools init hosting:github
 ```
 
-Dabei auswaehlen:
+Beim Assistenten gelten:
 
-- Firebase-Projekt: dein `BengtsToolBox` Firebase-Projekt
 - Repository: `Betogora/BengtsToolBox`
-- Build command: `npm ci && npm run build`
+- Build: `npm ci && npm run build`
 - Public directory: `dist`
-- Single-page app rewrite: `Yes`
-- Automatische Deploys auf `main`: `Yes`
+- Single-page app: ja
+- Produktionsbranch: `main`
 
-Firebase legt dann normalerweise selbst ein passendes GitHub Secret fuer den Service Account an.
-In diesem Projekt heisst es:
+Bereits vorhandene Workflow- und Firebase-Dateien nicht blind überschreiben; den erzeugten Stand mit diesem Repository vergleichen.
 
-```txt
-FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX
+## Manuell verifizieren und deployen
+
+Vor jedem manuellen Deployment:
+
+```powershell
+npm ci
+npm run lint
+npm run build
 ```
 
-Falls du es manuell machst, muss der Workflow entweder diesen Secret-Namen verwenden oder entsprechend angepasst werden.
+Hosting lässt sich bei Bedarf lokal ausrollen:
 
-## 6.1 Firestore-Regeln deployen
+```powershell
+npx firebase-tools deploy --only hosting
+```
 
-Hosting alleine veroeffentlicht nur die Website. Fuer Firestore muessen Regeln
-und Indexes ebenfalls deployed werden:
+Firestore Rules und Indizes bilden einen separaten Infrastruktur-Deploy:
 
 ```powershell
 npx firebase-tools deploy --only firestore:rules,firestore:indexes
 ```
 
-Diese Dateien werden aktuell manuell deployed. Der GitHub-Service-Account aus
-`firebase-tools init hosting:github` hat standardmaessig nur Hosting-Rechte; fuer
-automatische Rules-Deploys braeuchte er zusaetzliche Firebase Rules/
-Firestore-Berechtigungen.
+Die GitHub-Workflows deployen aktuell nur Hosting. Rules und Indizes bleiben manuell, solange der GitHub-Service-Account keine bewusst vergebenen Firestore-/Rules-Rechte besitzt.
 
-## 7. Deploy aus GitHub starten
+## Nach dem Deploy prüfen
 
-Sobald der Code auf GitHub ist:
+1. Produktions- oder Preview-URL öffnen.
+2. Eine verschachtelte Route direkt laden, zum Beispiel `/apps/diagnostics`; sie muss dank SPA-Rewrite funktionieren.
+3. Diagnose-App vollständig ausführen.
+4. Eine synchronisierte App in zwei Fenstern öffnen und Realtime-Verhalten prüfen.
+5. Browser-Konsole auf Auth-, Rules- und Netzwerkfehler kontrollieren.
 
-1. GitHub Repository oeffnen.
-2. Reiter `Actions`.
-3. Workflow `Deploy Firebase Hosting` oeffnen.
-4. `Run workflow` klicken.
-5. Branch `main` auswaehlen.
-6. Warten, bis der Lauf gruen ist.
+## Fehlerdiagnose
 
-Danach findest du die Online-Adresse in Firebase unter `Hosting`, typischerweise:
+| Symptom | Wahrscheinliche Ursache | Prüfung |
+| --- | --- | --- |
+| `npm ci` schlägt fehl | Lockfile und `package.json` divergieren | lokal `npm ci` ausführen |
+| Build schlägt fehl | TypeScript-, Lint-unabhängiger Compile- oder Bundlefehler | `npm run build` |
+| Workflow findet Projekt nicht | `FIREBASE_PROJECT_ID` fehlt oder ist falsch | GitHub Variable prüfen |
+| Hosting-Deploy nicht autorisiert | Service-Account-Secret fehlt, ist ungültig oder unzureichend berechtigt | Secret und Firebase IAM prüfen |
+| `auth/api-key-not-valid` | Web-App-Konfiguration fehlt oder Secret enthält zusätzlichen Text | `VITE_FIREBASE_API_KEY` prüfen |
+| `Missing or insufficient permissions` | Anonymous Auth ist aus oder Rules sind nicht deployed | Auth-Anbieter und Rules-Deploy prüfen |
+| Direkte Unterseite liefert 404 | SPA-Rewrite fehlt im aktiven Hosting-Ziel | `firebase.json` und Deploy prüfen |
+| App läuft nur lokal | Firebase-Konfiguration war beim Build unvollständig | Workflow-Environment und Diagnose-App prüfen |
 
-```txt
-https://deine-projekt-id.web.app
-https://deine-projekt-id.firebaseapp.com
-```
+## Sicherheitsgrenze
 
-## 8. Spaetere Updates
-
-Ab dann ist der Alltag einfach:
-
-1. Wir bearbeiten hier im Projekt den Code.
-2. Wir committen und pushen nach GitHub.
-3. GitHub Actions baut automatisch.
-4. Firebase Hosting veroeffentlicht automatisch.
-
-## Fehlerhilfe
-
-Wenn GitHub Actions rot wird:
-
-- `npm ci` Fehler: `package-lock.json` fehlt oder passt nicht.
-- `npm run build` Fehler: Code/TypeScript-Fehler im Projekt.
-- Firebase Deploy Fehler: Service Account Secret `FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX` oder `FIREBASE_PROJECT_ID` fehlt.
-- App online leer: Firebase Web-App-Secrets fehlen oder sind falsch.
-- `auth/api-key-not-valid`: GitHub Secret enthaelt vermutlich `NAME = wert` statt nur `wert`.
-- `Missing or insufficient permissions`: Firestore-Regeln sind nicht deployed oder Anonymous Auth ist deaktiviert.
+Die aktuellen Rules erlauben jedem anonym authentifizierten Client Lesen und Schreiben unter `apps/{appId}/...`. Das passt zum privaten App-Hub, ist aber keine Mandanten- oder Rollenabsicherung. Vor einer öffentlichen Nutzung mit sensiblen Daten müssen Datenräume, Claims und Rules enger modelliert und mit Emulator- oder Rules-Tests abgesichert werden.
