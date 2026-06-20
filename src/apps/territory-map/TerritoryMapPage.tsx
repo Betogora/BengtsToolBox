@@ -69,7 +69,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableHeader,
   TableRow,
@@ -1123,15 +1122,12 @@ export function TerritoryMapPage() {
             />
             {isScoreOpen && (
               <CardContent className="p-4 pt-0">
-                <TableContainer>
-                  <Table className="min-w-[34rem]">
+                <Table className="min-w-[34rem]">
                     <TableHeader>
-                      <TableRow>
                         <TableHead>Spieler</TableHead>
                         <TableHead className="text-right">Welt</TableHead>
                         <TableHead className="text-right">Deutschland</TableHead>
                         <TableHead className="text-right">Gesamt</TableHead>
-                      </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sushiScores.map((score) => (
@@ -1158,8 +1154,7 @@ export function TerritoryMapPage() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </TableContainer>
+                </Table>
               </CardContent>
             )}
           </Card>

@@ -36,7 +36,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableHeader,
   TableRow,
@@ -296,15 +295,12 @@ export function TerritoryEventTable({
   }
 
   return (
-    <TableContainer>
-      <Table className="min-w-[780px]">
+    <Table className="min-w-[780px]">
         <TableHeader>
-          <TableRow>
             <TableHead>Datum</TableHead>
             <TableHead>Spieler</TableHead>
             <TableHead>Territorium</TableHead>
             <TableHead className="text-right">Aktion</TableHead>
-          </TableRow>
         </TableHeader>
         <TableBody>
           {events.map((event) => (
@@ -391,7 +387,6 @@ export function TerritoryEventTable({
             </TableRow>
           ))}
         </TableBody>
-      </Table>
-    </TableContainer>
+    </Table>
   )
 }

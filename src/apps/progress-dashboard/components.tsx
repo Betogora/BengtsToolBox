@@ -43,7 +43,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableHeader,
   TableRow,
@@ -500,16 +499,13 @@ export function EventTable({
   }
 
   return (
-    <TableContainer>
-      <Table className="min-w-[760px]">
+    <Table className="min-w-[760px]">
         <TableHeader>
-          <TableRow>
             <TableHead>Zeitpunkt</TableHead>
             <TableHead>Spieler</TableHead>
             <TableHead>Wert</TableHead>
             <TableHead>Icon</TableHead>
             <TableHead className="text-right">Aktion</TableHead>
-          </TableRow>
         </TableHeader>
         <TableBody>
           {events.map((event) => (
@@ -622,8 +618,7 @@ export function EventTable({
             </TableRow>
           ))}
         </TableBody>
-      </Table>
-    </TableContainer>
+    </Table>
   )
 }
 

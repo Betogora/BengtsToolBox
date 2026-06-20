@@ -79,6 +79,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 const resultOptions: Array<{ value: GameResult; label: string }> = [
@@ -1005,45 +1013,41 @@ function ArchivedTournamentsList({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <table className="w-full min-w-[58rem] text-sm">
-          <thead className="bg-muted/70 text-left">
-            <tr>
-              <th className="p-3">Turnier</th>
-              <th className="p-3">Archiviert</th>
-              <th className="p-3">Kategorie</th>
-              <th className="p-3">Umfang</th>
-              <th className="p-3">Top 3</th>
-              <th className="p-3">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Table className="min-w-[58rem]" containerClassName="hidden md:block">
+          <TableHeader>
+              <TableHead>Turnier</TableHead>
+              <TableHead>Archiviert</TableHead>
+              <TableHead>Kategorie</TableHead>
+              <TableHead>Umfang</TableHead>
+              <TableHead>Top 3</TableHead>
+              <TableHead>Aktionen</TableHead>
+          </TableHeader>
+          <TableBody>
             {entries.map((entry) => (
-              <tr key={entry.tournament.id} className="border-t align-middle">
-                <td className="max-w-56 p-2.5 font-medium">
+              <TableRow key={entry.tournament.id}>
+                <TableCell className="max-w-56 font-medium">
                   <span className="block truncate">{entry.tournament.name}</span>
-                </td>
-                <td className="p-2.5 whitespace-nowrap">
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   {formatDateTime(entry.tournament.archivedAtClientIso)}
-                </td>
-                <td className="p-2.5">
+                </TableCell>
+                <TableCell>
                   <Badge variant="secondary">
                     {entry.category}
                   </Badge>
-                </td>
-                <td className="p-2.5 whitespace-nowrap">
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   {entry.tournament.players.length} Spieler, {entry.completedRounds}/
                   {entry.tournament.numberOfRounds} Runden
-                </td>
-                <td className="max-w-72 p-2.5 text-muted-foreground">
+                </TableCell>
+                <TableCell className="max-w-72 text-muted-foreground">
                   <span className="line-clamp-2">{topPlayers(entry)}</span>
-                </td>
-                <td className="p-2.5">{actions(entry.tournament)}</td>
-              </tr>
+                </TableCell>
+                <TableCell>{actions(entry.tournament)}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+      </Table>
     </>
   )
 }
@@ -1638,26 +1642,23 @@ export function SwissTournamentsPage() {
                 })}
               </div>
 
-              <div className="hidden overflow-x-auto rounded-md border md:block">
-                <table className="w-full min-w-[52rem] text-sm">
-                  <thead className="bg-muted/70 text-left">
-                    <tr>
-                      <th className="p-3">#</th>
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Rating</th>
-                      <th className="p-3">Ab Runde</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Aktion</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Table className="min-w-[52rem]" containerClassName="hidden md:block">
+                  <TableHeader>
+                      <TableHead>#</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Ab Runde</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Aktion</TableHead>
+                  </TableHeader>
+                  <TableBody>
                     {tournament.players.map((player, index) => {
                       const canRemove = canRemovePlayer(player.id)
 
                       return (
-                      <tr key={player.id} className="border-t">
-                        <td className="p-3 tabular-nums">{index + 1}</td>
-                        <td className="p-3">
+                      <TableRow key={player.id}>
+                        <TableCell className="tabular-nums">{index + 1}</TableCell>
+                        <TableCell>
                           <Input
                             aria-label={`Name von ${player.name}`}
                             value={player.name}
@@ -1668,8 +1669,8 @@ export function SwissTournamentsPage() {
                               })
                             }
                           />
-                        </td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell>
                           <Input
                             aria-label={`Rating von ${player.name}`}
                             className="w-28"
@@ -1684,14 +1685,14 @@ export function SwissTournamentsPage() {
                               })
                             }
                           />
-                        </td>
-                        <td className="p-3 tabular-nums">{player.addedInRound}</td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell className="tabular-nums">{player.addedInRound}</TableCell>
+                        <TableCell>
                           <Badge variant={statusVariant(player.status)}>
                             {statusLabels[player.status]}
                           </Badge>
-                        </td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             <Select
                               value={player.status}
@@ -1737,13 +1738,12 @@ export function SwissTournamentsPage() {
                               <Trash2 className="size-4" />
                             </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -2535,8 +2535,10 @@ function PairingsTable({
         })}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <table className="w-full min-w-[48rem] table-fixed text-sm">
+      <Table
+        className="min-w-[48rem] table-fixed"
+        containerClassName="hidden md:block"
+      >
           <colgroup>
             <col className="w-40" />
             <col />
@@ -2544,42 +2546,40 @@ function PairingsTable({
             <col className="w-36" />
             {showWarnings && <col className="w-56" />}
           </colgroup>
-          <thead className="bg-muted/70 text-left">
-          <tr>
-            <th className="p-3">Brett</th>
-            <th className="p-3">Weiß</th>
-            <th className="p-3">Schwarz</th>
-            <th className="p-3">Ergebnis</th>
-            {showWarnings && <th className="p-3">Hinweise</th>}
-          </tr>
-          </thead>
-          <tbody>
+          <TableHeader>
+            <TableHead>Brett</TableHead>
+            <TableHead>Weiß</TableHead>
+            <TableHead>Schwarz</TableHead>
+            <TableHead>Ergebnis</TableHead>
+            {showWarnings && <TableHead>Hinweise</TableHead>}
+          </TableHeader>
+          <TableBody>
           {pairings.map((pairing) => {
             const visibleWarnings = visibleWarningsForPairing(pairing)
 
             return (
-              <tr
+              <TableRow
                 key={pairing.id}
                 className={cn(
-                  'border-t align-top',
+                  'align-top',
                   pairing.isManual && 'bg-primary/5',
                 )}
               >
-              <td className="p-3 tabular-nums">
+              <TableCell className="tabular-nums">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span>{pairing.boardNumber}</span>
                   {pairing.kind === 'single' && (
                     <Badge variant="secondary">Einzelpartie</Badge>
                   )}
                 </div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 {renderWhite(pairing)}
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 {renderBlack(pairing)}
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 {pairing.isBye ? (
                   <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
                 ) : editable && onResultChange ? (
@@ -2612,9 +2612,9 @@ function PairingsTable({
                     {resultLabel(pairing.result)}
                   </Badge>
                 )}
-              </td>
+              </TableCell>
               {showWarnings && (
-                <td className="p-3">
+                <TableCell>
                   <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
                       <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
@@ -2653,14 +2653,13 @@ function PairingsTable({
                       })
                     )}
                   </div>
-                </td>
+                </TableCell>
               )}
-            </tr>
+            </TableRow>
             )
           })}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+      </Table>
     </>
   )
 }
@@ -2727,8 +2726,10 @@ function StandingsTable({
         </CardTitle>
       </CardHeader>
       <CardContent style={roundCellWidthStyle}>
-        <div className="swiss-standings-mobile rounded-md border md:hidden">
-          <table className="w-full table-fixed text-sm">
+        <Table
+          className="table-fixed"
+          containerClassName="swiss-standings-mobile md:hidden"
+        >
             <colgroup>
               <col className="w-11" />
               <col />
@@ -2736,27 +2737,25 @@ function StandingsTable({
               <col className="w-16" />
               <col className="w-9" />
             </colgroup>
-            <thead className="bg-muted/70 text-left">
-              <tr>
-                <th className="px-1.5 py-2 font-semibold">Platz</th>
-                <th className="py-2 pl-4 pr-1.5 font-semibold">Name</th>
-                <th className="px-1 py-2 text-center font-semibold">Punkte</th>
-                <th className="px-1 py-2 text-center font-semibold">Buchholz</th>
-                <th className="px-1 py-2 text-center font-semibold">SB</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader>
+                <TableHead className="px-1.5 py-2">Platz</TableHead>
+                <TableHead className="py-2 pl-4 pr-1.5">Name</TableHead>
+                <TableHead className="px-1 py-2 text-center">Punkte</TableHead>
+                <TableHead className="px-1 py-2 text-center">Buchholz</TableHead>
+                <TableHead className="px-1 py-2 text-center">SB</TableHead>
+            </TableHeader>
+            <TableBody>
               {standings.map((row) => {
                 const isExpanded = expandedPlayerId === row.playerId
                 const detailsId = `swiss-standing-details-${row.playerId}`
 
                 return (
                   <Fragment key={row.playerId}>
-                    <tr
+                    <TableRow
                       aria-controls={detailsId}
                       aria-expanded={isExpanded}
                       className={cn(
-                        'cursor-pointer border-t align-middle outline-none transition-colors hover:bg-primary/5 focus-visible:bg-primary/10',
+                        'cursor-pointer outline-none transition-colors hover:bg-primary/5 focus-visible:bg-primary/10',
                         podiumClass(row.rank),
                       )}
                       role="button"
@@ -2769,28 +2768,28 @@ function StandingsTable({
                         }
                       }}
                     >
-                      <td className="px-1.5 py-2 tabular-nums">{row.rank}</td>
-                      <td className="min-w-0 py-2 pl-4 pr-1.5 font-medium">
+                      <TableCell className="px-1.5 py-2 tabular-nums">{row.rank}</TableCell>
+                      <TableCell className="min-w-0 py-2 pl-4 pr-1.5 font-medium">
                         <span className="block min-w-0 truncate">{row.playerName}</span>
-                      </td>
-                      <td className="px-1 py-2 text-center tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
                         <span className="inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
                           {formatPoints(row.points)}
                         </span>
-                      </td>
-                      <td className="px-1 py-2 text-center tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
                         {formatPoints(row.buchholz)}
-                      </td>
-                      <td className="px-1 py-2 text-center tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
                         {formatPoints(row.sonnebornBerger)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                     {isExpanded && (
-                      <tr
+                      <TableRow
                         id={detailsId}
-                        className={cn('border-t bg-background/70', podiumClass(row.rank))}
+                        className={cn('bg-background/70', podiumClass(row.rank))}
                       >
-                        <td className="px-2 pb-2 pt-0" colSpan={5}>
+                        <TableCell className="px-2 pb-2 pt-0" colSpan={5}>
                           <div className="grid gap-2 py-2">
                             <div className="flex flex-wrap gap-1">
                               {row.roundHistory.map((cell) => (
@@ -2814,50 +2813,49 @@ function StandingsTable({
                               </Badge>
                             </div>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )}
                   </Fragment>
                 )
               })}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+        </Table>
 
-        <div className="swiss-standings-table-wrap swiss-standings-desktop hidden overflow-x-auto rounded-md border md:block">
-          <table className="swiss-standings-table w-full min-w-[68rem] text-sm">
-            <thead className="bg-muted/70 text-left">
-              <tr>
-                <th className="p-3">Platz</th>
-                <th className="p-3">Name</th>
-                <th className="p-3">Punkte</th>
-                <th className="p-3">Buchholz</th>
-                <th className="p-3">SB</th>
-                <th className="p-3">Siege</th>
-                <th className="swiss-rounds-heading p-3">Runden</th>
-                <th className="swiss-export-hidden-column p-3">{hardshipLabel}</th>
-                <th className="swiss-export-hidden-column p-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Table
+          className="swiss-standings-table min-w-[68rem]"
+          containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
+        >
+            <TableHeader>
+                <TableHead>Platz</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Punkte</TableHead>
+                <TableHead>Buchholz</TableHead>
+                <TableHead>SB</TableHead>
+                <TableHead>Siege</TableHead>
+                <TableHead className="swiss-rounds-heading">Runden</TableHead>
+                <TableHead className="swiss-export-hidden-column">{hardshipLabel}</TableHead>
+                <TableHead className="swiss-export-hidden-column">Status</TableHead>
+            </TableHeader>
+            <TableBody>
               {standings.map((row) => (
-                <tr
+                <TableRow
                   key={row.playerId}
-                  className={cn('border-t', podiumClass(row.rank))}
+                  className={podiumClass(row.rank)}
                 >
-                  <td className="p-3 tabular-nums">{row.rank}</td>
-                  <td className="p-3 font-medium">{row.playerName}</td>
-                  <td className="p-3 tabular-nums">
+                  <TableCell className="tabular-nums">{row.rank}</TableCell>
+                  <TableCell className="font-medium">{row.playerName}</TableCell>
+                  <TableCell className="tabular-nums">
                     <span className="inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
                       {formatPoints(row.points)}
                     </span>
-                  </td>
-                  <td className="p-3 tabular-nums">{formatPoints(row.buchholz)}</td>
-                  <td className="p-3 tabular-nums">
+                  </TableCell>
+                  <TableCell className="tabular-nums">{formatPoints(row.buchholz)}</TableCell>
+                  <TableCell className="tabular-nums">
                     {formatPoints(row.sonnebornBerger)}
-                  </td>
-                  <td className="p-3 tabular-nums">{row.wins}</td>
-                  <td className="swiss-round-table-cell p-3">
+                  </TableCell>
+                  <TableCell className="tabular-nums">{row.wins}</TableCell>
+                  <TableCell className="swiss-round-table-cell">
                     <div className="swiss-round-grid">
                       {row.roundHistory.map((cell) => (
                         <span
@@ -2869,20 +2867,19 @@ function StandingsTable({
                         </span>
                       ))}
                     </div>
-                  </td>
-                  <td className="swiss-export-hidden-column p-3 tabular-nums">
+                  </TableCell>
+                  <TableCell className="swiss-export-hidden-column tabular-nums">
                     {hardshipCount(row)}
-                  </td>
-                  <td className="swiss-export-hidden-column p-3">
+                  </TableCell>
+                  <TableCell className="swiss-export-hidden-column">
                     <Badge variant={statusVariant(row.status)}>
                       {statusLabels[row.status]}
                     </Badge>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+        </Table>
         <div className="swiss-export-qr hidden" aria-hidden="true">
           <img
             src={tournamentWebsiteQrUrl}

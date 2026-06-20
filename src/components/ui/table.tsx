@@ -2,51 +2,54 @@ import type { ComponentProps } from 'react'
 
 import { cn } from '@/lib/utils'
 
-function TableContainer({ className, ...props }: ComponentProps<'div'>) {
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: ComponentProps<'table'> & { containerClassName?: string }) {
   return (
     <div
       data-slot="table-container"
       className={cn(
-        'w-full min-w-0 overflow-x-auto rounded-md border bg-background',
-        className,
+        'w-full min-w-0 overflow-x-auto rounded-md border bg-card',
+        containerClassName,
       )}
-      {...props}
-    />
+    >
+      <table
+        data-slot="table"
+        className={cn('w-full text-sm', className)}
+        {...props}
+      />
+    </div>
   )
 }
 
-function Table({ className, ...props }: ComponentProps<'table'>) {
-  return (
-    <table
-      data-slot="table"
-      className={cn('w-full text-sm', className)}
-      {...props}
-    />
-  )
-}
-
-function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
+function TableHeader({ className, ...props }: ComponentProps<'tr'>) {
   return (
     <thead
       data-slot="table-header"
-      className={cn('bg-muted/70 text-left', className)}
-      {...props}
-    />
+      className="bg-muted/70 text-left"
+    >
+      <TableRow className={className} {...props} />
+    </thead>
   )
 }
 
 function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
-  return <tbody data-slot="table-body" className={className} {...props} />
+  return (
+    <tbody
+      data-slot="table-body"
+      className={cn('[&_tr]:border-t', className)}
+      {...props}
+    />
+  )
 }
 
 function TableRow({ className, ...props }: ComponentProps<'tr'>) {
   return (
     <tr
       data-slot="table-row"
-      className={cn(
-        'border-t align-middle transition-colors first:border-t-0 hover:bg-muted/20',
-        className,
-      )}
+      className={cn('align-middle', className)}
       {...props}
     />
   )
@@ -66,7 +69,7 @@ function TableCell({ className, ...props }: ComponentProps<'td'>) {
   return (
     <td
       data-slot="table-cell"
-      className={cn('p-2.5', className)}
+      className={cn('p-3', className)}
       {...props}
     />
   )
@@ -76,7 +79,6 @@ export {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableHeader,
   TableRow,
