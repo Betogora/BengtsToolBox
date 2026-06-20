@@ -55,6 +55,7 @@ function seedPlayers(
         player.rating === undefined || !Number.isFinite(player.rating)
           ? undefined
           : Math.round(player.rating),
+      status: player.status ?? 'active',
     }))
     .filter((player) => player.name.length > 0)
   const hasRatings = cleanPlayers.some((player) => Number.isFinite(player.rating))
@@ -76,7 +77,7 @@ function seedPlayers(
       id: makeId('player'),
       name: player.name,
       initialSeed: index + 1,
-      status: 'active',
+      status: player.status,
       addedInRound: 1,
     }
 
@@ -126,7 +127,10 @@ export function createTournament(
   const roundRobinCycles = normalizeRoundRobinCycles(input.roundRobinCycles)
   const numberOfRounds =
     format === 'roundRobin'
-      ? roundRobinRoundsForPlayerCount(seededPlayers.length, roundRobinCycles)
+      ? roundRobinRoundsForPlayerCount(
+          seededPlayers.filter((player) => player.status === 'active').length,
+          roundRobinCycles,
+        )
       : Math.max(1, Math.floor(input.numberOfRounds) || 1)
 
   return {

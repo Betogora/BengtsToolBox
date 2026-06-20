@@ -41,6 +41,7 @@ import type {
   ByePolicy,
   ByeScore,
   GameResult,
+  InitialPlayerStatus,
   Pairing,
   PairingWarning,
   PlayerStatus,
@@ -517,20 +518,21 @@ type DraftPlayer = {
   id: string
   name: string
   rating: string
+  status: InitialPlayerStatus
 }
 
 function defaultDraftPlayers(): DraftPlayer[] {
   return [
-    { id: 'draft-1', name: 'Niklas', rating: '1922' },
-    { id: 'draft-2', name: 'Bengt', rating: '1818' },
-    { id: 'draft-3', name: 'Thomas', rating: '1697' },
-    { id: 'draft-4', name: 'Liam', rating: '1674' },
-    { id: 'draft-5', name: 'Ralph', rating: '1614' },
-    { id: 'draft-6', name: 'Uwe', rating: '1524' },
-    { id: 'draft-7', name: 'Quinn', rating: '1494' },
-    { id: 'draft-8', name: 'Matthias', rating: '1485' },
-    { id: 'draft-9', name: 'Armin', rating: '1434' },
-    { id: 'draft-10', name: 'Nikita', rating: '1311' },
+    { id: 'draft-1', name: 'Niklas', rating: '1922', status: 'active' },
+    { id: 'draft-2', name: 'Bengt', rating: '1818', status: 'active' },
+    { id: 'draft-3', name: 'Thomas', rating: '1697', status: 'active' },
+    { id: 'draft-4', name: 'Liam', rating: '1674', status: 'active' },
+    { id: 'draft-5', name: 'Ralph', rating: '1614', status: 'active' },
+    { id: 'draft-6', name: 'Uwe', rating: '1524', status: 'active' },
+    { id: 'draft-7', name: 'Quinn', rating: '1494', status: 'active' },
+    { id: 'draft-8', name: 'Matthias', rating: '1485', status: 'active' },
+    { id: 'draft-9', name: 'Armin', rating: '1434', status: 'active' },
+    { id: 'draft-10', name: 'Nikita', rating: '1311', status: 'active' },
   ]
 }
 
@@ -545,6 +547,7 @@ function tournamentPlayersToDraftPlayers(tournament?: Tournament | null): DraftP
       id: `draft-${player.id}-${index}`,
       name: player.name,
       rating: player.rating === undefined ? '' : String(player.rating),
+      status: 'active',
     }))
 }
 
@@ -585,7 +588,7 @@ function TournamentCreator({
   const [numberOfRounds, setNumberOfRounds] = useState(() =>
     swissRoundsForPlayerCount(
       tournamentPlayersToDraftPlayers(initialTournament).filter(
-        (player) => player.name.trim().length > 0,
+        (player) => player.name.trim().length > 0 && player.status === 'active',
       ).length,
     ),
   )
@@ -603,7 +606,7 @@ function TournamentCreator({
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const cleanPlayerCount = players.filter(
-    (player) => player.name.trim().length > 0,
+    (player) => player.name.trim().length > 0 && player.status === 'active',
   ).length
   const automaticRoundCount = defaultRoundsForFormat(
     format,
@@ -638,6 +641,7 @@ function TournamentCreator({
           .slice(2)}`,
         name: draftName,
         rating: newDraftPlayerRating.trim(),
+        status: 'active',
       },
     ])
     setNewDraftPlayerName('')
@@ -715,61 +719,7 @@ function TournamentCreator({
             <Label>Spieler</Label>
           </div>
 
-          <div className="grid gap-1.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] gap-2 px-2 text-[0.68rem] font-semibold uppercase leading-none text-muted-foreground sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem]">
-              <span>Name</span>
-              <span>Rating</span>
-              <span className="sr-only">Aktion</span>
-            </div>
-            {players.map((player, index) => (
-              <div
-                key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-center gap-2 rounded-md border bg-card/70 p-2 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem]"
-              >
-                <Input
-                  id={`swiss-create-name-${player.id}`}
-                  aria-label={`Name von Spieler ${index + 1}`}
-                  value={player.name}
-                  onChange={(event) =>
-                    setPlayers((currentPlayers) =>
-                      currentPlayers.map((entry) =>
-                        entry.id === player.id
-                          ? { ...entry, name: event.currentTarget.value }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-                <Input
-                  id={`swiss-create-rating-${player.id}`}
-                  aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
-                  type="number"
-                  value={player.rating}
-                  onChange={(event) =>
-                    setPlayers((currentPlayers) =>
-                      currentPlayers.map((entry) =>
-                        entry.id === player.id
-                          ? { ...entry, rating: event.currentTarget.value }
-                          : entry,
-                      ),
-                    )
-                  }
-                />
-                <Button
-                  aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="size-9 self-center px-0"
-                  size="icon"
-                  variant="delete"
-                  onClick={() =>
-                    setPlayers((currentPlayers) =>
-                      currentPlayers.filter((entry) => entry.id !== player.id),
-                    )
-                  }
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            ))}
+          <div className="grid gap-3">
             <form
               className="rounded-md border border-dashed bg-background p-3"
               onSubmit={(event) => {
@@ -809,6 +759,107 @@ function TournamentCreator({
                 </Button>
               </div>
             </form>
+
+            <Table className="min-w-[46rem]">
+              <TableHeader>
+                <TableHead>#</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Aktion</TableHead>
+              </TableHeader>
+              <TableBody>
+                {players.map((player, index) => (
+                  <TableRow key={player.id}>
+                    <TableCell className="tabular-nums">{index + 1}</TableCell>
+                    <TableCell>
+                      <Input
+                        id={`swiss-create-name-${player.id}`}
+                        aria-label={`Name von Spieler ${index + 1}`}
+                        value={player.name}
+                        onChange={(event) =>
+                          setPlayers((currentPlayers) =>
+                            currentPlayers.map((entry) =>
+                              entry.id === player.id
+                                ? { ...entry, name: event.currentTarget.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        id={`swiss-create-rating-${player.id}`}
+                        aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                        className="w-28"
+                        type="number"
+                        value={player.rating}
+                        onChange={(event) =>
+                          setPlayers((currentPlayers) =>
+                            currentPlayers.map((entry) =>
+                              entry.id === player.id
+                                ? { ...entry, rating: event.currentTarget.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(player.status)}>
+                        {statusLabels[player.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={player.status}
+                          onValueChange={(value) =>
+                            setPlayers((currentPlayers) =>
+                              currentPlayers.map((entry) =>
+                                entry.id === player.id
+                                  ? {
+                                      ...entry,
+                                      status: value as InitialPlayerStatus,
+                                    }
+                                  : entry,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            aria-label={`Status von ${player.name || `Spieler ${index + 1}`}`}
+                            className="w-40"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">aktiv</SelectItem>
+                            <SelectItem value="inactive">inaktiv</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          aria-label={`${player.name || 'Spieler'} entfernen`}
+                          className="h-9"
+                          size="sm"
+                          variant="delete"
+                          onClick={() =>
+                            setPlayers((currentPlayers) =>
+                              currentPlayers.filter(
+                                (entry) => entry.id !== player.id,
+                              ),
+                            )
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
 
@@ -834,6 +885,7 @@ function TournamentCreator({
                 players: players.map((player) => ({
                   name: player.name,
                   rating: player.rating ? Number(player.rating) : undefined,
+                  status: player.status,
                 })),
                 initialSeedingMode,
                 byeScore,
