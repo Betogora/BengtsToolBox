@@ -39,6 +39,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -491,21 +500,21 @@ export function EventTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[760px] text-sm">
-        <thead className="bg-secondary/70 text-left">
-          <tr>
-            <th className="px-3 py-2 font-semibold">Zeitpunkt</th>
-            <th className="px-3 py-2 font-semibold">Spieler</th>
-            <th className="px-3 py-2 font-semibold">Wert</th>
-            <th className="px-3 py-2 font-semibold">Icon</th>
-            <th className="px-3 py-2 text-right font-semibold">Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
+    <TableContainer>
+      <Table className="min-w-[760px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Zeitpunkt</TableHead>
+            <TableHead>Spieler</TableHead>
+            <TableHead>Wert</TableHead>
+            <TableHead>Icon</TableHead>
+            <TableHead className="text-right">Aktion</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {events.map((event) => (
-            <tr key={event.id} className="border-t">
-              <td className="px-3 py-2">
+            <TableRow key={event.id}>
+              <TableCell>
                 <Input
                   type="datetime-local"
                   className="h-9"
@@ -519,8 +528,8 @@ export function EventTable({
                     })
                   }
                 />
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center gap-2 font-medium">
                   <span
                     className="size-3 rounded-full"
@@ -528,8 +537,8 @@ export function EventTable({
                   />
                   {event.playerName}
                 </div>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex gap-2">
                   <Select
                     value={event.valueDelta < 0 ? '-' : '+'}
@@ -569,8 +578,8 @@ export function EventTable({
                     </SelectContent>
                   </Select>
                 </div>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Select
                   value={event.icon}
                   onValueChange={(value) =>
@@ -597,8 +606,8 @@ export function EventTable({
                     ))}
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="px-3 py-2 text-right">
+              </TableCell>
+              <TableCell className="text-right">
                 <ConfirmButton
                   title="Ereignis löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
@@ -609,12 +618,12 @@ export function EventTable({
                     </Button>
                   }
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
 

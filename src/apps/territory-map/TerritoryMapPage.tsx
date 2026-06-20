@@ -65,6 +65,15 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 type SushiScore = {
   player: TerritoryPlayer
@@ -1043,7 +1052,7 @@ export function TerritoryMapPage() {
           </CardContent>
         </Card>
 
-        <div className="grid content-start gap-4">
+        <div className="grid min-w-0 content-start gap-4">
           <Card>
             <CollapsibleCardHeader
               icon={<Users className="size-5" />}
@@ -1105,7 +1114,7 @@ export function TerritoryMapPage() {
             )}
           </Card>
 
-          <Card>
+          <Card className="min-w-0">
             <CollapsibleCardHeader
               icon={<ListOrdered className="size-5" />}
               isOpen={isScoreOpen}
@@ -1114,39 +1123,43 @@ export function TerritoryMapPage() {
             />
             {isScoreOpen && (
               <CardContent className="p-4 pt-0">
-              <ol className="grid gap-2">
-                {sushiScores.map((score) => (
-                  <li
-                    key={score.player.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-md border bg-background p-3"
-                    style={{ '--player-color': score.player.color } as CSSProperties}
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="size-3 shrink-0 rounded-full bg-[var(--player-color)]"
-                        aria-hidden="true"
-                      />
-                      <span className="min-w-0 truncate text-sm font-medium">
-                        {score.player.name}
-                      </span>
-                    </div>
-                    <dl className="grid grid-cols-3 gap-2 text-right text-xs">
-                      <div>
-                        <dt className="text-muted-foreground">Welt</dt>
-                        <dd className="font-semibold">{score.world}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">Deutschland</dt>
-                        <dd className="font-semibold">{score.germany}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">Summe</dt>
-                        <dd className="font-semibold">{score.total}</dd>
-                      </div>
-                    </dl>
-                  </li>
-                ))}
-              </ol>
+                <TableContainer>
+                  <Table className="min-w-[34rem]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Spieler</TableHead>
+                        <TableHead className="text-right">Welt</TableHead>
+                        <TableHead className="text-right">Deutschland</TableHead>
+                        <TableHead className="text-right">Gesamt</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sushiScores.map((score) => (
+                        <TableRow key={score.player.id}>
+                          <TableCell className="font-medium">
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span
+                                className="size-3 shrink-0 rounded-full"
+                                style={{ backgroundColor: score.player.color }}
+                                aria-hidden="true"
+                              />
+                              <span className="truncate">{score.player.name}</span>
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {score.world}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {score.germany}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold tabular-nums">
+                            {score.total}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </CardContent>
             )}
           </Card>

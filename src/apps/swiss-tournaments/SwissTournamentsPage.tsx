@@ -108,11 +108,11 @@ const tournamentWebsiteQrUrl = '/qrcode.svg'
 const singleLineSelectTriggerClass =
   'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
 
-function roleColorPlaceholder(icon: ReactNode, color: string) {
+function roleLabel(icon: ReactNode, label: string) {
   return (
-    <span className="flex min-w-0 items-center gap-2">
+    <span className="flex min-w-0 items-center gap-1">
       {icon}
-      <span className="truncate">{color}</span>
+      <span className="truncate">{label}</span>
     </span>
   )
 }
@@ -749,8 +749,8 @@ function TournamentCreator({
                 />
                 <Button
                   aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="self-center"
-                  size="sm"
+                  className="size-9 self-center px-0"
+                  size="icon"
                   variant="delete"
                   onClick={() =>
                     setPlayers((currentPlayers) =>
@@ -790,7 +790,8 @@ function TournamentCreator({
                   }
                 />
                 <Button
-                  className="col-span-2 h-9 w-full md:col-span-1 md:w-auto"
+                  className="col-span-2 h-9 w-full md:col-span-1 md:h-11 md:w-auto"
+                  size="ifta"
                   type="submit"
                   variant="outline"
                   disabled={newDraftPlayerName.trim().length === 0}
@@ -1525,7 +1526,8 @@ export function SwissTournamentsPage() {
                     onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
                   />
                   <Button
-                    className="col-span-2 h-9 w-full md:col-span-1 md:w-auto"
+                    className="col-span-2 h-9 w-full md:col-span-1 md:h-11 md:w-auto"
+                    size="ifta"
                     type="submit"
                     variant="outline"
                     disabled={newPlayerName.trim().length === 0}
@@ -1610,7 +1612,8 @@ export function SwissTournamentsPage() {
                         </Select>
                         <Button
                           aria-label={`${player.name} entfernen`}
-                          className="size-9 px-0"
+                          className="h-11 w-9 px-0"
+                          size="ifta"
                           disabled={!canRemove}
                           title={
                             canRemove
@@ -1915,15 +1918,14 @@ export function SwissTournamentsPage() {
                                   <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
                                       <IftaSelectTrigger
+                                        aria-label="Weiß Brain"
                                         className={singleLineSelectTriggerClass}
-                                        label="Weiß Brain"
+                                        label={roleLabel(
+                                          <Brain className="size-3 shrink-0 text-primary" />,
+                                          'Weiß Brain',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Brain className="size-4 shrink-0 text-primary" />,
-                                            'Weiß',
-                                          )}
-                                        />
+                                        <SelectValue placeholder="offen" />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteBrain).map((player) => (
@@ -1935,15 +1937,14 @@ export function SwissTournamentsPage() {
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
                                       <IftaSelectTrigger
+                                        aria-label="Weiß Hand"
                                         className={singleLineSelectTriggerClass}
-                                        label="Weiß Hand"
+                                        label={roleLabel(
+                                          <Hand className="size-3 shrink-0 text-primary" />,
+                                          'Weiß Hand',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Hand className="size-4 shrink-0 text-primary" />,
-                                            'Weiß',
-                                          )}
-                                        />
+                                        <SelectValue placeholder="offen" />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteHand).map((player) => (
@@ -1957,15 +1958,14 @@ export function SwissTournamentsPage() {
                                   <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
                                       <IftaSelectTrigger
+                                        aria-label="Schwarz Brain"
                                         className={singleLineSelectTriggerClass}
-                                        label="Schwarz Brain"
+                                        label={roleLabel(
+                                          <Brain className="size-3 shrink-0 text-primary" />,
+                                          'Schwarz Brain',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Brain className="size-4 shrink-0 text-primary" />,
-                                            'Schwarz',
-                                          )}
-                                        />
+                                        <SelectValue placeholder="offen" />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackBrain).map((player) => (
@@ -1977,15 +1977,14 @@ export function SwissTournamentsPage() {
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
                                       <IftaSelectTrigger
+                                        aria-label="Schwarz Hand"
                                         className={singleLineSelectTriggerClass}
-                                        label="Schwarz Hand"
+                                        label={roleLabel(
+                                          <Hand className="size-3 shrink-0 text-primary" />,
+                                          'Schwarz Hand',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Hand className="size-4 shrink-0 text-primary" />,
-                                            'Schwarz',
-                                          )}
-                                        />
+                                        <SelectValue placeholder="offen" />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackHand).map((player) => (
@@ -1997,7 +1996,8 @@ export function SwissTournamentsPage() {
                                     </Select>
                                   </div>
                                   <Button
-                                    className="h-9 w-full"
+                                    className="h-9 w-full lg:h-11"
+                                    size="ifta"
                                     disabled={!canAddManualHandBrainPairing}
                                     onClick={async () => {
                                       if (!canAddManualHandBrainPairing) {
@@ -2029,16 +2029,15 @@ export function SwissTournamentsPage() {
                             <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
                                 <IftaSelectTrigger
+                                  aria-label="Weiß"
                                   className={singleLineSelectTriggerClass}
                                   containerClassName="lg:col-span-2"
-                                  label="Weiß"
+                                  label={roleLabel(
+                                    <ChessKing className="size-3 shrink-0 text-primary" />,
+                                    'Weiß',
+                                  )}
                                 >
-                                  <SelectValue
-                                    placeholder={roleColorPlaceholder(
-                                      <ChessKing className="size-4 shrink-0 text-primary" />,
-                                      'Weiß',
-                                    )}
-                                  />
+                                  <SelectValue placeholder="offen" />
                                 </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualWhiteOptions.map((player) => (
@@ -2050,16 +2049,15 @@ export function SwissTournamentsPage() {
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
                                 <IftaSelectTrigger
+                                  aria-label="Schwarz"
                                   className={singleLineSelectTriggerClass}
                                   containerClassName="lg:col-span-2"
-                                  label="Schwarz"
+                                  label={roleLabel(
+                                    <ChessKing className="size-3 shrink-0 text-primary" />,
+                                    'Schwarz',
+                                  )}
                                 >
-                                  <SelectValue
-                                    placeholder={roleColorPlaceholder(
-                                      <ChessKing className="size-4 shrink-0 text-primary" />,
-                                      'Schwarz',
-                                    )}
-                                  />
+                                  <SelectValue placeholder="offen" />
                                 </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualBlackOptions.map((player) => (
@@ -2070,7 +2068,8 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Button
-                                className="h-9 w-full"
+                                className="h-9 w-full lg:h-11"
+                                size="ifta"
                                 disabled={!canAddManualPairing}
                                 onClick={async () => {
                                   if (!canAddManualPairing) {

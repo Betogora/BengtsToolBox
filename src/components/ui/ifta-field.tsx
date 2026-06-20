@@ -5,7 +5,7 @@ import { SelectTrigger } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 type IftaInputProps = React.ComponentProps<'input'> & {
-  label: string
+  label: React.ReactNode
 }
 
 function IftaInput({ className, id, label, ...props }: IftaInputProps) {
@@ -16,7 +16,9 @@ function IftaInput({ className, id, label, ...props }: IftaInputProps) {
     <div className="relative">
       <Input
         id={inputId}
-        aria-label={props['aria-label'] ?? label}
+        aria-label={
+          props['aria-label'] ?? (typeof label === 'string' ? label : undefined)
+        }
         className={cn('h-11 px-3 pb-1.5 pt-5 text-sm', className)}
         {...props}
       />
@@ -32,7 +34,7 @@ function IftaInput({ className, id, label, ...props }: IftaInputProps) {
 
 type IftaSelectTriggerProps = React.ComponentProps<typeof SelectTrigger> & {
   containerClassName?: string
-  label: string
+  label: React.ReactNode
 }
 
 function IftaSelectTrigger({
@@ -45,7 +47,9 @@ function IftaSelectTrigger({
   return (
     <div className={cn('relative', containerClassName)}>
       <SelectTrigger
-        aria-label={props['aria-label'] ?? label}
+        aria-label={
+          props['aria-label'] ?? (typeof label === 'string' ? label : undefined)
+        }
         className={cn('h-11 px-3 pb-1.5 pt-5 text-sm', className)}
         {...props}
       >

@@ -402,7 +402,7 @@ export function DecisionWheelPage() {
                         id={`entry-color-${entry.id}`}
                         type="color"
                         aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
-                        className="h-9 cursor-pointer rounded-md border p-1"
+                        className="h-9 cursor-pointer rounded-md border p-1 sm:h-11"
                         value={entry.color}
                         onChange={(event) =>
                           updateEntry(entry.id, {
@@ -413,7 +413,7 @@ export function DecisionWheelPage() {
                     </div>
                     <Button
                       aria-label={`${getEntryDisplayText(entry, index)} löschen`}
-                      className="self-end"
+                      className="self-end sm:h-11"
                       size="icon"
                       variant="delete"
                       onClick={() => removeEntry(entry.id)}

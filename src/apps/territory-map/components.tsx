@@ -32,6 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 function toDateInputValue(value: string) {
   const date = new Date(value)
@@ -234,7 +243,8 @@ export function ClaimDialog({
             </Select>
           </div>
           <Button
-            className="w-full min-[34rem]:w-auto"
+            className="h-9 w-full min-[34rem]:h-11 min-[34rem]:w-auto"
+            size="ifta"
             onClick={() => onClaim(selectedPlayerId)}
           >
             Nigiri gegessen
@@ -286,20 +296,20 @@ export function TerritoryEventTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[780px] text-sm">
-        <thead className="bg-secondary/70 text-left">
-          <tr>
-            <th className="px-3 py-2 font-semibold">Datum</th>
-            <th className="px-3 py-2 font-semibold">Spieler</th>
-            <th className="px-3 py-2 font-semibold">Territorium</th>
-            <th className="px-3 py-2 text-right font-semibold">Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
+    <TableContainer>
+      <Table className="min-w-[780px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Datum</TableHead>
+            <TableHead>Spieler</TableHead>
+            <TableHead>Territorium</TableHead>
+            <TableHead className="text-right">Aktion</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {events.map((event) => (
-            <tr key={event.id} className="border-t">
-              <td className="px-3 py-2">
+            <TableRow key={event.id}>
+              <TableCell>
                 <Input
                   type="date"
                   className="h-9"
@@ -313,8 +323,8 @@ export function TerritoryEventTable({
                     })
                   }
                 />
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Select
                   value={event.playerId}
                   onValueChange={(value) =>
@@ -340,8 +350,8 @@ export function TerritoryEventTable({
                     ))}
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Select
                   value={event.territoryId}
                   onValueChange={(value) =>
@@ -361,8 +371,8 @@ export function TerritoryEventTable({
                     ))}
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="px-3 py-2 text-right">
+              </TableCell>
+              <TableCell className="text-right">
                 <ConfirmButton
                   title="Bereisung löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
@@ -377,11 +387,11 @@ export function TerritoryEventTable({
                     </Button>
                   }
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }
