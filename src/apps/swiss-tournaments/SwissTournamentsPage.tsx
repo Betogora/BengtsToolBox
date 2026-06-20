@@ -35,6 +35,8 @@ import {
 } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import type {
   ByePolicy,
   ByeScore,
@@ -378,75 +380,6 @@ function pairingWarningBadgeMeta(warning: PairingWarning): PairingWarningBadgeMe
           ? 'border-red-300 bg-red-100 text-red-950'
           : 'border-lime-300 bg-lime-100 text-lime-950',
     }
-  )
-}
-
-function ConfirmButton({
-  confirmLabel,
-  description,
-  onConfirm,
-  title,
-  trigger,
-}: {
-  confirmLabel: string
-  description: string
-  onConfirm: () => void | Promise<void>
-  title: string
-  trigger: ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-  const [isConfirming, setIsConfirming] = useState(false)
-  const confirmButtonRef = useRef<HTMLButtonElement>(null)
-
-  const handleConfirm = async () => {
-    if (isConfirming) {
-      return
-    }
-
-    setIsConfirming(true)
-
-    try {
-      await onConfirm()
-      setOpen(false)
-    } finally {
-      setIsConfirming(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.defaultPrevented) {
-            event.preventDefault()
-            void handleConfirm()
-          }
-        }}
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-          confirmButtonRef.current?.focus()
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
-          </DialogClose>
-          <Button
-            ref={confirmButtonRef}
-            disabled={isConfirming}
-            variant="destructive"
-            onClick={() => void handleConfirm()}
-          >
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -1242,7 +1175,7 @@ export function SwissTournamentsPage() {
 
   if (app.isLoading) {
     return (
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <AppPage>
         <AppTitleHeader />
         <Card>
           <CardHeader>
@@ -1250,13 +1183,13 @@ export function SwissTournamentsPage() {
             <CardDescription>Gespeicherte Turniere werden synchronisiert.</CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </AppPage>
     )
   }
 
   if (!tournament) {
     return (
-      <div className="swiss-tournaments-page mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <AppPage className="swiss-tournaments-page">
         <AppTitleHeader />
         {app.error && (
           <Card className="border-destructive">
@@ -1282,7 +1215,7 @@ export function SwissTournamentsPage() {
             </div>
           </CardHeader>
         </Card>
-      </div>
+      </AppPage>
     )
   }
 
@@ -1339,7 +1272,7 @@ export function SwissTournamentsPage() {
     manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
 
   return (
-    <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage className="swiss-tournaments-page" width="wide">
       <AppTitleHeader />
 
       {app.error && (
@@ -2190,7 +2123,7 @@ export function SwissTournamentsPage() {
         </TabsContent>
 
       </Tabs>
-    </div>
+    </AppPage>
   )
 }
 

@@ -5,6 +5,8 @@ import {
   getCoinflipLabel,
   useCoinflip,
 } from '@/apps/schlag-den-rabe/coinflip/hooks/useCoinflip'
+import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -20,11 +22,9 @@ export function CoinflipPage() {
   const lastLabel = data.lastFlip ? getCoinflipLabel(data.lastFlip.side) : '-'
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage>
       <section>
-        <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
-          Coinflip
-        </h1>
+        <AppPageTitle Icon={Coins} title="Coinflip" />
       </section>
 
       {error && (
@@ -111,6 +111,6 @@ export function CoinflipPage() {
           </CardContent>
         </Card>
       </section>
-    </div>
+    </AppPage>
   )
 }

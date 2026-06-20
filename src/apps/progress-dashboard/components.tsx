@@ -5,13 +5,12 @@ import {
   Funnel,
   Martini,
   Minus,
-  Pencil,
   Plus,
   Trash2,
   Wine,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   PlayerScore,
@@ -22,6 +21,9 @@ import type {
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import type { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
+import { formatNumber } from '@/apps/progress-dashboard/format'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,16 +31,6 @@ import {
   CardContent,
   CardHeader,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -47,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -69,13 +60,6 @@ const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
   beer: Beer,
   schnaps: Martini,
   funnel: Funnel,
-}
-
-export function formatNumber(value: number) {
-  return new Intl.NumberFormat('de-DE', {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  }).format(value)
 }
 
 function formatSignedNumber(value: number) {
@@ -142,106 +126,6 @@ function getEventTable(events: ProgressEvent[]) {
     (left, right) =>
       Date.parse(right.createdAtClientIso) - Date.parse(left.createdAtClientIso) ||
       right.position - left.position,
-  )
-}
-
-export function ConfirmButton({
-  children,
-  description,
-  onConfirm,
-  title,
-  trigger,
-}: {
-  children?: ReactNode
-  description: string
-  onConfirm: () => void | Promise<void>
-  title: string
-  trigger: ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {children}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
-          </DialogClose>
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              await onConfirm()
-              setOpen(false)
-            }}
-          >
-            Bestätigen
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function InlineTextEdit({
-  ariaLabel,
-  className,
-  fallback,
-  inputClassName,
-  onSave,
-  value,
-}: {
-  ariaLabel: string
-  className?: string
-  fallback: string
-  inputClassName?: string
-  onSave: (value: string) => void | Promise<void>
-  value: string
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const displayValue = value.trim() || fallback
-
-  if (isEditing) {
-    return (
-      <Input
-        aria-label={ariaLabel}
-        autoFocus
-        className={inputClassName}
-        defaultValue={displayValue}
-        onBlur={async (event) => {
-          await onSave(event.currentTarget.value)
-          setIsEditing(false)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur()
-          }
-
-          if (event.key === 'Escape') {
-            setIsEditing(false)
-          }
-        }}
-      />
-    )
-  }
-
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className={cn('min-w-0 truncate', className)}>{displayValue}</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`${ariaLabel} bearbeiten`}
-        onClick={() => setIsEditing(true)}
-      >
-        <Pencil className="size-4" />
-      </Button>
-    </div>
   )
 }
 

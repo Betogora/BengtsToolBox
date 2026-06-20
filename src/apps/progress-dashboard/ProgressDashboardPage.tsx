@@ -14,14 +14,15 @@ import { toast } from 'sonner'
 
 import {
   ArchiveDatasetCard,
-  ConfirmButton,
   EventTable,
-  formatNumber,
   PlayerCard,
   ProgressChart,
 } from '@/apps/progress-dashboard/components'
+import { formatNumber } from '@/apps/progress-dashboard/format'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,7 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { IftaInput } from '@/components/ui/ifta-field'
 
 export function ProgressDashboardPage() {
   const {
@@ -64,7 +65,7 @@ export function ProgressDashboardPage() {
   } as CSSProperties
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage width="wide">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           <AppPageTitle
@@ -112,8 +113,9 @@ export function ProgressDashboardPage() {
               </div>
             </div>
             <div className="w-full md:w-64">
-              <Input
+              <IftaInput
                 aria-label="Einheit"
+                label="Einheit"
                 value={activeDataset.unit}
                 onChange={(event) =>
                   updateActiveDatasetMeta('unit', event.currentTarget.value)
@@ -260,6 +262,6 @@ export function ProgressDashboardPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AppPage>
   )
 }

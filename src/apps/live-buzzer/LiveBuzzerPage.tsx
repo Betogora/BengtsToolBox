@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import type { BuzzerTimestamp } from '@/apps/live-buzzer/types'
 import { useLiveBuzzer } from '@/apps/live-buzzer/hooks/useLiveBuzzer'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -122,7 +123,7 @@ export function LiveBuzzerPage() {
 
   if (isPresenterMode) {
     return (
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <AppPage width="wide">
         <section className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <AppPageTitle Icon={Bell} title="Live-Buzzer" />
           <Button variant="outline" onClick={() => setIsPresenterMode(false)}>
@@ -193,12 +194,12 @@ export function LiveBuzzerPage() {
             </CardContent>
           </Card>
         </section>
-      </div>
+      </AppPage>
     )
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage>
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={Bell} title="Live-Buzzer" />
         <div className="flex flex-wrap gap-2">
@@ -507,6 +508,6 @@ export function LiveBuzzerPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AppPage>
   )
 }

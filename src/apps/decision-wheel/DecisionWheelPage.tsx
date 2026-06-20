@@ -21,6 +21,7 @@ import type {
   DecisionWheelResult,
 } from '@/apps/decision-wheel/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,6 +31,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { IftaInput } from '@/components/ui/ifta-field'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { getReadableTextColor } from '@/lib/theme'
@@ -299,7 +301,7 @@ export function DecisionWheelPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage>
       <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={CircleDot} title="Glücksrad" />
         <div className="flex flex-wrap gap-2">
@@ -370,20 +372,20 @@ export function DecisionWheelPage() {
                     key={entry.id}
                     className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_4.5rem_2.5rem_2.5rem] sm:items-end"
                   >
-                    <div className="grid gap-1.5">
-                      <Label htmlFor={`entry-text-${entry.id}`}>Text</Label>
-                      <Input
+                    <div>
+                      <IftaInput
                         id={`entry-text-${entry.id}`}
+                        label="Text"
                         value={entry.text}
                         onChange={(event) =>
                           updateEntry(entry.id, { text: event.target.value })
                         }
                       />
                     </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor={`entry-weight-${entry.id}`}>Gewicht</Label>
-                      <Input
+                    <div>
+                      <IftaInput
                         id={`entry-weight-${entry.id}`}
+                        label="Gewicht"
                         min={1}
                         type="number"
                         value={entry.weight}
@@ -483,6 +485,6 @@ export function DecisionWheelPage() {
           </Card>
         </div>
       </section>
-    </div>
+    </AppPage>
   )
 }

@@ -33,11 +33,12 @@ import { toast } from 'sonner'
 import {
   AddEaterCard,
   ClaimDialog,
-  InlineTextEdit,
   TerritoryEventTable,
   TerritoryShape,
 } from '@/apps/territory-map/components'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
+import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import {
   loadTerritories,
   mapViewBoxes,
@@ -824,7 +825,7 @@ export function TerritoryMapPage() {
   }, [])
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6">
+    <AppPage className="gap-5 py-6 lg:py-6" width="wide">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <AppPageTitle Icon={UtensilsCrossed} title="Sushi Map" />
@@ -1237,6 +1238,6 @@ export function TerritoryMapPage() {
         players={players}
         territory={selectedTerritory}
       />
-    </div>
+    </AppPage>
   )
 }

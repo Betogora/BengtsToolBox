@@ -1,19 +1,20 @@
 import {
   History,
   ListOrdered,
-  Pencil,
   Plus,
   RotateCcw,
   Trophy,
   Undo2,
   UsersRound,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import type { ScoreboardEvent } from '@/apps/scoreboard/types'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,17 +25,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
@@ -55,105 +45,6 @@ function formatEventTime(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
-}
-
-function ConfirmButton({
-  confirmLabel = 'Bestaetigen',
-  description,
-  onConfirm,
-  title,
-  trigger,
-}: {
-  confirmLabel?: string
-  description: string
-  onConfirm: () => void | Promise<void>
-  title: string
-  trigger: ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
-          </DialogClose>
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              await onConfirm()
-              setOpen(false)
-            }}
-          >
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function InlineTextEdit({
-  ariaLabel,
-  className,
-  fallback,
-  inputClassName,
-  onSave,
-  value,
-}: {
-  ariaLabel: string
-  className?: string
-  fallback: string
-  inputClassName?: string
-  onSave: (value: string) => void | Promise<void>
-  value: string
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const displayValue = value.trim() || fallback
-
-  if (isEditing) {
-    return (
-      <Input
-        aria-label={ariaLabel}
-        autoFocus
-        className={inputClassName}
-        defaultValue={displayValue}
-        onBlur={async (event) => {
-          await onSave(event.currentTarget.value)
-          setIsEditing(false)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur()
-          }
-
-          if (event.key === 'Escape') {
-            setIsEditing(false)
-          }
-        }}
-      />
-    )
-  }
-
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className={cn('min-w-0 truncate', className)}>{displayValue}</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`${ariaLabel} bearbeiten`}
-        onClick={() => setIsEditing(true)}
-      >
-        <Pencil className="size-4" />
-      </Button>
-    </div>
-  )
 }
 
 function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
@@ -252,7 +143,7 @@ export function ScoreboardPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage width="wide">
       <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <AppPageTitle Icon={ListOrdered}>
@@ -455,6 +346,6 @@ export function ScoreboardPage() {
           </div>
         </div>
       </section>
-    </div>
+    </AppPage>
   )
 }

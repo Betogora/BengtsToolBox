@@ -2,17 +2,17 @@ import { Dice5, History, RotateCcw } from 'lucide-react'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { IftaInput } from '@/components/ui/ifta-field'
 
 export function RandomizerPage() {
   const { data, updateRange, roll, clearHistory, error } = useRandomizer()
   const visibleHistory = data.history.slice(0, 10)
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage>
       <section>
         <AppPageTitle Icon={Dice5} title="Random Number Generator" />
       </section>
@@ -36,10 +36,10 @@ export function RandomizerPage() {
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="min-value">Minimum</Label>
-                <Input
+              <div>
+                <IftaInput
                   id="min-value"
+                  label="Minimum"
                   type="number"
                   value={data.min}
                   onChange={(event) =>
@@ -47,10 +47,10 @@ export function RandomizerPage() {
                   }
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="max-value">Maximum</Label>
-                <Input
+              <div>
+                <IftaInput
                   id="max-value"
+                  label="Maximum"
                   type="number"
                   value={data.max}
                   onChange={(event) =>
@@ -120,6 +120,6 @@ export function RandomizerPage() {
           </CardContent>
         </Card>
       </section>
-    </div>
+    </AppPage>
   )
 }
