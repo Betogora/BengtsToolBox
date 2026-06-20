@@ -600,18 +600,6 @@ export function useSwissTournaments(sessionId = 'default') {
     )
   }
 
-  const exportTournamentJson = (tournament = activeTournament) => {
-    if (!tournament) {
-      return
-    }
-
-    downloadText(
-      `${sanitizeDownloadName(tournament.name)}.json`,
-      JSON.stringify(tournament, null, 2),
-      'application/json;charset=utf-8',
-    )
-  }
-
   return {
     activeTournament,
     addManualHandBrainPairing,
@@ -626,7 +614,6 @@ export function useSwissTournaments(sessionId = 'default') {
     deleteLatestRound: removeLatestRound,
     error: stateStore.error ?? tournamentsStore.error,
     exportStandingsCsv,
-    exportTournamentJson,
     generateRound,
     goBackToPreviousRound,
     isLoading: stateStore.isLoading || tournamentsStore.isLoading,

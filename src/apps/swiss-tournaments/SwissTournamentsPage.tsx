@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   CirclePlus,
   Download,
-  FileJson,
   GitBranch,
   Hand,
   LayoutDashboard,
@@ -650,13 +649,13 @@ function TournamentCreator({
 
   return (
     <Card>
-      <CardContent className="grid gap-4 p-6">
+      <CardContent className="grid gap-2 p-6 md:gap-4">
         <TournamentFormatPicker
           format={format}
           onFormatChange={handleFormatChange}
         />
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-2 md:grid-cols-2 md:gap-3">
           <IftaInput
             id="swiss-name"
             label="Turniername"
@@ -677,7 +676,7 @@ function TournamentCreator({
           />
         </div>
 
-        <div className="grid gap-3 border-b pb-4 md:grid-cols-2">
+        <div className="grid gap-2 border-b pb-2 md:grid-cols-2 md:gap-3 md:pb-4">
           <div>
             <Select
               value={initialSeedingMode}
@@ -714,12 +713,12 @@ function TournamentCreator({
           </div>
         </div>
 
-        <div className="grid gap-3">
+        <div className="grid gap-2 md:gap-3">
           <div className="flex items-center">
             <Label>Spieler</Label>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2 md:gap-3">
             <form
               className="rounded-md border border-dashed bg-background p-3"
               onSubmit={(event) => {
@@ -760,7 +759,104 @@ function TournamentCreator({
               </div>
             </form>
 
-            <Table className="min-w-[46rem]">
+            <div className="grid gap-2 md:hidden">
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 px-2 text-[0.68rem] font-semibold leading-none text-muted-foreground">
+                <span>Name</span>
+                <span>Rating</span>
+              </div>
+              {players.map((player, index) => (
+                <div
+                  key={player.id}
+                  className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
+                      #{index + 1}
+                    </span>
+                    <Badge className="h-6" variant={statusVariant(player.status)}>
+                      {statusLabels[player.status]}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
+                    <Input
+                      id={`swiss-create-mobile-name-${player.id}`}
+                      aria-label={`Name von Spieler ${index + 1}`}
+                      value={player.name}
+                      onChange={(event) =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.map((entry) =>
+                            entry.id === player.id
+                              ? { ...entry, name: event.currentTarget.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      id={`swiss-create-mobile-rating-${player.id}`}
+                      aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                      type="number"
+                      value={player.rating}
+                      onChange={(event) =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.map((entry) =>
+                            entry.id === player.id
+                              ? { ...entry, rating: event.currentTarget.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] gap-2">
+                    <Select
+                      value={player.status}
+                      onValueChange={(value) =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.map((entry) =>
+                            entry.id === player.id
+                              ? {
+                                  ...entry,
+                                  status: value as InitialPlayerStatus,
+                                }
+                              : entry,
+                          ),
+                        )
+                      }
+                    >
+                      <IftaSelectTrigger
+                        aria-label={`Status von ${player.name || `Spieler ${index + 1}`}`}
+                        label="Status"
+                      >
+                        <SelectValue />
+                      </IftaSelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">aktiv</SelectItem>
+                        <SelectItem value="inactive">inaktiv</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      aria-label={`${player.name || 'Spieler'} entfernen`}
+                      className="h-11 w-9 px-0"
+                      size="ifta"
+                      type="button"
+                      variant="delete"
+                      onClick={() =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.filter((entry) => entry.id !== player.id),
+                        )
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Table className="min-w-[46rem]" containerClassName="hidden md:block">
               <TableHeader>
                 <TableHead>#</TableHead>
                 <TableHead>Name</TableHead>
@@ -965,13 +1061,11 @@ function ArchivedTournamentsList({
   entries,
   onDelete,
   onExportCsv,
-  onExportJson,
   onPrint,
 }: {
   entries: ArchivedTournamentSummary[]
   onDelete: (tournament: Tournament) => void | Promise<void>
   onExportCsv: (tournament: Tournament) => void
-  onExportJson: (tournament: Tournament) => void
   onPrint: (tournament: Tournament) => void
 }) {
   const topPlayers = (entry: ArchivedTournamentSummary) =>
@@ -998,15 +1092,6 @@ function ArchivedTournamentsList({
       >
         <Download className="size-4" />
         CSV
-      </Button>
-      <Button
-        aria-label={`${tournament.name} als JSON exportieren`}
-        size="sm"
-        variant="outline"
-        onClick={() => onExportJson(tournament)}
-      >
-        <FileJson className="size-4" />
-        JSON
       </Button>
       <ConfirmButton
         title="Vergangenes Turnier löschen?"
@@ -1429,87 +1514,91 @@ export function SwissTournamentsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">
-                <IftaInput
-                  label="Turniername"
-                  value={tournament.name}
-                  onChange={(event) =>
-                    void app.updateTournamentMeta({
-                      name: event.currentTarget.value,
-                    })
-                  }
-                />
-                {(tournament.format ?? 'swiss') !== 'roundRobin' && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3">
                   <IftaInput
-                    label="Runden"
-                    min={Math.max(1, highestCompletedRoundNumber(tournament))}
-                    type="number"
-                    value={tournament.numberOfRounds}
+                    label="Turniername"
+                    value={tournament.name}
                     onChange={(event) =>
                       void app.updateTournamentMeta({
-                        numberOfRounds: Number(event.currentTarget.value),
+                        name: event.currentTarget.value,
                       })
                     }
                   />
-                )}
-                <Select
-                  value={String(tournament.settings.byeScore)}
-                  onValueChange={(value) =>
-                    void app.updateSettings({
-                      byeScore: Number(value) as ByeScore,
-                    })
-                  }
-                >
-                  <IftaSelectTrigger
-                    className={singleLineSelectTriggerClass}
-                    label="Punkte pro Bye"
+                  {(tournament.format ?? 'swiss') !== 'roundRobin' && (
+                    <IftaInput
+                      label="Runden"
+                      min={Math.max(1, highestCompletedRoundNumber(tournament))}
+                      type="number"
+                      value={tournament.numberOfRounds}
+                      onChange={(event) =>
+                        void app.updateTournamentMeta({
+                          numberOfRounds: Number(event.currentTarget.value),
+                        })
+                      }
+                    />
+                  )}
+                </div>
+                <div className="grid gap-3">
+                  <Select
+                    value={String(tournament.settings.byeScore)}
+                    onValueChange={(value) =>
+                      void app.updateSettings({
+                        byeScore: Number(value) as ByeScore,
+                      })
+                    }
                   >
-                    <SelectValue />
-                  </IftaSelectTrigger>
-                  <SelectContent>
-                    {byeScoreOptions.map((option) => (
-                      <SelectItem key={option.value} value={String(option.value)}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={tournament.settings.byePolicy}
-                  onValueChange={(value) =>
-                    void app.updateSettings({
-                      byePolicy: value as ByePolicy,
-                    })
-                  }
-                >
-                  <IftaSelectTrigger
-                    className={singleLineSelectTriggerClass}
-                    label="Bye-Vergabe"
+                    <IftaSelectTrigger
+                      className={singleLineSelectTriggerClass}
+                      label="Punkte pro Bye"
+                    >
+                      <SelectValue />
+                    </IftaSelectTrigger>
+                    <SelectContent>
+                      {byeScoreOptions.map((option) => (
+                        <SelectItem key={option.value} value={String(option.value)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={tournament.settings.byePolicy}
+                    onValueChange={(value) =>
+                      void app.updateSettings({
+                        byePolicy: value as ByePolicy,
+                      })
+                    }
                   >
-                    <SelectValue />
-                  </IftaSelectTrigger>
-                  <SelectContent>
-                    {byePolicyOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <IftaSelectTrigger
+                      className={singleLineSelectTriggerClass}
+                      label="Bye-Vergabe"
+                    >
+                      <SelectValue />
+                    </IftaSelectTrigger>
+                    <SelectContent>
+                      {byePolicyOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={() => printPage()}>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Button className="w-full" variant="outline" onClick={() => printPage()}>
                   <Printer className="size-4" />
                   PDF
                 </Button>
-                <Button variant="outline" onClick={() => app.exportStandingsCsv()}>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => app.exportStandingsCsv()}
+                >
                   <Download className="size-4" />
                   CSV
-                </Button>
-                <Button variant="outline" onClick={() => app.exportTournamentJson()}>
-                  <FileJson className="size-4" />
-                  JSON
                 </Button>
               </div>
 
@@ -1542,7 +1631,6 @@ export function SwissTournamentsPage() {
                       toast.success('Vergangenes Turnier wurde geloescht.')
                     }}
                     onExportCsv={app.exportStandingsCsv}
-                    onExportJson={app.exportTournamentJson}
                     onPrint={printPage}
                   />
                 )}
@@ -1595,7 +1683,7 @@ export function SwissTournamentsPage() {
               </form>
 
               <div className="grid gap-2 md:hidden">
-                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-[0.68rem] font-semibold uppercase leading-none text-muted-foreground">
+                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-[0.68rem] font-semibold leading-none text-muted-foreground">
                   <span>Name</span>
                   <span>Rating</span>
                 </div>
