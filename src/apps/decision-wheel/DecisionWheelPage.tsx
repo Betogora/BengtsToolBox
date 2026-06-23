@@ -22,11 +22,12 @@ import type {
 } from '@/apps/decision-wheel/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -34,6 +35,14 @@ import { Input } from '@/components/ui/input'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { getReadableTextColor } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 
@@ -80,6 +89,10 @@ function getSegments(entries: DecisionWheelEntry[]): WheelSegment[] {
   const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0)
   let currentAngle = 0
 
+  if (totalWeight <= 0) {
+    return []
+  }
+
   return entries.map((entry) => {
     const size = (entry.weight / totalWeight) * 360
     const startAngle = currentAngle
@@ -98,6 +111,35 @@ function getSegments(entries: DecisionWheelEntry[]): WheelSegment[] {
 
 function shortenWheelLabel(value: string) {
   return value.length > 16 ? `${value.slice(0, 15)}...` : value
+}
+
+function getColorWithAlpha(color: string, alphaHex: string) {
+  return /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alphaHex}` : color
+}
+
+function parseWeightDraft(value: string) {
+  const numericWeight = Number(value)
+
+  return Number.isFinite(numericWeight) && numericWeight >= 1
+    ? Math.round(numericWeight)
+    : null
+}
+
+function getRenderableWheelEntries(
+  entries: DecisionWheelEntry[],
+  weightDrafts: Record<string, string>,
+) {
+  return entries.flatMap((entry) => {
+    const draftValue = weightDrafts[entry.id]
+
+    if (draftValue === undefined) {
+      return entry.weight >= 1 ? [entry] : []
+    }
+
+    const draftWeight = parseWeightDraft(draftValue)
+
+    return draftWeight === null ? [] : [{ ...entry, weight: draftWeight }]
+  })
 }
 
 type WheelGraphicProps = {
@@ -201,7 +243,14 @@ type ResultPanelProps = {
 
 function ResultPanel({ result }: ResultPanelProps) {
   return (
-    <div className="rounded-lg border bg-secondary p-4">
+    <div
+      className="rounded-lg border bg-secondary p-4"
+      style={
+        result
+          ? { backgroundColor: getColorWithAlpha(result.color, '80') }
+          : undefined
+      }
+    >
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Trophy className="size-4" />
         Gewinner
@@ -237,10 +286,15 @@ export function DecisionWheelPage() {
   const [rotation, setRotation] = useState(0)
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinEntries, setSpinEntries] = useState<DecisionWheelEntry[] | null>(null)
+  const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({})
   const spinTimeoutRef = useRef<number | null>(null)
   const isSpinLockedRef = useRef(false)
-  const visibleEntries = spinEntries ?? data.entries
-  const canSpin = data.entries.length > 0 && !isSpinning
+  const wheelEntries = useMemo(
+    () => getRenderableWheelEntries(data.entries, weightDrafts),
+    [data.entries, weightDrafts],
+  )
+  const visibleEntries = spinEntries ?? wheelEntries
+  const canSpin = wheelEntries.length > 0 && !isSpinning
 
   useEffect(
     () => () => {
@@ -256,7 +310,7 @@ export function DecisionWheelPage() {
       return
     }
 
-    const entriesBeforeSpin = data.entries
+    const entriesBeforeSpin = wheelEntries
     const result = prepareSpinResult(entriesBeforeSpin)
 
     if (!result) {
@@ -300,23 +354,43 @@ export function DecisionWheelPage() {
     }, spinSettleDelayMs)
   }
 
+  const clearWeightDraft = (entryId: string) =>
+    setWeightDrafts((currentDrafts) => {
+      if (!(entryId in currentDrafts)) {
+        return currentDrafts
+      }
+
+      const nextDrafts = { ...currentDrafts }
+      delete nextDrafts[entryId]
+
+      return nextDrafts
+    })
+
+  const handleWeightChange = (entryId: string, nextValue: string) => {
+    setWeightDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [entryId]: nextValue,
+    }))
+
+    const nextWeight = parseWeightDraft(nextValue)
+
+    if (nextWeight !== null) {
+      updateEntry(entryId, { weight: nextWeight })
+    }
+  }
+
   return (
     <AppPage>
-      <section className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <section>
         <AppPageTitle Icon={CircleDot} title="Glücksrad" />
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{data.entries.length} Optionen</Badge>
-        </div>
       </section>
 
       {error && (
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>Firebase-Fehler</CardTitle>
+            <CardDescription>{error.message}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-destructive">{error.message}</p>
-          </CardContent>
         </Card>
       )}
 
@@ -362,76 +436,166 @@ export function DecisionWheelPage() {
             </CardHeader>
             <CardContent className="grid gap-3">
               {data.entries.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <EmptyState>
                   Keine Optionen vorhanden. Füge eine Option hinzu oder setze die
                   Liste zurück.
-                </div>
+                </EmptyState>
               ) : (
-                data.entries.map((entry, index) => (
-                  <div
-                    key={entry.id}
-                    className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_4.5rem_2.5rem_2.5rem] sm:items-end"
-                  >
-                    <div>
-                      <IftaInput
-                        id={`entry-text-${entry.id}`}
-                        label="Text"
-                        value={entry.text}
-                        onChange={(event) =>
-                          updateEntry(entry.id, { text: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <IftaInput
-                        id={`entry-weight-${entry.id}`}
-                        label="Gewicht"
-                        min={1}
-                        type="number"
-                        value={entry.weight}
-                        onChange={(event) =>
-                          updateEntry(entry.id, {
-                            weight: Number(event.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor={`entry-color-${entry.id}`}>Farbe</Label>
-                      <Input
-                        id={`entry-color-${entry.id}`}
-                        type="color"
-                        aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
-                        className="h-9 cursor-pointer rounded-md border p-1 sm:h-11"
-                        value={entry.color}
-                        onChange={(event) =>
-                          updateEntry(entry.id, {
-                            color: event.currentTarget.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <Button
-                      aria-label={`${getEntryDisplayText(entry, index)} löschen`}
-                      className="self-end sm:h-11"
-                      size="icon"
-                      variant="delete"
-                      onClick={() => removeEntry(entry.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                <>
+                  <div className="grid gap-2 md:hidden">
+                    {data.entries.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
+                            #{index + 1}
+                          </span>
+                          <Button
+                            aria-label={`${getEntryDisplayText(entry, index)} löschen`}
+                            className="h-9 w-9 px-0"
+                            size="ifta"
+                            variant="delete"
+                            onClick={() => removeEntry(entry.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-2">
+                          <IftaInput
+                            id={`entry-text-${entry.id}`}
+                            label="Text"
+                            value={entry.text}
+                            onChange={(event) =>
+                              updateEntry(entry.id, { text: event.target.value })
+                            }
+                          />
+                          <IftaInput
+                            id={`entry-weight-${entry.id}`}
+                            label="Gewicht"
+                            min={1}
+                            type="number"
+                            className="text-center tabular-nums"
+                            value={weightDrafts[entry.id] ?? String(entry.weight)}
+                            onBlur={() => clearWeightDraft(entry.id)}
+                            onChange={(event) =>
+                              handleWeightChange(
+                                entry.id,
+                                event.currentTarget.value,
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                          <Label
+                            className="text-xs font-semibold text-muted-foreground"
+                            htmlFor={`entry-color-${entry.id}`}
+                          >
+                            Farbe
+                          </Label>
+                          <Input
+                            id={`entry-color-${entry.id}`}
+                            type="color"
+                            aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
+                            className="h-11 cursor-pointer rounded-md border p-1"
+                            value={entry.color}
+                            onChange={(event) =>
+                              updateEntry(entry.id, {
+                                color: event.currentTarget.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))
+
+                  <Table className="min-w-[38rem]" containerClassName="hidden md:block">
+                    <TableHeader>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Text</TableHead>
+                      <TableHead className="w-28">Gewicht</TableHead>
+                      <TableHead className="w-24">Farbe</TableHead>
+                      <TableHead className="w-20">Aktion</TableHead>
+                    </TableHeader>
+                    <TableBody>
+                      {data.entries.map((entry, index) => (
+                        <TableRow key={entry.id}>
+                          <TableCell className="tabular-nums">
+                            {index + 1}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              id={`entry-text-table-${entry.id}`}
+                              aria-label={`Text von Option ${index + 1}`}
+                              value={entry.text}
+                              onChange={(event) =>
+                                updateEntry(entry.id, {
+                                  text: event.currentTarget.value,
+                                })
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              id={`entry-weight-table-${entry.id}`}
+                              aria-label={`Gewicht von ${getEntryDisplayText(entry, index)}`}
+                              min={1}
+                              type="number"
+                              className="w-20 text-center tabular-nums"
+                              value={weightDrafts[entry.id] ?? String(entry.weight)}
+                              onBlur={() => clearWeightDraft(entry.id)}
+                              onChange={(event) =>
+                                handleWeightChange(
+                                  entry.id,
+                                  event.currentTarget.value,
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              id={`entry-color-table-${entry.id}`}
+                              type="color"
+                              aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
+                              className="h-9 w-12 cursor-pointer rounded-md border p-1"
+                              value={entry.color}
+                              onChange={(event) =>
+                                updateEntry(entry.id, {
+                                  color: event.currentTarget.value,
+                                })
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              aria-label={`${getEntryDisplayText(entry, index)} löschen`}
+                              className="h-9 w-9 px-0"
+                              size="icon"
+                              variant="delete"
+                              onClick={() => removeEntry(entry.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
               )}
 
-              <div className="flex min-h-[5.125rem] items-center justify-center rounded-lg border border-dashed p-3">
+              <div className="rounded-md border border-dashed bg-background p-3">
                 <Button
                   className="h-9 w-full"
                   variant="outline"
                   onClick={addEntry}
                 >
                   <Plus className="size-4" />
-                  Spieler hinzufügen
+                  Option hinzufügen
                 </Button>
               </div>
             </CardContent>
@@ -454,9 +618,9 @@ export function DecisionWheelPage() {
             </CardHeader>
             <CardContent>
               {data.history.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <EmptyState>
                   Noch keine Drehungen vorhanden.
-                </div>
+                </EmptyState>
               ) : (
                 <div className="grid gap-3">
                   {data.history.map((result, index) => (
