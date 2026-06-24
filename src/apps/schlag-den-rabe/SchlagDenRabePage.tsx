@@ -1,6 +1,8 @@
 import { Coins, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { AppPage } from '@/apps/shared/components/AppPage'
+
 import {
   Card,
   CardDescription,
@@ -53,7 +55,7 @@ function GameTile({ game }: { game: GameApp }) {
 
 export function SchlagDenRabePage() {
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-8 sm:px-6 lg:py-12">
+    <AppPage className="gap-7 lg:py-12">
       <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
         <div className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
@@ -84,6 +86,6 @@ export function SchlagDenRabePage() {
           <GameTile key={game.id} game={game} />
         ))}
       </section>
-    </div>
+    </AppPage>
   )
 }

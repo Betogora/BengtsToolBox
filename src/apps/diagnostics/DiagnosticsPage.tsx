@@ -12,6 +12,7 @@ import { apps } from '@/apps/registry'
 import { useDiagnostics } from '@/apps/diagnostics/hooks/useDiagnostics'
 import type { DiagnosticStatus } from '@/apps/diagnostics/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -67,7 +68,7 @@ export function DiagnosticsPage() {
     : 'Lokaler Demo-Modus'
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-12">
+    <AppPage className="lg:py-12">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="max-w-3xl">
           <Badge variant={status === 'error' ? 'destructive' : 'default'} className="mb-4 gap-2">
@@ -202,6 +203,6 @@ export function DiagnosticsPage() {
           </CardContent>
         </Card>
       </section>
-    </div>
+    </AppPage>
   )
 }

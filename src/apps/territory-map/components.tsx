@@ -1,9 +1,8 @@
 import {
   CirclePlus,
-  Pencil,
   Trash2,
 } from 'lucide-react'
-import { memo, useRef, useState, type ReactNode } from 'react'
+import { memo, useRef, useState } from 'react'
 
 import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import { unclaimedValue } from '@/apps/territory-map/mapConfig'
@@ -15,19 +14,17 @@ import type {
   TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
 import type { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
   Select,
   SelectContent,
@@ -35,6 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 function toDateInputValue(value: string) {
   const date = new Date(value)
@@ -70,49 +75,6 @@ function getEventTable(events: TerritoryVisitEvent[]) {
     (left, right) =>
       getEventDateKey(right).localeCompare(getEventDateKey(left)) ||
       right.position - left.position,
-  )
-}
-
-export function ConfirmButton({
-  children,
-  description,
-  onConfirm,
-  title,
-  trigger,
-}: {
-  children?: ReactNode
-  description: string
-  onConfirm: () => void | Promise<void>
-  title: string
-  trigger: ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {children}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
-          </DialogClose>
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              await onConfirm()
-              setOpen(false)
-            }}
-          >
-            Bestätigen
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -206,62 +168,6 @@ export const TerritoryShape = memo(function TerritoryShape({
   )
 })
 
-export function InlineTextEdit({
-  ariaLabel,
-  fallback,
-  onSave,
-  value,
-}: {
-  ariaLabel: string
-  fallback: string
-  onSave: (value: string) => void | Promise<void>
-  value: string
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const displayValue = value.trim() || fallback
-
-  if (isEditing) {
-    return (
-      <Input
-        aria-label={ariaLabel}
-        autoFocus
-        className="h-9 font-medium"
-        defaultValue={displayValue}
-        onBlur={async (event) => {
-          await onSave(event.currentTarget.value)
-          setIsEditing(false)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur()
-          }
-
-          if (event.key === 'Escape') {
-            setIsEditing(false)
-          }
-        }}
-      />
-    )
-  }
-
-  return (
-    <div className="group flex min-w-0 items-center gap-1">
-      <span className="min-w-0 truncate rounded-sm px-1 py-1 text-sm font-medium transition-colors group-hover:bg-accent/35">
-        {displayValue}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-11 sm:size-8"
-        aria-label={`${ariaLabel} bearbeiten`}
-        onClick={() => setIsEditing(true)}
-      >
-        <Pencil className="size-4" />
-      </Button>
-    </div>
-  )
-}
-
 export function ClaimDialog({
   claim,
   onClaim,
@@ -302,8 +208,7 @@ export function ClaimDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-3 min-[34rem]:flex-row min-[34rem]:items-end">
-          <div className="grid min-w-0 flex-1 gap-2">
-            <Label htmlFor="claim-player">Sushi-Tourist</Label>
+          <div className="min-w-0 flex-1">
             <Select
               open={isPlayerSelectOpen}
               value={selectedPlayerId}
@@ -323,9 +228,9 @@ export function ClaimDialog({
                 }, 250)
               }}
             >
-              <SelectTrigger id="claim-player" className="w-full">
+              <IftaSelectTrigger id="claim-player" className="w-full" label="Sushi-Tourist">
                 <SelectValue placeholder="Sushi-Tourist wählen" />
-              </SelectTrigger>
+              </IftaSelectTrigger>
               <SelectContent>
                 {players.map((player) => (
                   <SelectItem key={player.id} value={player.id}>
@@ -337,7 +242,8 @@ export function ClaimDialog({
             </Select>
           </div>
           <Button
-            className="w-full min-[34rem]:w-auto"
+            className="h-9 w-full min-[34rem]:h-11 min-[34rem]:w-auto"
+            size="ifta"
             onClick={() => onClaim(selectedPlayerId)}
           >
             Nigiri gegessen
@@ -389,20 +295,17 @@ export function TerritoryEventTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[780px] text-sm">
-        <thead className="bg-secondary/70 text-left">
-          <tr>
-            <th className="px-3 py-2 font-semibold">Datum</th>
-            <th className="px-3 py-2 font-semibold">Spieler</th>
-            <th className="px-3 py-2 font-semibold">Territorium</th>
-            <th className="px-3 py-2 text-right font-semibold">Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Table className="min-w-[780px]">
+        <TableHeader>
+            <TableHead>Datum</TableHead>
+            <TableHead>Spieler</TableHead>
+            <TableHead>Territorium</TableHead>
+            <TableHead className="text-right">Aktion</TableHead>
+        </TableHeader>
+        <TableBody>
           {events.map((event) => (
-            <tr key={event.id} className="border-t">
-              <td className="px-3 py-2">
+            <TableRow key={event.id}>
+              <TableCell>
                 <Input
                   type="date"
                   className="h-9"
@@ -416,8 +319,8 @@ export function TerritoryEventTable({
                     })
                   }
                 />
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Select
                   value={event.playerId}
                   onValueChange={(value) =>
@@ -443,8 +346,8 @@ export function TerritoryEventTable({
                     ))}
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Select
                   value={event.territoryId}
                   onValueChange={(value) =>
@@ -464,8 +367,8 @@ export function TerritoryEventTable({
                     ))}
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="px-3 py-2 text-right">
+              </TableCell>
+              <TableCell className="text-right">
                 <ConfirmButton
                   title="Bereisung löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
@@ -480,11 +383,10 @@ export function TerritoryEventTable({
                     </Button>
                   }
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+    </Table>
   )
 }

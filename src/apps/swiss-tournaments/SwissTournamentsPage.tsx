@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   CirclePlus,
   Download,
-  FileJson,
   GitBranch,
   Hand,
   LayoutDashboard,
@@ -31,13 +30,17 @@ import {
   formatPoints,
   getRoundDisplayLabel,
   recalculateStandings,
+  willResultCorrectionRegenerateCurrentDraftRound,
 } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPage } from '@/apps/shared/components/AppPage'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import type {
   ByePolicy,
   ByeScore,
   GameResult,
+  InitialPlayerStatus,
   Pairing,
   PairingWarning,
   PlayerStatus,
@@ -65,7 +68,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input, LabeledInput } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
+import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -75,21 +79,29 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 const resultOptions: Array<{ value: GameResult; label: string }> = [
-  { value: '1-0', label: '1-0' },
-  { value: '0-1', label: '0-1' },
-  { value: '0.5-0.5', label: '0,5-0,5' },
-  { value: 'forfeit-1-0', label: 'kampflos 1-0' },
-  { value: 'forfeit-0-1', label: 'kampflos 0-1' },
+  { value: '1-0', label: '1 - 0' },
+  { value: '0-1', label: '0 - 1' },
+  { value: '0.5-0.5', label: '1/2 - 1/2' },
+  { value: 'forfeit-1-0', label: 'kampflos 1 - 0' },
+  { value: 'forfeit-0-1', label: 'kampflos 0 - 1' },
 ]
 const openResultValue = 'open'
 type ResultSelectValue = GameResult | typeof openResultValue
 
 const byeScoreOptions: Array<{ value: ByeScore; label: string }> = [
   { value: 1, label: '1 Punkt' },
-  { value: 0.5, label: '0,5 Punkte' },
+  { value: 0.5, label: '1/2 Punkt' },
   { value: 0, label: '0 Punkte' },
 ]
 
@@ -104,11 +116,11 @@ const tournamentWebsiteQrUrl = '/qrcode.svg'
 const singleLineSelectTriggerClass =
   'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
 
-function roleColorPlaceholder(icon: ReactNode, color: string) {
+function roleLabel(icon: ReactNode, label: string) {
   return (
-    <span className="flex min-w-0 items-center gap-2">
+    <span className="flex min-w-0 items-center gap-1">
       {icon}
-      <span className="truncate">{color}</span>
+      <span className="truncate">{label}</span>
     </span>
   )
 }
@@ -189,11 +201,18 @@ function resultLabel(result?: GameResult) {
     return 'offen'
   }
 
-  const label = result.startsWith('bye-')
-    ? result.replace('bye-', 'Bye ')
-    : result.replaceAll('forfeit-', 'kampflos ')
+  if (result === 'bye-0.5') {
+    return 'Bye 1/2'
+  }
 
-  return label.replaceAll('.', ',')
+  if (result.startsWith('bye-')) {
+    return result.replace('bye-', 'Bye ')
+  }
+
+  return (
+    resultOptions.find((option) => option.value === result)?.label ??
+    result.replaceAll('forfeit-', 'kampflos ').replaceAll('-', ' - ')
+  )
 }
 
 function formatDateTime(value?: string) {
@@ -372,75 +391,6 @@ function pairingWarningBadgeMeta(warning: PairingWarning): PairingWarningBadgeMe
   )
 }
 
-function ConfirmButton({
-  confirmLabel,
-  description,
-  onConfirm,
-  title,
-  trigger,
-}: {
-  confirmLabel: string
-  description: string
-  onConfirm: () => void | Promise<void>
-  title: string
-  trigger: ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-  const [isConfirming, setIsConfirming] = useState(false)
-  const confirmButtonRef = useRef<HTMLButtonElement>(null)
-
-  const handleConfirm = async () => {
-    if (isConfirming) {
-      return
-    }
-
-    setIsConfirming(true)
-
-    try {
-      await onConfirm()
-      setOpen(false)
-    } finally {
-      setIsConfirming(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.defaultPrevented) {
-            event.preventDefault()
-            void handleConfirm()
-          }
-        }}
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-          confirmButtonRef.current?.focus()
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
-          </DialogClose>
-          <Button
-            ref={confirmButtonRef}
-            disabled={isConfirming}
-            variant="destructive"
-            onClick={() => void handleConfirm()}
-          >
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 function RoundProgress({
   currentRound,
   numberOfRounds,
@@ -567,20 +517,21 @@ type DraftPlayer = {
   id: string
   name: string
   rating: string
+  status: InitialPlayerStatus
 }
 
 function defaultDraftPlayers(): DraftPlayer[] {
   return [
-    { id: 'draft-1', name: 'Niklas', rating: '1922' },
-    { id: 'draft-2', name: 'Bengt', rating: '1818' },
-    { id: 'draft-3', name: 'Thomas', rating: '1697' },
-    { id: 'draft-4', name: 'Liam', rating: '1674' },
-    { id: 'draft-5', name: 'Ralph', rating: '1614' },
-    { id: 'draft-6', name: 'Uwe', rating: '1524' },
-    { id: 'draft-7', name: 'Quinn', rating: '1494' },
-    { id: 'draft-8', name: 'Matthias', rating: '1485' },
-    { id: 'draft-9', name: 'Armin', rating: '1434' },
-    { id: 'draft-10', name: 'Nikita', rating: '1311' },
+    { id: 'draft-1', name: 'Niklas', rating: '1922', status: 'active' },
+    { id: 'draft-2', name: 'Bengt', rating: '1818', status: 'active' },
+    { id: 'draft-3', name: 'Thomas', rating: '1697', status: 'active' },
+    { id: 'draft-4', name: 'Liam', rating: '1674', status: 'active' },
+    { id: 'draft-5', name: 'Ralph', rating: '1614', status: 'active' },
+    { id: 'draft-6', name: 'Uwe', rating: '1524', status: 'active' },
+    { id: 'draft-7', name: 'Quinn', rating: '1494', status: 'active' },
+    { id: 'draft-8', name: 'Matthias', rating: '1485', status: 'active' },
+    { id: 'draft-9', name: 'Armin', rating: '1434', status: 'active' },
+    { id: 'draft-10', name: 'Nikita', rating: '1311', status: 'active' },
   ]
 }
 
@@ -595,6 +546,7 @@ function tournamentPlayersToDraftPlayers(tournament?: Tournament | null): DraftP
       id: `draft-${player.id}-${index}`,
       name: player.name,
       rating: player.rating === undefined ? '' : String(player.rating),
+      status: 'active',
     }))
 }
 
@@ -635,7 +587,7 @@ function TournamentCreator({
   const [numberOfRounds, setNumberOfRounds] = useState(() =>
     swissRoundsForPlayerCount(
       tournamentPlayersToDraftPlayers(initialTournament).filter(
-        (player) => player.name.trim().length > 0,
+        (player) => player.name.trim().length > 0 && player.status === 'active',
       ).length,
     ),
   )
@@ -653,7 +605,7 @@ function TournamentCreator({
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const cleanPlayerCount = players.filter(
-    (player) => player.name.trim().length > 0,
+    (player) => player.name.trim().length > 0 && player.status === 'active',
   ).length
   const automaticRoundCount = defaultRoundsForFormat(
     format,
@@ -670,7 +622,7 @@ function TournamentCreator({
         ? defaultTournamentName(nextFormat)
         : currentName,
     )
-    setByeScore(nextFormat === 'handAndBrain' ? 0.5 : 1)
+    setByeScore(1)
     setFormat(nextFormat)
   }
   const handleAddDraftPlayer = () => {
@@ -688,6 +640,7 @@ function TournamentCreator({
           .slice(2)}`,
         name: draftName,
         rating: newDraftPlayerRating.trim(),
+        status: 'active',
       },
     ])
     setNewDraftPlayerName('')
@@ -696,38 +649,34 @@ function TournamentCreator({
 
   return (
     <Card>
-      <CardContent className="grid gap-4 p-6">
+      <CardContent className="grid gap-2 p-6 md:gap-4">
         <TournamentFormatPicker
           format={format}
           onFormatChange={handleFormatChange}
         />
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <LabeledInput
-              id="swiss-name"
-              label="Turniername"
-              value={name}
-              onChange={(event) => setName(event.currentTarget.value)}
-            />
-          </div>
-          <div>
-            <LabeledInput
-              id="swiss-rounds"
-              label="Runden"
-              min={1}
-              readOnly={format === 'roundRobin'}
-              type="number"
-              value={effectiveNumberOfRounds}
-              onChange={(event) => {
-                setRoundsManuallyEdited(true)
-                setNumberOfRounds(Number(event.currentTarget.value))
-              }}
-            />
-          </div>
+        <div className="grid gap-2 md:grid-cols-2 md:gap-3">
+          <IftaInput
+            id="swiss-name"
+            label="Turniername"
+            value={name}
+            onChange={(event) => setName(event.currentTarget.value)}
+          />
+          <IftaInput
+            id="swiss-rounds"
+            label="Runden"
+            min={1}
+            readOnly={format === 'roundRobin'}
+            type="number"
+            value={effectiveNumberOfRounds}
+            onChange={(event) => {
+              setRoundsManuallyEdited(true)
+              setNumberOfRounds(Number(event.currentTarget.value))
+            }}
+          />
         </div>
 
-        <div className="grid gap-3 border-b pb-4 md:grid-cols-2">
+        <div className="grid gap-2 border-b pb-2 md:grid-cols-2 md:gap-3 md:pb-4">
           <div>
             <Select
               value={initialSeedingMode}
@@ -736,9 +685,9 @@ function TournamentCreator({
                 setInitialSeedingMode(value as SeedingMode)
               }
             >
-              <SelectTrigger label="Sortierung">
+              <IftaSelectTrigger label="Sortierung">
                 <SelectValue />
-              </SelectTrigger>
+              </IftaSelectTrigger>
               <SelectContent>
                 <SelectItem value="rating">nach Rating</SelectItem>
                 <SelectItem value="random">zufällig</SelectItem>
@@ -750,9 +699,9 @@ function TournamentCreator({
               value={String(byeScore)}
               onValueChange={(value) => setByeScore(Number(value) as ByeScore)}
             >
-              <SelectTrigger label="Punkte pro Bye">
+              <IftaSelectTrigger label="Punkte pro Bye">
                 <SelectValue />
-              </SelectTrigger>
+              </IftaSelectTrigger>
               <SelectContent>
                 {byeScoreOptions.map((option) => (
                   <SelectItem key={option.value} value={String(option.value)}>
@@ -764,66 +713,12 @@ function TournamentCreator({
           </div>
         </div>
 
-        <div className="grid gap-3">
+        <div className="grid gap-2 md:gap-3">
           <div className="flex items-center">
             <Label>Spieler</Label>
           </div>
 
-          <div className="overflow-hidden rounded-md border bg-card/70">
-            <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] gap-2 border-b bg-muted/60 px-2.5 py-1.5 text-xs font-semibold text-muted-foreground sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:px-3">
-              <span>Name</span>
-              <span>Rating</span>
-              <span className="sr-only">Aktion</span>
-            </div>
-            {players.map((player) => (
-              <div
-                key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.5rem] items-center gap-2 border-b px-2.5 py-1.5 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] sm:px-3"
-              >
-                <Input
-                    aria-label={`Name von ${player.name || 'Spieler'}`}
-                    id={`swiss-create-name-${player.id}`}
-                    value={player.name}
-                    onChange={(event) =>
-                      setPlayers((currentPlayers) =>
-                        currentPlayers.map((entry) =>
-                          entry.id === player.id
-                            ? { ...entry, name: event.currentTarget.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                />
-                <Input
-                    aria-label={`Rating von ${player.name || 'Spieler'}`}
-                    id={`swiss-create-rating-${player.id}`}
-                    type="number"
-                    value={player.rating}
-                    onChange={(event) =>
-                      setPlayers((currentPlayers) =>
-                        currentPlayers.map((entry) =>
-                          entry.id === player.id
-                            ? { ...entry, rating: event.currentTarget.value }
-                            : entry,
-                        ),
-                      )
-                    }
-                />
-                <Button
-                  aria-label={`${player.name || 'Spieler'} entfernen`}
-                  className="h-9"
-                  size="sm"
-                  variant="delete"
-                  onClick={() =>
-                    setPlayers((currentPlayers) =>
-                      currentPlayers.filter((entry) => entry.id !== player.id),
-                    )
-                  }
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            ))}
+          <div className="grid gap-2 md:gap-3">
             <form
               className="border-t border-dashed bg-background px-2.5 py-2 sm:px-3"
               onSubmit={(event) => {
@@ -831,18 +726,20 @@ function TournamentCreator({
                 handleAddDraftPlayer()
               }}
             >
-              <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_2.5rem] md:grid-cols-[1fr_8rem_auto]">
-                <Input
-                  aria-label="Name des neuen Spielers"
-                  placeholder="Name"
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
+                <IftaInput
+                  aria-label="Neuer Spielername"
+                  label="Name"
+                  placeholder="Neuer Spieler"
                   value={newDraftPlayerName}
                   onChange={(event) =>
                     setNewDraftPlayerName(event.currentTarget.value)
                   }
                 />
-                <Input
-                  aria-label="Rating des neuen Spielers"
-                  placeholder="Rating"
+                <IftaInput
+                  aria-label="Neues Spielerrating"
+                  label="Rating"
+                  placeholder="DWZ"
                   type="number"
                   value={newDraftPlayerRating}
                   onChange={(event) =>
@@ -850,8 +747,8 @@ function TournamentCreator({
                   }
                 />
                 <Button
-                  aria-label="Spieler hinzufügen"
-                  className="col-span-2 h-9 w-full sm:col-span-1 sm:w-10 md:w-auto"
+                  className="col-span-2 h-9 w-full md:col-span-1 md:h-11 md:w-auto"
+                  size="ifta"
                   type="submit"
                   variant="outline"
                   disabled={newDraftPlayerName.trim().length === 0}
@@ -861,6 +758,204 @@ function TournamentCreator({
                 </Button>
               </div>
             </form>
+
+            <div className="grid gap-2 md:hidden">
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 px-2 text-[0.68rem] font-semibold leading-none text-muted-foreground">
+                <span>Name</span>
+                <span>Rating</span>
+              </div>
+              {players.map((player, index) => (
+                <div
+                  key={player.id}
+                  className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
+                      #{index + 1}
+                    </span>
+                    <Badge className="h-6" variant={statusVariant(player.status)}>
+                      {statusLabels[player.status]}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
+                    <Input
+                      id={`swiss-create-mobile-name-${player.id}`}
+                      aria-label={`Name von Spieler ${index + 1}`}
+                      value={player.name}
+                      onChange={(event) =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.map((entry) =>
+                            entry.id === player.id
+                              ? { ...entry, name: event.currentTarget.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      id={`swiss-create-mobile-rating-${player.id}`}
+                      aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                      type="number"
+                      value={player.rating}
+                      onChange={(event) =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.map((entry) =>
+                            entry.id === player.id
+                              ? { ...entry, rating: event.currentTarget.value }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] gap-2">
+                    <Select
+                      value={player.status}
+                      onValueChange={(value) =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.map((entry) =>
+                            entry.id === player.id
+                              ? {
+                                  ...entry,
+                                  status: value as InitialPlayerStatus,
+                                }
+                              : entry,
+                          ),
+                        )
+                      }
+                    >
+                      <IftaSelectTrigger
+                        aria-label={`Status von ${player.name || `Spieler ${index + 1}`}`}
+                        label="Status"
+                      >
+                        <SelectValue />
+                      </IftaSelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">aktiv</SelectItem>
+                        <SelectItem value="inactive">inaktiv</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      aria-label={`${player.name || 'Spieler'} entfernen`}
+                      className="h-11 w-9 px-0"
+                      size="ifta"
+                      type="button"
+                      variant="delete"
+                      onClick={() =>
+                        setPlayers((currentPlayers) =>
+                          currentPlayers.filter((entry) => entry.id !== player.id),
+                        )
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Table className="min-w-[46rem]" containerClassName="hidden md:block">
+              <TableHeader>
+                <TableHead>#</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Aktion</TableHead>
+              </TableHeader>
+              <TableBody>
+                {players.map((player, index) => (
+                  <TableRow key={player.id}>
+                    <TableCell className="tabular-nums">{index + 1}</TableCell>
+                    <TableCell>
+                      <Input
+                        id={`swiss-create-name-${player.id}`}
+                        aria-label={`Name von Spieler ${index + 1}`}
+                        value={player.name}
+                        onChange={(event) =>
+                          setPlayers((currentPlayers) =>
+                            currentPlayers.map((entry) =>
+                              entry.id === player.id
+                                ? { ...entry, name: event.currentTarget.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        id={`swiss-create-rating-${player.id}`}
+                        aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                        className="w-28"
+                        type="number"
+                        value={player.rating}
+                        onChange={(event) =>
+                          setPlayers((currentPlayers) =>
+                            currentPlayers.map((entry) =>
+                              entry.id === player.id
+                                ? { ...entry, rating: event.currentTarget.value }
+                                : entry,
+                            ),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(player.status)}>
+                        {statusLabels[player.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={player.status}
+                          onValueChange={(value) =>
+                            setPlayers((currentPlayers) =>
+                              currentPlayers.map((entry) =>
+                                entry.id === player.id
+                                  ? {
+                                      ...entry,
+                                      status: value as InitialPlayerStatus,
+                                    }
+                                  : entry,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            aria-label={`Status von ${player.name || `Spieler ${index + 1}`}`}
+                            className="w-40"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">aktiv</SelectItem>
+                            <SelectItem value="inactive">inaktiv</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          aria-label={`${player.name || 'Spieler'} entfernen`}
+                          className="h-9"
+                          size="sm"
+                          variant="delete"
+                          onClick={() =>
+                            setPlayers((currentPlayers) =>
+                              currentPlayers.filter(
+                                (entry) => entry.id !== player.id,
+                              ),
+                            )
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
 
@@ -886,6 +981,7 @@ function TournamentCreator({
                 players: players.map((player) => ({
                   name: player.name,
                   rating: player.rating ? Number(player.rating) : undefined,
+                  status: player.status,
                 })),
                 initialSeedingMode,
                 byeScore,
@@ -968,13 +1064,11 @@ function ArchivedTournamentsList({
   entries,
   onDelete,
   onExportCsv,
-  onExportJson,
   onPrint,
 }: {
   entries: ArchivedTournamentSummary[]
   onDelete: (tournament: Tournament) => void | Promise<void>
   onExportCsv: (tournament: Tournament) => void
-  onExportJson: (tournament: Tournament) => void
   onPrint: (tournament: Tournament) => void
 }) {
   const topPlayers = (entry: ArchivedTournamentSummary) =>
@@ -1001,15 +1095,6 @@ function ArchivedTournamentsList({
       >
         <Download className="size-4" />
         CSV
-      </Button>
-      <Button
-        aria-label={`${tournament.name} als JSON exportieren`}
-        size="sm"
-        variant="outline"
-        onClick={() => onExportJson(tournament)}
-      >
-        <FileJson className="size-4" />
-        JSON
       </Button>
       <ConfirmButton
         title="Vergangenes Turnier löschen?"
@@ -1068,45 +1153,41 @@ function ArchivedTournamentsList({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <table className="w-full min-w-[58rem] text-sm">
-          <thead className="bg-muted/70 text-left">
-            <tr>
-              <th className="p-3">Turnier</th>
-              <th className="p-3">Archiviert</th>
-              <th className="p-3">Kategorie</th>
-              <th className="p-3">Umfang</th>
-              <th className="p-3">Top 3</th>
-              <th className="p-3">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Table className="min-w-[58rem]" containerClassName="hidden md:block">
+          <TableHeader>
+              <TableHead>Turnier</TableHead>
+              <TableHead>Archiviert</TableHead>
+              <TableHead>Kategorie</TableHead>
+              <TableHead>Umfang</TableHead>
+              <TableHead>Top 3</TableHead>
+              <TableHead>Aktionen</TableHead>
+          </TableHeader>
+          <TableBody>
             {entries.map((entry) => (
-              <tr key={entry.tournament.id} className="border-t align-middle">
-                <td className="max-w-56 p-2.5 font-medium">
+              <TableRow key={entry.tournament.id}>
+                <TableCell className="max-w-56 font-medium">
                   <span className="block truncate">{entry.tournament.name}</span>
-                </td>
-                <td className="p-2.5 whitespace-nowrap">
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   {formatDateTime(entry.tournament.archivedAtClientIso)}
-                </td>
-                <td className="p-2.5">
+                </TableCell>
+                <TableCell>
                   <Badge variant="secondary">
                     {entry.category}
                   </Badge>
-                </td>
-                <td className="p-2.5 whitespace-nowrap">
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   {entry.tournament.players.length} Spieler, {entry.completedRounds}/
                   {entry.tournament.numberOfRounds} Runden
-                </td>
-                <td className="max-w-72 p-2.5 text-muted-foreground">
+                </TableCell>
+                <TableCell className="max-w-72 text-muted-foreground">
                   <span className="line-clamp-2">{topPlayers(entry)}</span>
-                </td>
-                <td className="p-2.5">{actions(entry.tournament)}</td>
-              </tr>
+                </TableCell>
+                <TableCell>{actions(entry.tournament)}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+      </Table>
     </>
   )
 }
@@ -1239,7 +1320,7 @@ export function SwissTournamentsPage() {
 
   if (app.isLoading) {
     return (
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <AppPage>
         <AppTitleHeader />
         <Card>
           <CardHeader>
@@ -1247,13 +1328,13 @@ export function SwissTournamentsPage() {
             <CardDescription>Gespeicherte Turniere werden synchronisiert.</CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </AppPage>
     )
   }
 
   if (!tournament) {
     return (
-      <div className="swiss-tournaments-page mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+      <AppPage className="swiss-tournaments-page">
         <AppTitleHeader />
         {app.error && (
           <Card className="border-destructive">
@@ -1279,7 +1360,7 @@ export function SwissTournamentsPage() {
             </div>
           </CardHeader>
         </Card>
-      </div>
+      </AppPage>
     )
   }
 
@@ -1336,7 +1417,7 @@ export function SwissTournamentsPage() {
     manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
 
   return (
-    <div className="swiss-tournaments-page mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:py-10">
+    <AppPage className="swiss-tournaments-page" width="wide">
       <AppTitleHeader />
 
       {app.error && (
@@ -1436,9 +1517,9 @@ export function SwissTournamentsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">
-                <div>
-                  <LabeledInput
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3">
+                  <IftaInput
                     label="Turniername"
                     value={tournament.name}
                     onChange={(event) =>
@@ -1447,10 +1528,8 @@ export function SwissTournamentsPage() {
                       })
                     }
                   />
-                </div>
-                {(tournament.format ?? 'swiss') !== 'roundRobin' && (
-                  <div>
-                    <LabeledInput
+                  {(tournament.format ?? 'swiss') !== 'roundRobin' && (
+                    <IftaInput
                       label="Runden"
                       min={Math.max(1, highestCompletedRoundNumber(tournament))}
                       type="number"
@@ -1461,9 +1540,9 @@ export function SwissTournamentsPage() {
                         })
                       }
                     />
-                  </div>
-                )}
-                <div>
+                  )}
+                </div>
+                <div className="grid gap-3">
                   <Select
                     value={String(tournament.settings.byeScore)}
                     onValueChange={(value) =>
@@ -1472,12 +1551,12 @@ export function SwissTournamentsPage() {
                       })
                     }
                   >
-                    <SelectTrigger
+                    <IftaSelectTrigger
                       className={singleLineSelectTriggerClass}
                       label="Punkte pro Bye"
                     >
                       <SelectValue />
-                    </SelectTrigger>
+                    </IftaSelectTrigger>
                     <SelectContent>
                       {byeScoreOptions.map((option) => (
                         <SelectItem key={option.value} value={String(option.value)}>
@@ -1486,8 +1565,6 @@ export function SwissTournamentsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
                   <Select
                     value={tournament.settings.byePolicy}
                     onValueChange={(value) =>
@@ -1496,12 +1573,12 @@ export function SwissTournamentsPage() {
                       })
                     }
                   >
-                    <SelectTrigger
+                    <IftaSelectTrigger
                       className={singleLineSelectTriggerClass}
                       label="Bye-Vergabe"
                     >
                       <SelectValue />
-                    </SelectTrigger>
+                    </IftaSelectTrigger>
                     <SelectContent>
                       {byePolicyOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
@@ -1513,18 +1590,18 @@ export function SwissTournamentsPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={() => printPage()}>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Button className="w-full" variant="outline" onClick={() => printPage()}>
                   <Printer className="size-4" />
                   PDF
                 </Button>
-                <Button variant="outline" onClick={() => app.exportStandingsCsv()}>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => app.exportStandingsCsv()}
+                >
                   <Download className="size-4" />
                   CSV
-                </Button>
-                <Button variant="outline" onClick={() => app.exportTournamentJson()}>
-                  <FileJson className="size-4" />
-                  JSON
                 </Button>
               </div>
 
@@ -1557,7 +1634,6 @@ export function SwissTournamentsPage() {
                       toast.success('Vergangenes Turnier wurde geloescht.')
                     }}
                     onExportCsv={app.exportStandingsCsv}
-                    onExportJson={app.exportTournamentJson}
                     onPrint={printPage}
                   />
                 )}
@@ -1583,19 +1659,22 @@ export function SwissTournamentsPage() {
                 }}
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
-                  <LabeledInput
+                  <IftaInput
                     label="Name"
+                    placeholder="Neuer Spieler"
                     value={newPlayerName}
                     onChange={(event) => setNewPlayerName(event.currentTarget.value)}
                   />
-                  <LabeledInput
+                  <IftaInput
                     label="Rating"
+                    placeholder="DWZ"
                     type="number"
                     value={newPlayerRating}
                     onChange={(event) => setNewPlayerRating(event.currentTarget.value)}
                   />
                   <Button
-                    className="col-span-2 h-9 w-full md:col-span-1 md:w-auto"
+                    className="col-span-2 h-9 w-full md:col-span-1 md:h-11 md:w-auto"
+                    size="ifta"
                     type="submit"
                     variant="outline"
                     disabled={newPlayerName.trim().length === 0}
@@ -1607,7 +1686,7 @@ export function SwissTournamentsPage() {
               </form>
 
               <div className="grid gap-2 md:hidden">
-                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2.5 text-xs font-semibold text-muted-foreground">
+                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-[0.68rem] font-semibold leading-none text-muted-foreground">
                   <span>Name</span>
                   <span>Rating</span>
                 </div>
@@ -1669,9 +1748,9 @@ export function SwissTournamentsPage() {
                             )
                           }
                         >
-                          <SelectTrigger label="Status">
+                          <IftaSelectTrigger label="Status">
                             <SelectValue />
-                          </SelectTrigger>
+                          </IftaSelectTrigger>
                           <SelectContent>
                             <SelectItem value="active">aktiv</SelectItem>
                             <SelectItem value="inactive">inaktiv</SelectItem>
@@ -1680,7 +1759,8 @@ export function SwissTournamentsPage() {
                         </Select>
                         <Button
                           aria-label={`${player.name} entfernen`}
-                          className="size-9 px-0"
+                          className="h-11 w-9 px-0"
+                          size="ifta"
                           disabled={!canRemove}
                           title={
                             canRemove
@@ -1705,27 +1785,25 @@ export function SwissTournamentsPage() {
                 })}
               </div>
 
-              <div className="hidden overflow-x-auto rounded-md border md:block">
-                <table className="w-full min-w-[52rem] text-sm">
-                  <thead className="bg-muted/70 text-left">
-                    <tr>
-                      <th className="p-3">#</th>
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Rating</th>
-                      <th className="p-3">Ab Runde</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Aktion</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Table className="min-w-[52rem]" containerClassName="hidden md:block">
+                  <TableHeader>
+                      <TableHead>#</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Ab Runde</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Aktion</TableHead>
+                  </TableHeader>
+                  <TableBody>
                     {tournament.players.map((player, index) => {
                       const canRemove = canRemovePlayer(player.id)
 
                       return (
-                      <tr key={player.id} className="border-t">
-                        <td className="p-3 tabular-nums">{index + 1}</td>
-                        <td className="p-3">
+                      <TableRow key={player.id}>
+                        <TableCell className="tabular-nums">{index + 1}</TableCell>
+                        <TableCell>
                           <Input
+                            aria-label={`Name von ${player.name}`}
                             value={player.name}
                             onChange={(event) =>
                               void app.updatePlayer(player.id, {
@@ -1734,9 +1812,10 @@ export function SwissTournamentsPage() {
                               })
                             }
                           />
-                        </td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell>
                           <Input
+                            aria-label={`Rating von ${player.name}`}
                             className="w-28"
                             type="number"
                             value={player.rating ?? ''}
@@ -1749,14 +1828,14 @@ export function SwissTournamentsPage() {
                               })
                             }
                           />
-                        </td>
-                        <td className="p-3 tabular-nums">{player.addedInRound}</td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell className="tabular-nums">{player.addedInRound}</TableCell>
+                        <TableCell>
                           <Badge variant={statusVariant(player.status)}>
                             {statusLabels[player.status]}
                           </Badge>
-                        </td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             <Select
                               value={player.status}
@@ -1767,7 +1846,10 @@ export function SwissTournamentsPage() {
                                 )
                               }
                             >
-                              <SelectTrigger className="w-40">
+                              <SelectTrigger
+                                aria-label={`Status von ${player.name}`}
+                                className="w-40"
+                              >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -1799,13 +1881,12 @@ export function SwissTournamentsPage() {
                               <Trash2 className="size-4" />
                             </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1956,6 +2037,14 @@ export function SwissTournamentsPage() {
                           onResultCorrection={(pairingId, result) =>
                             app.correctResult(round.roundNumber, pairingId, result)
                           }
+                          shouldConfirmResultCorrection={(pairingId, result) =>
+                            willResultCorrectionRegenerateCurrentDraftRound(
+                              tournament,
+                              round.roundNumber,
+                              pairingId,
+                              result,
+                            )
+                          }
                           onResultChange={(pairingId, result) =>
                             void app.setResult(round.roundNumber, pairingId, result)
                           }
@@ -1968,20 +2057,19 @@ export function SwissTournamentsPage() {
                                   <Brain className="size-4 text-primary" />
                                   Hand-and-Brain-Brett fixieren
                                 </div>
-                                <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
-                                  <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
+                                  <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
-                                      <SelectTrigger
+                                      <IftaSelectTrigger
+                                        aria-label="Weiß Brain"
                                         className={singleLineSelectTriggerClass}
-                                        label="Weiß · Brain"
+                                        label={roleLabel(
+                                          <Brain className="size-3 shrink-0 text-primary" />,
+                                          'Weiß Brain',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Brain className="size-4 shrink-0 text-primary" />,
-                                            'Weiß',
-                                          )}
-                                        />
-                                      </SelectTrigger>
+                                        <SelectValue placeholder="offen" />
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteBrain).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -1991,17 +2079,16 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
-                                      <SelectTrigger
+                                      <IftaSelectTrigger
+                                        aria-label="Weiß Hand"
                                         className={singleLineSelectTriggerClass}
-                                        label="Weiß · Hand"
+                                        label={roleLabel(
+                                          <Hand className="size-3 shrink-0 text-primary" />,
+                                          'Weiß Hand',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Hand className="size-4 shrink-0 text-primary" />,
-                                            'Weiß',
-                                          )}
-                                        />
-                                      </SelectTrigger>
+                                        <SelectValue placeholder="offen" />
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteHand).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -2011,19 +2098,18 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  <div className="grid gap-2 sm:grid-cols-2">
+                                  <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
-                                      <SelectTrigger
+                                      <IftaSelectTrigger
+                                        aria-label="Schwarz Brain"
                                         className={singleLineSelectTriggerClass}
-                                        label="Schwarz · Brain"
+                                        label={roleLabel(
+                                          <Brain className="size-3 shrink-0 text-primary" />,
+                                          'Schwarz Brain',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Brain className="size-4 shrink-0 text-primary" />,
-                                            'Schwarz',
-                                          )}
-                                        />
-                                      </SelectTrigger>
+                                        <SelectValue placeholder="offen" />
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackBrain).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -2033,17 +2119,16 @@ export function SwissTournamentsPage() {
                                       </SelectContent>
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
-                                      <SelectTrigger
+                                      <IftaSelectTrigger
+                                        aria-label="Schwarz Hand"
                                         className={singleLineSelectTriggerClass}
-                                        label="Schwarz · Hand"
+                                        label={roleLabel(
+                                          <Hand className="size-3 shrink-0 text-primary" />,
+                                          'Schwarz Hand',
+                                        )}
                                       >
-                                        <SelectValue
-                                          placeholder={roleColorPlaceholder(
-                                            <Hand className="size-4 shrink-0 text-primary" />,
-                                            'Schwarz',
-                                          )}
-                                        />
-                                      </SelectTrigger>
+                                        <SelectValue placeholder="offen" />
+                                      </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackHand).map((player) => (
                                           <SelectItem key={player.id} value={player.id}>
@@ -2054,7 +2139,8 @@ export function SwissTournamentsPage() {
                                     </Select>
                                   </div>
                                   <Button
-                                    className="h-9 w-full"
+                                    className="h-9 w-full lg:h-11"
+                                    size="ifta"
                                     disabled={!canAddManualHandBrainPairing}
                                     onClick={async () => {
                                       if (!canAddManualHandBrainPairing) {
@@ -2083,19 +2169,19 @@ export function SwissTournamentsPage() {
                                 </div>
                               </div>
                             )}
-                            <div className="grid gap-2 md:gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem]">
+                            <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
-                                <SelectTrigger
+                                <IftaSelectTrigger
+                                  aria-label="Weiß"
                                   className={singleLineSelectTriggerClass}
-                                  label="Weiß"
+                                  containerClassName="lg:col-span-2"
+                                  label={roleLabel(
+                                    <ChessKing className="size-3 shrink-0 text-primary" />,
+                                    'Weiß',
+                                  )}
                                 >
-                                  <SelectValue
-                                    placeholder={roleColorPlaceholder(
-                                      <ChessKing className="size-4 shrink-0 text-primary" />,
-                                      'Weiß',
-                                    )}
-                                  />
-                                </SelectTrigger>
+                                  <SelectValue placeholder="offen" />
+                                </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualWhiteOptions.map((player) => (
                                     <SelectItem key={player.id} value={player.id}>
@@ -2105,17 +2191,17 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
-                                <SelectTrigger
+                                <IftaSelectTrigger
+                                  aria-label="Schwarz"
                                   className={singleLineSelectTriggerClass}
-                                  label="Schwarz"
+                                  containerClassName="lg:col-span-2"
+                                  label={roleLabel(
+                                    <ChessKing className="size-3 shrink-0 text-primary" />,
+                                    'Schwarz',
+                                  )}
                                 >
-                                  <SelectValue
-                                    placeholder={roleColorPlaceholder(
-                                      <ChessKing className="size-4 shrink-0 text-primary" />,
-                                      'Schwarz',
-                                    )}
-                                  />
-                                </SelectTrigger>
+                                  <SelectValue placeholder="offen" />
+                                </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualBlackOptions.map((player) => (
                                     <SelectItem key={player.id} value={player.id}>
@@ -2125,7 +2211,8 @@ export function SwissTournamentsPage() {
                                 </SelectContent>
                               </Select>
                               <Button
-                                className="h-9 w-full"
+                                className="h-9 w-full lg:h-11"
+                                size="ifta"
                                 disabled={!canAddManualPairing}
                                 onClick={async () => {
                                   if (!canAddManualPairing) {
@@ -2172,29 +2259,37 @@ export function SwissTournamentsPage() {
         <TabsContent value="standings">
           <StandingsTable
             standings={visibleStandings}
+            tournamentFormat={visibleStandingsTournament.format}
             tournamentName={visibleStandingsTournament.name}
           />
         </TabsContent>
 
       </Tabs>
-    </div>
+    </AppPage>
   )
 }
 
 function ResultCorrectionBadge({
   onCorrect,
   pairing,
+  shouldConfirmRegeneration,
 }: {
   onCorrect: (pairingId: string, result?: GameResult) => unknown
   pairing: Pairing
+  shouldConfirmRegeneration?: (pairingId: string, result?: GameResult) => boolean
 }) {
+  const confirmButtonRef = useRef<HTMLButtonElement>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const handleCorrection = async (value: ResultSelectValue) => {
+  const [pendingValue, setPendingValue] = useState<ResultSelectValue | null>(null)
+
+  const resultFromValue = (value: ResultSelectValue) =>
+    value === openResultValue ? undefined : (value as GameResult)
+
+  const saveCorrection = async (result?: GameResult) => {
     if (isSaving) {
       return
     }
-
-    const result = value === openResultValue ? undefined : (value as GameResult)
 
     setIsSaving(true)
 
@@ -2206,33 +2301,108 @@ function ResultCorrectionBadge({
     }
   }
 
+  const handleCorrection = async (value: ResultSelectValue) => {
+    const result = resultFromValue(value)
+
+    if (shouldConfirmRegeneration?.(pairing.id, result)) {
+      setPendingValue(value)
+      setConfirmOpen(true)
+      return
+    }
+
+    await saveCorrection(result)
+  }
+
+  const handleConfirmCorrection = async () => {
+    if (pendingValue === null) {
+      setConfirmOpen(false)
+      return
+    }
+
+    await saveCorrection(resultFromValue(pendingValue))
+    setPendingValue(null)
+    setConfirmOpen(false)
+  }
+
+  const handleConfirmOpenChange = (open: boolean) => {
+    if (isSaving) {
+      return
+    }
+
+    setConfirmOpen(open)
+
+    if (!open) {
+      setPendingValue(null)
+    }
+  }
+
   return (
-    <Select
-      disabled={isSaving}
-      value={pairing.result ?? openResultValue}
-      onValueChange={(value) => void handleCorrection(value as ResultSelectValue)}
-    >
-      <SelectTrigger
-        aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
-        className={cn(
-          'inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold shadow-none',
-          'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
-          '[&>span]:truncate [&>svg]:hidden',
-          !pairing.result && 'bg-muted text-muted-foreground',
-        )}
-        title="Ergebnis korrigieren"
+    <>
+      <Select
+        disabled={isSaving || confirmOpen}
+        value={pairing.result ?? openResultValue}
+        onValueChange={(value) => void handleCorrection(value as ResultSelectValue)}
       >
-        <SelectValue placeholder="offen" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={openResultValue}>offen</SelectItem>
-        {resultOptions.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectTrigger
+          aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
+          className={cn(
+            'inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold shadow-none',
+            'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
+            '[&>span]:truncate [&>svg]:hidden',
+            !pairing.result && 'bg-muted text-muted-foreground',
+          )}
+          title="Ergebnis korrigieren"
+        >
+          <SelectValue placeholder="offen" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={openResultValue}>offen</SelectItem>
+          {resultOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Dialog open={confirmOpen} onOpenChange={handleConfirmOpenChange}>
+        <DialogContent
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.defaultPrevented) {
+              event.preventDefault()
+              void handleConfirmCorrection()
+            }
+          }}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            confirmButtonRef.current?.focus()
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Paarungen neu erzeugen?</DialogTitle>
+            <DialogDescription>
+              Diese Ergebnis-Korrektur erzeugt die Paarungen der aktuellen Runde
+              neu, weil dort noch keine Ergebnisse eingetragen sind. Bereits
+              laufende Partien können dadurch andere Gegner oder Farben bekommen.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button disabled={isSaving} variant="outline">
+                Abbrechen
+              </Button>
+            </DialogClose>
+            <Button
+              ref={confirmButtonRef}
+              disabled={isSaving}
+              variant="destructive"
+              onClick={() => void handleConfirmCorrection()}
+            >
+              Neu erzeugen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -2241,6 +2411,7 @@ function PairingsTable({
   onManualPairingRemove,
   onResultCorrection,
   onResultChange,
+  shouldConfirmResultCorrection,
   tournament,
   pairings,
   resultCorrectionEnabled = false,
@@ -2250,6 +2421,10 @@ function PairingsTable({
   onManualPairingRemove?: (pairingId: string) => void
   onResultCorrection?: (pairingId: string, result?: GameResult) => unknown
   onResultChange?: (pairingId: string, result?: GameResult) => void
+  shouldConfirmResultCorrection?: (
+    pairingId: string,
+    result?: GameResult,
+  ) => boolean
   tournament: Tournament
   pairings: Pairing[]
   resultCorrectionEnabled?: boolean
@@ -2388,6 +2563,7 @@ function PairingsTable({
         <ResultCorrectionBadge
           pairing={pairing}
           onCorrect={onResultCorrection}
+          shouldConfirmRegeneration={shouldConfirmResultCorrection}
         />
       )
     }
@@ -2504,8 +2680,10 @@ function PairingsTable({
         })}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <table className="w-full min-w-[48rem] table-fixed text-sm">
+      <Table
+        className="min-w-[48rem] table-fixed"
+        containerClassName="hidden md:block"
+      >
           <colgroup>
             <col className="w-40" />
             <col />
@@ -2513,42 +2691,40 @@ function PairingsTable({
             <col className="w-36" />
             {showWarnings && <col className="w-56" />}
           </colgroup>
-          <thead className="bg-muted/70 text-left">
-          <tr>
-            <th className="p-3">Brett</th>
-            <th className="p-3">Weiß</th>
-            <th className="p-3">Schwarz</th>
-            <th className="p-3">Ergebnis</th>
-            {showWarnings && <th className="p-3">Hinweise</th>}
-          </tr>
-          </thead>
-          <tbody>
+          <TableHeader>
+            <TableHead>Brett</TableHead>
+            <TableHead>Weiß</TableHead>
+            <TableHead>Schwarz</TableHead>
+            <TableHead>Ergebnis</TableHead>
+            {showWarnings && <TableHead>Hinweise</TableHead>}
+          </TableHeader>
+          <TableBody>
           {pairings.map((pairing) => {
             const visibleWarnings = visibleWarningsForPairing(pairing)
 
             return (
-              <tr
+              <TableRow
                 key={pairing.id}
                 className={cn(
-                  'border-t align-top',
+                  'align-top',
                   pairing.isManual && 'bg-primary/5',
                 )}
               >
-              <td className="p-3 tabular-nums">
+              <TableCell className="tabular-nums">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span>{pairing.boardNumber}</span>
                   {pairing.kind === 'single' && (
                     <Badge variant="secondary">Einzelpartie</Badge>
                   )}
                 </div>
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 {renderWhite(pairing)}
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 {renderBlack(pairing)}
-              </td>
-              <td className="p-3">
+              </TableCell>
+              <TableCell>
                 {pairing.isBye ? (
                   <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
                 ) : editable && onResultChange ? (
@@ -2574,15 +2750,16 @@ function PairingsTable({
                   <ResultCorrectionBadge
                     pairing={pairing}
                     onCorrect={onResultCorrection}
+                    shouldConfirmRegeneration={shouldConfirmResultCorrection}
                   />
                 ) : (
                   <Badge variant={pairing.result ? 'outline' : 'secondary'}>
                     {resultLabel(pairing.result)}
                   </Badge>
                 )}
-              </td>
+              </TableCell>
               {showWarnings && (
-                <td className="p-3">
+                <TableCell>
                   <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
                       <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
@@ -2621,23 +2798,24 @@ function PairingsTable({
                       })
                     )}
                   </div>
-                </td>
+                </TableCell>
               )}
-            </tr>
+            </TableRow>
             )
           })}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+      </Table>
     </>
   )
 }
 
 function StandingsTable({
   standings,
+  tournamentFormat,
   tournamentName,
 }: {
   standings: ReturnType<typeof useSwissTournaments>['standings']
+  tournamentFormat: Tournament['format']
   tournamentName: string
 }) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
@@ -2675,7 +2853,11 @@ function StandingsTable({
     '--swiss-round-cell-width': `${roundCellLabelWidth * 0.45 + 1.85}rem`,
     '--swiss-round-grid-columns': visibleRoundGridColumns,
   } as CSSProperties
-
+  const hardshipLabel = tournamentFormat === 'handAndBrain' ? 'Pech' : 'Byes'
+  const hardshipCount = (row: (typeof standings)[number]) =>
+    tournamentFormat === 'handAndBrain'
+      ? row.receivedByes + row.receivedSingleGames
+      : row.receivedByes
 
   return (
     <Card className="swiss-standings-card">
@@ -2689,8 +2871,10 @@ function StandingsTable({
         </CardTitle>
       </CardHeader>
       <CardContent style={roundCellWidthStyle}>
-        <div className="swiss-standings-mobile rounded-md border md:hidden">
-          <table className="w-full table-fixed text-sm">
+        <Table
+          className="table-fixed"
+          containerClassName="swiss-standings-mobile md:hidden"
+        >
             <colgroup>
               <col className="w-11" />
               <col />
@@ -2698,27 +2882,25 @@ function StandingsTable({
               <col className="w-16" />
               <col className="w-9" />
             </colgroup>
-            <thead className="bg-muted/70 text-left">
-              <tr>
-                <th className="px-1.5 py-2 font-semibold">Platz</th>
-                <th className="py-2 pl-4 pr-1.5 font-semibold">Name</th>
-                <th className="px-1 py-2 text-center font-semibold">Punkte</th>
-                <th className="px-1 py-2 text-center font-semibold">Buchholz</th>
-                <th className="px-1 py-2 text-center font-semibold">SB</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader>
+                <TableHead className="px-1.5 py-2">Platz</TableHead>
+                <TableHead className="py-2 pl-4 pr-1.5">Name</TableHead>
+                <TableHead className="px-1 py-2 text-center">Punkte</TableHead>
+                <TableHead className="px-1 py-2 text-center">Buchholz</TableHead>
+                <TableHead className="px-1 py-2 text-center">SB</TableHead>
+            </TableHeader>
+            <TableBody>
               {standings.map((row) => {
                 const isExpanded = expandedPlayerId === row.playerId
                 const detailsId = `swiss-standing-details-${row.playerId}`
 
                 return (
                   <Fragment key={row.playerId}>
-                    <tr
+                    <TableRow
                       aria-controls={detailsId}
                       aria-expanded={isExpanded}
                       className={cn(
-                        'cursor-pointer border-t align-middle outline-none transition-colors hover:bg-primary/5 focus-visible:bg-primary/10',
+                        'cursor-pointer outline-none transition-colors hover:bg-primary/5 focus-visible:bg-primary/10',
                         podiumClass(row.rank),
                       )}
                       role="button"
@@ -2731,28 +2913,28 @@ function StandingsTable({
                         }
                       }}
                     >
-                      <td className="px-1.5 py-2 tabular-nums">{row.rank}</td>
-                      <td className="min-w-0 py-2 pl-4 pr-1.5 font-medium">
+                      <TableCell className="px-1.5 py-2 tabular-nums">{row.rank}</TableCell>
+                      <TableCell className="min-w-0 py-2 pl-4 pr-1.5 font-medium">
                         <span className="block min-w-0 truncate">{row.playerName}</span>
-                      </td>
-                      <td className="px-1 py-2 text-center tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
                         <span className="inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
                           {formatPoints(row.points)}
                         </span>
-                      </td>
-                      <td className="px-1 py-2 text-center tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
                         {formatPoints(row.buchholz)}
-                      </td>
-                      <td className="px-1 py-2 text-center tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
                         {formatPoints(row.sonnebornBerger)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                     {isExpanded && (
-                      <tr
+                      <TableRow
                         id={detailsId}
-                        className={cn('border-t bg-background/70', podiumClass(row.rank))}
+                        className={cn('bg-background/70', podiumClass(row.rank))}
                       >
-                        <td className="px-2 pb-2 pt-0" colSpan={5}>
+                        <TableCell className="px-2 pb-2 pt-0" colSpan={5}>
                           <div className="grid gap-2 py-2">
                             <div className="flex flex-wrap gap-1">
                               {row.roundHistory.map((cell) => (
@@ -2767,7 +2949,7 @@ function StandingsTable({
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
                               <span>Siege: {row.wins}</span>
-                              <span>Byes: {row.receivedByes}</span>
+                              <span>{hardshipLabel}: {hardshipCount(row)}</span>
                               <Badge
                                 className="h-5 px-1.5 text-[10px]"
                                 variant={statusVariant(row.status)}
@@ -2776,50 +2958,49 @@ function StandingsTable({
                               </Badge>
                             </div>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )}
                   </Fragment>
                 )
               })}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+        </Table>
 
-        <div className="swiss-standings-table-wrap swiss-standings-desktop hidden overflow-x-auto rounded-md border md:block">
-          <table className="swiss-standings-table w-full min-w-[68rem] text-sm">
-            <thead className="bg-muted/70 text-left">
-              <tr>
-                <th className="p-3">Platz</th>
-                <th className="p-3">Name</th>
-                <th className="p-3">Punkte</th>
-                <th className="p-3">Buchholz</th>
-                <th className="p-3">SB</th>
-                <th className="p-3">Siege</th>
-                <th className="swiss-rounds-heading p-3">Runden</th>
-                <th className="swiss-export-hidden-column p-3">Byes</th>
-                <th className="swiss-export-hidden-column p-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Table
+          className="swiss-standings-table min-w-[68rem]"
+          containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
+        >
+            <TableHeader>
+                <TableHead>Platz</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Punkte</TableHead>
+                <TableHead>Buchholz</TableHead>
+                <TableHead>SB</TableHead>
+                <TableHead>Siege</TableHead>
+                <TableHead className="swiss-rounds-heading">Runden</TableHead>
+                <TableHead className="swiss-export-hidden-column">{hardshipLabel}</TableHead>
+                <TableHead className="swiss-export-hidden-column">Status</TableHead>
+            </TableHeader>
+            <TableBody>
               {standings.map((row) => (
-                <tr
+                <TableRow
                   key={row.playerId}
-                  className={cn('border-t', podiumClass(row.rank))}
+                  className={podiumClass(row.rank)}
                 >
-                  <td className="p-3 tabular-nums">{row.rank}</td>
-                  <td className="p-3 font-medium">{row.playerName}</td>
-                  <td className="p-3 tabular-nums">
+                  <TableCell className="tabular-nums">{row.rank}</TableCell>
+                  <TableCell className="font-medium">{row.playerName}</TableCell>
+                  <TableCell className="tabular-nums">
                     <span className="inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
                       {formatPoints(row.points)}
                     </span>
-                  </td>
-                  <td className="p-3 tabular-nums">{formatPoints(row.buchholz)}</td>
-                  <td className="p-3 tabular-nums">
+                  </TableCell>
+                  <TableCell className="tabular-nums">{formatPoints(row.buchholz)}</TableCell>
+                  <TableCell className="tabular-nums">
                     {formatPoints(row.sonnebornBerger)}
-                  </td>
-                  <td className="p-3 tabular-nums">{row.wins}</td>
-                  <td className="swiss-round-table-cell p-3">
+                  </TableCell>
+                  <TableCell className="tabular-nums">{row.wins}</TableCell>
+                  <TableCell className="swiss-round-table-cell">
                     <div className="swiss-round-grid">
                       {row.roundHistory.map((cell) => (
                         <span
@@ -2831,20 +3012,19 @@ function StandingsTable({
                         </span>
                       ))}
                     </div>
-                  </td>
-                  <td className="swiss-export-hidden-column p-3 tabular-nums">
-                    {row.receivedByes}
-                  </td>
-                  <td className="swiss-export-hidden-column p-3">
+                  </TableCell>
+                  <TableCell className="swiss-export-hidden-column tabular-nums">
+                    {hardshipCount(row)}
+                  </TableCell>
+                  <TableCell className="swiss-export-hidden-column">
                     <Badge variant={statusVariant(row.status)}>
                       {statusLabels[row.status]}
                     </Badge>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+        </Table>
         <div className="swiss-export-qr hidden" aria-hidden="true">
           <img
             src={tournamentWebsiteQrUrl}

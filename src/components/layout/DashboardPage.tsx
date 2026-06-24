@@ -153,7 +153,7 @@ export function DashboardPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-8 sm:px-6 lg:py-12">
       <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
         <div className="min-w-0">
-          <h1 className="truncate text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
+          <h1 className="text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">
             App-Hub
           </h1>
         </div>

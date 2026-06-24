@@ -5,13 +5,12 @@ import {
   Funnel,
   Martini,
   Minus,
-  Pencil,
   Plus,
   Trash2,
   Wine,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 
 import type {
   PlayerScore,
@@ -22,6 +21,9 @@ import type {
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import type { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
+import { formatNumber } from '@/apps/progress-dashboard/format'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,16 +31,6 @@ import {
   CardContent,
   CardHeader,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -47,7 +39,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -69,13 +68,6 @@ const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
   beer: Beer,
   schnaps: Martini,
   funnel: Funnel,
-}
-
-export function formatNumber(value: number) {
-  return new Intl.NumberFormat('de-DE', {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  }).format(value)
 }
 
 function formatSignedNumber(value: number) {
@@ -142,106 +134,6 @@ function getEventTable(events: ProgressEvent[]) {
     (left, right) =>
       Date.parse(right.createdAtClientIso) - Date.parse(left.createdAtClientIso) ||
       right.position - left.position,
-  )
-}
-
-export function ConfirmButton({
-  children,
-  description,
-  onConfirm,
-  title,
-  trigger,
-}: {
-  children?: ReactNode
-  description: string
-  onConfirm: () => void | Promise<void>
-  title: string
-  trigger: ReactNode
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {children}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
-          </DialogClose>
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              await onConfirm()
-              setOpen(false)
-            }}
-          >
-            Bestätigen
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function InlineTextEdit({
-  ariaLabel,
-  className,
-  fallback,
-  inputClassName,
-  onSave,
-  value,
-}: {
-  ariaLabel: string
-  className?: string
-  fallback: string
-  inputClassName?: string
-  onSave: (value: string) => void | Promise<void>
-  value: string
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const displayValue = value.trim() || fallback
-
-  if (isEditing) {
-    return (
-      <Input
-        aria-label={ariaLabel}
-        autoFocus
-        className={inputClassName}
-        defaultValue={displayValue}
-        onBlur={async (event) => {
-          await onSave(event.currentTarget.value)
-          setIsEditing(false)
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur()
-          }
-
-          if (event.key === 'Escape') {
-            setIsEditing(false)
-          }
-        }}
-      />
-    )
-  }
-
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className={cn('min-w-0 truncate', className)}>{displayValue}</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`${ariaLabel} bearbeiten`}
-        onClick={() => setIsEditing(true)}
-      >
-        <Pencil className="size-4" />
-      </Button>
-    </div>
   )
 }
 
@@ -607,21 +499,18 @@ export function EventTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[760px] text-sm">
-        <thead className="bg-secondary/70 text-left">
-          <tr>
-            <th className="px-3 py-2 font-semibold">Zeitpunkt</th>
-            <th className="px-3 py-2 font-semibold">Spieler</th>
-            <th className="px-3 py-2 font-semibold">Wert</th>
-            <th className="px-3 py-2 font-semibold">Icon</th>
-            <th className="px-3 py-2 text-right font-semibold">Aktion</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Table className="min-w-[760px]">
+        <TableHeader>
+            <TableHead>Zeitpunkt</TableHead>
+            <TableHead>Spieler</TableHead>
+            <TableHead>Wert</TableHead>
+            <TableHead>Icon</TableHead>
+            <TableHead className="text-right">Aktion</TableHead>
+        </TableHeader>
+        <TableBody>
           {events.map((event) => (
-            <tr key={event.id} className="border-t">
-              <td className="px-3 py-2">
+            <TableRow key={event.id}>
+              <TableCell>
                 <Input
                   type="datetime-local"
                   className="h-9"
@@ -635,8 +524,8 @@ export function EventTable({
                     })
                   }
                 />
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center gap-2 font-medium">
                   <span
                     className="size-3 rounded-full"
@@ -644,8 +533,8 @@ export function EventTable({
                   />
                   {event.playerName}
                 </div>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex gap-2">
                   <Select
                     value={event.valueDelta < 0 ? '-' : '+'}
@@ -685,8 +574,8 @@ export function EventTable({
                     </SelectContent>
                   </Select>
                 </div>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Select
                   value={event.icon}
                   onValueChange={(value) =>
@@ -713,8 +602,8 @@ export function EventTable({
                     ))}
                   </SelectContent>
                 </Select>
-              </td>
-              <td className="px-3 py-2 text-right">
+              </TableCell>
+              <TableCell className="text-right">
                 <ConfirmButton
                   title="Ereignis löschen?"
                   description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
@@ -725,12 +614,11 @@ export function EventTable({
                     </Button>
                   }
                 />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+    </Table>
   )
 }
 

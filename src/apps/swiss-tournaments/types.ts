@@ -1,5 +1,7 @@
 export type PlayerStatus = 'active' | 'inactive' | 'withdrawn'
 
+export type InitialPlayerStatus = Extract<PlayerStatus, 'active' | 'inactive'>
+
 export type Color = 'W' | 'B' | '-'
 
 export type GameResult =
@@ -111,6 +113,7 @@ export type StandingRow = {
   colorHistory: Color[]
   roundHistory: StandingRoundCell[]
   receivedByes: number
+  receivedSingleGames: number
   status: PlayerStatus
 }
 
@@ -130,6 +133,7 @@ export type SwissTournamentsState = {
 export type PlayerInput = {
   name: string
   rating?: number
+  status?: InitialPlayerStatus
 }
 
 export type CreateTournamentInput = {
@@ -151,4 +155,5 @@ export type PlayerScoreSummary = {
   colors: Color[]
   roles: Array<'hand' | 'brain' | '-'>
   byes: number
+  singleGames: number
 }

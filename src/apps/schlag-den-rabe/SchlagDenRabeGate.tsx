@@ -8,8 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { IftaInput } from '@/components/ui/ifta-field'
 
 const unlockKey = 'bengts-toolbox:schlag-den-rabe:unlocked'
 const password = '5340'
@@ -59,10 +58,10 @@ export function SchlagDenRabeGate({ children }: { children: ReactNode }) {
         </CardHeader>
         <CardContent>
           <form className="grid gap-4" onSubmit={handleSubmit}>
-            <div className="grid gap-2">
-              <Label htmlFor="schlag-den-rabe-password">Passwort</Label>
-              <Input
+            <div>
+              <IftaInput
                 id="schlag-den-rabe-password"
+                label="Passwort"
                 autoComplete="current-password"
                 autoFocus
                 type="password"

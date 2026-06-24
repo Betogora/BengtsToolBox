@@ -595,20 +595,8 @@ export function useSwissTournaments(sessionId = 'default') {
 
     downloadText(
       `${sanitizeDownloadName(tournament.name)}-rangliste.csv`,
-      standingsToCsv(recalculateStandings(tournament)),
+      standingsToCsv(recalculateStandings(tournament), tournament.format),
       'text/csv;charset=utf-8',
-    )
-  }
-
-  const exportTournamentJson = (tournament = activeTournament) => {
-    if (!tournament) {
-      return
-    }
-
-    downloadText(
-      `${sanitizeDownloadName(tournament.name)}.json`,
-      JSON.stringify(tournament, null, 2),
-      'application/json;charset=utf-8',
     )
   }
 
@@ -626,7 +614,6 @@ export function useSwissTournaments(sessionId = 'default') {
     deleteLatestRound: removeLatestRound,
     error: stateStore.error ?? tournamentsStore.error,
     exportStandingsCsv,
-    exportTournamentJson,
     generateRound,
     goBackToPreviousRound,
     isLoading: stateStore.isLoading || tournamentsStore.isLoading,
