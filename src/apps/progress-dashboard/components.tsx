@@ -48,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { getReadableTextColor } from '@/lib/theme'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -460,6 +461,7 @@ export function ProgressChart({
           const Icon = eventIconComponents[point.event.icon]
           const isActive = activePlayerId === point.event.playerId
           const isDimmed = activePlayerId !== null && !isActive
+          const markerIconColor = getReadableTextColor(point.event.playerColor)
 
           return (
             <g
@@ -482,17 +484,15 @@ export function ProgressChart({
               <circle
                 cx={point.x}
                 cy={point.y}
-                r={isActive ? '15' : '13'}
-                fill="#ffffff"
-                stroke={point.event.playerColor}
-                strokeWidth={isActive ? '4' : '3'}
+                r={isActive ? '13' : '11'}
+                fill={point.event.playerColor}
               />
               <Icon
-                x={point.x - 7}
-                y={point.y - 7}
-                width="14"
-                height="14"
-                color="var(--foreground)"
+                x={point.x - 6.5}
+                y={point.y - 6.5}
+                width="13"
+                height="13"
+                color={markerIconColor}
                 strokeWidth="2.4"
               />
             </g>
