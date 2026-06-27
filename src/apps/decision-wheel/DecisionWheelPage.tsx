@@ -12,7 +12,6 @@ import { toast } from 'sonner'
 import { ConfettiOverlay } from '@/apps/decision-wheel/components/ConfettiOverlay'
 import {
   EntryColorControl,
-  EntrySuccessControl,
   EntryTextControl,
   EntryWeightControl,
   RemoveEntryButton,
@@ -70,7 +69,12 @@ function DecisionWheelPresenter({
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="rounded-lg border bg-card p-6 shadow-sm">
-        <WheelGraphic entries={entries} rotation={rotation} isSpinning={false} />
+        <WheelGraphic
+          entries={entries}
+          highlightedEntryId={lastResult?.entryId}
+          rotation={rotation}
+          isSpinning={false}
+        />
       </section>
 
       <aside className="grid content-start gap-4">
@@ -164,11 +168,7 @@ export function DecisionWheelPage() {
     spinTimeoutRef.current = window.setTimeout(() => {
       commitSpinResult(result)
         .then(() => {
-          if (result.isSuccess) {
-            setConfettiTrigger((currentTrigger) => currentTrigger + 1)
-          }
-
-          toast.success(`${result.text} wurde gezogen.`)
+          setConfettiTrigger((currentTrigger) => currentTrigger + 1)
         })
         .catch(() => {
           toast.error('Das Ergebnis konnte nicht gespeichert werden.')
@@ -253,6 +253,7 @@ export function DecisionWheelPage() {
           <CardContent className="grid gap-5">
             <WheelGraphic
               entries={visibleEntries}
+              highlightedEntryId={!isSpinning ? data.lastResult?.entryId : null}
               rotation={rotation}
               isSpinning={isSpinning}
             />
@@ -308,7 +309,7 @@ export function DecisionWheelPage() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem_2.75rem] items-end gap-2">
+                        <div className="grid grid-cols-[minmax(0,1fr)_5rem_2.75rem] items-end gap-2">
                           <EntryColorControl
                             entry={entry}
                             index={index}
@@ -323,12 +324,6 @@ export function DecisionWheelPage() {
                             onClearWeightDraft={clearWeightDraft}
                             onWeightChange={handleWeightChange}
                           />
-                          <EntrySuccessControl
-                            entry={entry}
-                            index={index}
-                            mode="mobile"
-                            onUpdateEntry={updateEntry}
-                          />
                           <RemoveEntryButton
                             entry={entry}
                             index={index}
@@ -341,7 +336,7 @@ export function DecisionWheelPage() {
                   </div>
 
                   <Table
-                    className="w-full min-w-[32rem] table-fixed"
+                    className="w-full min-w-[28rem] table-fixed"
                     containerClassName="hidden md:block"
                   >
                     <TableHeader>
@@ -349,7 +344,6 @@ export function DecisionWheelPage() {
                       <TableHead className="px-2">Text</TableHead>
                       <TableHead className="w-20 px-2">Gewicht</TableHead>
                       <TableHead className="w-14 px-2">Farbe</TableHead>
-                      <TableHead className="w-20 px-2 text-center">Erfolg</TableHead>
                       <TableHead className="w-20 px-2 text-center">Aktion</TableHead>
                     </TableHeader>
                     <TableBody>
@@ -378,14 +372,6 @@ export function DecisionWheelPage() {
                           </TableCell>
                           <TableCell className="px-2">
                             <EntryColorControl
-                              entry={entry}
-                              index={index}
-                              mode="table"
-                              onUpdateEntry={updateEntry}
-                            />
-                          </TableCell>
-                          <TableCell className="px-2">
-                            <EntrySuccessControl
                               entry={entry}
                               index={index}
                               mode="table"

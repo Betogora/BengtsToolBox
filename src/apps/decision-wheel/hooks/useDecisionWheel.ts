@@ -21,7 +21,6 @@ function createEntry(id: string, index: number): DecisionWheelEntry {
     text: `Option ${index + 1}`,
     color: getThemeColorByIndex(index),
     weight: 1,
-    isSuccess: false,
   }
 }
 
@@ -51,7 +50,6 @@ function normalizeEntryForStorage(
     text: entry.text ?? '',
     color: normalizeThemeColor(entry.color, index),
     weight: sanitizeWeight(entry.weight),
-    isSuccess: entry.isSuccess === true,
   }
 }
 
@@ -144,7 +142,6 @@ export function useDecisionWheel(stateId = 'default') {
       text: getEntryDisplayText(winner, winnerIndex),
       color: winner.color,
       weight: winner.weight,
-      isSuccess: winner.isSuccess === true,
       createdAt: new Date().toISOString(),
     }
 

@@ -37,54 +37,6 @@ type RemoveEntryButtonProps = {
   onRemoveEntry: (entryId: string) => void
 }
 
-type SuccessCheckboxProps = {
-  checked: boolean
-  id: string
-  label: string
-  mode: EntryControlMode
-  onCheckedChange: (checked: boolean) => void
-}
-
-function SuccessCheckbox({
-  checked,
-  id,
-  label,
-  mode,
-  onCheckedChange,
-}: SuccessCheckboxProps) {
-  const input = (
-    <input
-      id={id}
-      type="checkbox"
-      checked={checked}
-      aria-label={label}
-      className="size-5 cursor-pointer accent-primary"
-      onChange={(event) => onCheckedChange(event.currentTarget.checked)}
-    />
-  )
-
-  if (mode === 'table') {
-    return <div className="flex h-9 items-center justify-center">{input}</div>
-  }
-
-  return (
-    <label
-      className="flex h-11 cursor-pointer items-center justify-center gap-2 text-sm font-semibold text-muted-foreground transition-colors focus-within:ring-[3px] focus-within:ring-ring/50"
-      htmlFor={id}
-    >
-      <span>{label}</span>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        aria-label={label}
-        className="size-5 cursor-pointer accent-primary"
-        onChange={(event) => onCheckedChange(event.currentTarget.checked)}
-      />
-    </label>
-  )
-}
-
 export function EntryTextControl({
   entry,
   index,
@@ -196,24 +148,6 @@ export function EntryColorControl({
   }
 
   return input
-}
-
-export function EntrySuccessControl({
-  entry,
-  mode,
-  onUpdateEntry,
-}: EntryControlProps) {
-  return (
-    <SuccessCheckbox
-      id={mode === 'mobile' ? `entry-success-${entry.id}` : `entry-success-table-${entry.id}`}
-      label="Erfolg"
-      checked={entry.isSuccess === true}
-      mode={mode}
-      onCheckedChange={(checked) =>
-        onUpdateEntry(entry.id, { isSuccess: checked })
-      }
-    />
-  )
 }
 
 export function RemoveEntryButton({

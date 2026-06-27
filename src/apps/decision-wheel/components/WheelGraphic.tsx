@@ -21,12 +21,14 @@ import { getReadableTextColor } from '@/lib/theme'
 
 type WheelGraphicProps = {
   entries: DecisionWheelEntry[]
+  highlightedEntryId?: string | null
   rotation: number
   isSpinning: boolean
 }
 
 export function WheelGraphic({
   entries,
+  highlightedEntryId = null,
   rotation,
   isSpinning,
 }: WheelGraphicProps) {
@@ -35,6 +37,9 @@ export function WheelGraphic({
     () => getWheelLabelFontSize(segments),
     [segments],
   )
+  const hasHighlightedSegment =
+    highlightedEntryId !== null &&
+    segments.some((segment) => segment.id === highlightedEntryId)
 
   if (entries.length === 0) {
     return (
@@ -68,6 +73,9 @@ export function WheelGraphic({
         {segments.map((segment, index) => {
           const segmentSize = getSegmentSize(segment)
           const availableLabelWidth = getSegmentLabelWidth(segment)
+          const isHighlighted =
+            hasHighlightedSegment && segment.id === highlightedEntryId
+          const isDimmed = hasHighlightedSegment && !isHighlighted
           const labelText = canRenderWheelLabel(segment, availableLabelWidth)
             ? shortenWheelLabelToWidth(
                 getEntryDisplayText(segment, index),
@@ -86,8 +94,9 @@ export function WheelGraphic({
               wheelRadius *
                 labelRadiusFactor *
                 Math.sin(((segment.midAngle - 90) * Math.PI) / 180),
-          }
+            }
           const labelTextColor = getReadableTextColor(segment.color)
+          const segmentStrokeWidth = isHighlighted ? '4' : '2'
           const labelStrokeProps =
             labelTextColor === '#FFFFFF'
               ? {
@@ -98,23 +107,58 @@ export function WheelGraphic({
               : {}
 
           return (
-            <g key={segment.id}>
+            <g
+              key={segment.id}
+              opacity={isDimmed ? 0.34 : 1}
+              style={{
+                filter: isHighlighted
+                  ? 'drop-shadow(0 4px 8px rgb(1 26 39 / 0.28))'
+                  : undefined,
+                transition: 'opacity 180ms ease, filter 180ms ease',
+              }}
+            >
               {segmentSize >= 359.99 ? (
-                <circle
-                  cx={wheelCenter}
-                  cy={wheelCenter}
-                  r={wheelRadius}
-                  fill={segment.color}
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                />
+                <>
+                  <circle
+                    cx={wheelCenter}
+                    cy={wheelCenter}
+                    r={wheelRadius}
+                    fill={segment.color}
+                    stroke="#ffffff"
+                    strokeWidth={segmentStrokeWidth}
+                  />
+                  {isHighlighted && (
+                    <circle
+                      cx={wheelCenter}
+                      cy={wheelCenter}
+                      r={wheelRadius - 1}
+                      fill="none"
+                      pointerEvents="none"
+                      stroke="var(--foreground)"
+                      strokeOpacity="0.24"
+                      strokeWidth="2"
+                    />
+                  )}
+                </>
               ) : (
-                <path
-                  d={createSegmentPath(segment.startAngle, segment.endAngle)}
-                  fill={segment.color}
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                />
+                <>
+                  <path
+                    d={createSegmentPath(segment.startAngle, segment.endAngle)}
+                    fill={segment.color}
+                    stroke="#ffffff"
+                    strokeWidth={segmentStrokeWidth}
+                  />
+                  {isHighlighted && (
+                    <path
+                      d={createSegmentPath(segment.startAngle, segment.endAngle)}
+                      fill="none"
+                      pointerEvents="none"
+                      stroke="var(--foreground)"
+                      strokeOpacity="0.24"
+                      strokeWidth="2"
+                    />
+                  )}
+                </>
               )}
               {labelText && (
                 <text
