@@ -298,7 +298,7 @@ export function DecisionWheelPage() {
                         className="grid gap-2 rounded-md border bg-card p-2.5 text-sm"
                       >
                         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-                          <span className="flex h-11 min-w-11 items-center justify-center rounded-md border bg-secondary px-2 text-sm font-semibold leading-none tabular-nums">
+                          <span className="flex h-11 w-11 items-center justify-center rounded-md border bg-secondary px-2 text-sm font-semibold leading-none tabular-nums">
                             #{index + 1}
                           </span>
                           <EntryTextControl
@@ -309,27 +309,30 @@ export function DecisionWheelPage() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-[minmax(0,1fr)_5rem_2.75rem] items-end gap-2">
-                          <EntryColorControl
-                            entry={entry}
-                            index={index}
-                            mode="mobile"
-                            onUpdateEntry={updateEntry}
-                          />
-                          <EntryWeightControl
-                            entry={entry}
-                            index={index}
-                            mode="mobile"
-                            value={weightDrafts[entry.id] ?? String(entry.weight)}
-                            onClearWeightDraft={clearWeightDraft}
-                            onWeightChange={handleWeightChange}
-                          />
-                          <RemoveEntryButton
-                            entry={entry}
-                            index={index}
-                            mode="mobile"
-                            onRemoveEntry={removeEntry}
-                          />
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2">
+                          <span className="h-11 w-11" aria-hidden="true" />
+                          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-end gap-2">
+                            <EntryColorControl
+                              entry={entry}
+                              index={index}
+                              mode="mobile"
+                              onUpdateEntry={updateEntry}
+                            />
+                            <EntryWeightControl
+                              entry={entry}
+                              index={index}
+                              mode="mobile"
+                              value={weightDrafts[entry.id] ?? String(entry.weight)}
+                              onClearWeightDraft={clearWeightDraft}
+                              onWeightChange={handleWeightChange}
+                            />
+                            <RemoveEntryButton
+                              entry={entry}
+                              index={index}
+                              mode="mobile"
+                              onRemoveEntry={removeEntry}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

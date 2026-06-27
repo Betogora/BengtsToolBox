@@ -15,8 +15,8 @@ import { useMemo, useState } from 'react'
 import type {
   PlayerScore,
   ProgressDataset,
+  ProgressDrinkIcon,
   ProgressEvent,
-  ProgressEventDelta,
   ProgressEventIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
@@ -50,6 +50,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getReadableTextColor } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -770,26 +771,33 @@ export function ProgressChart({
 }
 
 export function PlayerCard({
+  drinkIcons,
   onAddEvent,
   onColorChange,
+  onDefaultIconChange,
   onNameChange,
   onRemove,
   playerScore,
   unit,
 }: {
-  onAddEvent: (player: ProgressPlayer, valueDelta: ProgressEventDelta) => void
+  drinkIcons: ReturnType<typeof useProgressDashboard>['progressDrinkIcons']
+  onAddEvent: (player: ProgressPlayer, icon: ProgressDrinkIcon) => void
   onColorChange: (playerId: string, color: string) => void
+  onDefaultIconChange: (playerId: string, icon: ProgressDrinkIcon) => void
   onNameChange: (playerId: string, name: string) => void
   onRemove: (playerId: string) => void
   playerScore: PlayerScore
   unit: string
 }) {
   const { player, score } = playerScore
+  const selectedIcon = player.defaultEventIcon ?? 'beer'
+  const selectedIconLabel =
+    drinkIcons.find((icon) => icon.id === selectedIcon)?.label ?? 'Bier'
 
   return (
     <Card className="overflow-hidden">
       <div className="h-1.5 w-full" style={{ backgroundColor: player.color }} />
-      <CardHeader className="pb-3">
+      <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <InlineTextEdit
@@ -817,16 +825,45 @@ export function PlayerCard({
           />
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <Input
-          type="color"
-          aria-label={`${player.name} Farbe wählen`}
-          className="size-9 cursor-pointer rounded-md border p-1"
-          value={player.color}
-          onChange={(event) =>
-            onColorChange(player.id, event.currentTarget.value)
-          }
-        />
+      <CardContent className="grid gap-3 p-4 pt-0">
+        <div className="flex items-center justify-between gap-3">
+          <Input
+            type="color"
+            aria-label={`${player.name} Farbe wählen`}
+            className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
+            value={player.color}
+            onChange={(event) =>
+              onColorChange(player.id, event.currentTarget.value)
+            }
+          />
+          <div className="grid grid-cols-4 gap-1.5" aria-label="Getraenkeart">
+            {drinkIcons.map((icon) => {
+              const Icon = eventIconComponents[icon.id]
+              const isSelected = selectedIcon === icon.id
+
+              return (
+                <Button
+                  key={icon.id}
+                  type="button"
+                  size="icon"
+                  variant={isSelected ? 'default' : 'outline'}
+                  className={cn(
+                    'size-9',
+                    isSelected
+                      ? 'shadow-sm'
+                      : 'bg-background text-muted-foreground hover:text-foreground',
+                  )}
+                  aria-label={`${icon.label} fuer ${player.name} auswaehlen`}
+                  aria-pressed={isSelected}
+                  title={icon.label}
+                  onClick={() => onDefaultIconChange(player.id, icon.id)}
+                >
+                  <Icon className="size-4" />
+                </Button>
+              )
+            })}
+          </div>
+        </div>
 
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -838,17 +875,9 @@ export function PlayerCard({
           <div className="flex gap-2">
             <Button
               size="icon"
-              variant="outline"
-              aria-label={`${player.name} verringern`}
-              disabled={score <= 0}
-              onClick={() => onAddEvent(player, -1)}
-            >
-              <Minus className="size-4" />
-            </Button>
-            <Button
-              size="icon"
-              aria-label={`${player.name} erhöhen`}
-              onClick={() => onAddEvent(player, 1)}
+              aria-label={`${selectedIconLabel} fuer ${player.name} speichern`}
+              title={`${selectedIconLabel} speichern`}
+              onClick={() => onAddEvent(player, selectedIcon)}
             >
               <Plus className="size-4" />
             </Button>

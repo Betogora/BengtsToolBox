@@ -38,6 +38,34 @@ export const apps: HubApp[] = [
       })),
   },
   {
+    id: 'decision-wheel',
+    title: 'Glücksrad',
+    description:
+      'Decision Wheel für Spieleabende, Aufgaben, Preise und schnelle Auswahl.',
+    href: '/apps/decision-wheel',
+    routePath: 'apps/decision-wheel',
+    status: 'Live',
+    Icon: CircleDot,
+    loadPage: () =>
+      import('@/apps/decision-wheel').then(({ DecisionWheelPage }) => ({
+        default: DecisionWheelPage,
+      })),
+  },
+  {
+    id: 'progress-dashboard',
+    title: 'Fortschritts-Dashboard',
+    description:
+      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
+    href: '/apps/progress-dashboard',
+    routePath: 'apps/progress-dashboard',
+    status: 'Live',
+    Icon: ChartNoAxesCombined,
+    loadPage: () =>
+      import('@/apps/progress-dashboard').then(({ ProgressDashboardPage }) => ({
+        default: ProgressDashboardPage,
+      })),
+  },
+  {
     id: 'scoreboard',
     title: 'Scoreboard',
     description:
@@ -66,17 +94,17 @@ export const apps: HubApp[] = [
       })),
   },
   {
-    id: 'progress-dashboard',
-    title: 'Fortschritts-Dashboard',
+    id: 'territory-map',
+    title: 'Sushi Map',
     description:
-      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
-    href: '/apps/progress-dashboard',
-    routePath: 'apps/progress-dashboard',
+      'Interaktive Sushi-Reisekarte für Weltländer und deutsche Bundesländer mit Esserfarben und Live-Sync.',
+    href: '/apps/sushi',
+    routePath: 'apps/sushi',
     status: 'Live',
-    Icon: ChartNoAxesCombined,
+    Icon: UtensilsCrossed,
     loadPage: () =>
-      import('@/apps/progress-dashboard').then(({ ProgressDashboardPage }) => ({
-        default: ProgressDashboardPage,
+      import('@/apps/territory-map').then(({ TerritoryMapPage }) => ({
+        default: TerritoryMapPage,
       })),
   },
   {
@@ -91,34 +119,6 @@ export const apps: HubApp[] = [
     loadPage: () =>
       import('@/apps/randomizer').then(({ RandomizerPage }) => ({
         default: RandomizerPage,
-      })),
-  },
-  {
-    id: 'decision-wheel',
-    title: 'Glücksrad',
-    description:
-      'Decision Wheel für Spieleabende, Aufgaben, Preise und schnelle Auswahl.',
-    href: '/apps/decision-wheel',
-    routePath: 'apps/decision-wheel',
-    status: 'Live',
-    Icon: CircleDot,
-    loadPage: () =>
-      import('@/apps/decision-wheel').then(({ DecisionWheelPage }) => ({
-        default: DecisionWheelPage,
-      })),
-  },
-  {
-    id: 'territory-map',
-    title: 'Sushi Map',
-    description:
-      'Interaktive Sushi-Reisekarte für Weltländer und deutsche Bundesländer mit Esserfarben und Live-Sync.',
-    href: '/apps/sushi',
-    routePath: 'apps/sushi',
-    status: 'Live',
-    Icon: UtensilsCrossed,
-    loadPage: () =>
-      import('@/apps/territory-map').then(({ TerritoryMapPage }) => ({
-        default: TerritoryMapPage,
       })),
   },
   {

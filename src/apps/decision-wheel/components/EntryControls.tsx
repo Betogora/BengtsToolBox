@@ -5,7 +5,6 @@ import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
 import { Button } from '@/components/ui/button'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 type EntryControlMode = 'mobile' | 'table'
 
@@ -135,14 +134,23 @@ export function EntryColorControl({
 
   if (mode === 'mobile') {
     return (
-      <div className="grid grid-cols-[auto_minmax(3rem,1fr)] items-center gap-2">
-        <Label
-          className="text-xs font-semibold text-muted-foreground"
+      <div className="relative">
+        <Input
+          id={`entry-color-${entry.id}`}
+          type="color"
+          aria-label={`${getEntryDisplayText(entry, index)} Farbe wÃ¤hlen`}
+          className="h-11 cursor-pointer rounded-md border px-2 pb-1.5 pt-5"
+          value={entry.color}
+          onChange={(event) =>
+            onUpdateEntry(entry.id, { color: event.currentTarget.value })
+          }
+        />
+        <label
+          className="pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-[0.68rem] font-semibold leading-tight text-muted-foreground"
           htmlFor={`entry-color-${entry.id}`}
         >
           Farbe
-        </Label>
-        {input}
+        </label>
       </div>
     )
   }

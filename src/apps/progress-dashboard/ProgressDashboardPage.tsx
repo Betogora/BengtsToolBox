@@ -185,6 +185,7 @@ export function ProgressDashboardPage() {
     leader,
     playerScores,
     players,
+    progressDrinkIcons,
     progressEventIcons,
     removePlayer,
     resetAndArchiveDataset,
@@ -192,6 +193,7 @@ export function ProgressDashboardPage() {
     updateArchivedDatasetName,
     updateEvent,
     updatePlayerColor,
+    updatePlayerDefaultEventIcon,
     updatePlayerName,
   } = useProgressDashboard()
   const totalEvents = activeDataset.events.length
@@ -307,18 +309,22 @@ export function ProgressDashboardPage() {
         {playerScores.map((playerScore) => (
           <PlayerCard
             key={playerScore.player.id}
+            drinkIcons={progressDrinkIcons}
             playerScore={playerScore}
             unit={activeDataset.unit}
-            onAddEvent={async (player, valueDelta) => {
-              const didSave = await addEvent(player, valueDelta)
+            onAddEvent={async (player, icon) => {
+              const didSave = await addEvent(player, icon)
 
               if (didSave) {
-                toast.success(valueDelta > 0 ? '+1 gespeichert.' : '-1 gespeichert.')
+                toast.success(icon === 'schnaps' ? '+0,5 gespeichert.' : '+1 gespeichert.')
               } else {
                 toast.error('Der Stand kann nicht unter 0 fallen.')
               }
             }}
             onColorChange={(playerId, color) => updatePlayerColor(playerId, color)}
+            onDefaultIconChange={(playerId, icon) =>
+              updatePlayerDefaultEventIcon(playerId, icon)
+            }
             onNameChange={(playerId, name) => updatePlayerName(playerId, name)}
             onRemove={async (playerId) => {
               await removePlayer(playerId)
