@@ -20,9 +20,16 @@ import {
 } from '@/apps/progress-dashboard/components'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
+import type {
+  PlayerScore,
+  ProgressDataset,
+  ProgressPlayer,
+} from '@/apps/progress-dashboard/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,6 +40,97 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+
+function ProgressDashboardPresenter({
+  activeDataset,
+  leader,
+  playerScores,
+  players,
+  totalEvents,
+  totalScore,
+  unitLabel,
+}: {
+  activeDataset: ProgressDataset
+  leader: PlayerScore | undefined
+  playerScores: PlayerScore[]
+  players: ProgressPlayer[]
+  totalEvents: number
+  totalScore: number
+  unitLabel: string
+}) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-muted-foreground">
+              {activeDataset.name}
+            </p>
+            <h2 className="truncate text-3xl font-semibold tracking-normal">
+              {activeDataset.chartTitle}
+            </h2>
+          </div>
+          <Badge variant="outline">
+            {formatNumber(totalEvents)}
+            {unitLabel ? ` ${unitLabel}` : ''}
+          </Badge>
+        </div>
+        <ProgressChart dataset={activeDataset} players={players} />
+      </section>
+
+      <aside className="grid content-start gap-4">
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <p className="text-sm font-medium text-muted-foreground">Fuehrung</p>
+          <div className="mt-2 truncate text-3xl font-semibold">
+            {leader?.player.name ?? '-'}
+          </div>
+          <div className="mt-3 text-7xl font-semibold tabular-nums">
+            {formatNumber(leader?.score ?? 0)}
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            von {formatNumber(totalScore)}
+            {unitLabel ? ` ${unitLabel}` : ''}
+          </p>
+        </div>
+
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Trophy className="size-5 text-primary" />
+            <h2 className="text-2xl font-semibold tracking-normal">
+              Topliste
+            </h2>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {playerScores.length === 0 ? (
+              <EmptyState>Keine Spieler vorhanden.</EmptyState>
+            ) : (
+              playerScores.map((playerScore, index) => (
+                <div
+                  key={playerScore.player.id}
+                  className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
+                >
+                  <div className="font-semibold tabular-nums">{index + 1}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="size-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: playerScore.player.color }}
+                    />
+                    <span className="truncate font-semibold">
+                      {playerScore.player.name}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-semibold tabular-nums">
+                    {formatNumber(playerScore.score)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
+}
 
 export function ProgressDashboardPage() {
   const {
@@ -74,6 +172,27 @@ export function ProgressDashboardPage() {
           />
         </div>
         <div className="flex flex-wrap gap-2">
+          <PresenterLauncher
+            appTitle="Fortschritts-Dashboard"
+            views={[
+              {
+                id: 'overview',
+                label: 'Ueberblick',
+                Icon: ChartNoAxesCombined,
+                render: () => (
+                  <ProgressDashboardPresenter
+                    activeDataset={activeDataset}
+                    leader={leader}
+                    playerScores={playerScores}
+                    players={players}
+                    totalEvents={totalEvents}
+                    totalScore={totalScore}
+                    unitLabel={unitLabel}
+                  />
+                ),
+              },
+            ]}
+          />
           <Badge variant="outline">{players.length} Spieler</Badge>
           <Badge variant="outline">
             {formatNumber(totalEvents)}
@@ -242,9 +361,9 @@ export function ProgressDashboardPage() {
         </CardHeader>
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <EmptyState>
               Noch keine archivierten Datensätze.
-            </div>
+            </EmptyState>
           ) : (
             archivedDatasets.map((dataset) => (
               <ArchiveDatasetCard

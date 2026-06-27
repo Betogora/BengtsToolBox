@@ -9,13 +9,15 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import type { ScoreboardEvent } from '@/apps/scoreboard/types'
+import type { ScoreboardEvent, ScoreboardPlayer } from '@/apps/scoreboard/types'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,9 +52,9 @@ function formatEventTime(value: string) {
 function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+      <EmptyState className="p-4 text-left">
         Noch keine Punkte vergeben.
-      </div>
+      </EmptyState>
     )
   }
 
@@ -86,6 +88,150 @@ function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
   )
 }
 
+function ScoreboardPresenter({
+  isRealtime,
+  leader,
+  recentEvents,
+  sortedPlayers,
+  state,
+  teamSummaries,
+  totalScore,
+  unassignedScore,
+}: {
+  isRealtime: boolean
+  leader: ScoreboardPlayer | null
+  recentEvents: ScoreboardEvent[]
+  sortedPlayers: ScoreboardPlayer[]
+  state: { roundName: string; title: string }
+  teamSummaries: Array<{
+    className: string
+    dotClassName: string
+    id: string
+    memberCount: number
+    name: string
+    score: number
+  }>
+  totalScore: number
+  unassignedScore: number
+}) {
+  const lastEvent = recentEvents[0]
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-muted-foreground">
+              {state.roundName}
+            </p>
+            <h2 className="mt-1 truncate text-4xl font-semibold tracking-normal">
+              {state.title}
+            </h2>
+          </div>
+          <Badge variant={isRealtime ? 'default' : 'secondary'}>
+            {isRealtime ? 'Live-Sync' : 'Lokal'}
+          </Badge>
+        </div>
+
+        <div className="mt-6 grid gap-3">
+          {sortedPlayers.length === 0 ? (
+            <EmptyState>Keine Personen im Scoreboard.</EmptyState>
+          ) : (
+            sortedPlayers.map((player, index) => (
+              <div
+                key={player.id}
+                className={cn(
+                  'grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-4 rounded-md border bg-background p-4',
+                  index === 0 && 'border-primary bg-secondary/65',
+                )}
+              >
+                <div className="text-2xl font-semibold tabular-nums">
+                  {index + 1}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-2xl font-semibold">
+                    {player.name}
+                  </div>
+                </div>
+                <div className="text-5xl font-semibold tabular-nums">
+                  {player.score}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <aside className="grid content-start gap-4">
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <p className="text-sm font-medium text-muted-foreground">Fuehrung</p>
+          <div className="mt-2 truncate text-3xl font-semibold">
+            {leader?.name ?? '-'}
+          </div>
+          <div className="mt-3 text-7xl font-semibold tabular-nums">
+            {leader?.score ?? 0}
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {teamSummaries.map((team) => (
+            <div
+              key={team.id}
+              className={cn('rounded-lg border p-4', team.className)}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2 font-semibold">
+                  <span className={cn('size-3 rounded-full', team.dotClassName)} />
+                  <span className="truncate">{team.name}</span>
+                </div>
+                <div className="text-3xl font-semibold tabular-nums">
+                  {team.score}
+                </div>
+              </div>
+              <div className="mt-1 text-sm tabular-nums">
+                {team.memberCount} Personen
+              </div>
+            </div>
+          ))}
+          {unassignedScore > 0 && (
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-semibold">Kein Team</div>
+                <div className="text-3xl font-semibold tabular-nums">
+                  {unassignedScore}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Gesamt
+              </p>
+              <div className="text-3xl font-semibold tabular-nums">
+                {totalScore}
+              </div>
+            </div>
+            {lastEvent && (
+              <div className="min-w-0 text-right">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Letzte Aenderung
+                </p>
+                <div className="truncate font-semibold">
+                  {lastEvent.playerName} {formatSignedNumber(lastEvent.delta)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
 export function ScoreboardPage() {
   const {
     addPlayer,
@@ -98,6 +244,7 @@ export function ScoreboardPage() {
     recentEvents,
     removePlayer,
     resetScores,
+    sortedPlayers,
     state,
     teamSummaries,
     totalScore,
@@ -172,6 +319,28 @@ export function ScoreboardPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <PresenterLauncher
+            appTitle="Scoreboard"
+            views={[
+              {
+                id: 'ranking',
+                label: 'Rangliste',
+                Icon: Trophy,
+                render: () => (
+                  <ScoreboardPresenter
+                    isRealtime={isRealtime}
+                    leader={leader}
+                    recentEvents={recentEvents}
+                    sortedPlayers={sortedPlayers}
+                    state={state}
+                    teamSummaries={teamSummaries}
+                    totalScore={totalScore}
+                    unassignedScore={unassignedScore}
+                  />
+                ),
+              },
+            ]}
+          />
           <Button
             variant="outline"
             disabled={recentEvents.length === 0}

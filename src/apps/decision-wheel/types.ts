@@ -3,6 +3,7 @@ export type DecisionWheelEntry = {
   text: string
   color: string
   weight: number
+  isSuccess?: boolean
 }
 
 export type DecisionWheelResult = {
@@ -11,6 +12,7 @@ export type DecisionWheelResult = {
   text: string
   color: string
   weight: number
+  isSuccess?: boolean
   createdAt: string
 }
 
@@ -18,7 +20,6 @@ export type DecisionWheelState = {
   entries: DecisionWheelEntry[]
   lastResult: DecisionWheelResult | null
   history: DecisionWheelResult[]
-  removeWinnerAfterSpin?: boolean
   updatedAt?: unknown
   updatedBy?: string
 }

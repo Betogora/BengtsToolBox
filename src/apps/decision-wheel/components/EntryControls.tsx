@@ -1,0 +1,236 @@
+import { Trash2 } from 'lucide-react'
+
+import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
+import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
+import { Button } from '@/components/ui/button'
+import { IftaInput } from '@/components/ui/ifta-field'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+type EntryControlMode = 'mobile' | 'table'
+
+type UpdateEntry = (
+  entryId: string,
+  partialValue: Partial<Omit<DecisionWheelEntry, 'id'>>,
+) => void
+
+type EntryControlProps = {
+  entry: DecisionWheelEntry
+  index: number
+  mode: EntryControlMode
+  onUpdateEntry: UpdateEntry
+}
+
+type EntryWeightControlProps = {
+  entry: DecisionWheelEntry
+  index: number
+  mode: EntryControlMode
+  value: string
+  onClearWeightDraft: (entryId: string) => void
+  onWeightChange: (entryId: string, nextValue: string) => void
+}
+
+type RemoveEntryButtonProps = {
+  entry: DecisionWheelEntry
+  index: number
+  mode: EntryControlMode
+  onRemoveEntry: (entryId: string) => void
+}
+
+type SuccessCheckboxProps = {
+  checked: boolean
+  id: string
+  label: string
+  mode: EntryControlMode
+  onCheckedChange: (checked: boolean) => void
+}
+
+function SuccessCheckbox({
+  checked,
+  id,
+  label,
+  mode,
+  onCheckedChange,
+}: SuccessCheckboxProps) {
+  const input = (
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      aria-label={label}
+      className="size-5 cursor-pointer accent-primary"
+      onChange={(event) => onCheckedChange(event.currentTarget.checked)}
+    />
+  )
+
+  if (mode === 'table') {
+    return <div className="flex h-9 items-center justify-center">{input}</div>
+  }
+
+  return (
+    <label
+      className="flex h-11 cursor-pointer items-center justify-center gap-2 text-sm font-semibold text-muted-foreground transition-colors focus-within:ring-[3px] focus-within:ring-ring/50"
+      htmlFor={id}
+    >
+      <span>{label}</span>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        aria-label={label}
+        className="size-5 cursor-pointer accent-primary"
+        onChange={(event) => onCheckedChange(event.currentTarget.checked)}
+      />
+    </label>
+  )
+}
+
+export function EntryTextControl({
+  entry,
+  index,
+  mode,
+  onUpdateEntry,
+}: EntryControlProps) {
+  if (mode === 'mobile') {
+    return (
+      <IftaInput
+        id={`entry-text-${entry.id}`}
+        label="Text"
+        value={entry.text}
+        onChange={(event) =>
+          onUpdateEntry(entry.id, { text: event.currentTarget.value })
+        }
+      />
+    )
+  }
+
+  return (
+    <Input
+      id={`entry-text-table-${entry.id}`}
+      aria-label={`Text von Option ${index + 1}`}
+      className="max-w-60"
+      value={entry.text}
+      onChange={(event) =>
+        onUpdateEntry(entry.id, { text: event.currentTarget.value })
+      }
+    />
+  )
+}
+
+export function EntryWeightControl({
+  entry,
+  index,
+  mode,
+  value,
+  onClearWeightDraft,
+  onWeightChange,
+}: EntryWeightControlProps) {
+  if (mode === 'mobile') {
+    return (
+      <IftaInput
+        id={`entry-weight-${entry.id}`}
+        label="Gewicht"
+        min={1}
+        type="number"
+        className="text-center tabular-nums"
+        value={value}
+        onBlur={() => onClearWeightDraft(entry.id)}
+        onChange={(event) =>
+          onWeightChange(entry.id, event.currentTarget.value)
+        }
+      />
+    )
+  }
+
+  return (
+    <Input
+      id={`entry-weight-table-${entry.id}`}
+      aria-label={`Gewicht von ${getEntryDisplayText(entry, index)}`}
+      min={1}
+      type="number"
+      className="w-16 text-center tabular-nums"
+      value={value}
+      onBlur={() => onClearWeightDraft(entry.id)}
+      onChange={(event) =>
+        onWeightChange(entry.id, event.currentTarget.value)
+      }
+    />
+  )
+}
+
+export function EntryColorControl({
+  entry,
+  index,
+  mode,
+  onUpdateEntry,
+}: EntryControlProps) {
+  const input = (
+    <Input
+      id={mode === 'mobile' ? `entry-color-${entry.id}` : `entry-color-table-${entry.id}`}
+      type="color"
+      aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
+      className={
+        mode === 'mobile'
+          ? 'h-11 cursor-pointer rounded-md border p-1'
+          : 'h-9 w-10 cursor-pointer rounded-md border p-1'
+      }
+      value={entry.color}
+      onChange={(event) =>
+        onUpdateEntry(entry.id, { color: event.currentTarget.value })
+      }
+    />
+  )
+
+  if (mode === 'mobile') {
+    return (
+      <div className="grid grid-cols-[auto_minmax(3rem,1fr)] items-center gap-2">
+        <Label
+          className="text-xs font-semibold text-muted-foreground"
+          htmlFor={`entry-color-${entry.id}`}
+        >
+          Farbe
+        </Label>
+        {input}
+      </div>
+    )
+  }
+
+  return input
+}
+
+export function EntrySuccessControl({
+  entry,
+  mode,
+  onUpdateEntry,
+}: EntryControlProps) {
+  return (
+    <SuccessCheckbox
+      id={mode === 'mobile' ? `entry-success-${entry.id}` : `entry-success-table-${entry.id}`}
+      label="Erfolg"
+      checked={entry.isSuccess === true}
+      mode={mode}
+      onCheckedChange={(checked) =>
+        onUpdateEntry(entry.id, { isSuccess: checked })
+      }
+    />
+  )
+}
+
+export function RemoveEntryButton({
+  entry,
+  index,
+  mode,
+  onRemoveEntry,
+}: RemoveEntryButtonProps) {
+  return (
+    <Button
+      aria-label={`${getEntryDisplayText(entry, index)} löschen`}
+      className={mode === 'mobile' ? 'w-11 px-0' : 'h-9 w-9 px-0'}
+      size={mode === 'mobile' ? 'ifta' : 'icon'}
+      variant="delete"
+      onClick={() => onRemoveEntry(entry.id)}
+    >
+      <Trash2 className="size-4" />
+    </Button>
+  )
+}

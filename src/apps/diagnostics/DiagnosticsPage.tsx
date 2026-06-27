@@ -105,13 +105,13 @@ export function DiagnosticsPage() {
           {apps.map((app) => (
             <div
               key={app.id}
-              className="flex items-center justify-between gap-3 rounded-md border p-3"
+              className="flex min-w-0 flex-col items-start gap-3 rounded-md border p-3 min-[28rem]:flex-row min-[28rem]:items-center min-[28rem]:justify-between"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   <app.Icon className="size-4" />
                 </span>
-                <div className="truncate font-medium">{app.title}</div>
+                <div className="min-w-0 break-words font-medium">{app.title}</div>
               </div>
               <Badge variant={isFirebaseConfigured ? 'default' : 'secondary'}>
                 {appStatusLabel}

@@ -2,6 +2,7 @@ import { Coins, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 
 import {
   Card,
@@ -58,9 +59,7 @@ export function SchlagDenRabePage() {
     <AppPage className="gap-7 lg:py-12">
       <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
         <div className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
-            Schlag den Raab
-          </h1>
+          <AppPageTitle Icon={Target} title="Schlag den Raab" />
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
             Wähle ein Spiel und leg direkt los.
           </p>

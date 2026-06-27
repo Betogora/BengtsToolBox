@@ -5,8 +5,11 @@ import {
   getCoinflipLabel,
   useCoinflip,
 } from '@/apps/schlag-den-rabe/coinflip/hooks/useCoinflip'
+import type { CoinflipResult } from '@/apps/schlag-den-rabe/coinflip/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,14 +20,81 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
+function CoinflipPresenter({
+  history,
+  lastFlip,
+}: {
+  history: CoinflipResult[]
+  lastFlip: CoinflipResult | null
+}) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid min-h-[28rem] place-items-center rounded-lg border bg-secondary p-6 text-center shadow-sm">
+        <div>
+          <p className="text-base font-medium text-muted-foreground">
+            Letzter Flip
+          </p>
+          <div className="mt-4 text-7xl font-semibold leading-tight tracking-normal sm:text-8xl">
+            {lastFlip ? getCoinflipLabel(lastFlip.side) : '-'}
+          </div>
+        </div>
+      </section>
+
+      <aside className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <History className="size-5 text-primary" />
+          <h2 className="text-2xl font-semibold tracking-normal">
+            Letzte Ergebnisse
+          </h2>
+        </div>
+        <div className="mt-5 grid gap-3">
+          {history.length === 0 ? (
+            <EmptyState>Noch keine Flips vorhanden.</EmptyState>
+          ) : (
+            history.slice(0, 8).map((flipResult, index) => (
+              <div
+                key={flipResult.id}
+                className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
+              >
+                <div className="font-medium">
+                  Flip {history.length - index}
+                </div>
+                <div className="text-3xl font-semibold">
+                  {getCoinflipLabel(flipResult.side)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+    </div>
+  )
+}
+
 export function CoinflipPage() {
   const { data, flip, clearHistory, isLoading, error } = useCoinflip()
   const lastLabel = data.lastFlip ? getCoinflipLabel(data.lastFlip.side) : '-'
 
   return (
     <AppPage>
-      <section>
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={Coins} title="Coinflip" />
+        <PresenterLauncher
+          appTitle="Coinflip"
+          views={[
+            {
+              id: 'last-flip',
+              label: 'Letzter Flip',
+              Icon: Coins,
+              render: () => (
+                <CoinflipPresenter
+                  history={data.history}
+                  lastFlip={data.lastFlip}
+                />
+              ),
+            },
+          ]}
+        />
       </section>
 
       {error && (
@@ -81,9 +151,9 @@ export function CoinflipPage() {
           </CardHeader>
           <CardContent>
             {data.history.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <EmptyState className="p-8">
                 Noch keine Flips vorhanden.
-              </div>
+              </EmptyState>
             ) : (
               <div className="grid gap-3">
                 {data.history.map((flipResult, index) => (

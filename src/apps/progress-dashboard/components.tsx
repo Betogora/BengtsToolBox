@@ -23,6 +23,7 @@ import type {
 import type { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -145,15 +146,24 @@ export function ProgressChart({
   players: ProgressPlayer[]
 }) {
   const sortedEvents = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
+  const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null)
+  const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
+  const playerIds = useMemo(
+    () => new Set(players.map((player) => player.id)),
+    [players],
+  )
+  const activePlayerId =
+    (hoveredPlayerId && playerIds.has(hoveredPlayerId) ? hoveredPlayerId : null) ??
+    (pinnedPlayerId && playerIds.has(pinnedPlayerId) ? pinnedPlayerId : null)
   const validEventTimes = sortedEvents
     .map((event) => Date.parse(event.createdAtClientIso))
     .filter(Number.isFinite)
 
   if (sortedEvents.length === 0 || validEventTimes.length === 0) {
     return (
-      <div className="flex aspect-[2.45/1] min-h-0 items-center justify-center rounded-lg border border-dashed bg-card p-4 text-center text-sm text-muted-foreground">
+      <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
         Noch keine Ereignisse im aktuellen Datensatz.
-      </div>
+      </EmptyState>
     )
   }
 
@@ -244,13 +254,60 @@ export function ProgressChart({
     }
   })
 
+  const chartSeries = series.flatMap(({ player, segments }) => {
+    if (segments.length < 2) {
+      return []
+    }
+
+    const path = segments
+      .map((point, index) => {
+        const command = index === 0 ? 'M' : 'L'
+
+        return `${command} ${xScale(point.time).toFixed(1)} ${yScale(point.value).toFixed(1)}`
+      })
+      .join(' ')
+
+    return [{ player, path }]
+  })
+  const orderedChartSeries = activePlayerId
+    ? [
+        ...chartSeries.filter(({ player }) => player.id !== activePlayerId),
+        ...chartSeries.filter(({ player }) => player.id === activePlayerId),
+      ]
+    : chartSeries
+  const orderedEventPoints = activePlayerId
+    ? [
+        ...eventPoints.filter((point) => point.event.playerId !== activePlayerId),
+        ...eventPoints.filter((point) => point.event.playerId === activePlayerId),
+      ]
+    : eventPoints
+  const showHoveredPlayer = (playerId: string) => {
+    setHoveredPlayerId(playerId)
+  }
+  const hideHoveredPlayer = (playerId: string) => {
+    setHoveredPlayerId((currentPlayerId) =>
+      currentPlayerId === playerId ? null : currentPlayerId,
+    )
+  }
+  const togglePinnedPlayer = (playerId: string) => {
+    setPinnedPlayerId((currentPlayerId) =>
+      currentPlayerId === playerId ? null : playerId,
+    )
+  }
+  const clearHighlightedPlayer = () => {
+    setHoveredPlayerId(null)
+    setPinnedPlayerId(null)
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border bg-white p-3">
       <svg
-        role="img"
+        role="group"
         aria-label={dataset.chartTitle}
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         className="block h-auto w-full"
+        onClick={clearHighlightedPlayer}
+        onPointerLeave={() => setHoveredPlayerId(null)}
       >
         <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
         {yTicks.map((tick) => (
@@ -328,43 +385,107 @@ export function ProgressChart({
         >
           Zeit
         </text>
-        {series.map(({ player, segments }) => {
-          if (segments.length < 2) {
-            return null
-          }
-
-          const path = segments
-            .map((point, index) => {
-              const command = index === 0 ? 'M' : 'L'
-
-              return `${command} ${xScale(point.time).toFixed(1)} ${yScale(point.value).toFixed(1)}`
-            })
-            .join(' ')
+        {orderedChartSeries.map(({ player, path }) => {
+          const isActive = activePlayerId === player.id
+          const isDimmed = activePlayerId !== null && !isActive
 
           return (
-            <path
-              key={player.id}
-              d={path}
-              fill="none"
-              stroke={player.color}
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-              strokeWidth="4"
-            />
+            <g key={player.id}>
+              {isActive && (
+                <path
+                  d={path}
+                  fill="none"
+                  opacity="0.95"
+                  pointerEvents="none"
+                  stroke="#ffffff"
+                  strokeLinecap="square"
+                  strokeLinejoin="miter"
+                  strokeWidth="12"
+                />
+              )}
+              <path
+                d={path}
+                fill="none"
+                opacity={isDimmed ? '0.22' : '1'}
+                pointerEvents="none"
+                stroke={player.color}
+                strokeLinecap="square"
+                strokeLinejoin="miter"
+                strokeWidth={isActive ? '6' : '4'}
+                style={{
+                  filter: isActive
+                    ? 'drop-shadow(0 3px 5px rgb(15 23 42 / 0.24))'
+                    : undefined,
+                  transition:
+                    'opacity 150ms ease, stroke-width 150ms ease, filter 150ms ease',
+                }}
+              />
+            </g>
           )
         })}
-        {eventPoints.map((point) => {
+        {orderedChartSeries.map(({ player, path }) => (
+          <path
+            key={`${player.id}-hit-area`}
+            d={path}
+            role="button"
+            aria-label={`${player.name} Zeitreihe hervorheben`}
+            aria-pressed={pinnedPlayerId === player.id}
+            className="cursor-pointer outline-none"
+            fill="none"
+            focusable="true"
+            opacity="0"
+            pointerEvents="stroke"
+            stroke="transparent"
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            strokeWidth="18"
+            tabIndex={0}
+            onBlur={() => hideHoveredPlayer(player.id)}
+            onClick={(event) => {
+              event.stopPropagation()
+              togglePinnedPlayer(player.id)
+            }}
+            onFocus={() => showHoveredPlayer(player.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                togglePinnedPlayer(player.id)
+              }
+            }}
+            onPointerEnter={() => showHoveredPlayer(player.id)}
+            onPointerLeave={() => hideHoveredPlayer(player.id)}
+          />
+        ))}
+        {orderedEventPoints.map((point) => {
           const Icon = eventIconComponents[point.event.icon]
+          const isActive = activePlayerId === point.event.playerId
+          const isDimmed = activePlayerId !== null && !isActive
 
           return (
-            <g key={point.event.id}>
+            <g
+              key={point.event.id}
+              className="cursor-pointer"
+              opacity={isDimmed ? '0.28' : '1'}
+              style={{
+                filter: isActive
+                  ? 'drop-shadow(0 3px 5px rgb(15 23 42 / 0.2))'
+                  : undefined,
+                transition: 'opacity 150ms ease, filter 150ms ease',
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+                togglePinnedPlayer(point.event.playerId)
+              }}
+              onPointerEnter={() => showHoveredPlayer(point.event.playerId)}
+              onPointerLeave={() => hideHoveredPlayer(point.event.playerId)}
+            >
               <circle
                 cx={point.x}
                 cy={point.y}
-                r="13"
+                r={isActive ? '15' : '13'}
                 fill="#ffffff"
                 stroke={point.event.playerColor}
-                strokeWidth="3"
+                strokeWidth={isActive ? '4' : '3'}
               />
               <Icon
                 x={point.x - 7}
@@ -492,14 +613,154 @@ export function EventTable({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <EmptyState>
         Noch keine Ereignisse im aktuellen Datensatz.
-      </div>
+      </EmptyState>
     )
   }
 
+  const renderDateInput = (event: ProgressEvent) => (
+    <Input
+      type="datetime-local"
+      className="h-9"
+      value={toDateTimeLocalValue(event.createdAtClientIso)}
+      onChange={(inputEvent) =>
+        onUpdateEvent(event.id, {
+          createdAtClientIso: fromDateTimeLocalValue(
+            inputEvent.currentTarget.value,
+            event.createdAtClientIso,
+          ),
+        })
+      }
+    />
+  )
+  const renderPlayerLabel = (event: ProgressEvent) => (
+    <div className="flex min-w-0 items-center gap-2 font-medium">
+      <span
+        className="size-3 shrink-0 rounded-full"
+        style={{ backgroundColor: event.playerColor }}
+      />
+      <span className="min-w-0 break-words">{event.playerName}</span>
+    </div>
+  )
+  const renderValueControls = (event: ProgressEvent) => (
+    <div className="flex gap-2">
+      <Select
+        value={event.valueDelta < 0 ? '-' : '+'}
+        onValueChange={(value) =>
+          onUpdateEvent(event.id, {
+            valueDelta:
+              (value === '-' ? -1 : 1) * Math.abs(event.valueDelta || 1),
+          })
+        }
+      >
+        <SelectTrigger className="w-20">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="+">+</SelectItem>
+          <SelectItem value="-">-</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={getDrinkValueSelectValue(event.valueDelta)}
+        onValueChange={(value) =>
+          onUpdateEvent(event.id, {
+            valueDelta:
+              (event.valueDelta < 0 ? -1 : 1) * Number(value),
+          })
+        }
+      >
+        <SelectTrigger className="w-28">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {drinkValueOptions.map((value) => (
+            <SelectItem key={value} value={String(value)}>
+              {formatNumber(value)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+  const renderIconSelect = (event: ProgressEvent) => (
+    <Select
+      value={event.icon}
+      onValueChange={(value) =>
+        onUpdateEvent(event.id, {
+          icon: value as ProgressEventIcon,
+        })
+      }
+    >
+      <SelectTrigger className="w-32">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {icons.map((icon) => (
+          <SelectItem key={icon.id} value={icon.id}>
+            <span className="flex items-center gap-2">
+              {(() => {
+                const Icon = eventIconComponents[icon.id]
+
+                return <Icon className="size-4" />
+              })()}
+              {icon.label}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+  const renderDeleteButton = (event: ProgressEvent) => (
+    <ConfirmButton
+      title="Ereignis löschen?"
+      description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+      onConfirm={() => onDeleteEvent(event.id)}
+      trigger={
+        <Button variant="delete" size="icon" aria-label="Ereignis löschen">
+          <Trash2 className="size-4" />
+        </Button>
+      }
+    />
+  )
+
   return (
-    <Table className="min-w-[760px]">
+    <>
+      <div className="grid gap-2 md:hidden">
+        {events.map((event) => (
+          <div key={event.id} className="rounded-md border bg-card p-3 text-sm">
+            <div className="flex items-start justify-between gap-3">
+              {renderPlayerLabel(event)}
+              {renderDeleteButton(event)}
+            </div>
+            <div className="mt-3 grid gap-3">
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  Zeitpunkt
+                </div>
+                {renderDateInput(event)}
+              </div>
+              <div className="grid gap-3 min-[26rem]:grid-cols-2">
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Wert
+                  </div>
+                  {renderValueControls(event)}
+                </div>
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Icon
+                  </div>
+                  {renderIconSelect(event)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Table className="min-w-[760px]" containerClassName="hidden md:block">
         <TableHeader>
             <TableHead>Zeitpunkt</TableHead>
             <TableHead>Spieler</TableHead>
@@ -618,7 +879,8 @@ export function EventTable({
             </TableRow>
           ))}
         </TableBody>
-    </Table>
+      </Table>
+    </>
   )
 }
 
@@ -674,9 +936,9 @@ export function ArchiveDatasetCard({
       {isOpen && (
         <div className="border-t p-4">
           {events.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+            <EmptyState className="p-4">
               Dieser Datensatz hat keine Ereignisse.
-            </div>
+            </EmptyState>
           ) : (
             <div className="grid gap-2">
               {events.map((event) => (

@@ -5,6 +5,7 @@ import type {
   DecisionWheelResult,
   DecisionWheelState,
 } from '@/apps/decision-wheel/types'
+import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import {
@@ -14,11 +15,20 @@ import {
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
-const exampleEntries: DecisionWheelEntry[] = [
-  { id: 'option-1', text: 'Option 1', color: getThemeColorByIndex(0), weight: 1 },
-  { id: 'option-2', text: 'Option 2', color: getThemeColorByIndex(1), weight: 1 },
-  { id: 'option-3', text: 'Option 3', color: getThemeColorByIndex(2), weight: 1 },
-]
+function createEntry(id: string, index: number): DecisionWheelEntry {
+  return {
+    id,
+    text: `Option ${index + 1}`,
+    color: getThemeColorByIndex(index),
+    weight: 1,
+    isSuccess: false,
+  }
+}
+
+const exampleEntries: DecisionWheelEntry[] = Array.from(
+  { length: 3 },
+  (_, index) => createEntry(`option-${index + 1}`, index),
+)
 
 const initialDecisionWheelState: DecisionWheelState = {
   entries: exampleEntries,
@@ -32,19 +42,6 @@ function sanitizeWeight(weight: number | undefined) {
   return Number.isFinite(numericWeight) ? Math.max(1, Math.round(numericWeight)) : 1
 }
 
-export function getEntryDisplayText(
-  entry: Pick<DecisionWheelEntry, 'text'>,
-  index: number,
-) {
-  const trimmedText = entry.text?.trim()
-
-  return trimmedText || `Option ${index + 1}`
-}
-
-function fallbackEntryText(index: number) {
-  return `Option ${index + 1}`
-}
-
 function normalizeEntryForStorage(
   entry: DecisionWheelEntry,
   index: number,
@@ -54,6 +51,7 @@ function normalizeEntryForStorage(
     text: entry.text ?? '',
     color: normalizeThemeColor(entry.color, index),
     weight: sanitizeWeight(entry.weight),
+    isSuccess: entry.isSuccess === true,
   }
 }
 
@@ -98,12 +96,7 @@ export function useDecisionWheel(stateId = 'default') {
 
   const addEntry = () => {
     const nextIndex = data.entries.length
-    const entry: DecisionWheelEntry = {
-      id: `entry-${createRandomId()}`,
-      text: fallbackEntryText(nextIndex),
-      color: getThemeColorByIndex(nextIndex),
-      weight: 1,
-    }
+    const entry = createEntry(`entry-${createRandomId()}`, nextIndex)
 
     return saveEntries([...data.entries, entry])
   }
@@ -113,9 +106,9 @@ export function useDecisionWheel(stateId = 'default') {
     partialValue: Partial<Omit<DecisionWheelEntry, 'id'>>,
   ) =>
     saveEntries(
-      data.entries.map((entry, index) =>
+      data.entries.map((entry) =>
         entry.id === entryId
-          ? normalizeEntryForStorage({ ...entry, ...partialValue }, index)
+          ? { ...entry, ...partialValue }
           : entry,
       ),
     )
@@ -148,12 +141,10 @@ export function useDecisionWheel(stateId = 'default') {
     const result: DecisionWheelResult = {
       id: `result-${createRandomId()}`,
       entryId: winner.id,
-      text: getEntryDisplayText(
-        winner,
-        winnerIndex,
-      ),
+      text: getEntryDisplayText(winner, winnerIndex),
       color: winner.color,
       weight: winner.weight,
+      isSuccess: winner.isSuccess === true,
       createdAt: new Date().toISOString(),
     }
 

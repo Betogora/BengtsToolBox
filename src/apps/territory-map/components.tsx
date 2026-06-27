@@ -15,6 +15,7 @@ import type {
 } from '@/apps/territory-map/types'
 import type { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -288,14 +289,148 @@ export function TerritoryEventTable({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <EmptyState>
         Noch keine Bereisungen im aktuellen Datensatz.
-      </div>
+      </EmptyState>
     )
   }
 
+  const renderDateInput = (event: TerritoryVisitEvent) => (
+    <Input
+      type="date"
+      className="h-9"
+      value={toDateInputValue(event.createdAtClientIso)}
+      onChange={(inputEvent) =>
+        onUpdateEvent(event.id, {
+          createdAtClientIso: fromDateInputValue(
+            inputEvent.currentTarget.value,
+            event.createdAtClientIso,
+          ),
+        })
+      }
+    />
+  )
+  const renderPlayerSelect = (event: TerritoryVisitEvent) => (
+    <Select
+      value={event.playerId}
+      onValueChange={(value) =>
+        onUpdateEvent(event.id, {
+          playerId: value,
+        })
+      }
+    >
+      <SelectTrigger className="w-48">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {players.map((player) => (
+          <SelectItem key={player.id} value={player.id}>
+            <span className="flex items-center gap-2">
+              <span
+                className="size-3 rounded-full"
+                style={{ backgroundColor: player.color }}
+              />
+              {player.name}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+  const renderTerritorySelect = (event: TerritoryVisitEvent) => (
+    <Select
+      value={event.territoryId}
+      onValueChange={(value) =>
+        onUpdateEvent(event.id, {
+          territoryId: value,
+        })
+      }
+    >
+      <SelectTrigger className="w-64">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {territoryOptionsByMap[event.mapId].map((territory) => (
+          <SelectItem key={territory.id} value={territory.id}>
+            {territory.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+  const renderDeleteButton = (event: TerritoryVisitEvent) => (
+    <ConfirmButton
+      title="Bereisung löschen?"
+      description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+      onConfirm={() => onDeleteEvent(event.id)}
+      trigger={
+        <Button
+          variant="delete"
+          size="icon"
+          aria-label="Bereisung löschen"
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      }
+    />
+  )
+
   return (
-    <Table className="min-w-[780px]">
+    <>
+      <div className="grid gap-2 md:hidden">
+        {events.map((event) => {
+          const player = players.find((candidate) => candidate.id === event.playerId)
+          const territory = territoryOptionsByMap[event.mapId].find(
+            (candidate) => candidate.id === event.territoryId,
+          )
+
+          return (
+            <div key={event.id} className="rounded-md border bg-card p-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2 font-medium">
+                    {player && (
+                      <span
+                        className="size-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: player.color }}
+                      />
+                    )}
+                    <span className="min-w-0 break-words">
+                      {player?.name ?? 'Sushi-Tourist'}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {territory?.name ?? 'Territorium'}
+                  </div>
+                </div>
+                {renderDeleteButton(event)}
+              </div>
+              <div className="mt-3 grid gap-3">
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Datum
+                  </div>
+                  {renderDateInput(event)}
+                </div>
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Spieler
+                  </div>
+                  {renderPlayerSelect(event)}
+                </div>
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Territorium
+                  </div>
+                  {renderTerritorySelect(event)}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <Table className="min-w-[780px]" containerClassName="hidden md:block">
         <TableHeader>
             <TableHead>Datum</TableHead>
             <TableHead>Spieler</TableHead>
@@ -387,6 +522,7 @@ export function TerritoryEventTable({
             </TableRow>
           ))}
         </TableBody>
-    </Table>
+      </Table>
+    </>
   )
 }

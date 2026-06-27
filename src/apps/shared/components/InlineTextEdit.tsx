@@ -46,7 +46,7 @@ export function InlineTextEdit({
     <div className="group flex min-w-0 items-center gap-2">
       <span
         className={cn(
-          'min-w-0 truncate rounded-sm transition-colors group-hover:bg-accent/35',
+          'min-w-0 break-words rounded-sm leading-tight transition-colors group-hover:bg-accent/35',
           className,
         )}
       >

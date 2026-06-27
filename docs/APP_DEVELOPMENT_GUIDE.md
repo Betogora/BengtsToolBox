@@ -42,6 +42,10 @@ Optionale `components.tsx`, `logic.ts`, `format.ts` oder `data/`-Dateien entsteh
 
 Lucide Icons, bestehende Tokens und die globale Typografie bewahren die visuelle Sprache. Neue globale CSS-Regeln sind die Ausnahme; Feature-Layout gehört möglichst in die Komponente.
 
+### Presenter-Modus
+
+Wenn eine App eine beamer- oder zuschauerfreundliche Ausgabe braucht, nutzt sie `PresenterLauncher` aus `src/apps/shared/components/Presenter`. Die Views bleiben feature-lokal, sind rein lesend und rufen keine Hook-Actions auf. Mehrere sinnvolle Ausgaben werden als mehrere `PresenterViewDefinition`-EintrÃ¤ge angeboten; der Launcher zeigt dann eine kleine Startauswahl und rendert die gewÃ¤hlte Ansicht als Fullscreen-Overlay. Die normale Page bleibt die SteuerflÃ¤che.
+
 ## 4. Persistenz anbinden
 
 ### Dokument oder Collection?

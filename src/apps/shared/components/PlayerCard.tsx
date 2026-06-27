@@ -89,7 +89,7 @@ export function PlayerCard({
                 }}
               />
             ) : (
-              <h2 className="truncate py-1 text-3xl font-semibold tracking-normal">
+              <h2 className="break-words py-1 text-3xl font-semibold leading-tight tracking-normal">
                 {player.name}
               </h2>
             )}
