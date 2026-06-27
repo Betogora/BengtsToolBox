@@ -1191,11 +1191,13 @@ function ArchivedTournamentsList({
   )
 }
 
-function SwissRoundPresenter({
+function SwissStandingsPresenter({
   round,
+  standings,
   tournament,
 }: {
   round: Round | null
+  standings: ReturnType<typeof useSwissTournaments>['standings']
   tournament: Tournament
 }) {
   return (
@@ -1217,81 +1219,6 @@ function SwissRoundPresenter({
           </Badge>
         </div>
       </section>
-
-      <section className="rounded-lg border bg-card p-5 shadow-sm">
-        {round ? (
-          <div className="grid gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="flex items-center gap-2 text-2xl font-semibold tracking-normal">
-                <Swords className="size-5 text-primary" />
-                {getRoundDisplayLabel(tournament, round.roundNumber)}
-              </h3>
-              <Badge variant={round.status === 'completed' ? 'default' : 'secondary'}>
-                {round.status === 'completed' ? 'Abgeschlossen' : 'Offen'}
-              </Badge>
-            </div>
-            {round.pairings.length > 0 ? (
-              <PairingsTable
-                pairings={round.pairings}
-                showWarnings={false}
-                tournament={tournament}
-              />
-            ) : (
-              <EmptyState>Diese Runde hat noch keine Paarungen.</EmptyState>
-            )}
-          </div>
-        ) : (
-          <EmptyState>Noch keine Runde erzeugt.</EmptyState>
-        )}
-      </section>
-    </div>
-  )
-}
-
-function SwissStandingsPresenter({
-  standings,
-  tournament,
-}: {
-  standings: ReturnType<typeof useSwissTournaments>['standings']
-  tournament: Tournament
-}) {
-  const topRows = standings.slice(0, 3)
-
-  return (
-    <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-      <aside className="grid content-start gap-4">
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">
-            {tournamentFormatLabel(tournament.format)}
-          </p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-normal">
-            {tournament.name}
-          </h2>
-          <div className="mt-4">
-            <RoundProgress
-              currentRound={Math.max(tournament.currentRound, 1)}
-              numberOfRounds={tournament.numberOfRounds}
-            />
-          </div>
-        </div>
-
-        {topRows.map((row) => (
-          <div
-            key={row.playerId}
-            className="rounded-lg border bg-secondary/65 p-5 shadow-sm"
-          >
-            <div className="text-sm font-medium text-muted-foreground">
-              Platz {row.rank}
-            </div>
-            <div className="mt-1 truncate text-3xl font-semibold">
-              {row.playerName}
-            </div>
-            <div className="mt-3 text-6xl font-semibold tabular-nums">
-              {formatPoints(row.points)}
-            </div>
-          </div>
-        ))}
-      </aside>
 
       <section className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="mb-5 flex items-center gap-2">
@@ -1582,24 +1509,12 @@ export function SwissTournamentsPage() {
           appTitle={appTitle}
           views={[
             {
-              id: 'current-round',
-              label: 'Aktuelle Runde',
-              description: 'Bretter, Paarungen und Ergebnisse.',
-              Icon: Swords,
-              render: () => (
-                <SwissRoundPresenter
-                  round={currentRound}
-                  tournament={tournament}
-                />
-              ),
-            },
-            {
               id: 'standings',
               label: 'Rangliste',
-              description: 'Tabelle mit Punkten und Tie-Breaks.',
               Icon: Trophy,
               render: () => (
                 <SwissStandingsPresenter
+                  round={currentRound}
                   standings={app.standings}
                   tournament={tournament}
                 />

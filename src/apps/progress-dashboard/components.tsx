@@ -40,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -58,6 +59,14 @@ const chartPadding = {
   bottom: 58,
   left: 70,
 }
+const mobileSparklineWidth = 240
+const mobileSparklineHeight = 56
+const mobileSparklinePadding = {
+  top: 8,
+  right: 8,
+  bottom: 8,
+  left: 8,
+}
 
 const drinkValueOptions = [
   0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10,
@@ -70,6 +79,22 @@ const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
   beer: Beer,
   schnaps: Martini,
   funnel: Funnel,
+}
+
+type ProgressChartSegment = {
+  time: number
+  value: number
+}
+
+type ProgressChartSeries = {
+  eventValues: {
+    event: ProgressEvent
+    time: number
+    value: number
+  }[]
+  player: ProgressPlayer
+  score: number
+  segments: ProgressChartSegment[]
 }
 
 function formatSignedNumber(value: number) {
@@ -139,49 +164,39 @@ function getEventTable(events: ProgressEvent[]) {
   )
 }
 
-export function ProgressChart({
-  dataset,
-  players,
-}: {
-  dataset: ProgressDataset
-  players: ProgressPlayer[]
-}) {
-  const sortedEvents = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
-  const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null)
-  const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
-  const playerIds = useMemo(
-    () => new Set(players.map((player) => player.id)),
-    [players],
-  )
-  const activePlayerId =
-    (hoveredPlayerId && playerIds.has(hoveredPlayerId) ? hoveredPlayerId : null) ??
-    (pinnedPlayerId && playerIds.has(pinnedPlayerId) ? pinnedPlayerId : null)
+function createStepPath(
+  segments: ProgressChartSegment[],
+  xScale: (time: number) => number,
+  yScale: (value: number) => number,
+) {
+  return segments
+    .map((point, index) => {
+      const command = index === 0 ? 'M' : 'L'
+
+      return `${command} ${xScale(point.time).toFixed(1)} ${yScale(point.value).toFixed(1)}`
+    })
+    .join(' ')
+}
+
+function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[]) {
+  const sortedEvents = getSortedEvents(dataset.events)
   const validEventTimes = sortedEvents
     .map((event) => Date.parse(event.createdAtClientIso))
     .filter(Number.isFinite)
 
   if (sortedEvents.length === 0 || validEventTimes.length === 0) {
-    return (
-      <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
-        Noch keine Ereignisse im aktuellen Datensatz.
-      </EmptyState>
-    )
+    return null
   }
 
   const minTime = Math.min(...validEventTimes)
   const maxTime = Math.max(...validEventTimes)
   const xDomainMin = minTime === maxTime ? minTime - 60_000 : minTime
   const xDomainMax = minTime === maxTime ? maxTime + 60_000 : maxTime
-  const valuesByPlayer = new Map(players.map((player) => [player.id, 0]))
-  const eventPoints: {
-    event: ProgressEvent
-    x: number
-    y: number
-  }[] = []
-  const series = players.map((player) => {
+  const series: ProgressChartSeries[] = players.map((player) => {
     const playerEvents = sortedEvents.filter((event) => event.playerId === player.id)
     let score = 0
-    const segments: { time: number; value: number }[] = [
+    const eventValues: ProgressChartSeries['eventValues'] = []
+    const segments: ProgressChartSegment[] = [
       { time: xDomainMin, value: 0 },
     ]
 
@@ -195,17 +210,25 @@ export function ProgressChart({
       segments.push({ time, value: score })
       score = Math.max(0, score + event.valueDelta)
       segments.push({ time, value: score })
-      valuesByPlayer.set(player.id, score)
+      eventValues.push({ event, time, value: score })
     })
 
     segments.push({ time: xDomainMax, value: score })
 
     return {
+      eventValues,
       player,
+      score,
       segments,
     }
   })
-  const maxValue = Math.max(1, ...Array.from(valuesByPlayer.values()))
+  const maxValue = Math.max(
+    1,
+    ...series.map((entry) => entry.score),
+    ...series.flatMap((entry) =>
+      entry.eventValues.map((eventValue) => eventValue.value),
+    ),
+  )
   const yDomainMax = Math.max(1, Math.ceil(maxValue * 1.12))
   const plotWidth = chartWidth - chartPadding.left - chartPadding.right
   const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom
@@ -228,62 +251,301 @@ export function ProgressChart({
       }),
     }
   })
-
-  sortedEvents.forEach((event) => {
-    const player = players.find((candidate) => candidate.id === event.playerId)
-
-    if (!player) {
-      return
-    }
-
-    const playerEventsUntilNow = sortedEvents.filter(
-      (candidate) =>
-        candidate.playerId === event.playerId &&
-        (Date.parse(candidate.createdAtClientIso) < Date.parse(event.createdAtClientIso) ||
-          candidate.position <= event.position),
-    )
-    const score = playerEventsUntilNow.reduce(
-      (current, candidate) => Math.max(0, current + candidate.valueDelta),
-      0,
-    )
-    const time = Date.parse(event.createdAtClientIso)
-
-    if (Number.isFinite(time)) {
-      eventPoints.push({
-        event,
-        x: xScale(time),
-        y: yScale(score),
-      })
-    }
-  })
-
   const chartSeries = series.flatMap(({ player, segments }) => {
     if (segments.length < 2) {
       return []
     }
 
-    const path = segments
-      .map((point, index) => {
-        const command = index === 0 ? 'M' : 'L'
-
-        return `${command} ${xScale(point.time).toFixed(1)} ${yScale(point.value).toFixed(1)}`
-      })
-      .join(' ')
-
-    return [{ player, path }]
+    return [
+      {
+        player,
+        path: createStepPath(segments, xScale, yScale),
+      },
+    ]
   })
+  const eventPoints = series.flatMap((entry) =>
+    entry.eventValues.map((eventValue) => ({
+      event: eventValue.event,
+      x: xScale(eventValue.time),
+      y: yScale(eventValue.value),
+    })),
+  )
+  const rankedScores: PlayerScore[] = series
+    .map(({ player, score }) => ({ player, score }))
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.player.position - right.player.position,
+    )
+
+  return {
+    chartSeries,
+    eventPoints,
+    maxValue,
+    plotCenterX,
+    plotCenterY,
+    rankedScores,
+    series,
+    xDomainMax,
+    xDomainMin,
+    xScale,
+    xTicks,
+    yScale,
+    yTicks,
+    yDomainMax,
+  }
+}
+
+function getMobileSparklinePath(
+  segments: ProgressChartSegment[],
+  chartData: NonNullable<ReturnType<typeof getProgressChartData>>,
+) {
+  const plotWidth =
+    mobileSparklineWidth - mobileSparklinePadding.left - mobileSparklinePadding.right
+  const plotHeight =
+    mobileSparklineHeight - mobileSparklinePadding.top - mobileSparklinePadding.bottom
+  const xScale = (time: number) =>
+    mobileSparklinePadding.left +
+    ((time - chartData.xDomainMin) /
+      (chartData.xDomainMax - chartData.xDomainMin || 1)) *
+      plotWidth
+  const yScale = (value: number) =>
+    mobileSparklinePadding.top +
+    plotHeight -
+    (value / chartData.yDomainMax) * plotHeight
+
+  return createStepPath(segments, xScale, yScale)
+}
+
+function MobileScoreBars({
+  maxValue,
+  scores,
+  unit,
+}: {
+  maxValue: number
+  scores: PlayerScore[]
+  unit: string
+}) {
+  if (scores.length === 0) {
+    return (
+      <EmptyState className="p-4">
+        Keine Spieler vorhanden.
+      </EmptyState>
+    )
+  }
+
+  return (
+    <div className="grid gap-2">
+      {scores.map(({ player, score }, index) => {
+        const percentage = score > 0 ? Math.max(4, (score / maxValue) * 100) : 0
+
+        return (
+          <div
+            key={player.id}
+            className="rounded-md border bg-background p-3"
+            aria-label={`${player.name}: ${formatNumber(score)} ${unit}`.trim()}
+          >
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
+                  {index + 1}
+                </span>
+                <span
+                  className="size-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: player.color }}
+                />
+                <span className="min-w-0 truncate font-semibold">
+                  {player.name}
+                </span>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-lg font-semibold tabular-nums">
+                  {formatNumber(score)}
+                </div>
+                {unit.trim() && (
+                  <div className="max-w-24 truncate text-xs text-muted-foreground">
+                    {unit}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  backgroundColor: player.color,
+                  width: `${percentage}%`,
+                }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MobilePlayerTimelines({
+  chartData,
+  unit,
+}: {
+  chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  unit: string
+}) {
+  const rankedSeries = chartData.rankedScores
+    .map((score) =>
+      chartData.series.find((entry) => entry.player.id === score.player.id),
+    )
+    .filter((entry): entry is ProgressChartSeries => Boolean(entry))
+
+  if (rankedSeries.length === 0) {
+    return (
+      <EmptyState className="p-4">
+        Keine Spieler vorhanden.
+      </EmptyState>
+    )
+  }
+
+  return (
+    <div className="grid gap-2">
+      {rankedSeries.map(({ player, score, segments }) => {
+        const path = getMobileSparklinePath(segments, chartData)
+
+        return (
+          <div key={player.id} className="rounded-md border bg-background p-3">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="size-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: player.color }}
+                />
+                <span className="min-w-0 truncate font-semibold">
+                  {player.name}
+                </span>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-base font-semibold tabular-nums">
+                  {formatNumber(score)}
+                </div>
+                {unit.trim() && (
+                  <div className="max-w-24 truncate text-xs text-muted-foreground">
+                    {unit}
+                  </div>
+                )}
+              </div>
+            </div>
+            <svg
+              role="img"
+              aria-label={`${player.name} Zeitverlauf`}
+              viewBox={`0 0 ${mobileSparklineWidth} ${mobileSparklineHeight}`}
+              className="mt-3 block h-14 w-full overflow-visible"
+              preserveAspectRatio="none"
+            >
+              <rect
+                width={mobileSparklineWidth}
+                height={mobileSparklineHeight}
+                fill="#ffffff"
+                rx="6"
+              />
+              <line
+                x1={mobileSparklinePadding.left}
+                x2={mobileSparklineWidth - mobileSparklinePadding.right}
+                y1={mobileSparklineHeight - mobileSparklinePadding.bottom}
+                y2={mobileSparklineHeight - mobileSparklinePadding.bottom}
+                stroke="var(--muted)"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path
+                d={path}
+                fill="none"
+                stroke={player.color}
+                strokeLinecap="square"
+                strokeLinejoin="miter"
+                strokeWidth="3"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MobileProgressChart({
+  chartData,
+  dataset,
+}: {
+  chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  dataset: ProgressDataset
+}) {
+  return (
+    <div className="rounded-lg border bg-white p-3 md:hidden">
+      <Tabs defaultValue="stand" className="gap-3">
+        <TabsList className="grid h-10 w-full grid-cols-2 border bg-muted/70">
+          <TabsTrigger value="stand">Stand</TabsTrigger>
+          <TabsTrigger value="verlauf">Verlauf</TabsTrigger>
+        </TabsList>
+        <TabsContent value="stand">
+          <MobileScoreBars
+            maxValue={chartData.maxValue}
+            scores={chartData.rankedScores}
+            unit={dataset.unit}
+          />
+        </TabsContent>
+        <TabsContent value="verlauf">
+          <MobilePlayerTimelines chartData={chartData} unit={dataset.unit} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+export function ProgressChart({
+  dataset,
+  players,
+}: {
+  dataset: ProgressDataset
+  players: ProgressPlayer[]
+}) {
+  const chartData = useMemo(
+    () => getProgressChartData(dataset, players),
+    [dataset, players],
+  )
+  const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null)
+  const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
+  const playerIds = useMemo(
+    () => new Set(players.map((player) => player.id)),
+    [players],
+  )
+  const activePlayerId =
+    (hoveredPlayerId && playerIds.has(hoveredPlayerId) ? hoveredPlayerId : null) ??
+    (pinnedPlayerId && playerIds.has(pinnedPlayerId) ? pinnedPlayerId : null)
+
+  if (!chartData) {
+    return (
+      <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
+        Noch keine Ereignisse im aktuellen Datensatz.
+      </EmptyState>
+    )
+  }
+
   const orderedChartSeries = activePlayerId
     ? [
-        ...chartSeries.filter(({ player }) => player.id !== activePlayerId),
-        ...chartSeries.filter(({ player }) => player.id === activePlayerId),
+        ...chartData.chartSeries.filter(({ player }) => player.id !== activePlayerId),
+        ...chartData.chartSeries.filter(({ player }) => player.id === activePlayerId),
       ]
-    : chartSeries
+    : chartData.chartSeries
   const orderedEventPoints = activePlayerId
     ? [
-        ...eventPoints.filter((point) => point.event.playerId !== activePlayerId),
-        ...eventPoints.filter((point) => point.event.playerId === activePlayerId),
+        ...chartData.eventPoints.filter(
+          (point) => point.event.playerId !== activePlayerId,
+        ),
+        ...chartData.eventPoints.filter(
+          (point) => point.event.playerId === activePlayerId,
+        ),
       ]
-    : eventPoints
+    : chartData.eventPoints
   const showHoveredPlayer = (playerId: string) => {
     setHoveredPlayerId(playerId)
   }
@@ -303,28 +565,30 @@ export function ProgressChart({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white p-3">
-      <svg
-        role="group"
-        aria-label={dataset.chartTitle}
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="block h-auto w-full"
-        onClick={clearHighlightedPlayer}
-        onPointerLeave={() => setHoveredPlayerId(null)}
-      >
-        <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
-        {yTicks.map((tick) => (
+    <>
+      <MobileProgressChart chartData={chartData} dataset={dataset} />
+      <div className="hidden overflow-hidden rounded-lg border bg-white p-3 md:block">
+        <svg
+          role="group"
+          aria-label={dataset.chartTitle}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          className="block h-auto w-full"
+          onClick={clearHighlightedPlayer}
+          onPointerLeave={() => setHoveredPlayerId(null)}
+        >
+          <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
+        {chartData.yTicks.map((tick) => (
           <g key={`y-${tick}`}>
             <line
               x1={chartPadding.left}
               x2={chartWidth - chartPadding.right}
-              y1={yScale(tick)}
-              y2={yScale(tick)}
+              y1={chartData.yScale(tick)}
+              y2={chartData.yScale(tick)}
               stroke="var(--border)"
             />
             <text
               x={chartPadding.left - 14}
-              y={yScale(tick) + 4}
+              y={chartData.yScale(tick) + 4}
               textAnchor="end"
               fontSize="12"
               fill="var(--muted-foreground)"
@@ -333,17 +597,17 @@ export function ProgressChart({
             </text>
           </g>
         ))}
-        {xTicks.map((tick) => (
+        {chartData.xTicks.map((tick) => (
           <g key={`x-${tick.time}`}>
             <line
-              x1={xScale(tick.time)}
-              x2={xScale(tick.time)}
+              x1={chartData.xScale(tick.time)}
+              x2={chartData.xScale(tick.time)}
               y1={chartPadding.top}
               y2={chartHeight - chartPadding.bottom}
               stroke="var(--muted)"
             />
             <text
-              x={xScale(tick.time)}
+              x={chartData.xScale(tick.time)}
               y={chartHeight - 24}
               textAnchor="middle"
               fontSize="12"
@@ -369,17 +633,17 @@ export function ProgressChart({
         />
         <text
           x={20}
-          y={plotCenterY}
+          y={chartData.plotCenterY}
           textAnchor="middle"
           dominantBaseline="central"
-          transform={`rotate(-90 20 ${plotCenterY})`}
+          transform={`rotate(-90 20 ${chartData.plotCenterY})`}
           fontSize="17"
           fill="var(--foreground)"
         >
           {dataset.unit}
         </text>
         <text
-          x={plotCenterX}
+          x={chartData.plotCenterX}
           y={chartHeight - 6}
           textAnchor="middle"
           fontSize="17"
@@ -500,7 +764,8 @@ export function ProgressChart({
           )
         })}
       </svg>
-    </div>
+      </div>
+    </>
   )
 }
 

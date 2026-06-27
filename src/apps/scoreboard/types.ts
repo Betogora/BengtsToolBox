@@ -25,8 +25,6 @@ export type ScoreboardEvent = {
 }
 
 export type ScoreboardState = {
-  title: string
-  roundName: string
   events: ScoreboardEvent[]
   lastScoreEventId: string | null
   updatedBy?: string

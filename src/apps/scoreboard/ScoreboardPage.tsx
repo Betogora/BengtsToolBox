@@ -15,7 +15,6 @@ import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
-import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +28,8 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+
+const scoreboardTitle = 'Scoreboard'
 
 function formatSignedNumber(value: number) {
   const sign = value > 0 ? '+' : ''
@@ -89,20 +90,16 @@ function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
 }
 
 function ScoreboardPresenter({
-  isRealtime,
   leader,
   recentEvents,
   sortedPlayers,
-  state,
   teamSummaries,
   totalScore,
   unassignedScore,
 }: {
-  isRealtime: boolean
   leader: ScoreboardPlayer | null
   recentEvents: ScoreboardEvent[]
   sortedPlayers: ScoreboardPlayer[]
-  state: { roundName: string; title: string }
   teamSummaries: Array<{
     className: string
     dotClassName: string
@@ -119,19 +116,9 @@ function ScoreboardPresenter({
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
       <section className="rounded-lg border bg-card p-5 shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">
-              {state.roundName}
-            </p>
-            <h2 className="mt-1 truncate text-4xl font-semibold tracking-normal">
-              {state.title}
-            </h2>
-          </div>
-          <Badge variant={isRealtime ? 'default' : 'secondary'}>
-            {isRealtime ? 'Live-Sync' : 'Lokal'}
-          </Badge>
-        </div>
+        <h2 className="truncate text-4xl font-semibold tracking-normal">
+          {scoreboardTitle}
+        </h2>
 
         <div className="mt-6 grid gap-3">
           {sortedPlayers.length === 0 ? (
@@ -238,14 +225,12 @@ export function ScoreboardPage() {
     changeScore,
     error,
     isLoading,
-    isRealtime,
     leader,
     players,
     recentEvents,
     removePlayer,
     resetScores,
     sortedPlayers,
-    state,
     teamSummaries,
     totalScore,
     unassignedPlayers,
@@ -253,8 +238,6 @@ export function ScoreboardPage() {
     undoLastScoreChange,
     updatePlayerName,
     updatePlayerTeam,
-    updateRoundName,
-    updateTitle,
   } = useScoreboard()
 
   const handleChangeScore = async (playerId: string, delta: number) => {
@@ -293,34 +276,12 @@ export function ScoreboardPage() {
     <AppPage width="wide">
       <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <AppPageTitle Icon={ListOrdered}>
-            <InlineTextEdit
-              ariaLabel="Scoreboard-Titel"
-              className="text-3xl font-semibold tracking-normal sm:text-4xl"
-              fallback="Spieleabend"
-              inputClassName="h-12 text-3xl font-semibold sm:text-4xl"
-              value={state.title}
-              onSave={updateTitle}
-            />
-          </AppPageTitle>
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="text-sm">
-              {isRealtime ? 'Live-Sync' : 'Lokal'}
-            </Badge>
-            <InlineTextEdit
-              ariaLabel="Aktuelle Runde"
-              className="text-sm font-medium"
-              fallback="Runde 1"
-              inputClassName="h-8 max-w-52 text-sm"
-              value={state.roundName}
-              onSave={updateRoundName}
-            />
-          </div>
+          <AppPageTitle Icon={ListOrdered} title={scoreboardTitle} />
         </div>
 
         <div className="flex flex-wrap gap-2">
           <PresenterLauncher
-            appTitle="Scoreboard"
+            appTitle={scoreboardTitle}
             views={[
               {
                 id: 'ranking',
@@ -328,11 +289,9 @@ export function ScoreboardPage() {
                 Icon: Trophy,
                 render: () => (
                   <ScoreboardPresenter
-                    isRealtime={isRealtime}
                     leader={leader}
                     recentEvents={recentEvents}
                     sortedPlayers={sortedPlayers}
-                    state={state}
                     teamSummaries={teamSummaries}
                     totalScore={totalScore}
                     unassignedScore={unassignedScore}

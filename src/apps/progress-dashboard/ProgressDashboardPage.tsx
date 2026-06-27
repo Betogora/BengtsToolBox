@@ -40,6 +40,27 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { cn } from '@/lib/utils'
+
+const podiumLabels = ['Gold', 'Silber', 'Bronze'] as const
+
+function getPodiumRowClass(rank: number) {
+  return cn(
+    'grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3',
+    rank === 1 && 'border-[#c9961a]/45 bg-[#f6e3a5]/65',
+    rank === 2 && 'border-[#aab0b8]/50 bg-[#e6e8eb]/70',
+    rank === 3 && 'border-[#b8794f]/45 bg-[#e8c0a0]/55',
+  )
+}
+
+function getPodiumRankClass(rank: number) {
+  return cn(
+    'inline-flex size-9 items-center justify-center rounded-md border bg-card text-sm font-semibold tabular-nums',
+    rank === 1 && 'border-[#c9961a]/50 bg-[#f6d36b]/70',
+    rank === 2 && 'border-[#aab0b8]/60 bg-[#d8dde3]/80',
+    rank === 3 && 'border-[#b8794f]/50 bg-[#d79a70]/65',
+  )
+}
 
 function ProgressDashboardPresenter({
   activeDataset,
@@ -58,6 +79,12 @@ function ProgressDashboardPresenter({
   totalScore: number
   unitLabel: string
 }) {
+  const rankedPlayerScores = [...playerScores].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.player.position - right.player.position,
+  )
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
       <section className="rounded-lg border bg-card p-5 shadow-sm">
@@ -104,26 +131,39 @@ function ProgressDashboardPresenter({
             {playerScores.length === 0 ? (
               <EmptyState>Keine Spieler vorhanden.</EmptyState>
             ) : (
-              playerScores.map((playerScore, index) => (
-                <div
-                  key={playerScore.player.id}
-                  className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
-                >
-                  <div className="font-semibold tabular-nums">{index + 1}</div>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="size-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: playerScore.player.color }}
-                    />
-                    <span className="truncate font-semibold">
-                      {playerScore.player.name}
-                    </span>
+              rankedPlayerScores.map((playerScore, index) => {
+                const rank = index + 1
+                const podiumLabel = podiumLabels[index]
+
+                return (
+                  <div
+                    key={playerScore.player.id}
+                    className={getPodiumRowClass(rank)}
+                  >
+                    <div
+                      aria-label={
+                        podiumLabel ? `${podiumLabel}: Platz ${rank}` : `Platz ${rank}`
+                      }
+                      className={getPodiumRankClass(rank)}
+                      title={podiumLabel}
+                    >
+                      {rank}
+                    </div>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="size-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: playerScore.player.color }}
+                      />
+                      <span className="truncate font-semibold">
+                        {playerScore.player.name}
+                      </span>
+                    </div>
+                    <div className="inline-flex min-w-16 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-2xl font-semibold tabular-nums text-primary">
+                      {formatNumber(playerScore.score)}
+                    </div>
                   </div>
-                  <div className="text-2xl font-semibold tabular-nums">
-                    {formatNumber(playerScore.score)}
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>
