@@ -164,7 +164,7 @@ function ScoreboardPresenter({
 
       <aside className="grid content-start gap-4">
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Fuehrung</p>
+          <p className="text-sm font-medium text-muted-foreground">Führung</p>
           <div className="mt-2 truncate text-3xl font-semibold">
             {leader?.name ?? '-'}
           </div>
@@ -218,7 +218,7 @@ function ScoreboardPresenter({
             {lastEvent && (
               <div className="min-w-0 text-right">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Letzte Aenderung
+                  Letzte Änderung
                 </p>
                 <div className="truncate font-semibold">
                   {lastEvent.playerName} {formatSignedNumber(lastEvent.delta)}
@@ -277,16 +277,16 @@ export function ScoreboardPage() {
     const result = await undoLastScoreChange()
 
     if (result === 'undone') {
-      toast.success('Letzte Punkteaenderung rueckgaengig gemacht.')
+      toast.success('Letzte Punkteänderung rückgängig gemacht.')
       return
     }
 
     if (result === 'empty') {
-      toast.error('Es gibt noch keine Punkteaenderung.')
+      toast.error('Es gibt noch keine Punkteänderung.')
       return
     }
 
-    toast.error('Die Person der letzten Punkteaenderung existiert nicht mehr.')
+    toast.error('Die Person der letzten Punkteänderung existiert nicht mehr.')
   }
 
   return (
@@ -350,12 +350,12 @@ export function ScoreboardPage() {
             Undo
           </Button>
           <ConfirmButton
-            title="Scoreboard zuruecksetzen?"
-            description="Alle Punktestaende werden auf 0 gesetzt und der aktuelle Verlauf wird geloescht."
+            title="Scoreboard zurücksetzen?"
+            description="Alle Punktestände werden auf 0 gesetzt und der aktuelle Verlauf wird gelöscht."
             confirmLabel="Reset"
             onConfirm={async () => {
               await resetScores()
-              toast.success('Scoreboard wurde zurueckgesetzt.')
+              toast.success('Scoreboard wurde zurückgesetzt.')
             }}
             trigger={
               <Button variant="outline">
@@ -391,7 +391,7 @@ export function ScoreboardPage() {
             <CardContent className="grid gap-4">
               <div className="rounded-lg bg-secondary p-4">
                 <div className="text-sm text-muted-foreground">
-                  Fuehrung {leader ? leader.name : '-'}
+                  Führung {leader ? leader.name : '-'}
                 </div>
                 <div className="text-5xl font-semibold tabular-nums">
                   {leader?.score ?? 0}
@@ -470,7 +470,7 @@ export function ScoreboardPage() {
             <Button
               onClick={async () => {
                 await addPlayer()
-                toast.success('Person hinzugefuegt.')
+                toast.success('Person hinzugefügt.')
               }}
             >
               <Plus className="size-4" />
@@ -503,11 +503,11 @@ export function ScoreboardPage() {
                     variant="outline"
                     onClick={async () => {
                       await addPlayer()
-                      toast.success('Person hinzugefuegt.')
+                      toast.success('Person hinzugefügt.')
                     }}
                   >
                     <Plus className="size-6" />
-                    Person hinzufuegen
+                    Person hinzufügen
                   </Button>
                 </CardContent>
               </Card>

@@ -120,7 +120,7 @@ function AppTile({ app }: AppTileProps) {
   return (
     <Link
       to={app.href}
-      aria-label={`${app.title} oeffnen`}
+      aria-label={`${app.title} öffnen`}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       onFocus={prefetchApp}
       onMouseEnter={prefetchApp}

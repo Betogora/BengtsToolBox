@@ -44,7 +44,7 @@ Lucide Icons, bestehende Tokens und die globale Typografie bewahren die visuelle
 
 ### Presenter-Modus
 
-Wenn eine App eine beamer- oder zuschauerfreundliche Ausgabe braucht, nutzt sie `PresenterLauncher` aus `src/apps/shared/components/Presenter`. Die Views bleiben feature-lokal, sind rein lesend und rufen keine Hook-Actions auf. Mehrere sinnvolle Ausgaben werden als mehrere `PresenterViewDefinition`-EintrÃ¤ge angeboten; der Launcher zeigt dann eine kleine Startauswahl und rendert die gewÃ¤hlte Ansicht als Fullscreen-Overlay. Die normale Page bleibt die SteuerflÃ¤che.
+Wenn eine App eine beamer- oder zuschauerfreundliche Ausgabe braucht, nutzt sie `PresenterLauncher` aus `src/apps/shared/components/Presenter`. Die Views bleiben feature-lokal, sind rein lesend und rufen keine Hook-Actions auf. Mehrere sinnvolle Ausgaben werden als mehrere `PresenterViewDefinition`-Einträge angeboten; der Launcher zeigt dann eine kleine Startauswahl und rendert die gewählte Ansicht als Fullscreen-Overlay. Die normale Page bleibt die Steuerfläche.
 
 ## 4. Persistenz anbinden
 

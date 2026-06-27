@@ -214,7 +214,7 @@ export function DecisionWheelPage() {
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={CircleDot} title="Glücksrad" />
         <PresenterLauncher
-          appTitle="Gluecksrad"
+          appTitle="Glücksrad"
           views={[
             {
               id: 'wheel',

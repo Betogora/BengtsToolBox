@@ -52,7 +52,7 @@ function RandomizerPresenter({
         </div>
         <div className="mt-5 grid gap-3">
           {history.length === 0 ? (
-            <EmptyState>Noch keine Wuerfe vorhanden.</EmptyState>
+            <EmptyState>Noch keine Würfe vorhanden.</EmptyState>
           ) : (
             history.map((rollResult, index) => (
               <div

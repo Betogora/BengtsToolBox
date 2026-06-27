@@ -80,7 +80,7 @@ function ProgressDashboardPresenter({
 
       <aside className="grid content-start gap-4">
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Fuehrung</p>
+          <p className="text-sm font-medium text-muted-foreground">Führung</p>
           <div className="mt-2 truncate text-3xl font-semibold">
             {leader?.player.name ?? '-'}
           </div>
@@ -177,7 +177,7 @@ export function ProgressDashboardPage() {
             views={[
               {
                 id: 'overview',
-                label: 'Ueberblick',
+                label: 'Überblick',
                 Icon: ChartNoAxesCombined,
                 render: () => (
                   <ProgressDashboardPresenter
@@ -213,19 +213,19 @@ export function ProgressDashboardPage() {
       <Card style={chartAccentStyle}>
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-3 rounded-lg border bg-secondary/60 p-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2 text-lg">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
                 Führung
               </div>
               <div className="min-w-0 truncate text-lg font-semibold">
                 {leader ? leader.player.name : '-'}
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums">
+              <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+                <span className="font-semibold tabular-nums">
                   {formatNumber(leader?.score ?? 0)}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span>
                   von {formatNumber(totalScore)}
                   {unitLabel ? ` ${unitLabel}` : ''}
                 </span>

@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -133,9 +134,9 @@ export function PresenterLauncher({
       <Dialog open={isChooserOpen} onOpenChange={setIsChooserOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Presenter-Ansicht waehlen</DialogTitle>
+            <DialogTitle>Presenter-Ansicht wählen</DialogTitle>
             <DialogDescription>
-              Waehle, welche Ausgabe im Fullscreen angezeigt wird.
+              Wähle, welche Ausgabe im Fullscreen angezeigt wird.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
@@ -168,13 +169,15 @@ export function PresenterLauncher({
         </DialogContent>
       </Dialog>
 
-      {activeView && (
-        <PresenterStage
-          appTitle={appTitle}
-          view={activeView}
-          onExit={stopPresenter}
-        />
-      )}
+      {activeView &&
+        createPortal(
+          <PresenterStage
+            appTitle={appTitle}
+            view={activeView}
+            onExit={stopPresenter}
+          />,
+          document.body,
+        )}
     </>
   )
 }

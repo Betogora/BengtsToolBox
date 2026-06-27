@@ -168,7 +168,7 @@ export function EntryColorControl({
     <Input
       id={mode === 'mobile' ? `entry-color-${entry.id}` : `entry-color-table-${entry.id}`}
       type="color"
-      aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
+      aria-label={`${getEntryDisplayText(entry, index)} Farbe wählen`}
       className={
         mode === 'mobile'
           ? 'h-11 cursor-pointer rounded-md border p-1'

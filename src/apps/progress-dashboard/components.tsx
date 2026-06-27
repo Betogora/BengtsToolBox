@@ -209,6 +209,8 @@ export function ProgressChart({
   const yDomainMax = Math.max(1, Math.ceil(maxValue * 1.12))
   const plotWidth = chartWidth - chartPadding.left - chartPadding.right
   const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom
+  const plotCenterX = chartPadding.left + plotWidth / 2
+  const plotCenterY = chartPadding.top + plotHeight / 2
   const xScale = (time: number) =>
     chartPadding.left +
     ((time - xDomainMin) / (xDomainMax - xDomainMin || 1)) * plotWidth
@@ -367,21 +369,20 @@ export function ProgressChart({
         />
         <text
           x={20}
-          y={chartHeight / 2}
+          y={plotCenterY}
           textAnchor="middle"
-          transform={`rotate(-90 20 ${chartHeight / 2})`}
-          fontSize="13"
-          fontWeight="600"
+          dominantBaseline="central"
+          transform={`rotate(-90 20 ${plotCenterY})`}
+          fontSize="17"
           fill="var(--foreground)"
         >
           {dataset.unit}
         </text>
         <text
-          x={chartWidth / 2}
+          x={plotCenterX}
           y={chartHeight - 6}
           textAnchor="middle"
-          fontSize="13"
-          fontWeight="600"
+          fontSize="17"
           fill="var(--foreground)"
         >
           Zeit
@@ -554,7 +555,7 @@ export function PlayerCard({
       <CardContent className="grid gap-4">
         <Input
           type="color"
-          aria-label={`${player.name} Farbe waehlen`}
+          aria-label={`${player.name} Farbe wählen`}
           className="size-9 cursor-pointer rounded-md border p-1"
           value={player.color}
           onChange={(event) =>

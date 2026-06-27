@@ -1820,7 +1820,7 @@ export function SwissTournamentsPage() {
                     entries={archivedTournamentSummaries}
                     onDelete={async (archivedTournament) => {
                       await app.deleteTournament(archivedTournament.id)
-                      toast.success('Vergangenes Turnier wurde geloescht.')
+                      toast.success('Vergangenes Turnier wurde gelöscht.')
                     }}
                     onExportCsv={app.exportStandingsCsv}
                     onPrint={printPage}
