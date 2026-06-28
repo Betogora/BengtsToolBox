@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
 
-import { apps } from '@/apps/registry'
+import { registeredApps } from '@/apps/registry'
 
 const lazyAppElements = new Map(
-  apps.map((app) => {
+  registeredApps.map((app) => {
     const Page = lazy(app.loadPage)
 
     return [

@@ -1,6 +1,7 @@
-import { Home, Menu, Stethoscope, Target } from 'lucide-react'
+import { Home, Menu, Target, type LucideIcon } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
+import { diagnosticsApp } from '@/apps/registry'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -9,6 +10,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+
+type NavigationItem = {
+  href: string
+  label: string
+  Icon: LucideIcon
+}
+
+const navigationItems: readonly NavigationItem[] = [
+  {
+    href: '/',
+    label: 'Dashboard',
+    Icon: Home,
+  },
+  {
+    href: diagnosticsApp.href,
+    label: diagnosticsApp.title,
+    Icon: diagnosticsApp.Icon,
+  },
+  {
+    href: '/schlag-den-rabe',
+    label: 'Schlag den Raab',
+    Icon: Target,
+  },
+]
 
 export function AppShell() {
   return (
@@ -24,42 +49,21 @@ export function AppShell() {
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-secondary-foreground',
-                )
-              }
-            >
-              <Home className="size-4" />
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/apps/diagnostics"
-              className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-secondary-foreground',
-                )
-              }
-            >
-              <Stethoscope className="size-4" />
-              Diagnose
-            </NavLink>
-            <NavLink
-              to="/schlag-den-rabe"
-              className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-secondary-foreground',
-                )
-              }
-            >
-              <Target className="size-4" />
-              Schlag den Raab
-            </NavLink>
+            {navigationItems.map(({ href, label, Icon }) => (
+              <NavLink
+                key={href}
+                to={href}
+                className={({ isActive }) =>
+                  cn(
+                    'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                    isActive && 'bg-secondary text-secondary-foreground',
+                  )
+                }
+              >
+                <Icon className="size-4" />
+                {label}
+              </NavLink>
+            ))}
           </nav>
 
           <div className="md:hidden">
@@ -70,24 +74,14 @@ export function AppShell() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/" className="gap-2">
-                    <Home className="size-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/apps/diagnostics" className="gap-2">
-                    <Stethoscope className="size-4" />
-                    Diagnose
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/schlag-den-rabe" className="gap-2">
-                    <Target className="size-4" />
-                    Schlag den Raab
-                  </Link>
-                </DropdownMenuItem>
+                {navigationItems.map(({ href, label, Icon }) => (
+                  <DropdownMenuItem key={href} asChild>
+                    <Link to={href} className="gap-2">
+                      <Icon className="size-4" />
+                      {label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

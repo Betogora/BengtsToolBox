@@ -8,7 +8,7 @@ import {
   TriangleAlert,
 } from 'lucide-react'
 
-import { apps } from '@/apps/registry'
+import { registeredApps } from '@/apps/registry'
 import { useDiagnostics } from '@/apps/diagnostics/hooks/useDiagnostics'
 import type { DiagnosticStatus } from '@/apps/diagnostics/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
@@ -102,7 +102,7 @@ export function DiagnosticsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
-          {apps.map((app) => (
+          {registeredApps.map((app) => (
             <div
               key={app.id}
               className="flex min-w-0 flex-col items-start gap-3 rounded-md border p-3 min-[28rem]:flex-row min-[28rem]:items-center min-[28rem]:justify-between"

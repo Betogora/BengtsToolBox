@@ -1,12 +1,9 @@
 import { Layers3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { apps, type HubApp } from '@/apps/registry'
+import { dashboardApps, type HubApp } from '@/apps/registry'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-
-const diagnosticAppId = 'diagnostics'
-const hubApps = apps.filter((app) => app.id !== diagnosticAppId)
 
 type AppTileProps = {
   app: HubApp
@@ -172,14 +169,16 @@ export function DashboardPage() {
               <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/15">
                 <Layers3 className="size-5" />
               </div>
-              <CardTitle className="text-xl">{hubApps.length} Apps</CardTitle>
+              <CardTitle className="text-xl">
+                {dashboardApps.length} Apps
+              </CardTitle>
             </CardHeader>
           </Card>
         </div>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        {hubApps.map((app) => (
+        {dashboardApps.map((app) => (
           <AppTile key={app.id} app={app} />
         ))}
       </section>

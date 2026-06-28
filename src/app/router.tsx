@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import { apps } from '@/apps/registry'
+import { appRoutes } from '@/apps/registry'
 import { LazyAppRoute, LazySchlagDenRabeRoute } from '@/app/lazyRoutes'
 import { AppShell } from '@/components/layout/AppShell'
 import { DashboardPage } from '@/components/layout/DashboardPage'
@@ -22,9 +22,9 @@ export const router = createBrowserRouter([
         path: 'schlag-den-rabe/coinflip',
         element: <LazySchlagDenRabeRoute page="coinflip" />,
       },
-      ...apps.map((app) => ({
-        path: app.routePath,
-        element: <LazyAppRoute appId={app.id} />,
+      ...appRoutes.map((route) => ({
+        path: route.path,
+        element: <LazyAppRoute appId={route.appId} />,
       })),
     ],
   },

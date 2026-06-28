@@ -22,7 +22,14 @@ export type HubApp = {
   loadPage: () => Promise<{ default: ComponentType }>
 }
 
-export const apps: HubApp[] = [
+export type HubAppRoute = {
+  appId: string
+  path: string
+}
+
+const diagnosticsAppId = 'diagnostics'
+
+const appDefinitions: readonly HubApp[] = [
   {
     id: 'diagnostics',
     title: 'Diagnose',
@@ -136,3 +143,28 @@ export const apps: HubApp[] = [
       })),
   },
 ]
+
+const systemAppIds = new Set<string>([diagnosticsAppId])
+
+function requireRegisteredApp(appId: string) {
+  const app = appDefinitions.find((appDefinition) => appDefinition.id === appId)
+
+  if (!app) {
+    throw new Error(`Missing registered app "${appId}".`)
+  }
+
+  return app
+}
+
+export const registeredApps: readonly HubApp[] = appDefinitions
+
+export const dashboardApps: readonly HubApp[] = appDefinitions.filter(
+  (app) => !systemAppIds.has(app.id),
+)
+
+export const appRoutes: readonly HubAppRoute[] = appDefinitions.map((app) => ({
+  appId: app.id,
+  path: app.routePath,
+}))
+
+export const diagnosticsApp = requireRegisteredApp(diagnosticsAppId)
