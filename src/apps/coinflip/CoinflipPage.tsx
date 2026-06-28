@@ -4,8 +4,8 @@ import { toast } from 'sonner'
 import {
   getCoinflipLabel,
   useCoinflip,
-} from '@/apps/schlag-den-rabe/coinflip/hooks/useCoinflip'
-import type { CoinflipResult } from '@/apps/schlag-den-rabe/coinflip/types'
+} from '@/apps/coinflip/hooks/useCoinflip'
+import type { CoinflipResult } from '@/apps/coinflip/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { EmptyState } from '@/apps/shared/components/EmptyState'

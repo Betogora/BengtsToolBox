@@ -23,10 +23,11 @@
 | Fortschritts-Dashboard | Spieler, Events, Diagramm und Archiv | Firestore + lokaler Cache |
 | Random Number Generator | Würfel und Zufallszahlen | Firestore + lokaler Cache |
 | Glücksrad | Gewichtete Einträge und Ziehungsverlauf | Firestore + lokaler Cache |
+| Coinflip | Münzwurf mit Verlauf und Presenter-Ansicht | Firestore + lokaler Cache |
 | Sushi Map | Besuchte Länder und Bundesländer | Firestore + lokaler Cache |
 | SK Anderten Turnier-App | Swiss-, Rundenturnier- und Hand-and-Brain-Verwaltung | Firestore + lokaler Cache |
 
-Zusätzlich existiert mit **Schlag den Raab** ein geschützter Bereich außerhalb der Dashboard-Registry. Er bündelt eigenständige Spielmodule wie den Münzwurf.
+Zusätzlich existiert mit **Schlag den Raab** ein geschützter Bereich außerhalb der Dashboard-Registry.
 
 ## Architektur auf einen Blick
 

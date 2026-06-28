@@ -3,8 +3,7 @@ export const firebasePaths = {
     `apps/randomizer/state/${stateId}`,
   decisionWheelState: (stateId = 'default') =>
     `apps/decision-wheel/state/${stateId}`,
-  coinflipState: (stateId = 'default') =>
-    `apps/schlag-den-rabe/games/coinflip/state/${stateId}`,
+  coinflipState: (stateId = 'default') => `apps/coinflip/state/${stateId}`,
   liveBuzzerState: (sessionId = 'default') =>
     `apps/live-buzzer/sessions/${sessionId}/state/default`,
   liveBuzzerPlayers: (sessionId = 'default') =>

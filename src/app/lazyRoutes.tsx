@@ -31,12 +31,6 @@ const LazySchlagDenRabePage = lazy(() =>
     default: SchlagDenRabePage,
   })),
 )
-const LazyCoinflipPage = lazy(() =>
-  import('@/apps/schlag-den-rabe/coinflip').then(({ CoinflipPage }) => ({
-    default: CoinflipPage,
-  })),
-)
-
 const schlagDenRabeFallback = (
   <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground sm:px-6">
     Lade Schlag den Raab...
@@ -51,22 +45,10 @@ const schlagDenRabeElement = (
   </Suspense>
 )
 
-const coinflipElement = (
-  <Suspense fallback={schlagDenRabeFallback}>
-    <LazySchlagDenRabeGate>
-      <LazyCoinflipPage />
-    </LazySchlagDenRabeGate>
-  </Suspense>
-)
-
 export function LazyAppRoute({ appId }: { appId: string }) {
   return lazyAppElements.get(appId) ?? null
 }
 
-export function LazySchlagDenRabeRoute({
-  page,
-}: {
-  page: 'index' | 'coinflip'
-}) {
-  return page === 'coinflip' ? coinflipElement : schlagDenRabeElement
+export function LazySchlagDenRabeRoute() {
+  return schlagDenRabeElement
 }

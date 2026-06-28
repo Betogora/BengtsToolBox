@@ -1,58 +1,14 @@
-import { Coins, Target } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Target } from 'lucide-react'
 
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
-
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-
-type GameApp = {
-  id: string
-  title: string
-  href: string
-  Icon: typeof Coins
-}
-
-const games: GameApp[] = [
-  {
-    id: 'coinflip',
-    title: 'Coinflip',
-    href: '/schlag-den-rabe/coinflip',
-    Icon: Coins,
-  },
-]
-
-function GameTile({ game }: { game: GameApp }) {
-  return (
-    <Link
-      to={game.href}
-      aria-label={`${game.title} öffnen`}
-      className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-    >
-      <Card className="relative h-full overflow-hidden transition-colors group-hover:border-primary group-hover:bg-card/95">
-        <div className="absolute inset-x-0 top-0 h-2 bg-primary" />
-        <CardHeader className="grid min-h-36 gap-6 p-6 pt-7">
-          <div>
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_var(--primary)] transition-colors group-hover:bg-secondary group-hover:text-secondary-foreground">
-              <game.Icon className="size-6" />
-            </div>
-          </div>
-
-          <div>
-            <CardTitle className="text-2xl leading-tight transition-colors group-hover:text-primary sm:text-3xl">
-              {game.title}
-            </CardTitle>
-          </div>
-        </CardHeader>
-      </Card>
-    </Link>
-  )
-}
 
 export function SchlagDenRabePage() {
   return (
@@ -61,7 +17,7 @@ export function SchlagDenRabePage() {
         <div className="max-w-3xl">
           <AppPageTitle Icon={Target} title="Schlag den Raab" />
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-            Wähle ein Spiel und leg direkt los.
+            Geschuetzter Bereich fuer besondere Spielmodule.
           </p>
         </div>
 
@@ -71,7 +27,7 @@ export function SchlagDenRabePage() {
               <Target className="size-5" />
             </div>
             <div>
-              <CardTitle className="text-xl">{games.length} Spiel</CardTitle>
+              <CardTitle className="text-xl">0 Spiele</CardTitle>
               <CardDescription className="text-primary-foreground/75">
                 Wettbewerbe und Mini-Games
               </CardDescription>
@@ -80,11 +36,9 @@ export function SchlagDenRabePage() {
         </Card>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        {games.map((game) => (
-          <GameTile key={game.id} game={game} />
-        ))}
-      </section>
+      <EmptyState className="p-8">
+        Aktuell liegen alle verfuegbaren Tools auf der Hauptseite.
+      </EmptyState>
     </AppPage>
   )
 }

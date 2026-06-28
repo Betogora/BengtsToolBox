@@ -4,7 +4,7 @@ import type {
   CoinflipResult,
   CoinflipSide,
   CoinflipState,
-} from '@/apps/schlag-den-rabe/coinflip/types'
+} from '@/apps/coinflip/types'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'

@@ -51,10 +51,20 @@ export function WheelGraphic({
 
   return (
     <div className="relative mx-auto aspect-square w-full sm:max-w-[30rem]">
-      <div
-        className="absolute left-1/2 top-0 z-10 h-0 w-0 -translate-x-1/2 border-x-[13px] border-t-[26px] border-x-transparent border-t-foreground"
+      <svg
+        viewBox="0 0 64 82"
+        className="absolute left-1/2 top-0 z-10 h-[18%] min-h-16 w-[14%] min-w-14 -translate-x-1/2 -translate-y-1 drop-shadow-sm"
         aria-hidden="true"
-      />
+      >
+        <path
+          d="M15 5H49L38 61C36.7 68 34.5 72 32 72C29.5 72 27.3 68 26 61L15 5Z"
+          fill="#ff8175"
+          stroke="#ffffff"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="8"
+        />
+      </svg>
       <svg
         viewBox={`0 0 ${wheelSize} ${wheelSize}`}
         className="size-full drop-shadow-sm"

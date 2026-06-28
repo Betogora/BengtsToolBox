@@ -71,6 +71,79 @@ function WheelIllustration() {
   )
 }
 
+function CoinflipIllustration() {
+  return (
+    <SvgShell>
+      <g opacity="0.9">
+        <ellipse
+          cx="244"
+          cy="132"
+          fill={palette.navy}
+          opacity="0.12"
+          rx="88"
+          ry="12"
+        />
+        <circle
+          cx="230"
+          cy="80"
+          r="54"
+          fill="#ffffff"
+          stroke={palette.apricot}
+          strokeWidth="10"
+        />
+        <circle
+          cx="230"
+          cy="80"
+          r="34"
+          fill={palette.apricot}
+          opacity="0.42"
+        />
+        <text
+          fill={palette.teal}
+          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontSize="42"
+          fontWeight="800"
+          textAnchor="middle"
+          x="230"
+          y="95"
+        >
+          K
+        </text>
+        <circle
+          cx="298"
+          cy="58"
+          r="34"
+          fill="#ffffff"
+          stroke={palette.teal}
+          strokeWidth="8"
+          transform="rotate(18 298 58)"
+        />
+        <text
+          fill={palette.coral}
+          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontSize="29"
+          fontWeight="800"
+          textAnchor="middle"
+          transform="rotate(18 298 58)"
+          x="298"
+          y="68"
+        >
+          Z
+        </text>
+        <path
+          d="M154 42c18-22 51-30 83-17M318 98c-18 22-51 30-83 17"
+          fill="none"
+          stroke={palette.mint}
+          strokeLinecap="round"
+          strokeWidth="5"
+        />
+        <circle cx="150" cy="96" r="5" fill={palette.coral} opacity="0.7" />
+        <circle cx="338" cy="32" r="4" fill={palette.mint} />
+      </g>
+    </SvgShell>
+  )
+}
+
 function ProgressIllustration() {
   const bars = [
     { x: 184, h: 34, opacity: 0.16 },
@@ -317,6 +390,8 @@ export function DashboardIllustration({ appId }: { appId: string }) {
   switch (appId) {
     case 'decision-wheel':
       return <WheelIllustration />
+    case 'coinflip':
+      return <CoinflipIllustration />
     case 'progress-dashboard':
       return <ProgressIllustration />
     case 'scoreboard':

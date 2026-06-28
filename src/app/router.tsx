@@ -16,11 +16,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'schlag-den-rabe',
-        element: <LazySchlagDenRabeRoute page="index" />,
-      },
-      {
-        path: 'schlag-den-rabe/coinflip',
-        element: <LazySchlagDenRabeRoute page="coinflip" />,
+        element: <LazySchlagDenRabeRoute />,
       },
       ...appRoutes.map((route) => ({
         path: route.path,

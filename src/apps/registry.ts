@@ -4,6 +4,7 @@ import {
   ChartNoAxesCombined,
   ChessKing,
   CircleDot,
+  Coins,
   Dice5,
   ListOrdered,
   UtensilsCrossed,
@@ -39,6 +40,20 @@ const appDefinitions: readonly HubApp[] = [
     loadPage: () =>
       import('@/apps/decision-wheel').then(({ DecisionWheelPage }) => ({
         default: DecisionWheelPage,
+      })),
+  },
+  {
+    id: 'coinflip',
+    title: 'Coinflip',
+    description:
+      'Schneller Münzwurf mit Verlauf, letztem Ergebnis und Presenter-Ansicht.',
+    href: '/apps/coinflip',
+    routePath: 'apps/coinflip',
+    status: 'Live',
+    Icon: Coins,
+    loadPage: () =>
+      import('@/apps/coinflip').then(({ CoinflipPage }) => ({
+        default: CoinflipPage,
       })),
   },
   {
