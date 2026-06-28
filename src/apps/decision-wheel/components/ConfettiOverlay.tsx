@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 
 const confettiParticleCount = 84
-const confettiColors = ['#063852', '#F0810F', '#E6DF44', '#47BFFF', '#FFFFFF']
+const confettiColors = ['#0D8E90', '#A9DFDA', '#FD7261', '#FAC889', '#06344F', '#FFFFFF']
 
 type ConfettiParticle = {
   id: number
