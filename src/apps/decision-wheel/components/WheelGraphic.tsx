@@ -51,6 +51,10 @@ export function WheelGraphic({
 
   return (
     <div className="relative mx-auto aspect-square w-full sm:max-w-[30rem]">
+      <div
+        className="pointer-events-none absolute inset-[3%] rounded-full shadow-[0_18px_44px_rgba(1,26,39,0.16)]"
+        aria-hidden="true"
+      />
       <svg
         viewBox="0 0 64 82"
         className="absolute left-1/2 top-0 z-10 h-[18%] min-h-16 w-[14%] min-w-14 -translate-x-1/2 -translate-y-1 drop-shadow-sm"
@@ -67,7 +71,7 @@ export function WheelGraphic({
       </svg>
       <svg
         viewBox={`0 0 ${wheelSize} ${wheelSize}`}
-        className="size-full drop-shadow-sm"
+        className="relative z-[1] size-full"
         role="img"
         aria-label="Glücksrad"
         style={
@@ -122,7 +126,7 @@ export function WheelGraphic({
               opacity={isDimmed ? 0.34 : 1}
               style={{
                 filter: isHighlighted
-                  ? 'drop-shadow(0 4px 8px rgb(1 26 39 / 0.28))'
+                  ? 'drop-shadow(0 2px 4px rgb(1 26 39 / 0.18))'
                   : undefined,
                 transition: 'opacity 180ms ease, filter 180ms ease',
               }}
