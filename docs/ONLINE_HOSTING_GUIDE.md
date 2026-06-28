@@ -115,10 +115,9 @@ Die GitHub-Workflows deployen aktuell nur Hosting. Rules und Indizes bleiben man
 ## Nach dem Deploy prüfen
 
 1. Produktions- oder Preview-URL öffnen.
-2. Eine verschachtelte Route direkt laden, zum Beispiel `/apps/diagnostics`; sie muss dank SPA-Rewrite funktionieren.
-3. Diagnose-App vollständig ausführen.
-4. Eine synchronisierte App in zwei Fenstern öffnen und Realtime-Verhalten prüfen.
-5. Browser-Konsole auf Auth-, Rules- und Netzwerkfehler kontrollieren.
+2. Eine verschachtelte Route direkt laden, zum Beispiel `/apps/scoreboard`; sie muss dank SPA-Rewrite funktionieren.
+3. Eine synchronisierte App in zwei Fenstern öffnen und Realtime-Verhalten prüfen.
+4. Browser-Konsole auf Auth-, Rules- und Netzwerkfehler kontrollieren.
 
 ## Fehlerdiagnose
 
@@ -131,7 +130,7 @@ Die GitHub-Workflows deployen aktuell nur Hosting. Rules und Indizes bleiben man
 | `auth/api-key-not-valid` | Web-App-Konfiguration fehlt oder Secret enthält zusätzlichen Text | `VITE_FIREBASE_API_KEY` prüfen |
 | `Missing or insufficient permissions` | Anonymous Auth ist aus oder Rules sind nicht deployed | Auth-Anbieter und Rules-Deploy prüfen |
 | Direkte Unterseite liefert 404 | SPA-Rewrite fehlt im aktiven Hosting-Ziel | `firebase.json` und Deploy prüfen |
-| App läuft nur lokal | Firebase-Konfiguration war beim Build unvollständig | Workflow-Environment und Diagnose-App prüfen |
+| App läuft nur lokal | Firebase-Konfiguration war beim Build unvollständig | Workflow-Environment und synchronisierte App prüfen |
 
 ## Sicherheitsgrenze
 

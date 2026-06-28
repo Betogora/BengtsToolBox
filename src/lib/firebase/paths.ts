@@ -1,5 +1,4 @@
 export const firebasePaths = {
-  diagnosticsHealth: () => 'apps/diagnostics/health/default',
   randomizerState: (stateId = 'default') =>
     `apps/randomizer/state/${stateId}`,
   decisionWheelState: (stateId = 'default') =>

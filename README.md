@@ -25,7 +25,6 @@
 | Glücksrad | Gewichtete Einträge und Ziehungsverlauf | Firestore + lokaler Cache |
 | Sushi Map | Besuchte Länder und Bundesländer | Firestore + lokaler Cache |
 | SK Anderten Turnier-App | Swiss-, Rundenturnier- und Hand-and-Brain-Verwaltung | Firestore + lokaler Cache |
-| Diagnose | Firebase-, Auth-, Schreib- und Realtime-Prüfungen | Firestore + LocalStorage |
 
 Zusätzlich existiert mit **Schlag den Raab** ein geschützter Bereich außerhalb der Dashboard-Registry. Er bündelt eigenständige Spielmodule wie den Münzwurf.
 
@@ -57,10 +56,10 @@ Voraussetzung ist **Node.js 22 oder neuer**.
 ```powershell
 npm ci
 Copy-Item .env.example .env.local
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5180 --strictPort
 ```
 
-Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Mit Firebase-Werten ist die App normalerweise unter `http://localhost:5173` mit Realtime-Sync verfügbar.
+Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Mit Firebase-Werten ist die App normalerweise unter `http://127.0.0.1:5180` mit Realtime-Sync verfügbar.
 
 ### Qualitätschecks
 
@@ -70,7 +69,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` führt zuerst die TypeScript-Prüfung und anschließend den produktiven Vite-Build aus. Für Änderungen an Sync oder Firebase sollte danach zusätzlich `/apps/diagnostics` in zwei Browserfenstern geprüft werden.
+`npm run build` führt zuerst die TypeScript-Prüfung und anschließend den produktiven Vite-Build aus. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine synchronisierte App in zwei Browserfenstern geprüft werden.
 
 ## Eine App ergänzen
 

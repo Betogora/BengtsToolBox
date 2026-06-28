@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
-import { diagnosticsApp } from '@/apps/registry'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -28,11 +27,6 @@ const navigationItems: readonly NavigationItem[] = [
     href: '/',
     label: 'Dashboard',
     Icon: Home,
-  },
-  {
-    href: diagnosticsApp.href,
-    label: diagnosticsApp.title,
-    Icon: diagnosticsApp.Icon,
   },
   {
     href: '/schlag-den-rabe',

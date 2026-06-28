@@ -117,10 +117,9 @@ npm run build
 Bei Persistenz- oder Sync-Änderungen zusätzlich:
 
 1. App ohne `.env.local` öffnen und lokalen Modus prüfen.
-2. Mit Firebase-Konfiguration `/apps/diagnostics` erfolgreich ausführen.
-3. Dieselbe App in zwei Fenstern öffnen und Realtime-Änderungen beobachten.
-4. Neu laden und Persistenz sowie Initialisierung prüfen.
-5. Firestore-Fehlerzustand sichtbar testen, nicht nur den Happy Path.
+2. Mit Firebase-Konfiguration dieselbe App in zwei Fenstern öffnen und Realtime-Änderungen beobachten.
+3. Neu laden und Persistenz sowie Initialisierung prüfen.
+4. Firestore-Fehlerzustand sichtbar testen, nicht nur den Happy Path.
 
 Bei komplexer Fachlogik sind automatisierte Tests die bevorzugte Dokumentation. Falls noch kein passender Test-Runner eingerichtet ist, Logik zumindest in pure Funktionen kapseln und die fehlende Testabdeckung nicht durch eine lange, schnell veraltende Markdown-Spezifikation ersetzen.
 

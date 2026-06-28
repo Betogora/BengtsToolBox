@@ -6,7 +6,6 @@ import {
   CircleDot,
   Dice5,
   ListOrdered,
-  Stethoscope,
   UtensilsCrossed,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -27,23 +26,7 @@ export type HubAppRoute = {
   path: string
 }
 
-const diagnosticsAppId = 'diagnostics'
-
 const appDefinitions: readonly HubApp[] = [
-  {
-    id: 'diagnostics',
-    title: 'Diagnose',
-    description:
-      'Prüft Firebase, Anonymous Auth, Firestore-Zugriff, Realtime-Sync und lokalen Fallback.',
-    href: '/apps/diagnostics',
-    routePath: 'apps/diagnostics',
-    status: 'Live',
-    Icon: Stethoscope,
-    loadPage: () =>
-      import('@/apps/diagnostics').then(({ DiagnosticsPage }) => ({
-        default: DiagnosticsPage,
-      })),
-  },
   {
     id: 'decision-wheel',
     title: 'Glücksrad',
@@ -144,27 +127,11 @@ const appDefinitions: readonly HubApp[] = [
   },
 ]
 
-const systemAppIds = new Set<string>([diagnosticsAppId])
-
-function requireRegisteredApp(appId: string) {
-  const app = appDefinitions.find((appDefinition) => appDefinition.id === appId)
-
-  if (!app) {
-    throw new Error(`Missing registered app "${appId}".`)
-  }
-
-  return app
-}
-
 export const registeredApps: readonly HubApp[] = appDefinitions
 
-export const dashboardApps: readonly HubApp[] = appDefinitions.filter(
-  (app) => !systemAppIds.has(app.id),
-)
+export const dashboardApps: readonly HubApp[] = appDefinitions
 
 export const appRoutes: readonly HubAppRoute[] = appDefinitions.map((app) => ({
   appId: app.id,
   path: app.routePath,
 }))
-
-export const diagnosticsApp = requireRegisteredApp(diagnosticsAppId)
