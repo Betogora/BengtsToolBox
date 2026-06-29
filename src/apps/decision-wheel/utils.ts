@@ -9,10 +9,6 @@ export function getEntryDisplayText(
   return trimmedText || `Option ${index + 1}`
 }
 
-export function getColorWithAlpha(color: string, alphaHex: string) {
-  return /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alphaHex}` : color
-}
-
 export function parseWeightDraft(value: string) {
   const numericWeight = Number(value)
 

@@ -1,7 +1,7 @@
 import { Trophy } from 'lucide-react'
 
 import type { DecisionWheelResult } from '@/apps/decision-wheel/types'
-import { getColorWithAlpha } from '@/apps/decision-wheel/utils'
+import { getColorWithAlpha } from '@/apps/shared/utils'
 
 type ResultPanelProps = {
   result: DecisionWheelResult | null

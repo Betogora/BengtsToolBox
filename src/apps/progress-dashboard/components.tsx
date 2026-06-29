@@ -25,6 +25,7 @@ import { formatNumber } from '@/apps/progress-dashboard/format'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
+import { getColorWithAlpha } from '@/apps/shared/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -795,8 +796,7 @@ export function PlayerCard({
     drinkIcons.find((icon) => icon.id === selectedIcon)?.label ?? 'Bier'
 
   return (
-    <Card className="overflow-hidden">
-      <div className="h-1.5 w-full" style={{ backgroundColor: player.color }} />
+    <Card style={{ backgroundColor: getColorWithAlpha(player.color, '80') }}>
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
