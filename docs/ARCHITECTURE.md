@@ -33,7 +33,7 @@ Abhängigkeiten zeigen grundsätzlich nach innen: Eine Page nutzt ihren Feature-
 
 Reguläre Apps werden genau einmal in `src/apps/registry.ts` beschrieben. Die Registry liefert Titel, Beschreibung, Pfade, Status, Icon und Lazy Loader an Dashboard und Router. Das verhindert doppelte Navigations- und Routinglisten.
 
-Sonderbereiche dürfen außerhalb der Registry existieren, wenn sie bewusst nicht als Dashboard-App erscheinen. Aktuell gilt dies für `/schlag-den-rabe` und dessen Unterseiten; diese Routen stehen explizit in `src/app/router.tsx` und ihre Loader in `src/app/lazyRoutes.tsx`.
+Sonderbereiche dürfen außerhalb der Registry existieren, wenn sie bewusst nicht als Dashboard-App erscheinen. Aktuell gilt dies für `/schlag-den-raab` und dessen Unterseiten; diese Routen stehen explizit in `src/app/router.tsx` und ihre Loader in `src/app/lazyRoutes.tsx`.
 
 ## Feature-Aufbau
 

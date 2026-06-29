@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
 
-const unlockKey = 'bengts-toolbox:schlag-den-rabe:unlocked'
+const unlockKey = 'bengts-toolbox:schlag-den-raab:unlocked'
 const password = '5340'
 
 function isUnlocked() {
@@ -25,7 +25,7 @@ function unlockSession() {
   window.sessionStorage.setItem(unlockKey, 'true')
 }
 
-export function SchlagDenRabeGate({ children }: { children: ReactNode }) {
+export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
   const [isAllowed, setIsAllowed] = useState(isUnlocked)
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState('')
@@ -60,7 +60,7 @@ export function SchlagDenRabeGate({ children }: { children: ReactNode }) {
           <form className="grid gap-4" onSubmit={handleSubmit}>
             <div>
               <IftaInput
-                id="schlag-den-rabe-password"
+                id="schlag-den-raab-password"
                 label="Passwort"
                 autoComplete="current-password"
                 autoFocus

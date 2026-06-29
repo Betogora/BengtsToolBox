@@ -21,41 +21,41 @@ const lazyAppElements = new Map(
   }),
 )
 
-const LazySchlagDenRabeGate = lazy(() =>
-  import('@/apps/schlag-den-rabe').then(({ SchlagDenRabeGate }) => ({
-    default: SchlagDenRabeGate,
+const LazySchlagDenRaabGate = lazy(() =>
+  import('@/apps/schlag-den-raab').then(({ SchlagDenRaabGate }) => ({
+    default: SchlagDenRaabGate,
   })),
 )
-const LazySchlagDenRabePage = lazy(() =>
-  import('@/apps/schlag-den-rabe').then(({ SchlagDenRabePage }) => ({
-    default: SchlagDenRabePage,
+const LazySchlagDenRaabPage = lazy(() =>
+  import('@/apps/schlag-den-raab').then(({ SchlagDenRaabPage }) => ({
+    default: SchlagDenRaabPage,
   })),
 )
 const LazyCoinflipPage = lazy(() =>
-  import('@/apps/schlag-den-rabe/coinflip').then(({ CoinflipPage }) => ({
+  import('@/apps/schlag-den-raab/coinflip').then(({ CoinflipPage }) => ({
     default: CoinflipPage,
   })),
 )
 
-const schlagDenRabeFallback = (
+const schlagDenRaabFallback = (
   <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground sm:px-6">
     Lade Schlag den Raab...
   </div>
 )
 
-const schlagDenRabeElement = (
-  <Suspense fallback={schlagDenRabeFallback}>
-    <LazySchlagDenRabeGate>
-      <LazySchlagDenRabePage />
-    </LazySchlagDenRabeGate>
+const schlagDenRaabElement = (
+  <Suspense fallback={schlagDenRaabFallback}>
+    <LazySchlagDenRaabGate>
+      <LazySchlagDenRaabPage />
+    </LazySchlagDenRaabGate>
   </Suspense>
 )
 
 const coinflipElement = (
-  <Suspense fallback={schlagDenRabeFallback}>
-    <LazySchlagDenRabeGate>
+  <Suspense fallback={schlagDenRaabFallback}>
+    <LazySchlagDenRaabGate>
       <LazyCoinflipPage />
-    </LazySchlagDenRabeGate>
+    </LazySchlagDenRaabGate>
   </Suspense>
 )
 
@@ -63,10 +63,10 @@ export function LazyAppRoute({ appId }: { appId: string }) {
   return lazyAppElements.get(appId) ?? null
 }
 
-export function LazySchlagDenRabeRoute({
+export function LazySchlagDenRaabRoute({
   page,
 }: {
   page: 'index' | 'coinflip'
 }) {
-  return page === 'coinflip' ? coinflipElement : schlagDenRabeElement
+  return page === 'coinflip' ? coinflipElement : schlagDenRaabElement
 }

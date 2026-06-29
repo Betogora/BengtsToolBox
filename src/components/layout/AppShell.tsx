@@ -49,7 +49,7 @@ export function AppShell() {
               Diagnose
             </NavLink>
             <NavLink
-              to="/schlag-den-rabe"
+              to="/schlag-den-raab"
               className={({ isActive }) =>
                 cn(
                   'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
@@ -83,7 +83,7 @@ export function AppShell() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/schlag-den-rabe" className="gap-2">
+                  <Link to="/schlag-den-raab" className="gap-2">
                     <Target className="size-4" />
                     Schlag den Raab
                   </Link>

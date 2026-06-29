@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import {
   getCoinflipLabel,
   useCoinflip,
-} from '@/apps/schlag-den-rabe/coinflip/hooks/useCoinflip'
+} from '@/apps/schlag-den-raab/coinflip/hooks/useCoinflip'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Button } from '@/components/ui/button'

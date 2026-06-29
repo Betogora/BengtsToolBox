@@ -142,6 +142,129 @@ select {
   white-space: nowrap;
 }
 
+.raab-score-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+}
+
+.raab-score-card [data-slot="card-header"] {
+  padding: 16px 18px 8px;
+}
+
+.raab-score-card [data-slot="card-content"] {
+  padding: 0 18px 18px;
+}
+
+.raab-score-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  background: #ffffff;
+}
+
+.raab-score-table {
+  min-width: 40rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+.raab-score-table thead {
+  background: #e9ecdc !important;
+}
+
+.raab-score-table th,
+.raab-score-table td {
+  padding: 7px 8px !important;
+  border-color: #d7d8bd !important;
+  vertical-align: middle;
+}
+
+.raab-score-table th {
+  color: var(--foreground);
+  font-weight: 800;
+}
+
+.raab-score-table input {
+  min-height: 2rem;
+  font-size: 0.8125rem;
+}
+
+.raab-score-table button:not(.raab-score-button) {
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.raab-score-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 4rem;
+  min-height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--foreground);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.raab-score-button:hover,
+.raab-score-button:focus-visible {
+  border-color: var(--primary);
+  background: rgba(6, 56, 82, 0.07);
+  outline: none;
+}
+
+.raab-score-button-winner {
+  border-color: rgba(6, 56, 82, 0.25);
+  background: rgba(6, 56, 82, 0.1);
+}
+
+.raab-score-pill {
+  display: inline-flex;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.raab-tiebreak-row {
+  background: rgba(240, 129, 15, 0.08);
+}
+
+.raab-tiebreak-row td {
+  border-top: 2px solid var(--primary) !important;
+}
+
+@media (max-width: 640px) {
+  .raab-score-card [data-slot="card-header"],
+  .raab-score-card [data-slot="card-content"] {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .raab-score-table {
+    min-width: 38rem;
+    font-size: 0.75rem;
+  }
+}
+
 @media (pointer: coarse) {
   .territory-map-layer {
     filter: none;

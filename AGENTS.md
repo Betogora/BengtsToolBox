@@ -33,7 +33,7 @@ Nicht vorsorglich alle Apps, Datensätze oder Guides laden. Der aktuelle Code is
 ## Architekturregeln
 
 - Reguläre Dashboard-Apps genau einmal in `src/apps/registry.ts` registrieren. Dashboard, Standardroute und Lazy Loading entstehen daraus.
-- Bewusst versteckte oder anders strukturierte Bereiche dürfen explizite Routen besitzen. Aktuell gilt dies für `/schlag-den-rabe`.
+- Bewusst versteckte oder anders strukturierte Bereiche dürfen explizite Routen besitzen. Aktuell gilt dies für `/schlag-den-raab`.
 - Firestore-Pfade ausschließlich in `src/lib/firebase/paths.ts` definieren; keine Pfadstrings in Pages oder Feature-Hooks duplizieren.
 - Dokumentzustand über `useFirestoreDoc`, geordnete Mengen über `useFirestoreCollection` synchronisieren.
 - Keine app-eigenen Firebase-Clients, Auth-Flows oder LocalStorage-Fallbacks erstellen.
