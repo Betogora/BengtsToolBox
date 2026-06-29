@@ -19,11 +19,11 @@ function IftaInput({ className, id, label, ...props }: IftaInputProps) {
         aria-label={
           props['aria-label'] ?? (typeof label === 'string' ? label : undefined)
         }
-        className={cn('h-11 px-3 pb-1.5 pt-5 text-sm', className)}
+        className={cn('h-11 px-3 pb-1.5 pt-5', className)}
         {...props}
       />
       <label
-        className="pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-[0.68rem] font-semibold leading-tight text-muted-foreground"
+        className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-muted-foreground"
         htmlFor={inputId}
       >
         {label}
@@ -50,12 +50,12 @@ function IftaSelectTrigger({
         aria-label={
           props['aria-label'] ?? (typeof label === 'string' ? label : undefined)
         }
-        className={cn('h-11 px-3 pb-1.5 pt-5 text-sm', className)}
+        className={cn('h-11 px-3 pb-1.5 pt-5', className)}
         {...props}
       >
         {children}
       </SelectTrigger>
-      <span className="pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-2.5rem)] truncate text-[0.68rem] font-semibold leading-tight text-muted-foreground">
+      <span className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-2.5rem)] truncate text-muted-foreground">
         {label}
       </span>
     </div>

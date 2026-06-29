@@ -54,7 +54,7 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
           <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Target className="size-6" />
           </div>
-          <CardTitle className="text-2xl">Schlag den Raab</CardTitle>
+          <CardTitle className="type-section-title">Schlag den Raab</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4" onSubmit={handleSubmit}>
@@ -72,7 +72,7 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
                 }}
               />
               {error && (
-                <p className="text-sm font-medium text-destructive">{error}</p>
+                <p className="type-label text-destructive">{error}</p>
               )}
             </div>
             <Button type="submit">

@@ -31,10 +31,10 @@ function CoinflipPresenter({
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="grid min-h-[28rem] place-items-center rounded-lg border bg-secondary p-6 text-center shadow-sm">
         <div>
-          <p className="text-base font-medium text-muted-foreground">
+          <p className="type-label text-muted-foreground">
             Letzter Flip
           </p>
-          <div className="mt-4 text-7xl font-semibold leading-tight tracking-normal sm:text-8xl">
+          <div className="type-metric-xl mt-4">
             {lastFlip ? getCoinflipLabel(lastFlip.side) : '-'}
           </div>
         </div>
@@ -43,7 +43,7 @@ function CoinflipPresenter({
       <aside className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <History className="size-5 text-primary" />
-          <h2 className="text-2xl font-semibold tracking-normal">
+          <h2 className="type-section-title">
             Letzte Ergebnisse
           </h2>
         </div>
@@ -56,10 +56,10 @@ function CoinflipPresenter({
                 key={flipResult.id}
                 className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
               >
-                <div className="font-medium">
+                <div className="type-label">
                   Flip {history.length - index}
                 </div>
-                <div className="text-3xl font-semibold">
+                <div className="type-metric-md">
                   {getCoinflipLabel(flipResult.side)}
                 </div>
               </div>
@@ -117,8 +117,8 @@ export function CoinflipPage() {
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="rounded-lg bg-secondary p-6 text-center">
-              <div className="text-sm text-muted-foreground">Letzter Flip</div>
-              <div className="mt-3 text-6xl font-semibold tracking-normal sm:text-7xl">
+              <div className="type-ui text-muted-foreground">Letzter Flip</div>
+              <div className="type-metric-xl mt-3">
                 {lastLabel}
               </div>
             </div>
@@ -160,14 +160,14 @@ export function CoinflipPage() {
                   <div key={flipResult.id}>
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <div className="font-medium">
+                        <div className="type-label">
                           Flip {data.history.length - index}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="type-caption text-muted-foreground">
                           {new Date(flipResult.createdAt).toLocaleString()}
                         </div>
                       </div>
-                      <div className="text-2xl font-semibold">
+                      <div className="type-metric-sm">
                         {getCoinflipLabel(flipResult.side)}
                       </div>
                     </div>

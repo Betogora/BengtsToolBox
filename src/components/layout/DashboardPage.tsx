@@ -36,7 +36,7 @@ function AppTile({ app }: AppTileProps) {
             <app.Icon className="size-6" />
           </div>
 
-          <CardTitle className="hyphens-auto break-words text-[1.45rem] leading-[1.12] transition-colors group-hover:text-primary sm:text-[1.65rem]">
+          <CardTitle className="type-tile-title hyphens-auto break-words transition-colors group-hover:text-primary">
             {app.title}
           </CardTitle>
         </CardHeader>
@@ -50,7 +50,7 @@ export function DashboardPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 pb-6 pt-8 sm:px-6 lg:gap-8 lg:pb-8 lg:pt-12">
       <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
         <div className="min-w-0">
-          <h1 className="text-5xl font-extrabold leading-none tracking-normal text-foreground sm:text-6xl lg:text-7xl">
+          <h1 className="type-dashboard-title text-foreground">
             App-Hub
           </h1>
           <div className="mt-5 h-2 w-16 rounded-full bg-primary sm:w-20" />
@@ -70,7 +70,7 @@ export function DashboardPage() {
               <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/18">
                 <Layers3 className="size-5" />
               </div>
-              <CardTitle className="whitespace-nowrap text-xl">
+              <CardTitle className="whitespace-nowrap">
                 {dashboardApps.length} Apps
               </CardTitle>
             </CardHeader>

@@ -5,14 +5,11 @@ import {
   ChevronDown,
   ChevronRight,
   Coins,
-  Dice5,
-  Gamepad2,
+  Layers3,
   RotateCcw,
-  Target,
   Trash2,
   Trophy,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 import {
   getSchlagDenRaabSummary,
@@ -27,6 +24,7 @@ import type {
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
+import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -48,96 +46,47 @@ import { cn } from '@/lib/utils'
 type GameApp = {
   id: string
   title: string
-  href?: string
   Icon: LucideIcon
-  status: 'live' | 'preview'
+  illustrationId: string
 }
 
 const games: GameApp[] = [
   {
-    id: 'coinflip',
-    title: 'Coinflip',
-    href: '/apps/coinflip',
-    Icon: Coins,
-    status: 'live',
-  },
-  {
     id: 'dummy-1',
     title: 'Dummy Game 1',
-    Icon: Dice5,
-    status: 'preview',
+    Icon: Coins,
+    illustrationId: 'coinflip',
   },
   {
     id: 'dummy-2',
     title: 'Dummy Game 2',
-    Icon: Gamepad2,
-    status: 'preview',
+    Icon: Coins,
+    illustrationId: 'coinflip',
   },
 ]
 
 function GameTile({ game }: { game: GameApp }) {
-  const tile = (
-    <Card
-      className={cn(
-        'relative h-full overflow-hidden transition-colors',
-        game.href
-          ? 'group-hover:border-primary group-hover:bg-card/95'
-          : 'border-dashed bg-card/70 text-muted-foreground',
-      )}
-    >
-      <div
-        className={cn(
-          'absolute inset-x-0 top-0 h-2',
-          game.href ? 'bg-primary' : 'bg-muted',
-        )}
-      />
-      <CardHeader className="grid min-h-36 gap-6 p-6 pt-7">
-        <div className="flex items-start justify-between gap-3">
-          <div
-            className={cn(
-              'flex size-12 shrink-0 items-center justify-center rounded-lg shadow-[0_14px_30px_-18px_var(--primary)] transition-colors',
-              game.href
-                ? 'bg-primary text-primary-foreground group-hover:bg-secondary group-hover:text-secondary-foreground'
-                : 'bg-muted text-muted-foreground',
-            )}
-          >
-            <game.Icon className="size-6" />
-          </div>
-          {game.status === 'preview' && (
-            <Badge variant="outline" className="bg-background/70">
-              Vorschau
-            </Badge>
-          )}
+  return (
+    <div aria-disabled="true" className="group block rounded-lg">
+      <Card className="relative h-48 overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/45 group-hover:shadow-[0_18px_46px_-34px_rgba(6,52,79,0.55)]">
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 w-[48%] overflow-hidden opacity-95 [mask-image:linear-gradient(to_left,black_0%,black_72%,transparent_100%)]"
+          aria-hidden="true"
+        >
+          <DashboardIllustration appId={game.illustrationId} />
         </div>
 
-        <CardTitle
-          className={cn(
-            'text-2xl leading-tight transition-colors sm:text-3xl',
-            game.href && 'group-hover:text-primary',
-          )}
-        >
-          {game.title}
-        </CardTitle>
-      </CardHeader>
-    </Card>
-  )
+        <CardHeader className="relative z-10 flex h-full max-w-[58%] flex-col justify-start gap-3 p-5 sm:p-6">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_16px_34px_-18px_rgba(13,142,144,0.9)] transition-colors group-hover:bg-secondary group-hover:text-primary">
+            <game.Icon className="size-6" />
+          </div>
 
-  if (!game.href) {
-    return (
-      <div aria-disabled="true" className="block rounded-lg">
-        {tile}
-      </div>
-    )
-  }
-
-  return (
-    <Link
-      to={game.href}
-      aria-label={`${game.title} oeffnen`}
-      className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-    >
-      {tile}
-    </Link>
+          <CardTitle className="type-tile-title hyphens-auto break-words transition-colors group-hover:text-primary">
+            {game.title}
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    </div>
   )
 }
 
@@ -189,12 +138,12 @@ function PlayerScoreSummary({
     >
       <div className="flex min-w-0 items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold">{player.name}</div>
-          <div className="text-xs text-muted-foreground">
+          <div className="type-action truncate">{player.name}</div>
+          <div className="type-caption text-muted-foreground">
             {gameWins} gewonnene Spiele
           </div>
         </div>
-        <div className="text-3xl font-semibold tabular-nums">{score}</div>
+        <div className="type-metric-md">{score}</div>
       </div>
     </div>
   )
@@ -293,7 +242,7 @@ function ScoreOverview() {
               />
             ))}
             <div className="rounded-md border bg-background/75 p-3">
-              <div className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+              <div className="type-caption text-muted-foreground">
                 Ausgang
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -337,13 +286,13 @@ function ScoreOverview() {
                   key={row.game.id}
                   className={cn(row.game.position === 16 && 'raab-tiebreak-row')}
                 >
-                  <TableCell className="text-center font-semibold tabular-nums">
+                  <TableCell className="type-action text-center tabular-nums">
                     {row.game.position}
                   </TableCell>
                   <TableCell className="min-w-0">
                     <InlineTextEdit
                       ariaLabel={`Name von Spiel ${row.game.position}`}
-                      className="max-w-[18rem] font-medium"
+                      className="type-label max-w-[18rem]"
                       fallback={`Spiel ${row.game.position}`}
                       inputClassName="h-8"
                       value={row.game.title}
@@ -403,14 +352,14 @@ function ArchiveSection({
             <ChevronRight className="size-4 shrink-0" />
           )}
           <Archive className="size-5 shrink-0 text-primary" />
-          <span className="font-semibold">Alte Datensätze</span>
+          <span className="type-action">Alte Datensätze</span>
           <Badge variant="secondary">{archivedDatasets.length}</Badge>
         </button>
       </CardHeader>
       {isOpen && (
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <div className="type-ui rounded-lg border border-dashed p-6 text-center text-muted-foreground">
               Noch keine archivierten Datensätze.
             </div>
           ) : (
@@ -460,12 +409,12 @@ function ArchiveDatasetCard({
           <div className="min-w-0">
             <InlineTextEdit
               ariaLabel="Archivname"
-              className="font-semibold"
+              className="type-action"
               fallback="Archivierter Datensatz"
               value={dataset.name}
               onSave={(value) => onRename(dataset.id, value)}
             />
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="type-caption mt-1 text-muted-foreground">
               {formatDateTime(dataset.archivedAtClientIso)} - {playedGames}{' '}
               Spiele
             </div>
@@ -495,7 +444,7 @@ function ArchiveDatasetCard({
               />
             ))}
             <div className="rounded-md border bg-background/75 p-3">
-              <div className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+              <div className="type-caption text-muted-foreground">
                 Ausgang
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -545,10 +494,10 @@ function ReadOnlyArchiveTable({
             key={row.game.id}
             className={cn(row.game.position === 16 && 'raab-tiebreak-row')}
           >
-            <TableCell className="text-center font-semibold tabular-nums">
+            <TableCell className="type-action text-center tabular-nums">
               {row.game.position}
             </TableCell>
-            <TableCell className="min-w-0 font-medium">
+            <TableCell className="type-label min-w-0">
               <span className="block max-w-[18rem] truncate">
                 {row.game.title}
               </span>
@@ -577,31 +526,26 @@ function ReadOnlyArchiveTable({
 }
 
 export function SchlagDenRaabPage() {
-  const activeGameCount = games.filter((game) => game.status === 'live').length
-  const previewGameCount = games.length - activeGameCount
-
   return (
     <AppPage className="gap-7 lg:py-12" width="wide">
       <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
         <div className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-normal text-foreground sm:text-5xl">
+          <h1 className="type-dashboard-title text-foreground">
             Schlag den Raab
           </h1>
         </div>
 
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader className="flex-row items-center gap-4 p-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/15">
-              <Target className="size-5" />
+        <Card className="h-[72px] w-fit justify-self-end border-primary/20 bg-primary text-primary-foreground shadow-[0_18px_46px_-30px_rgba(13,142,144,0.9)]">
+          <CardHeader className="flex h-full flex-row items-center gap-4 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/18">
+              <Layers3 className="size-5" />
             </div>
-            <CardTitle className="text-xl">
-              {activeGameCount} aktiv / {previewGameCount} Vorschau
-            </CardTitle>
+            <CardTitle className="whitespace-nowrap">{games.length} Apps</CardTitle>
           </CardHeader>
         </Card>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         {games.map((game) => (
           <GameTile key={game.id} game={game} />
         ))}

@@ -80,16 +80,16 @@ function DecisionWheelPresenter({
       <aside className="grid content-start gap-4">
         <ResultPanel result={lastResult} />
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Optionen</p>
-          <div className="mt-2 text-5xl font-semibold tabular-nums">
+          <p className="type-label text-muted-foreground">Optionen</p>
+          <div className="type-metric-lg mt-2">
             {entries.length}
           </div>
         </div>
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="type-label text-muted-foreground">
             Drehungen
           </p>
-          <div className="mt-2 text-5xl font-semibold tabular-nums">
+          <div className="type-metric-lg mt-2">
             {historyCount}
           </div>
         </div>
@@ -295,10 +295,10 @@ export function DecisionWheelPage() {
                     {data.entries.map((entry, index) => (
                       <div
                         key={entry.id}
-                        className="grid gap-2 rounded-md border bg-card p-2.5 text-sm"
+                        className="type-ui grid gap-2 rounded-md border bg-card p-2.5"
                       >
                         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-                          <span className="flex h-11 w-11 items-center justify-center rounded-md border bg-secondary px-2 text-sm font-semibold leading-none tabular-nums">
+                          <span className="type-action flex h-11 w-11 items-center justify-center rounded-md border bg-secondary px-2 tabular-nums">
                             #{index + 1}
                           </span>
                           <EntryTextControl
@@ -435,8 +435,8 @@ export function DecisionWheelPage() {
                     <div key={result.id}>
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="truncate font-medium">{result.text}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="type-label truncate">{result.text}</div>
+                          <div className="type-caption text-muted-foreground">
                             {new Date(result.createdAt).toLocaleString()}
                           </div>
                         </div>

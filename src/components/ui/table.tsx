@@ -17,7 +17,7 @@ function Table({
     >
       <table
         data-slot="table"
-        className={cn('w-full text-sm', className)}
+        className={cn('type-ui w-full', className)}
         {...props}
       />
     </div>
@@ -59,7 +59,7 @@ function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"
-      className={cn('p-3 font-semibold', className)}
+      className={cn('type-action p-3', className)}
       {...props}
     />
   )

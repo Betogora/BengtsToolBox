@@ -70,7 +70,6 @@ export function PlayerCard({
                 key={player.name}
                 aria-label={`Name für Person ${player.position}`}
                 autoFocus
-                className="h-12"
                 defaultValue={player.name}
                 onBlur={(event) => saveName(event.currentTarget.value)}
                 onKeyDown={(event) => {
@@ -82,14 +81,10 @@ export function PlayerCard({
                     setIsEditingName(false)
                   }
                 }}
-                style={{
-                  fontSize: '1.875rem',
-                  fontWeight: 600,
-                  lineHeight: '2.25rem',
-                }}
+                className="type-page-title h-12"
               />
             ) : (
-              <h2 className="break-words py-1 text-3xl font-semibold leading-tight tracking-normal">
+              <h2 className="type-page-title break-words py-1">
                 {player.name}
               </h2>
             )}
@@ -141,10 +136,10 @@ export function PlayerCard({
         {typeof score === 'number' && onIncrement && onDecrement && (
           <div className="flex items-end justify-between gap-4">
             <div>
-              <div className="text-4xl font-semibold tabular-nums">
+              <div className="type-metric-lg">
                 {score}
               </div>
-              <div className="text-xs text-muted-foreground">Score</div>
+              <div className="type-caption text-muted-foreground">Score</div>
             </div>
             <div className="flex gap-2">
               <Button
@@ -180,8 +175,8 @@ export function PlayerCard({
         {buzzLabel && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
             <div>
-              <div className="text-sm text-muted-foreground">Buzz</div>
-              <div className="mt-1 font-semibold tabular-nums">
+              <div className="type-ui text-muted-foreground">Buzz</div>
+              <div className="type-action mt-1 tabular-nums">
                 {buzzTime ?? '-'}
               </div>
             </div>

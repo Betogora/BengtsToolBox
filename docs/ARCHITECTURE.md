@@ -82,6 +82,7 @@ Anonymous Auth stellt eine UID ohne Login-Oberfläche bereit. Die aktuellen Fire
 ## UI-System
 
 - Globale Design-Tokens und Themes liegen in `src/styles/globals.css` und `src/lib/theme.ts`.
+- Die UI-Schrift ist lokal eingebundene Manrope Variable; Schriftgrößen und Gewichte werden über `type-*`-Rollen wie `type-page-title`, `type-section-title`, `type-label`, `type-action` und `type-metric-*` verwendet.
 - Generische Controls in `src/components/ui` bilden die gemeinsame visuelle Basis.
 - `AppPage` und `AppPageTitle` aus `src/apps/shared/components` vereinheitlichen Feature-Seiten.
 - Pages bleiben responsiv, zeigen Lade- und Fehlerzustände sichtbar und vermeiden app-eigene globale Styles.

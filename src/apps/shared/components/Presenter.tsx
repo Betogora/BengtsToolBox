@@ -153,11 +153,11 @@ export function PresenterLauncher({
                 >
                   <Icon className="size-5 shrink-0 text-primary" />
                   <span className="grid min-w-0 gap-1">
-                    <span className="font-semibold leading-tight">
+                    <span className="type-action">
                       {view.label}
                     </span>
                     {view.description && (
-                      <span className="text-xs font-normal leading-snug text-muted-foreground">
+                      <span className="type-caption text-muted-foreground">
                         {view.description}
                       </span>
                     )}
@@ -228,10 +228,10 @@ function PresenterStage({
               <ViewIcon className="size-5" />
             </span>
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-muted-foreground">
+              <div className="type-label truncate text-muted-foreground">
                 {appTitle}
               </div>
-              <h1 className="truncate text-xl font-semibold leading-tight tracking-normal">
+              <h1 className="type-card-title truncate">
                 {view.label}
               </h1>
             </div>

@@ -45,7 +45,7 @@ export function AppShell() {
               <BriefcaseBusiness className="size-5" />
             </span>
             <span className="min-w-0">
-              <span className="block whitespace-nowrap text-xl font-extrabold leading-none text-foreground">
+              <span className="type-brand block whitespace-nowrap text-foreground">
                 BengtsToolBox
               </span>
             </span>
@@ -58,7 +58,7 @@ export function AppShell() {
                 to={href}
                 className={({ isActive }) =>
                   cn(
-                    'inline-flex h-11 items-center gap-2 rounded-md px-4 text-base font-semibold text-foreground transition-colors hover:bg-secondary hover:text-primary',
+                    'type-action inline-flex h-11 items-center gap-2 rounded-md px-4 text-foreground transition-colors hover:bg-secondary hover:text-primary',
                     isActive && 'bg-secondary text-primary',
                   )
                 }

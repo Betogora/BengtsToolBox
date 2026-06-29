@@ -17,12 +17,12 @@ export function ResultPanel({ result }: ResultPanelProps) {
           : undefined
       }
     >
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="type-ui flex items-center gap-2 text-muted-foreground">
         <Trophy className="size-4" />
         Gewinner
       </div>
       <div className="mt-2 flex min-h-10 items-center justify-between gap-3">
-        <div className="min-w-0 truncate text-2xl font-semibold">
+        <div className="type-section-title min-w-0 truncate">
           {result?.text ?? 'Noch nicht gedreht'}
         </div>
         {result && (

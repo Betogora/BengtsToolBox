@@ -510,8 +510,8 @@ function TerritoryMapPresenter({
       <section className="overflow-hidden rounded-lg border bg-secondary shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-card/85 p-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Karte</p>
-            <h2 className="text-3xl font-semibold tracking-normal">
+            <p className="type-label text-muted-foreground">Karte</p>
+            <h2 className="type-section-title">
               {mapLabels[activeMap]}
             </h2>
           </div>
@@ -567,7 +567,7 @@ function TerritoryMapPresenter({
         <div className="rounded-lg border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <Trophy className="size-5 text-primary" />
-            <h2 className="text-2xl font-semibold tracking-normal">
+            <h2 className="type-section-title">
               Punktzahl
             </h2>
           </div>
@@ -580,17 +580,17 @@ function TerritoryMapPresenter({
                   key={score.player.id}
                   className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
                 >
-                  <div className="font-semibold tabular-nums">{index + 1}</div>
+                  <div className="type-action tabular-nums">{index + 1}</div>
                   <div className="flex min-w-0 items-center gap-2">
                     <span
                       className="size-3 shrink-0 rounded-full"
                       style={{ backgroundColor: score.player.color }}
                     />
-                    <span className="truncate font-semibold">
+                    <span className="type-action truncate">
                       {score.player.name}
                     </span>
                   </div>
-                  <div className="text-2xl font-semibold tabular-nums">
+                  <div className="type-metric-sm">
                     {score.total}
                   </div>
                 </div>
@@ -600,7 +600,7 @@ function TerritoryMapPresenter({
         </div>
 
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Legende</p>
+          <p className="type-label text-muted-foreground">Legende</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {players.map((player) => (
               <Badge key={player.id} variant="outline">
@@ -1351,7 +1351,7 @@ export function TerritoryMapPage() {
               ))}
               <AddEaterCard onAdd={handleAddEater} />
               {isLoading && players.length === 0 && (
-                <p className="text-sm text-muted-foreground">Synchronisiere...</p>
+                <p className="type-ui text-muted-foreground">Synchronisiere...</p>
               )}
               </CardContent>
             )}
@@ -1382,7 +1382,7 @@ export function TerritoryMapPage() {
                     <TableBody>
                       {sushiScores.map((score) => (
                         <TableRow key={score.player.id}>
-                          <TableCell className="min-w-0 px-2 py-2 font-medium">
+                          <TableCell className="type-label min-w-0 px-2 py-2">
                             <span className="flex min-w-0 items-center gap-2">
                               <span
                                 className="size-3 shrink-0 rounded-full"
@@ -1398,7 +1398,7 @@ export function TerritoryMapPage() {
                           <TableCell className="px-1 py-2 text-right tabular-nums">
                             {score.germany}
                           </TableCell>
-                          <TableCell className="px-2 py-2 text-right font-semibold tabular-nums">
+                          <TableCell className="type-action px-2 py-2 text-right tabular-nums">
                             {score.total}
                           </TableCell>
                         </TableRow>
@@ -1415,7 +1415,7 @@ export function TerritoryMapPage() {
                     <TableBody>
                       {sushiScores.map((score) => (
                         <TableRow key={score.player.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="type-label">
                             <span className="flex min-w-0 items-center gap-2">
                               <span
                                 className="size-3 shrink-0 rounded-full"
@@ -1431,7 +1431,7 @@ export function TerritoryMapPage() {
                           <TableCell className="text-right tabular-nums">
                             {score.germany}
                           </TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">
+                          <TableCell className="type-action text-right tabular-nums">
                             {score.total}
                           </TableCell>
                         </TableRow>
@@ -1465,7 +1465,7 @@ export function TerritoryMapPage() {
                     key={achievement.id}
                     aria-label={`${achievement.title}: ${achievement.rule}`}
                     className={[
-                      'group grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'type-ui group grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       isUnlocked
                         ? 'text-foreground'
                         : 'text-muted-foreground opacity-55 grayscale',
@@ -1473,16 +1473,16 @@ export function TerritoryMapPage() {
                     tabIndex={0}
                     title={achievement.rule}
                   >
-                    <span className="min-w-0 truncate font-medium">
+                    <span className="type-label min-w-0 truncate">
                       {achievement.title}
                     </span>
                     <span className="flex size-8 items-center justify-center text-primary">
                       <Icon className="size-5" />
                     </span>
-                    <span className="min-w-0 truncate text-right font-semibold">
+                    <span className="type-action min-w-0 truncate text-right">
                       {winnerLabel || '-'}
                     </span>
-                    <span className="col-span-3 hidden rounded-md bg-secondary/70 px-2 py-1 text-xs leading-snug text-secondary-foreground group-hover:block group-focus:block group-active:block">
+                    <span className="type-caption col-span-3 hidden rounded-md bg-secondary/70 px-2 py-1 text-secondary-foreground group-hover:block group-focus:block group-active:block">
                       {achievement.rule}
                     </span>
                   </li>

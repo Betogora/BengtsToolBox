@@ -108,10 +108,10 @@ function LiveBuzzerPresenter({
   return (
     <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="rounded-lg border bg-primary p-6 text-primary-foreground shadow-sm">
-        <div className="text-4xl font-semibold tracking-normal sm:text-5xl">
+        <div className="type-section-title">
           {winner ? displayPlayerName(winner) : 'Bereit'}
         </div>
-        <div className="mt-8 text-8xl font-semibold leading-none tabular-nums sm:text-9xl">
+        <div className="type-metric-xl mt-8">
           {winnerTeam?.name ?? '-'}
         </div>
         <div className="mt-6 flex flex-wrap gap-2">
@@ -127,7 +127,7 @@ function LiveBuzzerPresenter({
       <div className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
-          <h2 className="text-2xl font-semibold tracking-normal">
+          <h2 className="type-section-title">
             Buzz-Reihenfolge
           </h2>
         </div>
@@ -148,10 +148,10 @@ function LiveBuzzerPresenter({
                   className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-2xl font-semibold">
+                    <div className="type-section-title truncate">
                       #{buzzRanks.get(player.id)} {displayPlayerName(player)}
                     </div>
-                    <div className="mt-1 text-sm text-muted-foreground">
+                    <div className="type-ui mt-1 text-muted-foreground">
                       {formatBuzzTime(
                         player.buzzedAt,
                         player.buzzedAtClientIso,
@@ -322,7 +322,7 @@ export function LiveBuzzerPage() {
           <CardContent className="grid gap-5">
             <Button
               className={cn(
-                'h-48 rounded-lg text-6xl font-semibold shadow-sm sm:h-64 sm:text-8xl',
+                'type-metric-xl h-48 rounded-lg shadow-sm sm:h-64',
                 winner?.id === selectedPlayerId &&
                   'bg-accent text-accent-foreground hover:bg-accent/90',
               )}
@@ -354,16 +354,16 @@ export function LiveBuzzerPage() {
             </Button>
 
             <div className="rounded-lg border p-4">
-              <div className="text-sm text-muted-foreground">Ergebnis</div>
+              <div className="type-ui text-muted-foreground">Ergebnis</div>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-h-7 text-xl font-semibold">
+                <div className="type-card-title min-h-7">
                   {winner ? displayPlayerName(winner) : '-'}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={winnerTeam?.className} variant="outline">
                     {winnerTeam?.name ?? 'Kein Team'}
                   </Badge>
-                  <span className="text-xl font-semibold tabular-nums">
+                  <span className="type-card-title tabular-nums">
                     {formatBuzzTime(
                       sessionState.lastBuzzedAt,
                       sessionState.lastBuzzedAtClientIso,
@@ -395,13 +395,13 @@ export function LiveBuzzerPage() {
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 font-semibold">
+                  <div className="type-action flex items-center gap-2">
                     <span className={cn('size-3 rounded-full', team.dotClassName)} />
                     {team.name}
                   </div>
                   {team.isWinner && <Trophy className="size-4" />}
                 </div>
-                <div className="mt-2 text-sm tabular-nums">
+                <div className="type-ui mt-2 tabular-nums">
                   {team.memberCount} Mitglieder
                 </div>
               </div>
@@ -419,7 +419,7 @@ export function LiveBuzzerPage() {
               <div className="flex flex-wrap gap-2">
                 <PresenterLauncher
                   appTitle="Live-Buzzer"
-                  className="h-8 px-3 text-xs"
+                  className="h-8 px-3"
                   views={[
                     {
                       id: 'live',
@@ -514,10 +514,10 @@ export function LiveBuzzerPage() {
                     className="flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <div className="font-semibold">
+                      <div className="type-action">
                         Runde {entry.roundNumber}: {entry.winnerPlayerName}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="type-ui text-muted-foreground">
                         {new Date(entry.createdAt).toLocaleString()}
                       </div>
                     </div>

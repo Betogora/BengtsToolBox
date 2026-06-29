@@ -10,6 +10,9 @@ const palette = {
   paleMint: '#e8f7f4',
 }
 
+const illustrationFontFamily = 'Manrope Variable, Manrope, ui-sans-serif, system-ui'
+const illustrationFontWeight = '750'
+
 function SvgShell({
   children,
   viewBox = '0 0 360 160',
@@ -100,9 +103,9 @@ function CoinflipIllustration() {
         />
         <text
           fill={palette.teal}
-          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontFamily={illustrationFontFamily}
           fontSize="42"
-          fontWeight="800"
+          fontWeight={illustrationFontWeight}
           textAnchor="middle"
           x="230"
           y="95"
@@ -120,9 +123,9 @@ function CoinflipIllustration() {
         />
         <text
           fill={palette.coral}
-          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontFamily={illustrationFontFamily}
           fontSize="29"
-          fontWeight="800"
+          fontWeight={illustrationFontWeight}
           textAnchor="middle"
           transform="rotate(18 298 58)"
           x="298"
@@ -204,9 +207,9 @@ function ScoreboardIllustration() {
         <path d="M142 42a8 8 0 0 1 8-8h80a8 8 0 0 1 8 8v28h-96Z" fill={palette.mint} opacity="0.42" />
         <text
           fill={palette.teal}
-          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontFamily={illustrationFontFamily}
           fontSize="14"
-          fontWeight="800"
+          fontWeight={illustrationFontWeight}
           textAnchor="middle"
           x="190"
           y="58"
@@ -215,9 +218,9 @@ function ScoreboardIllustration() {
         </text>
         <text
           fill={palette.teal}
-          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontFamily={illustrationFontFamily}
           fontSize="54"
-          fontWeight="800"
+          fontWeight={illustrationFontWeight}
           textAnchor="middle"
           x="190"
           y="112"
@@ -239,9 +242,9 @@ function ScoreboardIllustration() {
         <path d="M254 42a8 8 0 0 1 8-8h80a8 8 0 0 1 8 8v28h-96Z" fill={palette.coral} opacity="0.2" />
         <text
           fill={palette.coral}
-          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontFamily={illustrationFontFamily}
           fontSize="14"
-          fontWeight="800"
+          fontWeight={illustrationFontWeight}
           textAnchor="middle"
           x="302"
           y="58"
@@ -250,9 +253,9 @@ function ScoreboardIllustration() {
         </text>
         <text
           fill={palette.coral}
-          fontFamily="Inter, ui-sans-serif, system-ui"
+          fontFamily={illustrationFontFamily}
           fontSize="54"
-          fontWeight="800"
+          fontWeight={illustrationFontWeight}
           textAnchor="middle"
           x="302"
           y="112"
@@ -359,9 +362,9 @@ function RandomizerIllustration() {
           />
           <text
             fill={tile.color}
-            fontFamily="Inter, ui-sans-serif, system-ui"
+            fontFamily={illustrationFontFamily}
             fontSize="38"
-            fontWeight="800"
+            fontWeight={illustrationFontWeight}
             textAnchor="middle"
             x={tile.x + 41}
             y={tile.y + 41}

@@ -22,7 +22,8 @@ const labelPadding = 8
 const labelMinSegmentAngle = 16
 const labelEllipsis = '...'
 const wheelLabelFontFamily =
-  'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+  'Manrope Variable, Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+const wheelLabelFontWeight = 650
 
 let wheelLabelMeasureContext: CanvasRenderingContext2D | null | undefined
 
@@ -137,7 +138,7 @@ function measureWheelLabel(value: string, fontSize: number) {
     return estimateWheelLabelWidth(value, fontSize)
   }
 
-  context.font = `700 ${fontSize}px ${wheelLabelFontFamily}`
+  context.font = `${wheelLabelFontWeight} ${fontSize}px ${wheelLabelFontFamily}`
 
   return context.measureText(value).width
 }

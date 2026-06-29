@@ -146,7 +146,7 @@ export function EntryColorControl({
           }
         />
         <label
-          className="pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-[0.68rem] font-semibold leading-tight text-muted-foreground"
+          className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-muted-foreground"
           htmlFor={`entry-color-${entry.id}`}
         >
           Farbe

@@ -348,23 +348,23 @@ function MobileScoreBars({
           >
             <div className="flex min-w-0 items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
+                <span className="type-action w-6 shrink-0 tabular-nums text-muted-foreground">
                   {index + 1}
                 </span>
                 <span
                   className="size-3 shrink-0 rounded-full"
                   style={{ backgroundColor: player.color }}
                 />
-                <span className="min-w-0 truncate font-semibold">
+                <span className="type-action min-w-0 truncate">
                   {player.name}
                 </span>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-lg font-semibold tabular-nums">
+                <div className="type-metric-sm">
                   {formatNumber(score)}
                 </div>
                 {unit.trim() && (
-                  <div className="max-w-24 truncate text-xs text-muted-foreground">
+                  <div className="type-caption max-w-24 truncate text-muted-foreground">
                     {unit}
                   </div>
                 )}
@@ -420,16 +420,16 @@ function MobilePlayerTimelines({
                   className="size-3 shrink-0 rounded-full"
                   style={{ backgroundColor: player.color }}
                 />
-                <span className="min-w-0 truncate font-semibold">
+                <span className="type-action min-w-0 truncate">
                   {player.name}
                 </span>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-base font-semibold tabular-nums">
+                <div className="type-action tabular-nums">
                   {formatNumber(score)}
                 </div>
                 {unit.trim() && (
-                  <div className="max-w-24 truncate text-xs text-muted-foreground">
+                  <div className="type-caption max-w-24 truncate text-muted-foreground">
                     {unit}
                   </div>
                 )}
@@ -802,9 +802,9 @@ export function PlayerCard({
           <div className="min-w-0 flex-1">
             <InlineTextEdit
               ariaLabel={`Name für ${player.name}`}
-              className="py-1 text-2xl font-semibold tracking-normal"
+              className="type-section-title py-1"
               fallback={`Person ${player.position}`}
-              inputClassName="h-11 text-xl font-semibold"
+              inputClassName="type-section-title h-11"
               value={player.name}
               onSave={(value) => onNameChange(player.id, value)}
             />
@@ -867,10 +867,10 @@ export function PlayerCard({
 
         <div className="flex items-end justify-between gap-4">
           <div>
-            <div className="text-4xl font-semibold tabular-nums">
+            <div className="type-metric-lg">
               {formatNumber(score)}
             </div>
-            <div className="text-xs text-muted-foreground">{unit}</div>
+            <div className="type-caption text-muted-foreground">{unit}</div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -930,7 +930,7 @@ export function EventTable({
     />
   )
   const renderPlayerLabel = (event: ProgressEvent) => (
-    <div className="flex min-w-0 items-center gap-2 font-medium">
+    <div className="type-label flex min-w-0 items-center gap-2">
       <span
         className="size-3 shrink-0 rounded-full"
         style={{ backgroundColor: event.playerColor }}
@@ -1024,27 +1024,27 @@ export function EventTable({
     <>
       <div className="grid gap-2 md:hidden">
         {events.map((event) => (
-          <div key={event.id} className="rounded-md border bg-card p-3 text-sm">
+          <div key={event.id} className="type-ui rounded-md border bg-card p-3">
             <div className="flex items-start justify-between gap-3">
               {renderPlayerLabel(event)}
               {renderDeleteButton(event)}
             </div>
             <div className="mt-3 grid gap-3">
               <div>
-                <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                <div className="type-caption mb-1.5 text-muted-foreground">
                   Zeitpunkt
                 </div>
                 {renderDateInput(event)}
               </div>
               <div className="grid gap-3 min-[26rem]:grid-cols-2">
                 <div>
-                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="type-caption mb-1.5 text-muted-foreground">
                     Wert
                   </div>
                   {renderValueControls(event)}
                 </div>
                 <div>
-                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="type-caption mb-1.5 text-muted-foreground">
                     Icon
                   </div>
                   {renderIconSelect(event)}
@@ -1082,7 +1082,7 @@ export function EventTable({
                 />
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2 font-medium">
+                <div className="type-label flex items-center gap-2">
                   <span
                     className="size-3 rounded-full"
                     style={{ backgroundColor: event.playerColor }}
@@ -1206,12 +1206,12 @@ export function ArchiveDatasetCard({
           <div className="min-w-0">
             <InlineTextEdit
               ariaLabel="Archivname"
-              className="font-semibold"
+              className="type-action"
               fallback="Archivierter Datensatz"
               value={dataset.name}
               onSave={(value) => onRename(dataset.id, value)}
             />
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="type-caption mt-1 text-muted-foreground">
               {formatDateTime(dataset.archivedAtClientIso)} - {events.length}{' '}
               Ereignisse
             </div>
@@ -1246,12 +1246,12 @@ export function ArchiveDatasetCard({
                       className="size-3 rounded-full"
                       style={{ backgroundColor: event.playerColor }}
                     />
-                    <span className="font-medium">{event.playerName}</span>
+                    <span className="type-label">{event.playerName}</span>
                     <Badge variant={event.valueDelta > 0 ? 'default' : 'outline'}>
                       {formatSignedNumber(event.valueDelta)}
                     </Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="type-caption text-muted-foreground">
                     {formatDateTime(event.createdAtClientIso)}
                   </div>
                 </div>

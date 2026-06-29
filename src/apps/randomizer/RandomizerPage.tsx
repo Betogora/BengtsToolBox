@@ -31,13 +31,13 @@ function RandomizerPresenter({
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <section className="grid min-h-[28rem] place-items-center rounded-lg border bg-secondary p-6 text-center shadow-sm">
         <div>
-          <p className="text-base font-medium text-muted-foreground">
+          <p className="type-label text-muted-foreground">
             Letzter Wurf
           </p>
-          <div className="mt-4 text-9xl font-semibold leading-none tabular-nums">
+          <div className="type-metric-xl mt-4">
             {lastRoll ?? '-'}
           </div>
-          <p className="mt-5 text-xl font-semibold tabular-nums">
+          <p className="type-action mt-5 tabular-nums">
             {min} bis {max}
           </p>
         </div>
@@ -46,7 +46,7 @@ function RandomizerPresenter({
       <aside className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <History className="size-5 text-primary" />
-          <h2 className="text-2xl font-semibold tracking-normal">
+          <h2 className="type-section-title">
             Letzte Ergebnisse
           </h2>
         </div>
@@ -59,10 +59,10 @@ function RandomizerPresenter({
                 key={rollResult.id}
                 className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
               >
-                <div className="font-medium">
+                <div className="type-label">
                   Wurf {history.length - index}
                 </div>
-                <div className="text-4xl font-semibold tabular-nums">
+                <div className="type-metric-lg">
                   {rollResult.value}
                 </div>
               </div>
@@ -151,10 +151,10 @@ export function RandomizerPage() {
               className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg bg-secondary p-6 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               onClick={roll}
             >
-              <div className="text-7xl font-semibold tabular-nums">
+              <div className="type-metric-xl">
                 {data.lastRoll ?? '-'}
               </div>
-              <div className="flex items-center justify-center gap-2 text-lg font-semibold leading-none tracking-normal">
+              <div className="type-action flex items-center justify-center gap-2">
                 <Dice5 className="size-5 text-primary" />
                 <span>Würfeln</span>
               </div>
@@ -192,10 +192,10 @@ export function RandomizerPage() {
                     key={rollResult.id}
                     className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
                   >
-                    <div className="font-medium">
+                    <div className="type-label">
                       Wurf {visibleHistory.length - index}
                     </div>
-                    <div className="text-2xl font-semibold tabular-nums">
+                    <div className="type-metric-sm">
                       {rollResult.value}
                     </div>
                   </div>

@@ -55,7 +55,7 @@ function getPodiumRowClass(rank: number) {
 
 function getPodiumRankClass(rank: number) {
   return cn(
-    'inline-flex size-9 items-center justify-center rounded-md border bg-card text-sm font-semibold tabular-nums',
+    'type-action inline-flex size-9 items-center justify-center rounded-md border bg-card tabular-nums',
     rank === 1 && 'border-[#c9961a]/50 bg-[#f6d36b]/70',
     rank === 2 && 'border-[#aab0b8]/60 bg-[#d8dde3]/80',
     rank === 3 && 'border-[#b8794f]/50 bg-[#d79a70]/65',
@@ -90,10 +90,10 @@ function ProgressDashboardPresenter({
       <section className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="type-label text-muted-foreground">
               {activeDataset.name}
             </p>
-            <h2 className="truncate text-3xl font-semibold tracking-normal">
+            <h2 className="type-section-title truncate">
               {activeDataset.chartTitle}
             </h2>
           </div>
@@ -107,14 +107,14 @@ function ProgressDashboardPresenter({
 
       <aside className="grid content-start gap-4">
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Führung</p>
-          <div className="mt-2 truncate text-3xl font-semibold">
+          <p className="type-label text-muted-foreground">Führung</p>
+          <div className="type-section-title mt-2 truncate">
             {leader?.player.name ?? '-'}
           </div>
-          <div className="mt-3 text-7xl font-semibold tabular-nums">
+          <div className="type-metric-xl mt-3">
             {formatNumber(leader?.score ?? 0)}
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="type-ui mt-2 text-muted-foreground">
             von {formatNumber(totalScore)}
             {unitLabel ? ` ${unitLabel}` : ''}
           </p>
@@ -123,7 +123,7 @@ function ProgressDashboardPresenter({
         <div className="rounded-lg border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <Trophy className="size-5 text-primary" />
-            <h2 className="text-2xl font-semibold tracking-normal">
+            <h2 className="type-section-title">
               Topliste
             </h2>
           </div>
@@ -154,11 +154,11 @@ function ProgressDashboardPresenter({
                         className="size-3 shrink-0 rounded-full"
                         style={{ backgroundColor: playerScore.player.color }}
                       />
-                      <span className="truncate font-semibold">
+                      <span className="type-action truncate">
                         {playerScore.player.name}
                       </span>
                     </div>
-                    <div className="inline-flex min-w-16 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-2xl font-semibold tabular-nums text-primary">
+                    <div className="type-metric-sm inline-flex min-w-16 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-primary">
                       {formatNumber(playerScore.score)}
                     </div>
                   </div>
@@ -255,16 +255,16 @@ export function ProgressDashboardPage() {
       <Card style={chartAccentStyle}>
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-3 rounded-lg border bg-secondary/60 p-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2 text-lg">
+            <div className="type-ui flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
                 Führung
               </div>
-              <div className="min-w-0 truncate text-lg font-semibold">
+              <div className="type-action min-w-0 truncate">
                 {leader ? leader.player.name : '-'}
               </div>
               <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                <span className="font-semibold tabular-nums">
+                <span className="type-action tabular-nums">
                   {formatNumber(leader?.score ?? 0)}
                 </span>
                 <span>
@@ -295,12 +295,12 @@ export function ProgressDashboardPage() {
 
       <section className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
         <div>
-          <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-normal">
+          <h2 className="type-section-title flex items-center gap-2">
             <UsersRound className="size-5 text-primary" />
             Spieler
           </h2>
           {isLoading && (
-            <p className="mt-1 text-sm text-muted-foreground">Synchronisiere...</p>
+            <p className="type-ui mt-1 text-muted-foreground">Synchronisiere...</p>
           )}
         </div>
       </section>
@@ -362,8 +362,8 @@ export function ProgressDashboardPage() {
                 <ChevronRight className="size-4 shrink-0" />
               )}
               <BarChart3 className="size-5 text-primary" />
-              <span className="font-semibold">Datensatz</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="type-action">Datensatz</span>
+              <span className="type-caption text-muted-foreground">
                 {formatNumber(totalEvents)} Ereignisse
               </span>
             </button>

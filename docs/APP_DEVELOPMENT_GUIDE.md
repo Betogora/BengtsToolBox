@@ -40,7 +40,7 @@ Optionale `components.tsx`, `logic.ts`, `format.ts` oder `data/`-Dateien entsteh
 3. Gemeinsame Teams, IDs und Hilfen aus `src/apps/shared` nutzen.
 4. Code erst nach `shared` verschieben, wenn mindestens zwei Apps dieselbe Abstraktion wirklich verwenden.
 
-Lucide Icons, bestehende Tokens und die globale Typografie bewahren die visuelle Sprache. Neue globale CSS-Regeln sind die Ausnahme; Feature-Layout gehört möglichst in die Komponente.
+Lucide Icons, bestehende Tokens und die globale Typografie bewahren die visuelle Sprache. Neue globale CSS-Regeln sind die Ausnahme; Feature-Layout gehört möglichst in die Komponente. Für Schriftgrößen und Gewichte semantische Rollen aus `src/styles/globals.css` verwenden, zum Beispiel `type-page-title`, `type-section-title`, `type-label`, `type-action` und `type-metric-*`, statt app-spezifische `text-*`/`font-*`-Kombinationen einzuführen.
 
 ### Presenter-Modus
 

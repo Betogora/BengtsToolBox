@@ -385,10 +385,10 @@ export function TerritoryEventTable({
           )
 
           return (
-            <div key={event.id} className="rounded-md border bg-card p-3 text-sm">
+            <div key={event.id} className="type-ui rounded-md border bg-card p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-2 font-medium">
+                  <div className="type-label flex min-w-0 items-center gap-2">
                     {player && (
                       <span
                         className="size-3 shrink-0 rounded-full"
@@ -399,7 +399,7 @@ export function TerritoryEventTable({
                       {player?.name ?? 'Sushi-Tourist'}
                     </span>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="type-caption mt-1 text-muted-foreground">
                     {territory?.name ?? 'Territorium'}
                   </div>
                 </div>
@@ -407,19 +407,19 @@ export function TerritoryEventTable({
               </div>
               <div className="mt-3 grid gap-3">
                 <div>
-                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="type-caption mb-1.5 text-muted-foreground">
                     Datum
                   </div>
                   {renderDateInput(event)}
                 </div>
                 <div>
-                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="type-caption mb-1.5 text-muted-foreground">
                     Spieler
                   </div>
                   {renderPlayerSelect(event)}
                 </div>
                 <div>
-                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="type-caption mb-1.5 text-muted-foreground">
                     Territorium
                   </div>
                   {renderTerritorySelect(event)}

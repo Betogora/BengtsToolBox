@@ -71,7 +71,7 @@ function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
               className="size-3 shrink-0 rounded-full"
               style={{ backgroundColor: event.playerColor }}
             />
-            <span className="min-w-0 truncate text-sm font-medium">
+            <span className="type-label min-w-0 truncate">
               {event.playerName}
             </span>
           </div>
@@ -79,7 +79,7 @@ function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
             <Badge variant={event.delta > 0 ? 'default' : 'outline'}>
               {formatSignedNumber(event.delta)}
             </Badge>
-            <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">
+            <span className="type-caption w-12 text-right text-muted-foreground tabular-nums">
               {formatEventTime(event.createdAtClientIso)}
             </span>
           </div>
@@ -116,7 +116,7 @@ function ScoreboardPresenter({
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
       <section className="rounded-lg border bg-card p-5 shadow-sm">
-        <h2 className="truncate text-4xl font-semibold tracking-normal">
+        <h2 className="type-section-title truncate">
           {scoreboardTitle}
         </h2>
 
@@ -132,15 +132,15 @@ function ScoreboardPresenter({
                   index === 0 && 'border-primary bg-secondary/65',
                 )}
               >
-                <div className="text-2xl font-semibold tabular-nums">
+                <div className="type-metric-sm">
                   {index + 1}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-2xl font-semibold">
+                  <div className="type-section-title truncate">
                     {player.name}
                   </div>
                 </div>
-                <div className="text-5xl font-semibold tabular-nums">
+                <div className="type-metric-lg">
                   {player.score}
                 </div>
               </div>
@@ -151,11 +151,11 @@ function ScoreboardPresenter({
 
       <aside className="grid content-start gap-4">
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Führung</p>
-          <div className="mt-2 truncate text-3xl font-semibold">
+          <p className="type-label text-muted-foreground">Führung</p>
+          <div className="type-section-title mt-2 truncate">
             {leader?.name ?? '-'}
           </div>
-          <div className="mt-3 text-7xl font-semibold tabular-nums">
+          <div className="type-metric-xl mt-3">
             {leader?.score ?? 0}
           </div>
         </div>
@@ -167,15 +167,15 @@ function ScoreboardPresenter({
               className={cn('rounded-lg border p-4', team.className)}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2 font-semibold">
+                <div className="type-action flex min-w-0 items-center gap-2">
                   <span className={cn('size-3 rounded-full', team.dotClassName)} />
                   <span className="truncate">{team.name}</span>
                 </div>
-                <div className="text-3xl font-semibold tabular-nums">
+                <div className="type-metric-md">
                   {team.score}
                 </div>
               </div>
-              <div className="mt-1 text-sm tabular-nums">
+              <div className="type-ui mt-1 tabular-nums">
                 {team.memberCount} Personen
               </div>
             </div>
@@ -183,8 +183,8 @@ function ScoreboardPresenter({
           {unassignedScore > 0 && (
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="font-semibold">Kein Team</div>
-                <div className="text-3xl font-semibold tabular-nums">
+                <div className="type-action">Kein Team</div>
+                <div className="type-metric-md">
                   {unassignedScore}
                 </div>
               </div>
@@ -195,19 +195,19 @@ function ScoreboardPresenter({
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="type-label text-muted-foreground">
                 Gesamt
               </p>
-              <div className="text-3xl font-semibold tabular-nums">
+              <div className="type-metric-md">
                 {totalScore}
               </div>
             </div>
             {lastEvent && (
               <div className="min-w-0 text-right">
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="type-label text-muted-foreground">
                   Letzte Änderung
                 </p>
-                <div className="truncate font-semibold">
+                <div className="type-action truncate">
                   {lastEvent.playerName} {formatSignedNumber(lastEvent.delta)}
                 </div>
               </div>
@@ -349,10 +349,10 @@ export function ScoreboardPage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="rounded-lg bg-secondary p-4">
-                <div className="text-sm text-muted-foreground">
+                <div className="type-ui text-muted-foreground">
                   Führung {leader ? leader.name : '-'}
                 </div>
-                <div className="text-5xl font-semibold tabular-nums">
+                <div className="type-metric-lg">
                   {leader?.score ?? 0}
                 </div>
               </div>
@@ -364,7 +364,7 @@ export function ScoreboardPage() {
                     className={cn('rounded-lg border p-4', team.className)}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2 font-semibold">
+                      <div className="type-action flex min-w-0 items-center gap-2">
                         <span
                           className={cn(
                             'size-3 shrink-0 rounded-full',
@@ -373,11 +373,11 @@ export function ScoreboardPage() {
                         />
                         <span className="min-w-0 truncate">{team.name}</span>
                       </div>
-                      <div className="text-2xl font-semibold tabular-nums">
+                      <div className="type-metric-sm">
                         {team.score}
                       </div>
                     </div>
-                    <div className="mt-1 text-sm tabular-nums">
+                    <div className="type-ui mt-1 tabular-nums">
                       {team.memberCount} Personen
                     </div>
                   </div>
@@ -386,21 +386,21 @@ export function ScoreboardPage() {
                 {unassignedPlayers.length > 0 && (
                   <div className="rounded-lg border p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="font-semibold">Kein Team</div>
-                      <div className="text-2xl font-semibold tabular-nums">
+                      <div className="type-action">Kein Team</div>
+                      <div className="type-metric-sm">
                         {unassignedScore}
                       </div>
                     </div>
-                    <div className="mt-1 text-sm text-muted-foreground tabular-nums">
+                    <div className="type-ui mt-1 text-muted-foreground tabular-nums">
                       {unassignedPlayers.length} Personen
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="rounded-lg border p-3 text-sm">
+              <div className="type-ui rounded-lg border p-3">
                 <div className="text-muted-foreground">Gesamt</div>
-                <div className="text-2xl font-semibold tabular-nums">
+                <div className="type-metric-sm">
                   {totalScore}
                 </div>
               </div>
@@ -422,7 +422,7 @@ export function ScoreboardPage() {
 
         <div className="grid gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="flex items-center gap-2 text-2xl font-semibold tracking-normal">
+            <h2 className="type-section-title flex items-center gap-2">
               <UsersRound className="size-5 text-primary" />
               Personen
             </h2>

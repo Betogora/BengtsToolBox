@@ -43,7 +43,7 @@ export function WheelGraphic({
 
   if (entries.length === 0) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-full border border-dashed bg-secondary text-center text-sm text-muted-foreground sm:max-w-[30rem]">
+      <div className="type-ui flex aspect-square w-full items-center justify-center rounded-full border border-dashed bg-secondary text-center text-muted-foreground sm:max-w-[30rem]">
         Keine Optionen im Rad.
       </div>
     )
@@ -181,8 +181,9 @@ export function WheelGraphic({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fill={labelTextColor}
+                  fontFamily="var(--btb-font-sans)"
                   fontSize={labelFontSize}
-                  fontWeight="700"
+                  fontWeight="650"
                   transform={`rotate(${segment.midAngle}, ${labelPosition.x}, ${labelPosition.y})`}
                   {...labelStrokeProps}
                 >

@@ -303,7 +303,7 @@ function TournamentCompleteBanner({
   numberOfRounds: number
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-sm font-semibold text-emerald-950">
+    <div className="type-action flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950">
       <CheckCircle2 className="size-5 shrink-0" />
       <span>{label}</span>
       <Badge className="border-emerald-300 bg-emerald-50 text-emerald-950" variant="outline">
@@ -479,7 +479,7 @@ function TournamentFormatPicker({
         >
           <Swords className="size-4 shrink-0" />
           <span className="min-w-0">
-            <span className="block whitespace-nowrap text-sm font-semibold">
+            <span className="type-action block whitespace-nowrap">
               {tournamentFormatLabel('swiss')}
             </span>
           </span>
@@ -492,7 +492,7 @@ function TournamentFormatPicker({
         >
           <GitBranch className="size-4 shrink-0" />
           <span className="min-w-0">
-            <span className="block whitespace-nowrap text-sm font-semibold">
+            <span className="type-action block whitespace-nowrap">
               {tournamentFormatLabel('roundRobin')}
             </span>
           </span>
@@ -505,7 +505,7 @@ function TournamentFormatPicker({
         >
           <Brain className="size-4 shrink-0" />
           <span className="min-w-0">
-            <span className="block whitespace-nowrap text-sm font-semibold">
+            <span className="type-action block whitespace-nowrap">
               {tournamentFormatLabel('handAndBrain')}
             </span>
           </span>
@@ -762,7 +762,7 @@ function TournamentCreator({
             </form>
 
             <div className="grid gap-2 md:hidden">
-              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 px-2 text-[0.68rem] font-semibold leading-none text-muted-foreground">
+              <div className="type-field-label grid grid-cols-[minmax(0,1fr)_7rem] gap-2 px-2 text-muted-foreground">
                 <span>Name</span>
                 <span>Rating</span>
               </div>
@@ -772,7 +772,7 @@ function TournamentCreator({
                   className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
+                    <span className="type-caption flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 tabular-nums">
                       #{index + 1}
                     </span>
                     <Badge className="h-6" variant={statusVariant(player.status)}>
@@ -1133,7 +1133,7 @@ function ArchivedTournamentsList({
             className="grid gap-3 rounded-md border bg-background p-3 text-sm"
           >
             <div className="min-w-0">
-              <div className="truncate font-semibold">{entry.tournament.name}</div>
+              <div className="type-action truncate">{entry.tournament.name}</div>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 <Badge variant="secondary">
                   {entry.category}
@@ -1146,7 +1146,7 @@ function ArchivedTournamentsList({
                 </Badge>
               </div>
             </div>
-            <div className="grid gap-1 text-xs text-muted-foreground">
+            <div className="type-caption grid gap-1 text-muted-foreground">
               <span>{formatDateTime(entry.tournament.archivedAtClientIso)}</span>
               <span className="line-clamp-2">Top 3: {topPlayers(entry)}</span>
             </div>
@@ -1167,7 +1167,7 @@ function ArchivedTournamentsList({
           <TableBody>
             {entries.map((entry) => (
               <TableRow key={entry.tournament.id}>
-                <TableCell className="max-w-56 font-medium">
+                <TableCell className="type-label max-w-56">
                   <span className="block truncate">{entry.tournament.name}</span>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
@@ -1208,10 +1208,10 @@ function SwissStandingsPresenter({
       <section className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="type-label text-muted-foreground">
               {tournamentFormatLabel(tournament.format)}
             </p>
-            <h2 className="truncate text-3xl font-semibold tracking-normal">
+            <h2 className="type-section-title truncate">
               {tournament.name}
             </h2>
           </div>
@@ -1226,7 +1226,7 @@ function SwissStandingsPresenter({
       <section className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="mb-5 flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
-          <h3 className="text-2xl font-semibold tracking-normal">Rangliste</h3>
+          <h3 className="type-section-title">Rangliste</h3>
         </div>
         {standings.length === 0 ? (
           <EmptyState>Noch keine Rangliste vorhanden.</EmptyState>
@@ -1252,9 +1252,9 @@ function SwissStandingsPresenter({
                   )}
                 >
                   <TableCell className="tabular-nums">{row.rank}</TableCell>
-                  <TableCell className="font-medium">{row.playerName}</TableCell>
+                  <TableCell className="type-label">{row.playerName}</TableCell>
                   <TableCell className="tabular-nums">
-                    <span className="inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                    <span className="type-action inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-primary">
                       {formatPoints(row.points)}
                     </span>
                   </TableCell>
@@ -1538,19 +1538,19 @@ export function SwissTournamentsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
         <TabsList className="swiss-print-hidden grid h-auto w-full grid-cols-2 sm:grid-cols-4">
-          <TabsTrigger value="overview" className="min-w-0 font-semibold tracking-normal">
+          <TabsTrigger value="overview" className="min-w-0">
             <LayoutDashboard className="size-5 text-primary" />
             Übersicht
           </TabsTrigger>
-          <TabsTrigger value="players" className="min-w-0 font-semibold tracking-normal">
+          <TabsTrigger value="players" className="min-w-0">
             <UsersRound className="size-5 text-primary" />
             Spieler
           </TabsTrigger>
-          <TabsTrigger value="pairings" className="min-w-0 font-semibold tracking-normal">
+          <TabsTrigger value="pairings" className="min-w-0">
             <Swords className="size-5 text-primary" />
             Paarungen
           </TabsTrigger>
-          <TabsTrigger value="standings" className="min-w-0 font-semibold tracking-normal">
+          <TabsTrigger value="standings" className="min-w-0">
             <Trophy className="size-5 text-primary" />
             Rangliste
           </TabsTrigger>
@@ -1562,7 +1562,7 @@ export function SwissTournamentsPage() {
               <CardHeader className="gap-3 p-4 md:gap-2">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
                   <CardDescription>Aktuelle Runde</CardDescription>
-                  <CardTitle className="text-2xl">
+                  <CardTitle className="type-section-title">
                     {tournament.currentRound}/{tournament.numberOfRounds}
                   </CardTitle>
                 </div>
@@ -1721,7 +1721,7 @@ export function SwissTournamentsPage() {
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     <Archive className="size-5 shrink-0 text-primary" />
-                    <span className="truncate text-base font-semibold">
+                    <span className="type-action truncate">
                       Vergangene Turniere
                     </span>
                     <Badge variant="secondary">{archivedTournamentSummaries.length}</Badge>
@@ -1793,7 +1793,7 @@ export function SwissTournamentsPage() {
               </form>
 
               <div className="grid gap-2 md:hidden">
-                <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-[0.68rem] font-semibold leading-none text-muted-foreground">
+                <div className="type-field-label grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-muted-foreground">
                   <span>Name</span>
                   <span>Rating</span>
                 </div>
@@ -1807,14 +1807,14 @@ export function SwissTournamentsPage() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
+                          <span className="type-caption flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 tabular-nums">
                             #{index + 1}
                           </span>
                           <Badge className="h-6" variant={statusVariant(player.status)}>
                             {statusLabels[player.status]}
                           </Badge>
                         </div>
-                        <span className="text-xs text-muted-foreground tabular-nums">
+                        <span className="type-caption text-muted-foreground tabular-nums">
                           ab Runde {player.addedInRound}
                         </span>
                       </div>
@@ -2160,7 +2160,7 @@ export function SwissTournamentsPage() {
                           <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
                             {tournament.format === 'handAndBrain' && (
                               <div className="grid gap-2">
-                                <div className="flex items-center gap-2 text-sm font-semibold">
+                                <div className="type-action flex items-center gap-2">
                                   <Brain className="size-4 text-primary" />
                                   Hand-and-Brain-Brett fixieren
                                 </div>
@@ -2347,7 +2347,7 @@ export function SwissTournamentsPage() {
                   )
                 })
               ) : (
-                <div className="flex flex-col gap-3 rounded-md border border-dashed p-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <div className="type-ui flex flex-col gap-3 rounded-md border border-dashed p-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                   <span>Erzeuge die erste Runde, sobald Spieler angelegt sind.</span>
                   <Button
                     className="w-full sm:w-auto"
@@ -2453,7 +2453,7 @@ function ResultCorrectionBadge({
         <SelectTrigger
           aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
           className={cn(
-            'inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 text-xs font-semibold shadow-none',
+            'type-caption inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 shadow-none',
             'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
             '[&>span]:truncate [&>svg]:hidden',
             !pairing.result && 'bg-muted text-muted-foreground',
@@ -2573,14 +2573,14 @@ function PairingsTable({
         <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5">
           <Brain className="size-3.5 shrink-0 text-primary" />
           <span className="sr-only">Brain</span>
-          <span className="min-w-0 truncate font-medium">
+          <span className="type-label min-w-0 truncate">
             {playerName(tournament, side.brainPlayerId)}
           </span>
         </div>
         <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5">
           <Hand className="size-3.5 shrink-0 text-primary" />
           <span className="sr-only">Hand</span>
-          <span className="min-w-0 truncate font-medium">
+          <span className="type-label min-w-0 truncate">
             {playerName(tournament, side.handPlayerId)}
           </span>
         </div>
@@ -2690,7 +2690,7 @@ function PairingsTable({
       <div className="flex flex-wrap gap-1">
         {pairing.isManual && (
           <span
-            className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950"
+            className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950"
             title={removeLabel}
           >
             <span className="px-2 py-0.5">FIXIERT</span>
@@ -2721,7 +2721,7 @@ function PairingsTable({
             return (
               <Badge
                 key={entry.id}
-                className={cn('font-semibold', badgeMeta.className)}
+                className={cn('type-action', badgeMeta.className)}
                 title={entry.message}
                 variant="outline"
               >
@@ -2750,7 +2750,7 @@ function PairingsTable({
               )}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="font-semibold tabular-nums whitespace-nowrap">
+                <div className="type-action tabular-nums whitespace-nowrap">
                   Brett {pairing.boardNumber}
                   {pairing.kind === 'single' && (
                     <Badge className="ml-2 align-middle" variant="secondary">
@@ -2762,13 +2762,13 @@ function PairingsTable({
               </div>
               <div className="mt-2.5 grid grid-cols-2 gap-2">
                 <div className="min-w-0">
-                  <div className="text-xs font-medium text-muted-foreground">
+                  <div className="type-caption text-muted-foreground">
                     Wei&szlig;
                   </div>
                   <div className="whitespace-normal">{whiteName}</div>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-medium text-muted-foreground">
+                  <div className="type-caption text-muted-foreground">
                     Schwarz
                   </div>
                   <div className="whitespace-normal">{blackName}</div>
@@ -2776,7 +2776,7 @@ function PairingsTable({
               </div>
               <div className="mt-2.5">
                 {(!editable || !onResultChange) && (
-                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="type-caption mb-1.5 text-muted-foreground">
                     Ergebnis
                   </div>
                 )}
@@ -2869,7 +2869,7 @@ function PairingsTable({
                 <TableCell>
                   <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
-                      <span className="inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-xs font-semibold text-yellow-950">
+                      <span className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950">
                         <span className="px-2 py-0.5">FIXIERT</span>
                         {editable && onManualPairingRemove && (
                           <Button
@@ -2895,7 +2895,7 @@ function PairingsTable({
                         return (
                           <Badge
                             key={entry.id}
-                            className={cn('font-semibold', badgeMeta.className)}
+                            className={cn('type-action', badgeMeta.className)}
                             title={entry.message}
                             variant="outline"
                           >
@@ -2936,7 +2936,7 @@ function StandingsTable({
           : ''
   const roundCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
     cn(
-      'swiss-round-cell inline-flex h-7 min-w-11 items-center justify-start rounded px-2 text-xs font-semibold tabular-nums',
+      'type-caption swiss-round-cell inline-flex h-7 min-w-11 items-center justify-start rounded px-2 tabular-nums',
       cell.color === 'W' && 'border border-border bg-white text-foreground',
       cell.color === 'B' && 'bg-primary text-primary-foreground',
       cell.outcome === 'bye' && 'border border-dashed border-border bg-muted text-muted-foreground',
@@ -3021,11 +3021,11 @@ function StandingsTable({
                       }}
                     >
                       <TableCell className="px-1.5 py-2 tabular-nums">{row.rank}</TableCell>
-                      <TableCell className="min-w-0 py-2 pl-4 pr-1.5 font-medium">
+                      <TableCell className="type-label min-w-0 py-2 pl-4 pr-1.5">
                         <span className="block min-w-0 truncate">{row.playerName}</span>
                       </TableCell>
                       <TableCell className="px-1 py-2 text-center tabular-nums">
-                        <span className="inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
+                        <span className="type-action inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-primary">
                           {formatPoints(row.points)}
                         </span>
                       </TableCell>
@@ -3054,11 +3054,11 @@ function StandingsTable({
                                 </span>
                               ))}
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
+                            <div className="type-field-label flex flex-wrap items-center gap-2 text-muted-foreground">
                               <span>Siege: {row.wins}</span>
                               <span>{hardshipLabel}: {hardshipCount(row)}</span>
                               <Badge
-                                className="h-5 px-1.5 text-[10px]"
+                                className="h-5 px-1.5"
                                 variant={statusVariant(row.status)}
                               >
                                 {statusLabels[row.status]}
@@ -3096,9 +3096,9 @@ function StandingsTable({
                   className={podiumClass(row.rank)}
                 >
                   <TableCell className="tabular-nums">{row.rank}</TableCell>
-                  <TableCell className="font-medium">{row.playerName}</TableCell>
+                  <TableCell className="type-label">{row.playerName}</TableCell>
                   <TableCell className="tabular-nums">
-                    <span className="inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                    <span className="type-action inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-primary">
                       {formatPoints(row.points)}
                     </span>
                   </TableCell>
