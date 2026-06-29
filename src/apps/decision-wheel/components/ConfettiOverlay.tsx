@@ -2,7 +2,6 @@ import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 
 const confettiParticleCount = 84
-const confettiColors = ['#0D8E90', '#A9DFDA', '#FD7261', '#FAC889', '#06344F', '#FFFFFF']
 
 type ConfettiParticle = {
   id: number
@@ -16,13 +15,14 @@ type ConfettiParticle = {
 }
 
 type ConfettiOverlayProps = {
+  color: string | null
   trigger: number
 }
 
-function createConfettiParticles(): ConfettiParticle[] {
+function createConfettiParticles(color: string): ConfettiParticle[] {
   return Array.from({ length: confettiParticleCount }, (_, index) => ({
     id: index,
-    color: confettiColors[index % confettiColors.length],
+    color,
     left: Math.random() * 100,
     size: 6 + Math.random() * 8,
     delay: Math.random() * 420,
@@ -32,13 +32,13 @@ function createConfettiParticles(): ConfettiParticle[] {
   }))
 }
 
-export function ConfettiOverlay({ trigger }: ConfettiOverlayProps) {
+export function ConfettiOverlay({ color, trigger }: ConfettiOverlayProps) {
   const particles = useMemo(
-    () => (trigger > 0 ? createConfettiParticles() : []),
-    [trigger],
+    () => (trigger > 0 && color ? createConfettiParticles(color) : []),
+    [color, trigger],
   )
 
-  if (trigger <= 0) {
+  if (trigger <= 0 || !color) {
     return null
   }
 

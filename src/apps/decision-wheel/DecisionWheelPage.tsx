@@ -114,7 +114,10 @@ export function DecisionWheelPage() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinEntries, setSpinEntries] = useState<DecisionWheelEntry[] | null>(null)
   const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({})
-  const [confettiTrigger, setConfettiTrigger] = useState(0)
+  const [confetti, setConfetti] = useState<{
+    color: string | null
+    trigger: number
+  }>({ color: null, trigger: 0 })
   const spinTimeoutRef = useRef<number | null>(null)
   const isSpinLockedRef = useRef(false)
   const wheelEntries = useMemo(
@@ -168,7 +171,10 @@ export function DecisionWheelPage() {
     spinTimeoutRef.current = window.setTimeout(() => {
       commitSpinResult(result)
         .then(() => {
-          setConfettiTrigger((currentTrigger) => currentTrigger + 1)
+          setConfetti((currentConfetti) => ({
+            color: result.color,
+            trigger: currentConfetti.trigger + 1,
+          }))
         })
         .catch(() => {
           toast.error('Das Ergebnis konnte nicht gespeichert werden.')
@@ -209,7 +215,7 @@ export function DecisionWheelPage() {
 
   return (
     <AppPage>
-      <ConfettiOverlay trigger={confettiTrigger} />
+      <ConfettiOverlay color={confetti.color} trigger={confetti.trigger} />
 
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={CircleDot} title="Glücksrad" />
