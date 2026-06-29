@@ -57,7 +57,7 @@ const games: GameApp[] = [
   {
     id: 'coinflip',
     title: 'Coinflip',
-    href: '/schlag-den-raab/coinflip',
+    href: '/apps/coinflip',
     Icon: Coins,
     status: 'live',
   },

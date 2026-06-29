@@ -1,11 +1,9 @@
 export const firebasePaths = {
-  diagnosticsHealth: () => 'apps/diagnostics/health/default',
   randomizerState: (stateId = 'default') =>
     `apps/randomizer/state/${stateId}`,
   decisionWheelState: (stateId = 'default') =>
     `apps/decision-wheel/state/${stateId}`,
-  coinflipState: (stateId = 'default') =>
-    `apps/schlag-den-raab/games/coinflip/state/${stateId}`,
+  coinflipState: (stateId = 'default') => `apps/coinflip/state/${stateId}`,
   schlagDenRaabState: (sessionId = 'default') =>
     `apps/schlag-den-raab/sessions/${sessionId}/state/default`,
   liveBuzzerState: (sessionId = 'default') =>

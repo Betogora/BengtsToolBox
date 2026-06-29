@@ -2,7 +2,6 @@ import {
   Bell,
   History,
   Lock,
-  Monitor,
   RotateCcw,
   Trophy,
   Unlock,
@@ -13,11 +12,17 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import type { BuzzerTimestamp } from '@/apps/live-buzzer/types'
+import type {
+  BuzzerPlayer,
+  BuzzerSessionState,
+  BuzzerTimestamp,
+} from '@/apps/live-buzzer/types'
 import { useLiveBuzzer } from '@/apps/live-buzzer/hooks/useLiveBuzzer'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -85,6 +90,89 @@ declare global {
   }
 }
 
+function LiveBuzzerPresenter({
+  buzzRanks,
+  buzzedPlayers,
+  roundNumber,
+  sessionState,
+  winner,
+  winnerTeam,
+}: {
+  buzzRanks: Map<string, number>
+  buzzedPlayers: BuzzerPlayer[]
+  roundNumber: number
+  sessionState: BuzzerSessionState
+  winner: BuzzerPlayer | null
+  winnerTeam: { className: string; name: string } | null | undefined
+}) {
+  return (
+    <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="rounded-lg border bg-primary p-6 text-primary-foreground shadow-sm">
+        <div className="text-4xl font-semibold tracking-normal sm:text-5xl">
+          {winner ? displayPlayerName(winner) : 'Bereit'}
+        </div>
+        <div className="mt-8 text-8xl font-semibold leading-none tabular-nums sm:text-9xl">
+          {winnerTeam?.name ?? '-'}
+        </div>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Badge className="bg-white text-primary">
+            Runde {roundNumber}
+          </Badge>
+          <Badge className="bg-white text-primary">
+            {sessionState.isOpen ? 'Live' : 'Gesperrt'}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Trophy className="size-5 text-primary" />
+          <h2 className="text-2xl font-semibold tracking-normal">
+            Buzz-Reihenfolge
+          </h2>
+        </div>
+        <div className="mt-5 grid gap-3">
+          {buzzedPlayers.length === 0 ? (
+            <EmptyState className="p-8">Noch kein Buzz.</EmptyState>
+          ) : (
+            buzzedPlayers
+              .slice()
+              .sort(
+                (left, right) =>
+                  (buzzRanks.get(left.id) ?? 99) -
+                  (buzzRanks.get(right.id) ?? 99),
+              )
+              .map((player) => (
+                <div
+                  key={player.id}
+                  className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-2xl font-semibold">
+                      #{buzzRanks.get(player.id)} {displayPlayerName(player)}
+                    </div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {formatBuzzTime(
+                        player.buzzedAt,
+                        player.buzzedAtClientIso,
+                      )}
+                    </div>
+                  </div>
+                  {winner?.id === player.id && (
+                    <Badge className={winnerTeam?.className}>
+                      <Trophy className="size-3.5" />
+                      Gewinner
+                    </Badge>
+                  )}
+                </div>
+              ))
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function LiveBuzzerPage() {
   const {
     buzz,
@@ -109,7 +197,6 @@ export function LiveBuzzerPage() {
     winner,
     winnerTeam,
   } = useLiveBuzzer()
-  const [isPresenterMode, setIsPresenterMode] = useState(false)
   const [isSoundEnabled, setIsSoundEnabled] = useState(false)
 
   const selectedHasBuzzed = Boolean(
@@ -120,83 +207,6 @@ export function LiveBuzzerPage() {
   const buzzedPlayers = players.filter(
     (player) => player.buzzedAt || player.buzzedAtClientIso,
   )
-
-  if (isPresenterMode) {
-    return (
-      <AppPage width="wide">
-        <section className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <AppPageTitle Icon={Bell} title="Live-Buzzer" />
-          <Button variant="outline" onClick={() => setIsPresenterMode(false)}>
-            <Monitor className="size-4" />
-            Zurück
-          </Button>
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card className="bg-primary text-primary-foreground">
-            <CardHeader>
-              <CardTitle className="text-3xl sm:text-5xl">
-                {winner ? displayPlayerName(winner) : 'Bereit'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="text-8xl font-semibold tabular-nums sm:text-9xl">
-                {winnerTeam?.name ?? '-'}
-              </div>
-              <Badge className="bg-white text-primary">
-                Runde {roundNumber} - {sessionState.isOpen ? 'Live' : 'Gesperrt'}
-              </Badge>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Buzz-Reihenfolge</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              {buzzedPlayers.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                  Noch kein Buzz.
-                </div>
-              ) : (
-                buzzedPlayers
-                  .slice()
-                  .sort(
-                    (left, right) =>
-                      (buzzRanks.get(left.id) ?? 99) -
-                      (buzzRanks.get(right.id) ?? 99),
-                  )
-                  .map((player) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center justify-between gap-4 rounded-lg border p-4"
-                    >
-                      <div>
-                        <div className="text-2xl font-semibold">
-                          #{buzzRanks.get(player.id)} {displayPlayerName(player)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatBuzzTime(
-                            player.buzzedAt,
-                            player.buzzedAtClientIso,
-                          )}
-                        </div>
-                      </div>
-                      {winner?.id === player.id && (
-                        <Badge>
-                          <Trophy className="size-3.5" />
-                          Gewinner
-                        </Badge>
-                      )}
-                    </div>
-                  ))
-              )}
-            </CardContent>
-          </Card>
-        </section>
-      </AppPage>
-    )
-  }
 
   return (
     <AppPage>
@@ -246,9 +256,9 @@ export function LiveBuzzerPage() {
                   }
                 />
               ) : (
-                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+                <EmptyState className="p-8">
                   Spieler wird angelegt...
-                </div>
+                </EmptyState>
               )}
             </CardContent>
           </Card>
@@ -407,14 +417,27 @@ export function LiveBuzzerPage() {
                 Spielerübersicht
               </CardTitle>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsPresenterMode(true)}
-                >
-                  <Monitor className="size-4" />
-                  Presenter
-                </Button>
+                <PresenterLauncher
+                  appTitle="Live-Buzzer"
+                  className="h-8 px-3 text-xs"
+                  views={[
+                    {
+                      id: 'live',
+                      label: 'Live-Ansicht',
+                      Icon: Bell,
+                      render: () => (
+                        <LiveBuzzerPresenter
+                          buzzRanks={buzzRanks}
+                          buzzedPlayers={buzzedPlayers}
+                          roundNumber={roundNumber}
+                          sessionState={sessionState}
+                          winner={winner}
+                          winnerTeam={winnerTeam}
+                        />
+                      ),
+                    },
+                  ]}
+                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -475,9 +498,9 @@ export function LiveBuzzerPage() {
         </CardHeader>
         <CardContent>
           {sessionState.history.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <EmptyState>
               Noch keine Gewinner vorhanden.
-            </div>
+            </EmptyState>
           ) : (
             <div className="grid gap-3">
               {sessionState.history.map((entry) => {

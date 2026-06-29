@@ -36,6 +36,8 @@ import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTour
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import type {
   ByePolicy,
   ByeScore,
@@ -1116,9 +1118,9 @@ function ArchivedTournamentsList({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+      <EmptyState className="p-4 text-left">
         Noch keine vergangenen Turniere gespeichert.
-      </div>
+      </EmptyState>
     )
   }
 
@@ -1189,6 +1191,92 @@ function ArchivedTournamentsList({
           </TableBody>
       </Table>
     </>
+  )
+}
+
+function SwissStandingsPresenter({
+  round,
+  standings,
+  tournament,
+}: {
+  round: Round | null
+  standings: ReturnType<typeof useSwissTournaments>['standings']
+  tournament: Tournament
+}) {
+  return (
+    <div className="grid gap-6">
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-muted-foreground">
+              {tournamentFormatLabel(tournament.format)}
+            </p>
+            <h2 className="truncate text-3xl font-semibold tracking-normal">
+              {tournament.name}
+            </h2>
+          </div>
+          <Badge variant="outline">
+            {round
+              ? getRoundDisplayLabel(tournament, round.roundNumber)
+              : 'Keine Runde'}
+          </Badge>
+        </div>
+      </section>
+
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="mb-5 flex items-center gap-2">
+          <Trophy className="size-5 text-primary" />
+          <h3 className="text-2xl font-semibold tracking-normal">Rangliste</h3>
+        </div>
+        {standings.length === 0 ? (
+          <EmptyState>Noch keine Rangliste vorhanden.</EmptyState>
+        ) : (
+          <Table className="min-w-[44rem]">
+            <TableHeader>
+              <TableHead>Platz</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Punkte</TableHead>
+              <TableHead>Buchholz</TableHead>
+              <TableHead>SB</TableHead>
+              <TableHead>Siege</TableHead>
+              <TableHead>Status</TableHead>
+            </TableHeader>
+            <TableBody>
+              {standings.map((row) => (
+                <TableRow
+                  key={row.playerId}
+                  className={cn(
+                    row.rank === 1 && 'bg-[#f6e3a5]/65',
+                    row.rank === 2 && 'bg-[#e6e8eb]/70',
+                    row.rank === 3 && 'bg-[#e8c0a0]/55',
+                  )}
+                >
+                  <TableCell className="tabular-nums">{row.rank}</TableCell>
+                  <TableCell className="font-medium">{row.playerName}</TableCell>
+                  <TableCell className="tabular-nums">
+                    <span className="inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                      {formatPoints(row.points)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatPoints(row.buchholz)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatPoints(row.sonnebornBerger)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">{row.wins}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(row.status)}>
+                      {statusLabels[row.status]}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </section>
+    </div>
   )
 }
 
@@ -1418,7 +1506,26 @@ export function SwissTournamentsPage() {
 
   return (
     <AppPage className="swiss-tournaments-page" width="wide">
-      <AppTitleHeader />
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <AppTitleHeader />
+        <PresenterLauncher
+          appTitle={appTitle}
+          views={[
+            {
+              id: 'standings',
+              label: 'Rangliste',
+              Icon: Trophy,
+              render: () => (
+                <SwissStandingsPresenter
+                  round={currentRound}
+                  standings={app.standings}
+                  tournament={tournament}
+                />
+              ),
+            },
+          ]}
+        />
+      </section>
 
       {app.error && (
         <Card className="border-destructive">
@@ -1502,9 +1609,9 @@ export function SwissTournamentsPage() {
                   <PairingsTable tournament={tournament} pairings={currentRound.pairings} />
                 </div>
               ) : (
-                <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                <EmptyState className="text-left">
                   Noch keine Runde erzeugt.
-                </div>
+                </EmptyState>
               )}
             </CardContent>
           </Card>
@@ -1631,7 +1738,7 @@ export function SwissTournamentsPage() {
                     entries={archivedTournamentSummaries}
                     onDelete={async (archivedTournament) => {
                       await app.deleteTournament(archivedTournament.id)
-                      toast.success('Vergangenes Turnier wurde geloescht.')
+                      toast.success('Vergangenes Turnier wurde gelöscht.')
                     }}
                     onExportCsv={app.exportStandingsCsv}
                     onPrint={printPage}

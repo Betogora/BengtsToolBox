@@ -4,6 +4,7 @@ import type {
   PlayerScore,
   ProgressDataset,
   ProgressDashboardState,
+  ProgressDrinkIcon,
   ProgressEvent,
   ProgressEventDelta,
   ProgressEventIcon,
@@ -22,6 +23,8 @@ import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 
 export const progressColorPresets = [...participantColorPresets]
+
+const defaultProgressDrinkIcon: ProgressDrinkIcon = 'beer'
 
 const defaultUnit = 'Getränke'
 const legacyDefaultChartTitle = 'Fortschritt über Zeit'
@@ -56,6 +59,17 @@ export const progressEventIcons: {
   { id: 'funnel', label: 'Trichter', chartLabel: 'T' },
 ]
 
+export const progressDrinkIcons: {
+  id: ProgressDrinkIcon
+  label: string
+  chartLabel: string
+}[] = [
+  { id: 'wine', label: 'Wein', chartLabel: 'W' },
+  { id: 'beer', label: 'Bier', chartLabel: 'B' },
+  { id: 'schnaps', label: 'Schnaps', chartLabel: 'S' },
+  { id: 'funnel', label: 'Trichter', chartLabel: 'T' },
+]
+
 const activeDatasetId = 'dataset-current'
 
 const defaultPlayers: ProgressPlayer[] = Array.from({ length: 5 }, (_, index) => ({
@@ -63,6 +77,7 @@ const defaultPlayers: ProgressPlayer[] = Array.from({ length: 5 }, (_, index) =>
   name: `Person ${index + 1}`,
   position: index + 1,
   color: progressColorPresets[index % progressColorPresets.length],
+  defaultEventIcon: defaultProgressDrinkIcon,
 }))
 
 const initialState: ProgressDashboardState = {
@@ -149,6 +164,18 @@ function normalizeEventIcon(icon: unknown, valueDelta: number): ProgressEventIco
   return valueDelta < 0 ? 'minus' : 'plus'
 }
 
+function isProgressDrinkIcon(icon: unknown): icon is ProgressDrinkIcon {
+  return icon === 'wine' || icon === 'beer' || icon === 'schnaps' || icon === 'funnel'
+}
+
+function normalizeDrinkIcon(icon: unknown): ProgressDrinkIcon {
+  return isProgressDrinkIcon(icon) ? icon : defaultProgressDrinkIcon
+}
+
+function getDrinkIconEventDelta(icon: ProgressDrinkIcon): ProgressEventDelta {
+  return icon === 'schnaps' ? 0.5 : 1
+}
+
 function normalizeDatasetName(name: string | undefined) {
   const trimmedName = name?.trim()
 
@@ -174,6 +201,7 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
     position,
     name,
     color,
+    defaultEventIcon: normalizeDrinkIcon(player.defaultEventIcon),
   }
 }
 
@@ -343,6 +371,7 @@ export function useProgressDashboard(sessionId = 'default') {
       name: `Person ${nextPosition}`,
       position: nextPosition,
       color: getParticipantColorByPosition(nextPosition),
+      defaultEventIcon: defaultProgressDrinkIcon,
       lastUpdatedBy: session.userId,
     })
   }
@@ -375,13 +404,25 @@ export function useProgressDashboard(sessionId = 'default') {
     })
   }
 
-  const addEvent = (player: ProgressPlayer, valueDelta: ProgressEventDelta) => {
-    const score = playerScores.find((entry) => entry.player.id === player.id)?.score ?? 0
+  const updatePlayerDefaultEventIcon = (
+    playerId: string,
+    icon: ProgressDrinkIcon,
+  ) => {
+    const player = players.find((entry) => entry.id === playerId)
 
-    if (valueDelta < 0 && score <= 0) {
-      return Promise.resolve(false)
+    if (!player) {
+      return Promise.resolve()
     }
 
+    return playersStore.mergeItem(playerId, {
+      defaultEventIcon: normalizeDrinkIcon(icon),
+      lastUpdatedBy: session.userId,
+    })
+  }
+
+  const addEvent = (player: ProgressPlayer, icon: ProgressDrinkIcon) => {
+    const eventIcon = normalizeDrinkIcon(icon)
+    const valueDelta = getDrinkIconEventDelta(eventIcon)
     const now = new Date().toISOString()
     const nextPosition =
       activeDataset.events.reduce(
@@ -394,7 +435,7 @@ export function useProgressDashboard(sessionId = 'default') {
       playerName: player.name,
       playerColor: player.color,
       valueDelta,
-      icon: valueDelta < 0 ? 'minus' : 'plus',
+      icon: eventIcon,
       createdAtClientIso: now,
       createdAtLabel: now,
       position: nextPosition,
@@ -482,12 +523,14 @@ export function useProgressDashboard(sessionId = 'default') {
     players,
     progressEventIcons,
     progressColorPresets,
+    progressDrinkIcons,
     removePlayer,
     resetAndArchiveDataset,
     updateActiveDatasetMeta,
     updateArchivedDatasetName,
     updateEvent,
     updatePlayerColor,
+    updatePlayerDefaultEventIcon,
     updatePlayerName,
   }
 }

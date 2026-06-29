@@ -1,22 +1,28 @@
 export const themePalette = {
-  skyBlue: '#47BFFF',
-  darkNavy: '#011A27',
-  blueberry: '#063852',
-  tangerine: '#F0810F',
-  daffodil: '#E6DF44',
+  teal: '#0D8E90',
+  mint: '#A9DFDA',
+  coral: '#FD7261',
+  apricot: '#FAC889',
+  fog: '#D7DDDE',
+  darkNavy: '#06344F',
+  skyBlue: '#A9DFDA',
+  blueberry: '#0D8E90',
+  tangerine: '#FD7261',
+  daffodil: '#FAC889',
 } as const
 
 export const participantColorPresets = [
-  themePalette.blueberry,
-  themePalette.tangerine,
-  themePalette.daffodil,
+  themePalette.teal,
+  themePalette.coral,
+  themePalette.apricot,
+  themePalette.mint,
   themePalette.darkNavy,
 ] as const
 
 export const teamThemeColors = {
-  blue: themePalette.blueberry,
-  yellow: themePalette.daffodil,
-  unassigned: themePalette.tangerine,
+  blue: themePalette.teal,
+  yellow: themePalette.coral,
+  unassigned: themePalette.apricot,
 } as const
 
 function normalizeHexColor(color: string | undefined) {
@@ -44,8 +50,16 @@ export function normalizeThemeColor(color: string | undefined, fallbackIndex = 0
     return getThemeColorByIndex(fallbackIndex)
   }
 
-  if (normalizedColor === themePalette.skyBlue) {
-    return themePalette.blueberry
+  const legacyColorMap: Record<string, string> = {
+    '#011A27': themePalette.darkNavy,
+    '#063852': themePalette.teal,
+    '#47BFFF': themePalette.mint,
+    '#E6DF44': themePalette.apricot,
+    '#F0810F': themePalette.coral,
+  }
+
+  if (legacyColorMap[normalizedColor]) {
+    return legacyColorMap[normalizedColor]
   }
 
   return normalizedColor

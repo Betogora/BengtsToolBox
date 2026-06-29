@@ -91,7 +91,6 @@ Anonymous Auth stellt eine UID ohne Login-Oberfläche bereit. Die aktuellen Fire
 
 - Fehlende Firebase-Umgebung: lokaler Modus statt Startabbruch.
 - Auth-, Rules- oder Netzwerkfehler: konkrete Fehlermeldung im betroffenen Feature.
-- Diagnose: `/apps/diagnostics` prüft Konfiguration, Anonymous Auth, Lesen/Schreiben, Snapshots und LocalStorage.
 - Direkte URLs: `firebase.json` rewritet alle unbekannten Hosting-Pfade auf `/index.html`.
 - Produktion: Pushes auf `main` bauen und deployen Hosting; Pull Requests erhalten Preview Channels.
 - Firestore Rules und Indizes sind ein separater manueller Deploy, solange der Hosting-Service-Account dafür keine passenden Rechte besitzt.

@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CircleDot,
@@ -7,22 +6,37 @@ import {
   Plus,
   RotateCcw,
   Shuffle,
-  Trash2,
-  Trophy,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { ConfettiOverlay } from '@/apps/decision-wheel/components/ConfettiOverlay'
 import {
-  getEntryDisplayText,
-  useDecisionWheel,
-} from '@/apps/decision-wheel/hooks/useDecisionWheel'
+  EntryColorControl,
+  EntryTextControl,
+  EntryWeightControl,
+  RemoveEntryButton,
+} from '@/apps/decision-wheel/components/EntryControls'
+import { ResultPanel } from '@/apps/decision-wheel/components/ResultPanel'
+import { WheelGraphic } from '@/apps/decision-wheel/components/WheelGraphic'
+import { useDecisionWheel } from '@/apps/decision-wheel/hooks/useDecisionWheel'
 import type {
   DecisionWheelEntry,
   DecisionWheelResult,
 } from '@/apps/decision-wheel/types'
+import {
+  getRenderableWheelEntries,
+  parseWeightDraft,
+} from '@/apps/decision-wheel/utils'
+import {
+  getSegments,
+  normalizeRotation,
+  spinFullRotationDegrees,
+  spinSettleDelayMs,
+} from '@/apps/decision-wheel/wheel'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -31,9 +45,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { IftaInput } from '@/components/ui/ifta-field'
-import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
   Table,
@@ -43,230 +54,46 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getReadableTextColor } from '@/lib/theme'
-import { cn } from '@/lib/utils'
 
-type WheelSegment = DecisionWheelEntry & {
-  startAngle: number
-  endAngle: number
-  midAngle: number
-}
-
-const wheelSize = 260
-const wheelCenter = wheelSize / 2
-const wheelRadius = 118
-const spinDurationMs = 4400
-const spinSettleDelayMs = spinDurationMs + 150
-const spinFullRotationDegrees = 1800
-
-function normalizeRotation(value: number) {
-  return ((value % 360) + 360) % 360
-}
-
-function polarToCartesian(angle: number) {
-  const radians = ((angle - 90) * Math.PI) / 180
-
-  return {
-    x: wheelCenter + wheelRadius * Math.cos(radians),
-    y: wheelCenter + wheelRadius * Math.sin(radians),
-  }
-}
-
-function createSegmentPath(startAngle: number, endAngle: number) {
-  const start = polarToCartesian(startAngle)
-  const end = polarToCartesian(endAngle)
-  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0
-
-  return [
-    `M ${wheelCenter} ${wheelCenter}`,
-    `L ${start.x} ${start.y}`,
-    `A ${wheelRadius} ${wheelRadius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
-    'Z',
-  ].join(' ')
-}
-
-function getSegments(entries: DecisionWheelEntry[]): WheelSegment[] {
-  const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0)
-  let currentAngle = 0
-
-  if (totalWeight <= 0) {
-    return []
-  }
-
-  return entries.map((entry) => {
-    const size = (entry.weight / totalWeight) * 360
-    const startAngle = currentAngle
-    const endAngle = currentAngle + size
-
-    currentAngle = endAngle
-
-    return {
-      ...entry,
-      startAngle,
-      endAngle,
-      midAngle: startAngle + size / 2,
-    }
-  })
-}
-
-function shortenWheelLabel(value: string) {
-  return value.length > 16 ? `${value.slice(0, 15)}...` : value
-}
-
-function getColorWithAlpha(color: string, alphaHex: string) {
-  return /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alphaHex}` : color
-}
-
-function parseWeightDraft(value: string) {
-  const numericWeight = Number(value)
-
-  return Number.isFinite(numericWeight) && numericWeight >= 1
-    ? Math.round(numericWeight)
-    : null
-}
-
-function getRenderableWheelEntries(
-  entries: DecisionWheelEntry[],
-  weightDrafts: Record<string, string>,
-) {
-  return entries.flatMap((entry) => {
-    const draftValue = weightDrafts[entry.id]
-
-    if (draftValue === undefined) {
-      return entry.weight >= 1 ? [entry] : []
-    }
-
-    const draftWeight = parseWeightDraft(draftValue)
-
-    return draftWeight === null ? [] : [{ ...entry, weight: draftWeight }]
-  })
-}
-
-type WheelGraphicProps = {
+function DecisionWheelPresenter({
+  entries,
+  historyCount,
+  lastResult,
+  rotation,
+}: {
   entries: DecisionWheelEntry[]
+  historyCount: number
+  lastResult: DecisionWheelResult | null
   rotation: number
-  isSpinning: boolean
-}
-
-function WheelGraphic({ entries, rotation, isSpinning }: WheelGraphicProps) {
-  const segments = useMemo(() => getSegments(entries), [entries])
-
-  if (entries.length === 0) {
-    return (
-      <div className="flex aspect-square w-full max-w-[30rem] items-center justify-center rounded-full border border-dashed bg-secondary text-center text-sm text-muted-foreground">
-        Keine Optionen im Rad.
-      </div>
-    )
-  }
-
+}) {
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[30rem]">
-      <div
-        className="absolute left-1/2 top-0 z-10 h-0 w-0 -translate-x-1/2 border-x-[13px] border-t-[26px] border-x-transparent border-t-foreground"
-        aria-hidden="true"
-      />
-      <svg
-        viewBox={`0 0 ${wheelSize} ${wheelSize}`}
-        className="size-full drop-shadow-sm"
-        role="img"
-        aria-label="Glücksrad"
-        style={
-          {
-            transform: `rotate(${rotation}deg)`,
-            transition: isSpinning
-              ? `transform ${spinDurationMs}ms cubic-bezier(0.12, 0.72, 0.18, 1)`
-              : 'none',
-          } as CSSProperties
-        }
-      >
-        <circle cx={wheelCenter} cy={wheelCenter} r={wheelRadius + 5} fill="#ffffff" />
-        {segments.map((segment, index) => {
-          const segmentSize = segment.endAngle - segment.startAngle
-          const labelPosition = {
-            x:
-              wheelCenter +
-              wheelRadius * 0.58 * Math.cos(((segment.midAngle - 90) * Math.PI) / 180),
-            y:
-              wheelCenter +
-              wheelRadius * 0.58 * Math.sin(((segment.midAngle - 90) * Math.PI) / 180),
-          }
+    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="rounded-lg border bg-card p-6 shadow-sm">
+        <WheelGraphic
+          entries={entries}
+          highlightedEntryId={lastResult?.entryId}
+          rotation={rotation}
+          isSpinning={false}
+        />
+      </section>
 
-          return (
-            <g key={segment.id}>
-              {segmentSize >= 359.99 ? (
-                <circle
-                  cx={wheelCenter}
-                  cy={wheelCenter}
-                  r={wheelRadius}
-                  fill={segment.color}
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                />
-              ) : (
-                <path
-                  d={createSegmentPath(segment.startAngle, segment.endAngle)}
-                  fill={segment.color}
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                />
-              )}
-              {segmentSize > 16 && (
-                <text
-                  x={labelPosition.x}
-                  y={labelPosition.y}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill={getReadableTextColor(segment.color)}
-                  fontSize={entries.length > 8 ? 8 : 10}
-                  fontWeight="700"
-                  paintOrder="stroke"
-                  stroke="rgba(54, 50, 55, 0.38)"
-                  strokeWidth="2"
-                  transform={`rotate(${segment.midAngle}, ${labelPosition.x}, ${labelPosition.y})`}
-                >
-                  {shortenWheelLabel(getEntryDisplayText(segment, index))}
-                </text>
-              )}
-            </g>
-          )
-        })}
-        <circle cx={wheelCenter} cy={wheelCenter} r="24" fill="#ffffff" />
-        <circle cx={wheelCenter} cy={wheelCenter} r="13" fill="var(--primary)" />
-      </svg>
-    </div>
-  )
-}
-
-type ResultPanelProps = {
-  result: DecisionWheelResult | null
-}
-
-function ResultPanel({ result }: ResultPanelProps) {
-  return (
-    <div
-      className="rounded-lg border bg-secondary p-4"
-      style={
-        result
-          ? { backgroundColor: getColorWithAlpha(result.color, '80') }
-          : undefined
-      }
-    >
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Trophy className="size-4" />
-        Gewinner
-      </div>
-      <div className="mt-2 flex min-h-10 items-center justify-between gap-3">
-        <div className="min-w-0 truncate text-2xl font-semibold">
-          {result?.text ?? 'Noch nicht gedreht'}
+      <aside className="grid content-start gap-4">
+        <ResultPanel result={lastResult} />
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <p className="text-sm font-medium text-muted-foreground">Optionen</p>
+          <div className="mt-2 text-5xl font-semibold tabular-nums">
+            {entries.length}
+          </div>
         </div>
-        {result && (
-          <span
-            className="size-5 shrink-0 rounded-full border"
-            style={{ backgroundColor: result.color }}
-            aria-hidden="true"
-          />
-        )}
-      </div>
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <p className="text-sm font-medium text-muted-foreground">
+            Drehungen
+          </p>
+          <div className="mt-2 text-5xl font-semibold tabular-nums">
+            {historyCount}
+          </div>
+        </div>
+      </aside>
     </div>
   )
 }
@@ -287,6 +114,7 @@ export function DecisionWheelPage() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinEntries, setSpinEntries] = useState<DecisionWheelEntry[] | null>(null)
   const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({})
+  const [confettiTrigger, setConfettiTrigger] = useState(0)
   const spinTimeoutRef = useRef<number | null>(null)
   const isSpinLockedRef = useRef(false)
   const wheelEntries = useMemo(
@@ -340,7 +168,7 @@ export function DecisionWheelPage() {
     spinTimeoutRef.current = window.setTimeout(() => {
       commitSpinResult(result)
         .then(() => {
-          toast.success(`${result.text} wurde gezogen.`)
+          setConfettiTrigger((currentTrigger) => currentTrigger + 1)
         })
         .catch(() => {
           toast.error('Das Ergebnis konnte nicht gespeichert werden.')
@@ -381,8 +209,28 @@ export function DecisionWheelPage() {
 
   return (
     <AppPage>
-      <section>
+      <ConfettiOverlay trigger={confettiTrigger} />
+
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={CircleDot} title="Glücksrad" />
+        <PresenterLauncher
+          appTitle="Glücksrad"
+          views={[
+            {
+              id: 'wheel',
+              label: 'Rad',
+              Icon: CircleDot,
+              render: () => (
+                <DecisionWheelPresenter
+                  entries={wheelEntries}
+                  historyCount={data.history.length}
+                  lastResult={data.lastResult}
+                  rotation={rotation}
+                />
+              ),
+            },
+          ]}
+        />
       </section>
 
       {error && (
@@ -405,6 +253,7 @@ export function DecisionWheelPage() {
           <CardContent className="grid gap-5">
             <WheelGraphic
               entries={visibleEntries}
+              highlightedEntryId={!isSpinning ? data.lastResult?.entryId : null}
               rotation={rotation}
               isSpinning={isSpinning}
             />
@@ -446,140 +295,99 @@ export function DecisionWheelPage() {
                     {data.entries.map((entry, index) => (
                       <div
                         key={entry.id}
-                        className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
+                        className="grid gap-2 rounded-md border bg-card p-2.5 text-sm"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 text-xs font-semibold leading-none tabular-nums">
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                          <span className="flex h-11 w-11 items-center justify-center rounded-md border bg-secondary px-2 text-sm font-semibold leading-none tabular-nums">
                             #{index + 1}
                           </span>
-                          <Button
-                            aria-label={`${getEntryDisplayText(entry, index)} löschen`}
-                            className="h-9 w-9 px-0"
-                            size="ifta"
-                            variant="delete"
-                            onClick={() => removeEntry(entry.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-
-                        <div className="grid grid-cols-[minmax(0,1fr)_5rem] gap-2">
-                          <IftaInput
-                            id={`entry-text-${entry.id}`}
-                            label="Text"
-                            value={entry.text}
-                            onChange={(event) =>
-                              updateEntry(entry.id, { text: event.target.value })
-                            }
-                          />
-                          <IftaInput
-                            id={`entry-weight-${entry.id}`}
-                            label="Gewicht"
-                            min={1}
-                            type="number"
-                            className="text-center tabular-nums"
-                            value={weightDrafts[entry.id] ?? String(entry.weight)}
-                            onBlur={() => clearWeightDraft(entry.id)}
-                            onChange={(event) =>
-                              handleWeightChange(
-                                entry.id,
-                                event.currentTarget.value,
-                              )
-                            }
+                          <EntryTextControl
+                            entry={entry}
+                            index={index}
+                            mode="mobile"
+                            onUpdateEntry={updateEntry}
                           />
                         </div>
 
-                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-                          <Label
-                            className="text-xs font-semibold text-muted-foreground"
-                            htmlFor={`entry-color-${entry.id}`}
-                          >
-                            Farbe
-                          </Label>
-                          <Input
-                            id={`entry-color-${entry.id}`}
-                            type="color"
-                            aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
-                            className="h-11 cursor-pointer rounded-md border p-1"
-                            value={entry.color}
-                            onChange={(event) =>
-                              updateEntry(entry.id, {
-                                color: event.currentTarget.value,
-                              })
-                            }
-                          />
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2">
+                          <span className="h-11 w-11" aria-hidden="true" />
+                          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-end gap-2">
+                            <EntryColorControl
+                              entry={entry}
+                              index={index}
+                              mode="mobile"
+                              onUpdateEntry={updateEntry}
+                            />
+                            <EntryWeightControl
+                              entry={entry}
+                              index={index}
+                              mode="mobile"
+                              value={weightDrafts[entry.id] ?? String(entry.weight)}
+                              onClearWeightDraft={clearWeightDraft}
+                              onWeightChange={handleWeightChange}
+                            />
+                            <RemoveEntryButton
+                              entry={entry}
+                              index={index}
+                              mode="mobile"
+                              onRemoveEntry={removeEntry}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <Table className="min-w-[38rem]" containerClassName="hidden md:block">
+                  <Table
+                    className="w-full min-w-[28rem] table-fixed"
+                    containerClassName="hidden md:block"
+                  >
                     <TableHeader>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Text</TableHead>
-                      <TableHead className="w-28">Gewicht</TableHead>
-                      <TableHead className="w-24">Farbe</TableHead>
-                      <TableHead className="w-20">Aktion</TableHead>
+                      <TableHead className="w-10 px-2">#</TableHead>
+                      <TableHead className="px-2">Text</TableHead>
+                      <TableHead className="w-20 px-2">Gewicht</TableHead>
+                      <TableHead className="w-14 px-2">Farbe</TableHead>
+                      <TableHead className="w-20 px-2 text-center">Aktion</TableHead>
                     </TableHeader>
                     <TableBody>
                       {data.entries.map((entry, index) => (
                         <TableRow key={entry.id}>
-                          <TableCell className="tabular-nums">
+                          <TableCell className="px-2 tabular-nums">
                             {index + 1}
                           </TableCell>
-                          <TableCell>
-                            <Input
-                              id={`entry-text-table-${entry.id}`}
-                              aria-label={`Text von Option ${index + 1}`}
-                              value={entry.text}
-                              onChange={(event) =>
-                                updateEntry(entry.id, {
-                                  text: event.currentTarget.value,
-                                })
-                              }
+                          <TableCell className="px-2">
+                            <EntryTextControl
+                              entry={entry}
+                              index={index}
+                              mode="table"
+                              onUpdateEntry={updateEntry}
                             />
                           </TableCell>
-                          <TableCell>
-                            <Input
-                              id={`entry-weight-table-${entry.id}`}
-                              aria-label={`Gewicht von ${getEntryDisplayText(entry, index)}`}
-                              min={1}
-                              type="number"
-                              className="w-20 text-center tabular-nums"
+                          <TableCell className="px-2 text-center">
+                            <EntryWeightControl
+                              entry={entry}
+                              index={index}
+                              mode="table"
                               value={weightDrafts[entry.id] ?? String(entry.weight)}
-                              onBlur={() => clearWeightDraft(entry.id)}
-                              onChange={(event) =>
-                                handleWeightChange(
-                                  entry.id,
-                                  event.currentTarget.value,
-                                )
-                              }
+                              onClearWeightDraft={clearWeightDraft}
+                              onWeightChange={handleWeightChange}
                             />
                           </TableCell>
-                          <TableCell>
-                            <Input
-                              id={`entry-color-table-${entry.id}`}
-                              type="color"
-                              aria-label={`${getEntryDisplayText(entry, index)} Farbe waehlen`}
-                              className="h-9 w-12 cursor-pointer rounded-md border p-1"
-                              value={entry.color}
-                              onChange={(event) =>
-                                updateEntry(entry.id, {
-                                  color: event.currentTarget.value,
-                                })
-                              }
+                          <TableCell className="px-2">
+                            <EntryColorControl
+                              entry={entry}
+                              index={index}
+                              mode="table"
+                              onUpdateEntry={updateEntry}
                             />
                           </TableCell>
-                          <TableCell>
-                            <Button
-                              aria-label={`${getEntryDisplayText(entry, index)} löschen`}
-                              className="h-9 w-9 px-0"
-                              size="icon"
-                              variant="delete"
-                              onClick={() => removeEntry(entry.id)}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
+                          <TableCell className="px-2 text-center">
+                            <RemoveEntryButton
+                              entry={entry}
+                              index={index}
+                              mode="table"
+                              onRemoveEntry={removeEntry}
+                            />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -633,7 +441,7 @@ export function DecisionWheelPage() {
                           </div>
                         </div>
                         <span
-                          className={cn('size-4 shrink-0 rounded-full border')}
+                          className="size-4 shrink-0 rounded-full border"
                           style={{ backgroundColor: result.color }}
                           aria-hidden="true"
                         />

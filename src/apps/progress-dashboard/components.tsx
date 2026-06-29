@@ -15,14 +15,15 @@ import { useMemo, useState } from 'react'
 import type {
   PlayerScore,
   ProgressDataset,
+  ProgressDrinkIcon,
   ProgressEvent,
-  ProgressEventDelta,
   ProgressEventIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import type { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -47,6 +49,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { getReadableTextColor } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -55,6 +59,14 @@ const chartPadding = {
   right: 36,
   bottom: 58,
   left: 70,
+}
+const mobileSparklineWidth = 240
+const mobileSparklineHeight = 56
+const mobileSparklinePadding = {
+  top: 8,
+  right: 8,
+  bottom: 8,
+  left: 8,
 }
 
 const drinkValueOptions = [
@@ -68,6 +80,22 @@ const eventIconComponents: Record<ProgressEventIcon, LucideIcon> = {
   beer: Beer,
   schnaps: Martini,
   funnel: Funnel,
+}
+
+type ProgressChartSegment = {
+  time: number
+  value: number
+}
+
+type ProgressChartSeries = {
+  eventValues: {
+    event: ProgressEvent
+    time: number
+    value: number
+  }[]
+  player: ProgressPlayer
+  score: number
+  segments: ProgressChartSegment[]
 }
 
 function formatSignedNumber(value: number) {
@@ -137,40 +165,39 @@ function getEventTable(events: ProgressEvent[]) {
   )
 }
 
-export function ProgressChart({
-  dataset,
-  players,
-}: {
-  dataset: ProgressDataset
-  players: ProgressPlayer[]
-}) {
-  const sortedEvents = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
+function createStepPath(
+  segments: ProgressChartSegment[],
+  xScale: (time: number) => number,
+  yScale: (value: number) => number,
+) {
+  return segments
+    .map((point, index) => {
+      const command = index === 0 ? 'M' : 'L'
+
+      return `${command} ${xScale(point.time).toFixed(1)} ${yScale(point.value).toFixed(1)}`
+    })
+    .join(' ')
+}
+
+function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[]) {
+  const sortedEvents = getSortedEvents(dataset.events)
   const validEventTimes = sortedEvents
     .map((event) => Date.parse(event.createdAtClientIso))
     .filter(Number.isFinite)
 
   if (sortedEvents.length === 0 || validEventTimes.length === 0) {
-    return (
-      <div className="flex aspect-[2.45/1] min-h-0 items-center justify-center rounded-lg border border-dashed bg-card p-4 text-center text-sm text-muted-foreground">
-        Noch keine Ereignisse im aktuellen Datensatz.
-      </div>
-    )
+    return null
   }
 
   const minTime = Math.min(...validEventTimes)
   const maxTime = Math.max(...validEventTimes)
   const xDomainMin = minTime === maxTime ? minTime - 60_000 : minTime
   const xDomainMax = minTime === maxTime ? maxTime + 60_000 : maxTime
-  const valuesByPlayer = new Map(players.map((player) => [player.id, 0]))
-  const eventPoints: {
-    event: ProgressEvent
-    x: number
-    y: number
-  }[] = []
-  const series = players.map((player) => {
+  const series: ProgressChartSeries[] = players.map((player) => {
     const playerEvents = sortedEvents.filter((event) => event.playerId === player.id)
     let score = 0
-    const segments: { time: number; value: number }[] = [
+    const eventValues: ProgressChartSeries['eventValues'] = []
+    const segments: ProgressChartSegment[] = [
       { time: xDomainMin, value: 0 },
     ]
 
@@ -184,20 +211,30 @@ export function ProgressChart({
       segments.push({ time, value: score })
       score = Math.max(0, score + event.valueDelta)
       segments.push({ time, value: score })
-      valuesByPlayer.set(player.id, score)
+      eventValues.push({ event, time, value: score })
     })
 
     segments.push({ time: xDomainMax, value: score })
 
     return {
+      eventValues,
       player,
+      score,
       segments,
     }
   })
-  const maxValue = Math.max(1, ...Array.from(valuesByPlayer.values()))
+  const maxValue = Math.max(
+    1,
+    ...series.map((entry) => entry.score),
+    ...series.flatMap((entry) =>
+      entry.eventValues.map((eventValue) => eventValue.value),
+    ),
+  )
   const yDomainMax = Math.max(1, Math.ceil(maxValue * 1.12))
   const plotWidth = chartWidth - chartPadding.left - chartPadding.right
   const plotHeight = chartHeight - chartPadding.top - chartPadding.bottom
+  const plotCenterX = chartPadding.left + plotWidth / 2
+  const plotCenterY = chartPadding.top + plotHeight / 2
   const xScale = (time: number) =>
     chartPadding.left +
     ((time - xDomainMin) / (xDomainMax - xDomainMin || 1)) * plotWidth
@@ -215,56 +252,344 @@ export function ProgressChart({
       }),
     }
   })
-
-  sortedEvents.forEach((event) => {
-    const player = players.find((candidate) => candidate.id === event.playerId)
-
-    if (!player) {
-      return
+  const chartSeries = series.flatMap(({ player, segments }) => {
+    if (segments.length < 2) {
+      return []
     }
 
-    const playerEventsUntilNow = sortedEvents.filter(
-      (candidate) =>
-        candidate.playerId === event.playerId &&
-        (Date.parse(candidate.createdAtClientIso) < Date.parse(event.createdAtClientIso) ||
-          candidate.position <= event.position),
-    )
-    const score = playerEventsUntilNow.reduce(
-      (current, candidate) => Math.max(0, current + candidate.valueDelta),
-      0,
-    )
-    const time = Date.parse(event.createdAtClientIso)
-
-    if (Number.isFinite(time)) {
-      eventPoints.push({
-        event,
-        x: xScale(time),
-        y: yScale(score),
-      })
-    }
+    return [
+      {
+        player,
+        path: createStepPath(segments, xScale, yScale),
+      },
+    ]
   })
+  const eventPoints = series.flatMap((entry) =>
+    entry.eventValues.map((eventValue) => ({
+      event: eventValue.event,
+      x: xScale(eventValue.time),
+      y: yScale(eventValue.value),
+    })),
+  )
+  const rankedScores: PlayerScore[] = series
+    .map(({ player, score }) => ({ player, score }))
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.player.position - right.player.position,
+    )
+
+  return {
+    chartSeries,
+    eventPoints,
+    maxValue,
+    plotCenterX,
+    plotCenterY,
+    rankedScores,
+    series,
+    xDomainMax,
+    xDomainMin,
+    xScale,
+    xTicks,
+    yScale,
+    yTicks,
+    yDomainMax,
+  }
+}
+
+function getMobileSparklinePath(
+  segments: ProgressChartSegment[],
+  chartData: NonNullable<ReturnType<typeof getProgressChartData>>,
+) {
+  const plotWidth =
+    mobileSparklineWidth - mobileSparklinePadding.left - mobileSparklinePadding.right
+  const plotHeight =
+    mobileSparklineHeight - mobileSparklinePadding.top - mobileSparklinePadding.bottom
+  const xScale = (time: number) =>
+    mobileSparklinePadding.left +
+    ((time - chartData.xDomainMin) /
+      (chartData.xDomainMax - chartData.xDomainMin || 1)) *
+      plotWidth
+  const yScale = (value: number) =>
+    mobileSparklinePadding.top +
+    plotHeight -
+    (value / chartData.yDomainMax) * plotHeight
+
+  return createStepPath(segments, xScale, yScale)
+}
+
+function MobileScoreBars({
+  maxValue,
+  scores,
+  unit,
+}: {
+  maxValue: number
+  scores: PlayerScore[]
+  unit: string
+}) {
+  if (scores.length === 0) {
+    return (
+      <EmptyState className="p-4">
+        Keine Spieler vorhanden.
+      </EmptyState>
+    )
+  }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white p-3">
-      <svg
-        role="img"
-        aria-label={dataset.chartTitle}
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="block h-auto w-full"
-      >
-        <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
-        {yTicks.map((tick) => (
+    <div className="grid gap-2">
+      {scores.map(({ player, score }, index) => {
+        const percentage = score > 0 ? Math.max(4, (score / maxValue) * 100) : 0
+
+        return (
+          <div
+            key={player.id}
+            className="rounded-md border bg-background p-3"
+            aria-label={`${player.name}: ${formatNumber(score)} ${unit}`.trim()}
+          >
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
+                  {index + 1}
+                </span>
+                <span
+                  className="size-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: player.color }}
+                />
+                <span className="min-w-0 truncate font-semibold">
+                  {player.name}
+                </span>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-lg font-semibold tabular-nums">
+                  {formatNumber(score)}
+                </div>
+                {unit.trim() && (
+                  <div className="max-w-24 truncate text-xs text-muted-foreground">
+                    {unit}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  backgroundColor: player.color,
+                  width: `${percentage}%`,
+                }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MobilePlayerTimelines({
+  chartData,
+  unit,
+}: {
+  chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  unit: string
+}) {
+  const rankedSeries = chartData.rankedScores
+    .map((score) =>
+      chartData.series.find((entry) => entry.player.id === score.player.id),
+    )
+    .filter((entry): entry is ProgressChartSeries => Boolean(entry))
+
+  if (rankedSeries.length === 0) {
+    return (
+      <EmptyState className="p-4">
+        Keine Spieler vorhanden.
+      </EmptyState>
+    )
+  }
+
+  return (
+    <div className="grid gap-2">
+      {rankedSeries.map(({ player, score, segments }) => {
+        const path = getMobileSparklinePath(segments, chartData)
+
+        return (
+          <div key={player.id} className="rounded-md border bg-background p-3">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="size-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: player.color }}
+                />
+                <span className="min-w-0 truncate font-semibold">
+                  {player.name}
+                </span>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-base font-semibold tabular-nums">
+                  {formatNumber(score)}
+                </div>
+                {unit.trim() && (
+                  <div className="max-w-24 truncate text-xs text-muted-foreground">
+                    {unit}
+                  </div>
+                )}
+              </div>
+            </div>
+            <svg
+              role="img"
+              aria-label={`${player.name} Zeitverlauf`}
+              viewBox={`0 0 ${mobileSparklineWidth} ${mobileSparklineHeight}`}
+              className="mt-3 block h-14 w-full overflow-visible"
+              preserveAspectRatio="none"
+            >
+              <rect
+                width={mobileSparklineWidth}
+                height={mobileSparklineHeight}
+                fill="#ffffff"
+                rx="6"
+              />
+              <line
+                x1={mobileSparklinePadding.left}
+                x2={mobileSparklineWidth - mobileSparklinePadding.right}
+                y1={mobileSparklineHeight - mobileSparklinePadding.bottom}
+                y2={mobileSparklineHeight - mobileSparklinePadding.bottom}
+                stroke="var(--muted)"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path
+                d={path}
+                fill="none"
+                stroke={player.color}
+                strokeLinecap="square"
+                strokeLinejoin="miter"
+                strokeWidth="3"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MobileProgressChart({
+  chartData,
+  dataset,
+}: {
+  chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  dataset: ProgressDataset
+}) {
+  return (
+    <div className="rounded-lg border bg-white p-3 md:hidden">
+      <Tabs defaultValue="stand" className="gap-3">
+        <TabsList className="grid h-10 w-full grid-cols-2 border bg-muted/70">
+          <TabsTrigger value="stand">Stand</TabsTrigger>
+          <TabsTrigger value="verlauf">Verlauf</TabsTrigger>
+        </TabsList>
+        <TabsContent value="stand">
+          <MobileScoreBars
+            maxValue={chartData.maxValue}
+            scores={chartData.rankedScores}
+            unit={dataset.unit}
+          />
+        </TabsContent>
+        <TabsContent value="verlauf">
+          <MobilePlayerTimelines chartData={chartData} unit={dataset.unit} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+export function ProgressChart({
+  dataset,
+  players,
+}: {
+  dataset: ProgressDataset
+  players: ProgressPlayer[]
+}) {
+  const chartData = useMemo(
+    () => getProgressChartData(dataset, players),
+    [dataset, players],
+  )
+  const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null)
+  const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
+  const playerIds = useMemo(
+    () => new Set(players.map((player) => player.id)),
+    [players],
+  )
+  const activePlayerId =
+    (hoveredPlayerId && playerIds.has(hoveredPlayerId) ? hoveredPlayerId : null) ??
+    (pinnedPlayerId && playerIds.has(pinnedPlayerId) ? pinnedPlayerId : null)
+
+  if (!chartData) {
+    return (
+      <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
+        Noch keine Ereignisse im aktuellen Datensatz.
+      </EmptyState>
+    )
+  }
+
+  const orderedChartSeries = activePlayerId
+    ? [
+        ...chartData.chartSeries.filter(({ player }) => player.id !== activePlayerId),
+        ...chartData.chartSeries.filter(({ player }) => player.id === activePlayerId),
+      ]
+    : chartData.chartSeries
+  const orderedEventPoints = activePlayerId
+    ? [
+        ...chartData.eventPoints.filter(
+          (point) => point.event.playerId !== activePlayerId,
+        ),
+        ...chartData.eventPoints.filter(
+          (point) => point.event.playerId === activePlayerId,
+        ),
+      ]
+    : chartData.eventPoints
+  const showHoveredPlayer = (playerId: string) => {
+    setHoveredPlayerId(playerId)
+  }
+  const hideHoveredPlayer = (playerId: string) => {
+    setHoveredPlayerId((currentPlayerId) =>
+      currentPlayerId === playerId ? null : currentPlayerId,
+    )
+  }
+  const togglePinnedPlayer = (playerId: string) => {
+    setPinnedPlayerId((currentPlayerId) =>
+      currentPlayerId === playerId ? null : playerId,
+    )
+  }
+  const clearHighlightedPlayer = () => {
+    setHoveredPlayerId(null)
+    setPinnedPlayerId(null)
+  }
+
+  return (
+    <>
+      <MobileProgressChart chartData={chartData} dataset={dataset} />
+      <div className="hidden overflow-hidden rounded-lg border bg-white p-3 md:block">
+        <svg
+          role="group"
+          aria-label={dataset.chartTitle}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          className="block h-auto w-full"
+          onClick={clearHighlightedPlayer}
+          onPointerLeave={() => setHoveredPlayerId(null)}
+        >
+          <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
+        {chartData.yTicks.map((tick) => (
           <g key={`y-${tick}`}>
             <line
               x1={chartPadding.left}
               x2={chartWidth - chartPadding.right}
-              y1={yScale(tick)}
-              y2={yScale(tick)}
+              y1={chartData.yScale(tick)}
+              y2={chartData.yScale(tick)}
               stroke="var(--border)"
             />
             <text
               x={chartPadding.left - 14}
-              y={yScale(tick) + 4}
+              y={chartData.yScale(tick) + 4}
               textAnchor="end"
               fontSize="12"
               fill="var(--muted-foreground)"
@@ -273,17 +598,17 @@ export function ProgressChart({
             </text>
           </g>
         ))}
-        {xTicks.map((tick) => (
+        {chartData.xTicks.map((tick) => (
           <g key={`x-${tick.time}`}>
             <line
-              x1={xScale(tick.time)}
-              x2={xScale(tick.time)}
+              x1={chartData.xScale(tick.time)}
+              x2={chartData.xScale(tick.time)}
               y1={chartPadding.top}
               y2={chartHeight - chartPadding.bottom}
               stroke="var(--muted)"
             />
             <text
-              x={xScale(tick.time)}
+              x={chartData.xScale(tick.time)}
               y={chartHeight - 24}
               textAnchor="middle"
               fontSize="12"
@@ -309,100 +634,170 @@ export function ProgressChart({
         />
         <text
           x={20}
-          y={chartHeight / 2}
+          y={chartData.plotCenterY}
           textAnchor="middle"
-          transform={`rotate(-90 20 ${chartHeight / 2})`}
-          fontSize="13"
-          fontWeight="600"
+          dominantBaseline="central"
+          transform={`rotate(-90 20 ${chartData.plotCenterY})`}
+          fontSize="17"
           fill="var(--foreground)"
         >
           {dataset.unit}
         </text>
         <text
-          x={chartWidth / 2}
+          x={chartData.plotCenterX}
           y={chartHeight - 6}
           textAnchor="middle"
-          fontSize="13"
-          fontWeight="600"
+          fontSize="17"
           fill="var(--foreground)"
         >
           Zeit
         </text>
-        {series.map(({ player, segments }) => {
-          if (segments.length < 2) {
-            return null
-          }
-
-          const path = segments
-            .map((point, index) => {
-              const command = index === 0 ? 'M' : 'L'
-
-              return `${command} ${xScale(point.time).toFixed(1)} ${yScale(point.value).toFixed(1)}`
-            })
-            .join(' ')
+        {orderedChartSeries.map(({ player, path }) => {
+          const isActive = activePlayerId === player.id
+          const isDimmed = activePlayerId !== null && !isActive
 
           return (
-            <path
-              key={player.id}
-              d={path}
-              fill="none"
-              stroke={player.color}
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-              strokeWidth="4"
-            />
+            <g key={player.id}>
+              {isActive && (
+                <path
+                  d={path}
+                  fill="none"
+                  opacity="0.95"
+                  pointerEvents="none"
+                  stroke="#ffffff"
+                  strokeLinecap="square"
+                  strokeLinejoin="miter"
+                  strokeWidth="12"
+                />
+              )}
+              <path
+                d={path}
+                fill="none"
+                opacity={isDimmed ? '0.22' : '1'}
+                pointerEvents="none"
+                stroke={player.color}
+                strokeLinecap="square"
+                strokeLinejoin="miter"
+                strokeWidth={isActive ? '6' : '4'}
+                style={{
+                  filter: isActive
+                    ? 'drop-shadow(0 3px 5px rgb(15 23 42 / 0.24))'
+                    : undefined,
+                  transition:
+                    'opacity 150ms ease, stroke-width 150ms ease, filter 150ms ease',
+                }}
+              />
+            </g>
           )
         })}
-        {eventPoints.map((point) => {
+        {orderedChartSeries.map(({ player, path }) => (
+          <path
+            key={`${player.id}-hit-area`}
+            d={path}
+            role="button"
+            aria-label={`${player.name} Zeitreihe hervorheben`}
+            aria-pressed={pinnedPlayerId === player.id}
+            className="cursor-pointer outline-none"
+            fill="none"
+            focusable="true"
+            opacity="0"
+            pointerEvents="stroke"
+            stroke="transparent"
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            strokeWidth="18"
+            tabIndex={0}
+            onBlur={() => hideHoveredPlayer(player.id)}
+            onClick={(event) => {
+              event.stopPropagation()
+              togglePinnedPlayer(player.id)
+            }}
+            onFocus={() => showHoveredPlayer(player.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                togglePinnedPlayer(player.id)
+              }
+            }}
+            onPointerEnter={() => showHoveredPlayer(player.id)}
+            onPointerLeave={() => hideHoveredPlayer(player.id)}
+          />
+        ))}
+        {orderedEventPoints.map((point) => {
           const Icon = eventIconComponents[point.event.icon]
+          const isActive = activePlayerId === point.event.playerId
+          const isDimmed = activePlayerId !== null && !isActive
+          const markerIconColor = getReadableTextColor(point.event.playerColor)
 
           return (
-            <g key={point.event.id}>
+            <g
+              key={point.event.id}
+              className="cursor-pointer"
+              opacity={isDimmed ? '0.28' : '1'}
+              style={{
+                filter: isActive
+                  ? 'drop-shadow(0 3px 5px rgb(15 23 42 / 0.2))'
+                  : undefined,
+                transition: 'opacity 150ms ease, filter 150ms ease',
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+                togglePinnedPlayer(point.event.playerId)
+              }}
+              onPointerEnter={() => showHoveredPlayer(point.event.playerId)}
+              onPointerLeave={() => hideHoveredPlayer(point.event.playerId)}
+            >
               <circle
                 cx={point.x}
                 cy={point.y}
-                r="13"
-                fill="#ffffff"
-                stroke={point.event.playerColor}
-                strokeWidth="3"
+                r={isActive ? '13' : '11'}
+                fill={point.event.playerColor}
               />
               <Icon
-                x={point.x - 7}
-                y={point.y - 7}
-                width="14"
-                height="14"
-                color="var(--foreground)"
+                x={point.x - 6.5}
+                y={point.y - 6.5}
+                width="13"
+                height="13"
+                color={markerIconColor}
                 strokeWidth="2.4"
               />
             </g>
           )
         })}
       </svg>
-    </div>
+      </div>
+    </>
   )
 }
 
 export function PlayerCard({
+  drinkIcons,
   onAddEvent,
   onColorChange,
+  onDefaultIconChange,
   onNameChange,
   onRemove,
   playerScore,
   unit,
 }: {
-  onAddEvent: (player: ProgressPlayer, valueDelta: ProgressEventDelta) => void
+  drinkIcons: ReturnType<typeof useProgressDashboard>['progressDrinkIcons']
+  onAddEvent: (player: ProgressPlayer, icon: ProgressDrinkIcon) => void
   onColorChange: (playerId: string, color: string) => void
+  onDefaultIconChange: (playerId: string, icon: ProgressDrinkIcon) => void
   onNameChange: (playerId: string, name: string) => void
   onRemove: (playerId: string) => void
   playerScore: PlayerScore
   unit: string
 }) {
   const { player, score } = playerScore
+  const selectedIcon = player.defaultEventIcon ?? 'beer'
+  const selectedIconLabel =
+    drinkIcons.find((icon) => icon.id === selectedIcon)?.label ?? 'Bier'
 
   return (
     <Card className="overflow-hidden">
       <div className="h-1.5 w-full" style={{ backgroundColor: player.color }} />
-      <CardHeader className="pb-3">
+      <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <InlineTextEdit
@@ -430,16 +825,45 @@ export function PlayerCard({
           />
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        <Input
-          type="color"
-          aria-label={`${player.name} Farbe waehlen`}
-          className="size-9 cursor-pointer rounded-md border p-1"
-          value={player.color}
-          onChange={(event) =>
-            onColorChange(player.id, event.currentTarget.value)
-          }
-        />
+      <CardContent className="grid gap-3 p-4 pt-0">
+        <div className="flex items-center justify-between gap-3">
+          <Input
+            type="color"
+            aria-label={`${player.name} Farbe wählen`}
+            className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
+            value={player.color}
+            onChange={(event) =>
+              onColorChange(player.id, event.currentTarget.value)
+            }
+          />
+          <div className="grid grid-cols-4 gap-1.5" aria-label="Getraenkeart">
+            {drinkIcons.map((icon) => {
+              const Icon = eventIconComponents[icon.id]
+              const isSelected = selectedIcon === icon.id
+
+              return (
+                <Button
+                  key={icon.id}
+                  type="button"
+                  size="icon"
+                  variant={isSelected ? 'default' : 'outline'}
+                  className={cn(
+                    'size-9',
+                    isSelected
+                      ? 'shadow-sm'
+                      : 'bg-background text-muted-foreground hover:text-foreground',
+                  )}
+                  aria-label={`${icon.label} fuer ${player.name} auswaehlen`}
+                  aria-pressed={isSelected}
+                  title={icon.label}
+                  onClick={() => onDefaultIconChange(player.id, icon.id)}
+                >
+                  <Icon className="size-4" />
+                </Button>
+              )
+            })}
+          </div>
+        </div>
 
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -451,17 +875,9 @@ export function PlayerCard({
           <div className="flex gap-2">
             <Button
               size="icon"
-              variant="outline"
-              aria-label={`${player.name} verringern`}
-              disabled={score <= 0}
-              onClick={() => onAddEvent(player, -1)}
-            >
-              <Minus className="size-4" />
-            </Button>
-            <Button
-              size="icon"
-              aria-label={`${player.name} erhöhen`}
-              onClick={() => onAddEvent(player, 1)}
+              aria-label={`${selectedIconLabel} fuer ${player.name} speichern`}
+              title={`${selectedIconLabel} speichern`}
+              onClick={() => onAddEvent(player, selectedIcon)}
             >
               <Plus className="size-4" />
             </Button>
@@ -492,14 +908,154 @@ export function EventTable({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <EmptyState>
         Noch keine Ereignisse im aktuellen Datensatz.
-      </div>
+      </EmptyState>
     )
   }
 
+  const renderDateInput = (event: ProgressEvent) => (
+    <Input
+      type="datetime-local"
+      className="h-9"
+      value={toDateTimeLocalValue(event.createdAtClientIso)}
+      onChange={(inputEvent) =>
+        onUpdateEvent(event.id, {
+          createdAtClientIso: fromDateTimeLocalValue(
+            inputEvent.currentTarget.value,
+            event.createdAtClientIso,
+          ),
+        })
+      }
+    />
+  )
+  const renderPlayerLabel = (event: ProgressEvent) => (
+    <div className="flex min-w-0 items-center gap-2 font-medium">
+      <span
+        className="size-3 shrink-0 rounded-full"
+        style={{ backgroundColor: event.playerColor }}
+      />
+      <span className="min-w-0 break-words">{event.playerName}</span>
+    </div>
+  )
+  const renderValueControls = (event: ProgressEvent) => (
+    <div className="flex gap-2">
+      <Select
+        value={event.valueDelta < 0 ? '-' : '+'}
+        onValueChange={(value) =>
+          onUpdateEvent(event.id, {
+            valueDelta:
+              (value === '-' ? -1 : 1) * Math.abs(event.valueDelta || 1),
+          })
+        }
+      >
+        <SelectTrigger className="w-20">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="+">+</SelectItem>
+          <SelectItem value="-">-</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={getDrinkValueSelectValue(event.valueDelta)}
+        onValueChange={(value) =>
+          onUpdateEvent(event.id, {
+            valueDelta:
+              (event.valueDelta < 0 ? -1 : 1) * Number(value),
+          })
+        }
+      >
+        <SelectTrigger className="w-28">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {drinkValueOptions.map((value) => (
+            <SelectItem key={value} value={String(value)}>
+              {formatNumber(value)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+  const renderIconSelect = (event: ProgressEvent) => (
+    <Select
+      value={event.icon}
+      onValueChange={(value) =>
+        onUpdateEvent(event.id, {
+          icon: value as ProgressEventIcon,
+        })
+      }
+    >
+      <SelectTrigger className="w-32">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {icons.map((icon) => (
+          <SelectItem key={icon.id} value={icon.id}>
+            <span className="flex items-center gap-2">
+              {(() => {
+                const Icon = eventIconComponents[icon.id]
+
+                return <Icon className="size-4" />
+              })()}
+              {icon.label}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+  const renderDeleteButton = (event: ProgressEvent) => (
+    <ConfirmButton
+      title="Ereignis löschen?"
+      description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+      onConfirm={() => onDeleteEvent(event.id)}
+      trigger={
+        <Button variant="delete" size="icon" aria-label="Ereignis löschen">
+          <Trash2 className="size-4" />
+        </Button>
+      }
+    />
+  )
+
   return (
-    <Table className="min-w-[760px]">
+    <>
+      <div className="grid gap-2 md:hidden">
+        {events.map((event) => (
+          <div key={event.id} className="rounded-md border bg-card p-3 text-sm">
+            <div className="flex items-start justify-between gap-3">
+              {renderPlayerLabel(event)}
+              {renderDeleteButton(event)}
+            </div>
+            <div className="mt-3 grid gap-3">
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                  Zeitpunkt
+                </div>
+                {renderDateInput(event)}
+              </div>
+              <div className="grid gap-3 min-[26rem]:grid-cols-2">
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Wert
+                  </div>
+                  {renderValueControls(event)}
+                </div>
+                <div>
+                  <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+                    Icon
+                  </div>
+                  {renderIconSelect(event)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Table className="min-w-[760px]" containerClassName="hidden md:block">
         <TableHeader>
             <TableHead>Zeitpunkt</TableHead>
             <TableHead>Spieler</TableHead>
@@ -618,7 +1174,8 @@ export function EventTable({
             </TableRow>
           ))}
         </TableBody>
-    </Table>
+      </Table>
+    </>
   )
 }
 
@@ -674,9 +1231,9 @@ export function ArchiveDatasetCard({
       {isOpen && (
         <div className="border-t p-4">
           {events.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+            <EmptyState className="p-4">
               Dieser Datensatz hat keine Ereignisse.
-            </div>
+            </EmptyState>
           ) : (
             <div className="grid gap-2">
               {events.map((event) => (

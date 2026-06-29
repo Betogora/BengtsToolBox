@@ -1,4 +1,10 @@
-import { Home, Menu, Stethoscope, Target } from 'lucide-react'
+import {
+  BriefcaseBusiness,
+  Home,
+  Menu,
+  Target,
+  type LucideIcon,
+} from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -10,84 +16,75 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
+type NavigationItem = {
+  href: string
+  label: string
+  Icon: LucideIcon
+}
+
+const navigationItems: readonly NavigationItem[] = [
+  {
+    href: '/',
+    label: 'Dashboard',
+    Icon: Home,
+  },
+  {
+    href: '/schlag-den-raab',
+    label: 'Schlag den Raab',
+    Icon: Target,
+  },
+]
+
 export function AppShell() {
   return (
     <div className="min-h-svh">
-      <header className="app-shell-header sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center">
-            <span>
-              <span className="block whitespace-nowrap text-sm font-semibold leading-none">
+      <header className="app-shell-header sticky top-0 z-40 px-3 py-2 sm:px-4">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between rounded-lg border bg-card/95 px-4 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:px-6">
+          <Link to="/" className="flex min-w-0 items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_rgba(13,142,144,0.9)]">
+              <BriefcaseBusiness className="size-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block whitespace-nowrap text-xl font-extrabold leading-none text-foreground">
                 BengtsToolBox
               </span>
             </span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-secondary-foreground',
-                )
-              }
-            >
-              <Home className="size-4" />
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/apps/diagnostics"
-              className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-secondary-foreground',
-                )
-              }
-            >
-              <Stethoscope className="size-4" />
-              Diagnose
-            </NavLink>
-            <NavLink
-              to="/schlag-den-raab"
-              className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                  isActive && 'bg-secondary text-secondary-foreground',
-                )
-              }
-            >
-              <Target className="size-4" />
-              Schlag den Raab
-            </NavLink>
+            {navigationItems.map(({ href, label, Icon }) => (
+              <NavLink
+                key={href}
+                to={href}
+                className={({ isActive }) =>
+                  cn(
+                    'inline-flex h-11 items-center gap-2 rounded-md px-4 text-base font-semibold text-foreground transition-colors hover:bg-secondary hover:text-primary',
+                    isActive && 'bg-secondary text-primary',
+                  )
+                }
+              >
+                <Icon className="size-4" />
+                {label}
+              </NavLink>
+            ))}
           </nav>
 
           <div className="md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="Navigation">
+                <Button variant="secondary" size="icon" aria-label="Navigation">
                   <Menu className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/" className="gap-2">
-                    <Home className="size-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/apps/diagnostics" className="gap-2">
-                    <Stethoscope className="size-4" />
-                    Diagnose
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/schlag-den-raab" className="gap-2">
-                    <Target className="size-4" />
-                    Schlag den Raab
-                  </Link>
-                </DropdownMenuItem>
+                {navigationItems.map(({ href, label, Icon }) => (
+                  <DropdownMenuItem key={href} asChild>
+                    <Link to={href} className="gap-2">
+                      <Icon className="size-4" />
+                      {label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

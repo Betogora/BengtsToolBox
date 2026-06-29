@@ -68,7 +68,7 @@ export function PlayerCard({
             {isEditingName ? (
               <Input
                 key={player.name}
-                aria-label={`Name fuer Person ${player.position}`}
+                aria-label={`Name für Person ${player.position}`}
                 autoFocus
                 className="h-12"
                 defaultValue={player.name}
@@ -89,7 +89,7 @@ export function PlayerCard({
                 }}
               />
             ) : (
-              <h2 className="truncate py-1 text-3xl font-semibold tracking-normal">
+              <h2 className="break-words py-1 text-3xl font-semibold leading-tight tracking-normal">
                 {player.name}
               </h2>
             )}
@@ -158,7 +158,7 @@ export function PlayerCard({
               </Button>
               <Button
                 size="icon"
-                aria-label={`${player.name} erhoehen`}
+                aria-label={`${player.name} erhöhen`}
                 onClick={onIncrement}
               >
                 <Plus className="size-4" />
@@ -166,7 +166,7 @@ export function PlayerCard({
               {onIncrementLarge && (
                 <Button
                   size="sm"
-                  aria-label={`${player.name} um 5 erhoehen`}
+                  aria-label={`${player.name} um 5 erhöhen`}
                   onClick={onIncrementLarge}
                 >
                   <Plus className="size-4" />

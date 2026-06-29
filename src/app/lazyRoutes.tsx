@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
 
-import { apps } from '@/apps/registry'
+import { registeredApps } from '@/apps/registry'
 
 const lazyAppElements = new Map(
-  apps.map((app) => {
+  registeredApps.map((app) => {
     const Page = lazy(app.loadPage)
 
     return [
@@ -26,14 +26,10 @@ const LazySchlagDenRaabGate = lazy(() =>
     default: SchlagDenRaabGate,
   })),
 )
+
 const LazySchlagDenRaabPage = lazy(() =>
   import('@/apps/schlag-den-raab').then(({ SchlagDenRaabPage }) => ({
     default: SchlagDenRaabPage,
-  })),
-)
-const LazyCoinflipPage = lazy(() =>
-  import('@/apps/schlag-den-raab/coinflip').then(({ CoinflipPage }) => ({
-    default: CoinflipPage,
   })),
 )
 
@@ -51,22 +47,10 @@ const schlagDenRaabElement = (
   </Suspense>
 )
 
-const coinflipElement = (
-  <Suspense fallback={schlagDenRaabFallback}>
-    <LazySchlagDenRaabGate>
-      <LazyCoinflipPage />
-    </LazySchlagDenRaabGate>
-  </Suspense>
-)
-
 export function LazyAppRoute({ appId }: { appId: string }) {
   return lazyAppElements.get(appId) ?? null
 }
 
-export function LazySchlagDenRaabRoute({
-  page,
-}: {
-  page: 'index' | 'coinflip'
-}) {
-  return page === 'coinflip' ? coinflipElement : schlagDenRaabElement
+export function LazySchlagDenRaabRoute() {
+  return schlagDenRaabElement
 }

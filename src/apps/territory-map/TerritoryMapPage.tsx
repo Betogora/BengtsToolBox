@@ -38,7 +38,9 @@ import {
 } from '@/apps/territory-map/components'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import {
   loadTerritories,
   mapViewBoxes,
@@ -52,14 +54,17 @@ import {
 } from '@/apps/territory-map/mapConfig'
 import type {
   Territory,
+  TerritoryClaim,
   TerritoryMapId,
   TerritoryPlayer,
   TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -107,6 +112,13 @@ type SvgRenderMetrics = {
   top: number
   viewBoxX: number
   viewBoxY: number
+}
+
+type PresenterTerritoryShapeProps = {
+  claim?: TerritoryClaim
+  patternPrefix: string
+  players: TerritoryPlayer[]
+  territory: Territory
 }
 
 type PendingDragMove = {
@@ -396,6 +408,214 @@ function getAchievements(events: TerritoryVisitEvent[]): AchievementResult[] {
       winnerNames: [...winners.values()],
     }
   })
+}
+
+function getPresenterClaimColor(
+  claimPlayerId: string,
+  claimColor: string,
+  players: TerritoryPlayer[],
+) {
+  return players.find((player) => player.id === claimPlayerId)?.color ?? claimColor
+}
+
+function PresenterTerritoryShape({
+  claim,
+  patternPrefix,
+  players,
+  territory,
+}: PresenterTerritoryShapeProps) {
+  const owners = claim?.owners?.length
+    ? claim.owners
+    : claim
+      ? [
+          {
+            playerId: claim.playerId,
+            playerName: claim.playerName,
+            playerColor: claim.playerColor,
+          },
+        ]
+      : []
+  const patternId = `${patternPrefix}-${territory.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`
+  const ownerColor =
+    owners.length > 1
+      ? `url(#${patternId})`
+      : owners.length === 1
+        ? getPresenterClaimColor(owners[0].playerId, owners[0].playerColor, players)
+        : `url(#${patternPrefix}-unclaimed)`
+  const ownerLabel =
+    owners.length > 0
+      ? owners.map((owner) => owner.playerName).join(', ')
+      : 'Unbereist'
+
+  return (
+    <>
+      {owners.length > 1 && (
+        <pattern
+          id={patternId}
+          width={owners.length * 8}
+          height="8"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          {owners.map((owner, index) => (
+            <rect
+              key={owner.playerId}
+              x={index * 8}
+              width="8"
+              height="8"
+              fill={getPresenterClaimColor(owner.playerId, owner.playerColor, players)}
+            />
+          ))}
+        </pattern>
+      )}
+      <path
+        d={territory.path}
+        className="territory-shape"
+        fill={ownerColor}
+        opacity={claim ? 0.94 : 1}
+        stroke="var(--background)"
+        strokeWidth={0.75}
+        vectorEffect="non-scaling-stroke"
+      >
+        <title>{`${territory.name}: ${ownerLabel}`}</title>
+      </path>
+    </>
+  )
+}
+
+function TerritoryMapPresenter({
+  activeMap,
+  claims,
+  isMapLoading,
+  players,
+  sushiScores,
+  territories,
+}: {
+  activeMap: TerritoryMapId
+  claims: Record<string, TerritoryClaim>
+  isMapLoading: boolean
+  players: TerritoryPlayer[]
+  sushiScores: SushiScore[]
+  territories: Territory[]
+}) {
+  const patternPrefix = `presenter-territory-${activeMap}`
+  const claimedCount = Object.keys(claims).length
+  const coverageLabel =
+    territories.length > 0
+      ? `${claimedCount}/${territories.length}`
+      : `${claimedCount}`
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className="overflow-hidden rounded-lg border bg-secondary shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-card/85 p-4">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Karte</p>
+            <h2 className="text-3xl font-semibold tracking-normal">
+              {mapLabels[activeMap]}
+            </h2>
+          </div>
+          <Badge variant="outline">{coverageLabel} bereist</Badge>
+        </div>
+        <div className="h-[62svh] min-h-[24rem] bg-secondary">
+          <svg
+            viewBox={mapViewBoxes[activeMap]}
+            className="block size-full"
+            aria-label={mapLabels[activeMap]}
+            role="img"
+          >
+            <defs>
+              <pattern
+                id={`${patternPrefix}-unclaimed`}
+                width="10"
+                height="10"
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(45)"
+              >
+                <rect width="10" height="10" fill="var(--muted)" />
+                <rect width="3" height="10" fill="var(--border)" opacity="0.75" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="var(--secondary)" />
+            {isMapLoading ? (
+              <text
+                x="50%"
+                y="50%"
+                dominantBaseline="middle"
+                textAnchor="middle"
+                fill="var(--muted-foreground)"
+                fontSize="14"
+              >
+                Karte wird geladen...
+              </text>
+            ) : (
+              territories.map((territory) => (
+                <PresenterTerritoryShape
+                  key={territory.id}
+                  claim={claims[territory.id]}
+                  patternPrefix={patternPrefix}
+                  players={players}
+                  territory={territory}
+                />
+              ))
+            )}
+          </svg>
+        </div>
+      </section>
+
+      <aside className="grid content-start gap-4">
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Trophy className="size-5 text-primary" />
+            <h2 className="text-2xl font-semibold tracking-normal">
+              Punktzahl
+            </h2>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {sushiScores.length === 0 ? (
+              <EmptyState>Keine Sushi-Touristen vorhanden.</EmptyState>
+            ) : (
+              sushiScores.map((score, index) => (
+                <div
+                  key={score.player.id}
+                  className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
+                >
+                  <div className="font-semibold tabular-nums">{index + 1}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="size-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: score.player.color }}
+                    />
+                    <span className="truncate font-semibold">
+                      {score.player.name}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-semibold tabular-nums">
+                    {score.total}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <p className="text-sm font-medium text-muted-foreground">Legende</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {players.map((player) => (
+              <Badge key={player.id} variant="outline">
+                <span
+                  className="size-2.5 rounded-full"
+                  style={{ backgroundColor: player.color }}
+                />
+                {player.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
 }
 
 function getTerritoryIdFromTarget(target: EventTarget | null) {
@@ -837,13 +1057,37 @@ export function TerritoryMapPage() {
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <AppPageTitle Icon={UtensilsCrossed} title="Sushi Map" />
-          {error && (
-            <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error.message}
-            </p>
-          )}
         </div>
+        <PresenterLauncher
+          appTitle="Sushi Map"
+          views={[
+            {
+              id: 'map',
+              label: 'Karte',
+              Icon: MapPinned,
+              render: () => (
+                <TerritoryMapPresenter
+                  activeMap={state.activeMap}
+                  claims={currentClaims}
+                  isMapLoading={isMapLoading}
+                  players={players}
+                  sushiScores={sushiScores}
+                  territories={territories}
+                />
+              ),
+            },
+          ]}
+        />
       </section>
+
+      {error && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardDescription>{error.message}</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="overflow-hidden bg-secondary">
@@ -1122,7 +1366,46 @@ export function TerritoryMapPage() {
             />
             {isScoreOpen && (
               <CardContent className="p-4 pt-0">
-                <Table className="min-w-[34rem]">
+                <Table className="table-fixed md:hidden" containerClassName="md:hidden">
+                    <colgroup>
+                      <col />
+                      <col className="w-14" />
+                      <col className="w-20" />
+                      <col className="w-14" />
+                    </colgroup>
+                    <TableHeader>
+                        <TableHead className="px-2 py-2">Spieler</TableHead>
+                        <TableHead className="px-1 py-2 text-right">Welt</TableHead>
+                        <TableHead className="px-1 py-2 text-right">DE</TableHead>
+                        <TableHead className="px-2 py-2 text-right">Gesamt</TableHead>
+                    </TableHeader>
+                    <TableBody>
+                      {sushiScores.map((score) => (
+                        <TableRow key={score.player.id}>
+                          <TableCell className="min-w-0 px-2 py-2 font-medium">
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span
+                                className="size-3 shrink-0 rounded-full"
+                                style={{ backgroundColor: score.player.color }}
+                                aria-hidden="true"
+                              />
+                              <span className="min-w-0 truncate">{score.player.name}</span>
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-1 py-2 text-right tabular-nums">
+                            {score.world}
+                          </TableCell>
+                          <TableCell className="px-1 py-2 text-right tabular-nums">
+                            {score.germany}
+                          </TableCell>
+                          <TableCell className="px-2 py-2 text-right font-semibold tabular-nums">
+                            {score.total}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                </Table>
+                <Table className="min-w-[34rem]" containerClassName="hidden md:block">
                     <TableHeader>
                         <TableHead>Spieler</TableHead>
                         <TableHead className="text-right">Welt</TableHead>

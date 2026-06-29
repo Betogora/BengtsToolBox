@@ -1,11 +1,78 @@
 import { Dice5, History, RotateCcw } from 'lucide-react'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
+import type { RollResult } from '@/apps/randomizer/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+
+function RandomizerPresenter({
+  history,
+  lastRoll,
+  max,
+  min,
+}: {
+  history: RollResult[]
+  lastRoll: number | null
+  max: number
+  min: number
+}) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid min-h-[28rem] place-items-center rounded-lg border bg-secondary p-6 text-center shadow-sm">
+        <div>
+          <p className="text-base font-medium text-muted-foreground">
+            Letzter Wurf
+          </p>
+          <div className="mt-4 text-9xl font-semibold leading-none tabular-nums">
+            {lastRoll ?? '-'}
+          </div>
+          <p className="mt-5 text-xl font-semibold tabular-nums">
+            {min} bis {max}
+          </p>
+        </div>
+      </section>
+
+      <aside className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-2">
+          <History className="size-5 text-primary" />
+          <h2 className="text-2xl font-semibold tracking-normal">
+            Letzte Ergebnisse
+          </h2>
+        </div>
+        <div className="mt-5 grid gap-3">
+          {history.length === 0 ? (
+            <EmptyState>Noch keine Würfe vorhanden.</EmptyState>
+          ) : (
+            history.map((rollResult, index) => (
+              <div
+                key={rollResult.id}
+                className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
+              >
+                <div className="font-medium">
+                  Wurf {history.length - index}
+                </div>
+                <div className="text-4xl font-semibold tabular-nums">
+                  {rollResult.value}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+    </div>
+  )
+}
 
 export function RandomizerPage() {
   const { data, updateRange, roll, clearHistory, error } = useRandomizer()
@@ -13,15 +80,33 @@ export function RandomizerPage() {
 
   return (
     <AppPage>
-      <section>
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={Dice5} title="Random Number Generator" />
+        <PresenterLauncher
+          appTitle="Random Number Generator"
+          views={[
+            {
+              id: 'last-roll',
+              label: 'Letzter Wurf',
+              Icon: Dice5,
+              render: () => (
+                <RandomizerPresenter
+                  history={visibleHistory}
+                  lastRoll={data.lastRoll}
+                  max={data.max}
+                  min={data.min}
+                />
+              ),
+            },
+          ]}
+        />
       </section>
 
       {error && (
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>Firebase-Fehler</CardTitle>
-            <p className="text-sm text-destructive">{error.message}</p>
+            <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -97,9 +182,9 @@ export function RandomizerPage() {
           </CardHeader>
           <CardContent>
             {visibleHistory.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <EmptyState className="p-8">
                 Noch keine Würfe vorhanden.
-              </div>
+              </EmptyState>
             ) : (
               <div className="divide-y">
                 {visibleHistory.map((rollResult, index) => (

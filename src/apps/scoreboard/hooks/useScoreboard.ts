@@ -16,8 +16,6 @@ import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 const eventLimit = 10
 
 const initialState: ScoreboardState = {
-  title: 'Spieleabend',
-  roundName: 'Runde 1',
   events: [],
   lastScoreEventId: null,
 }
@@ -87,10 +85,6 @@ function normalizePlayer(
 
 function normalizeState(state: ScoreboardState): ScoreboardState {
   return {
-    ...initialState,
-    ...state,
-    title: state.title?.trim() || initialState.title,
-    roundName: state.roundName?.trim() || initialState.roundName,
     events: (state.events ?? [])
       .map((event, index) => ({
         ...event,
@@ -106,6 +100,7 @@ function normalizeState(state: ScoreboardState): ScoreboardState {
       }))
       .slice(0, eventLimit),
     lastScoreEventId: state.lastScoreEventId ?? null,
+    updatedBy: state.updatedBy,
   }
 }
 
@@ -177,18 +172,6 @@ export function useScoreboard(sessionId = 'default') {
       })),
     )
   }, [playersStore, session.userId])
-
-  const updateTitle = (title: string) =>
-    stateStore.merge({
-      title: title.trim() || initialState.title,
-      updatedBy: session.userId,
-    })
-
-  const updateRoundName = (roundName: string) =>
-    stateStore.merge({
-      roundName: roundName.trim() || initialState.roundName,
-      updatedBy: session.userId,
-    })
 
   const addPlayer = () => {
     const nextPosition =
@@ -346,7 +329,5 @@ export function useScoreboard(sessionId = 'default') {
     undoLastScoreChange,
     updatePlayerName,
     updatePlayerTeam,
-    updateRoundName,
-    updateTitle,
   }
 }

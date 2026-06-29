@@ -18,6 +18,10 @@ src/styles/               Globale Styles und Design-Tokens
 docs/                     Dauerhafte Architektur-, Entwicklungs- und Betriebsdoku
 ```
 
+## Lokaler Dev-Server
+
+- BengtsToolBox immer auf Port `5180` öffnen und starten, zum Beispiel mit `npm run dev -- --host 127.0.0.1 --port 5180 --strictPort`. Nicht auf den Vite-Standardport `5173` ausweichen, damit die App nicht mit anderen lokalen Projekten konkurriert.
+
 ## Kontext gezielt laden
 
 | Aufgabe | Zuerst lesen |

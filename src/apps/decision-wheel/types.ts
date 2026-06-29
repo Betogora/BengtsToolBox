@@ -18,7 +18,6 @@ export type DecisionWheelState = {
   entries: DecisionWheelEntry[]
   lastResult: DecisionWheelResult | null
   history: DecisionWheelResult[]
-  removeWinnerAfterSpin?: boolean
   updatedAt?: unknown
   updatedBy?: string
 }

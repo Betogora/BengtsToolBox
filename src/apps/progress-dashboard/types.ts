@@ -1,10 +1,6 @@
-export type ProgressEventIcon =
-  | 'plus'
-  | 'minus'
-  | 'wine'
-  | 'beer'
-  | 'schnaps'
-  | 'funnel'
+export type ProgressDrinkIcon = 'wine' | 'beer' | 'schnaps' | 'funnel'
+
+export type ProgressEventIcon = 'plus' | 'minus' | ProgressDrinkIcon
 
 export type ProgressEventDelta = number
 
@@ -13,6 +9,7 @@ export type ProgressPlayer = {
   name: string
   position: number
   color: string
+  defaultEventIcon?: ProgressDrinkIcon
   lastUpdatedBy?: string
 }
 

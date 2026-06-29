@@ -9,13 +9,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import type { ScoreboardEvent } from '@/apps/scoreboard/types'
+import type { ScoreboardEvent, ScoreboardPlayer } from '@/apps/scoreboard/types'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
-import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
+import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,6 +28,8 @@ import {
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+
+const scoreboardTitle = 'Scoreboard'
 
 function formatSignedNumber(value: number) {
   const sign = value > 0 ? '+' : ''
@@ -50,9 +53,9 @@ function formatEventTime(value: string) {
 function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+      <EmptyState className="p-4 text-left">
         Noch keine Punkte vergeben.
-      </div>
+      </EmptyState>
     )
   }
 
@@ -86,19 +89,148 @@ function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
   )
 }
 
+function ScoreboardPresenter({
+  leader,
+  recentEvents,
+  sortedPlayers,
+  teamSummaries,
+  totalScore,
+  unassignedScore,
+}: {
+  leader: ScoreboardPlayer | null
+  recentEvents: ScoreboardEvent[]
+  sortedPlayers: ScoreboardPlayer[]
+  teamSummaries: Array<{
+    className: string
+    dotClassName: string
+    id: string
+    memberCount: number
+    name: string
+    score: number
+  }>
+  totalScore: number
+  unassignedScore: number
+}) {
+  const lastEvent = recentEvents[0]
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <h2 className="truncate text-4xl font-semibold tracking-normal">
+          {scoreboardTitle}
+        </h2>
+
+        <div className="mt-6 grid gap-3">
+          {sortedPlayers.length === 0 ? (
+            <EmptyState>Keine Personen im Scoreboard.</EmptyState>
+          ) : (
+            sortedPlayers.map((player, index) => (
+              <div
+                key={player.id}
+                className={cn(
+                  'grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-4 rounded-md border bg-background p-4',
+                  index === 0 && 'border-primary bg-secondary/65',
+                )}
+              >
+                <div className="text-2xl font-semibold tabular-nums">
+                  {index + 1}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-2xl font-semibold">
+                    {player.name}
+                  </div>
+                </div>
+                <div className="text-5xl font-semibold tabular-nums">
+                  {player.score}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <aside className="grid content-start gap-4">
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <p className="text-sm font-medium text-muted-foreground">Führung</p>
+          <div className="mt-2 truncate text-3xl font-semibold">
+            {leader?.name ?? '-'}
+          </div>
+          <div className="mt-3 text-7xl font-semibold tabular-nums">
+            {leader?.score ?? 0}
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {teamSummaries.map((team) => (
+            <div
+              key={team.id}
+              className={cn('rounded-lg border p-4', team.className)}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2 font-semibold">
+                  <span className={cn('size-3 rounded-full', team.dotClassName)} />
+                  <span className="truncate">{team.name}</span>
+                </div>
+                <div className="text-3xl font-semibold tabular-nums">
+                  {team.score}
+                </div>
+              </div>
+              <div className="mt-1 text-sm tabular-nums">
+                {team.memberCount} Personen
+              </div>
+            </div>
+          ))}
+          {unassignedScore > 0 && (
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-semibold">Kein Team</div>
+                <div className="text-3xl font-semibold tabular-nums">
+                  {unassignedScore}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Gesamt
+              </p>
+              <div className="text-3xl font-semibold tabular-nums">
+                {totalScore}
+              </div>
+            </div>
+            {lastEvent && (
+              <div className="min-w-0 text-right">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Letzte Änderung
+                </p>
+                <div className="truncate font-semibold">
+                  {lastEvent.playerName} {formatSignedNumber(lastEvent.delta)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
 export function ScoreboardPage() {
   const {
     addPlayer,
     changeScore,
     error,
     isLoading,
-    isRealtime,
     leader,
     players,
     recentEvents,
     removePlayer,
     resetScores,
-    state,
+    sortedPlayers,
     teamSummaries,
     totalScore,
     unassignedPlayers,
@@ -106,8 +238,6 @@ export function ScoreboardPage() {
     undoLastScoreChange,
     updatePlayerName,
     updatePlayerTeam,
-    updateRoundName,
-    updateTitle,
   } = useScoreboard()
 
   const handleChangeScore = async (playerId: string, delta: number) => {
@@ -130,48 +260,46 @@ export function ScoreboardPage() {
     const result = await undoLastScoreChange()
 
     if (result === 'undone') {
-      toast.success('Letzte Punkteaenderung rueckgaengig gemacht.')
+      toast.success('Letzte Punkteänderung rückgängig gemacht.')
       return
     }
 
     if (result === 'empty') {
-      toast.error('Es gibt noch keine Punkteaenderung.')
+      toast.error('Es gibt noch keine Punkteänderung.')
       return
     }
 
-    toast.error('Die Person der letzten Punkteaenderung existiert nicht mehr.')
+    toast.error('Die Person der letzten Punkteänderung existiert nicht mehr.')
   }
 
   return (
     <AppPage width="wide">
       <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <AppPageTitle Icon={ListOrdered}>
-            <InlineTextEdit
-              ariaLabel="Scoreboard-Titel"
-              className="text-3xl font-semibold tracking-normal sm:text-4xl"
-              fallback="Spieleabend"
-              inputClassName="h-12 text-3xl font-semibold sm:text-4xl"
-              value={state.title}
-              onSave={updateTitle}
-            />
-          </AppPageTitle>
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="text-sm">
-              {isRealtime ? 'Live-Sync' : 'Lokal'}
-            </Badge>
-            <InlineTextEdit
-              ariaLabel="Aktuelle Runde"
-              className="text-sm font-medium"
-              fallback="Runde 1"
-              inputClassName="h-8 max-w-52 text-sm"
-              value={state.roundName}
-              onSave={updateRoundName}
-            />
-          </div>
+          <AppPageTitle Icon={ListOrdered} title={scoreboardTitle} />
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <PresenterLauncher
+            appTitle={scoreboardTitle}
+            views={[
+              {
+                id: 'ranking',
+                label: 'Rangliste',
+                Icon: Trophy,
+                render: () => (
+                  <ScoreboardPresenter
+                    leader={leader}
+                    recentEvents={recentEvents}
+                    sortedPlayers={sortedPlayers}
+                    teamSummaries={teamSummaries}
+                    totalScore={totalScore}
+                    unassignedScore={unassignedScore}
+                  />
+                ),
+              },
+            ]}
+          />
           <Button
             variant="outline"
             disabled={recentEvents.length === 0}
@@ -181,12 +309,12 @@ export function ScoreboardPage() {
             Undo
           </Button>
           <ConfirmButton
-            title="Scoreboard zuruecksetzen?"
-            description="Alle Punktestaende werden auf 0 gesetzt und der aktuelle Verlauf wird geloescht."
+            title="Scoreboard zurücksetzen?"
+            description="Alle Punktestände werden auf 0 gesetzt und der aktuelle Verlauf wird gelöscht."
             confirmLabel="Reset"
             onConfirm={async () => {
               await resetScores()
-              toast.success('Scoreboard wurde zurueckgesetzt.')
+              toast.success('Scoreboard wurde zurückgesetzt.')
             }}
             trigger={
               <Button variant="outline">
@@ -222,7 +350,7 @@ export function ScoreboardPage() {
             <CardContent className="grid gap-4">
               <div className="rounded-lg bg-secondary p-4">
                 <div className="text-sm text-muted-foreground">
-                  Fuehrung {leader ? leader.name : '-'}
+                  Führung {leader ? leader.name : '-'}
                 </div>
                 <div className="text-5xl font-semibold tabular-nums">
                   {leader?.score ?? 0}
@@ -301,7 +429,7 @@ export function ScoreboardPage() {
             <Button
               onClick={async () => {
                 await addPlayer()
-                toast.success('Person hinzugefuegt.')
+                toast.success('Person hinzugefügt.')
               }}
             >
               <Plus className="size-4" />
@@ -334,11 +462,11 @@ export function ScoreboardPage() {
                     variant="outline"
                     onClick={async () => {
                       await addPlayer()
-                      toast.success('Person hinzugefuegt.')
+                      toast.success('Person hinzugefügt.')
                     }}
                   >
                     <Plus className="size-6" />
-                    Person hinzufuegen
+                    Person hinzufügen
                   </Button>
                 </CardContent>
               </Card>
