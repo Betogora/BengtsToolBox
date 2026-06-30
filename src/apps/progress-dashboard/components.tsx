@@ -99,10 +99,14 @@ type ProgressChartSeries = {
   segments: ProgressChartSegment[]
 }
 
-function formatSignedNumber(value: number) {
-  const sign = value > 0 ? '+' : value < 0 ? '-' : ''
+type ProgressChartMobileView = 'stand' | 'verlauf'
 
-  return `${sign}${formatNumber(Math.abs(value))}`
+type ArchivePlayerSummary = {
+  eventCount: number
+  firstEventAt: string | null
+  lastEventAt: string | null
+  player: ProgressPlayer
+  score: number
 }
 
 function getDrinkValueSelectValue(value: number) {
@@ -163,6 +167,90 @@ function getEventTable(events: ProgressEvent[]) {
     (left, right) =>
       Date.parse(right.createdAtClientIso) - Date.parse(left.createdAtClientIso) ||
       right.position - left.position,
+  )
+}
+
+function formatDateRange(
+  startValue: string | null | undefined,
+  endValue: string | null | undefined,
+) {
+  if (!startValue && !endValue) {
+    return '-'
+  }
+
+  if (!startValue || startValue === endValue) {
+    return formatDateTime(endValue ?? startValue)
+  }
+
+  if (!endValue) {
+    return formatDateTime(startValue)
+  }
+
+  return `${formatDateTime(startValue)} - ${formatDateTime(endValue)}`
+}
+
+function getArchivePlayerName(event: ProgressEvent, position: number) {
+  return event.playerName.trim() || `Spieler ${position}`
+}
+
+function getArchivePlayerColor(event: ProgressEvent) {
+  return event.playerColor || '#0d8e90'
+}
+
+function getArchivePlayers(dataset: ProgressDataset) {
+  const playersById = new Map<string, ProgressPlayer>()
+
+  getSortedEvents(dataset.events).forEach((event) => {
+    const existingPlayer = playersById.get(event.playerId)
+    const position = existingPlayer?.position ?? playersById.size + 1
+
+    playersById.set(event.playerId, {
+      id: event.playerId,
+      name: getArchivePlayerName(event, position),
+      position,
+      color: getArchivePlayerColor(event),
+    })
+  })
+
+  return [...playersById.values()].sort(
+    (left, right) => left.position - right.position,
+  )
+}
+
+function getArchivePlayerSummaries(
+  dataset: ProgressDataset,
+  players: ProgressPlayer[],
+) {
+  const summariesByPlayerId = new Map<string, ArchivePlayerSummary>(
+    players.map((player) => [
+      player.id,
+      {
+        eventCount: 0,
+        firstEventAt: null,
+        lastEventAt: null,
+        player,
+        score: 0,
+      },
+    ]),
+  )
+
+  getSortedEvents(dataset.events).forEach((event) => {
+    const summary = summariesByPlayerId.get(event.playerId)
+
+    if (!summary) {
+      return
+    }
+
+    summary.eventCount += 1
+    summary.firstEventAt = summary.firstEventAt ?? event.createdAtClientIso
+    summary.lastEventAt = event.createdAtClientIso
+    summary.score = Math.max(0, summary.score + event.valueDelta)
+  })
+
+  return [...summariesByPlayerId.values()].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.player.position - right.player.position,
   )
 }
 
@@ -477,13 +565,15 @@ function MobilePlayerTimelines({
 function MobileProgressChart({
   chartData,
   dataset,
+  defaultView = 'stand',
 }: {
   chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  defaultView?: ProgressChartMobileView
   dataset: ProgressDataset
 }) {
   return (
     <div className="rounded-lg border bg-white p-3 md:hidden">
-      <Tabs defaultValue="stand" className="gap-3">
+      <Tabs defaultValue={defaultView} className="gap-3">
         <TabsList className="grid h-10 w-full grid-cols-2 border bg-muted/70">
           <TabsTrigger value="stand">Stand</TabsTrigger>
           <TabsTrigger value="verlauf">Verlauf</TabsTrigger>
@@ -505,9 +595,13 @@ function MobileProgressChart({
 
 export function ProgressChart({
   dataset,
+  emptyMessage = 'Noch keine Ereignisse im aktuellen Datensatz.',
+  mobileDefaultView = 'stand',
   players,
 }: {
   dataset: ProgressDataset
+  emptyMessage?: string
+  mobileDefaultView?: ProgressChartMobileView
   players: ProgressPlayer[]
 }) {
   const chartData = useMemo(
@@ -527,7 +621,7 @@ export function ProgressChart({
   if (!chartData) {
     return (
       <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
-        Noch keine Ereignisse im aktuellen Datensatz.
+        {emptyMessage}
       </EmptyState>
     )
   }
@@ -568,7 +662,11 @@ export function ProgressChart({
 
   return (
     <>
-      <MobileProgressChart chartData={chartData} dataset={dataset} />
+      <MobileProgressChart
+        chartData={chartData}
+        defaultView={mobileDefaultView}
+        dataset={dataset}
+      />
       <div className="hidden overflow-hidden rounded-lg border bg-white p-3 md:block">
         <svg
           role="group"
@@ -1189,21 +1287,27 @@ export function ArchiveDatasetCard({
   onRename: (datasetId: string, name: string) => void
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const events = getEventTable(dataset.events)
+  const eventCount = dataset.events.length
 
   return (
     <div className="rounded-lg border">
-      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-          onClick={() => setIsOpen((current) => !current)}
-        >
-          {isOpen ? (
-            <ChevronDown className="size-4 shrink-0" />
-          ) : (
-            <ChevronRight className="size-4 shrink-0" />
-          )}
-          <div className="min-w-0">
+      <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <button
+            className="grid size-8 shrink-0 place-items-center rounded-md text-primary transition-colors hover:bg-muted"
+            aria-expanded={isOpen}
+            aria-label={`${dataset.name || 'Archivierter Datensatz'} ${
+              isOpen ? 'einklappen' : 'aufklappen'
+            }`}
+            onClick={() => setIsOpen((current) => !current)}
+          >
+            {isOpen ? (
+              <ChevronDown className="size-4" />
+            ) : (
+              <ChevronRight className="size-4" />
+            )}
+          </button>
+          <div className="min-w-0 flex-1">
             <InlineTextEdit
               ariaLabel="Archivname"
               className="type-action"
@@ -1211,12 +1315,16 @@ export function ArchiveDatasetCard({
               value={dataset.name}
               onSave={(value) => onRename(dataset.id, value)}
             />
-            <div className="type-caption mt-1 text-muted-foreground">
-              {formatDateTime(dataset.archivedAtClientIso)} - {events.length}{' '}
-              Ereignisse
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="type-caption text-muted-foreground">
+                {formatDateTime(dataset.archivedAtClientIso)}
+              </span>
+              <Badge variant="outline">
+                {formatNumber(eventCount)} Ereignisse
+              </Badge>
             </div>
           </div>
-        </button>
+        </div>
         <ConfirmButton
           title="Datensatz löschen?"
           description="Der archivierte Datensatz wird dauerhaft entfernt."
@@ -1228,36 +1336,110 @@ export function ArchiveDatasetCard({
           }
         />
       </div>
-      {isOpen && (
-        <div className="border-t p-4">
-          {events.length === 0 ? (
-            <EmptyState className="p-4">
-              Dieser Datensatz hat keine Ereignisse.
-            </EmptyState>
-          ) : (
-            <div className="grid gap-2">
-              {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-3 rounded-full"
-                      style={{ backgroundColor: event.playerColor }}
-                    />
-                    <span className="type-label">{event.playerName}</span>
-                    <Badge variant={event.valueDelta > 0 ? 'default' : 'outline'}>
-                      {formatSignedNumber(event.valueDelta)}
-                    </Badge>
-                  </div>
-                  <div className="type-caption text-muted-foreground">
-                    {formatDateTime(event.createdAtClientIso)}
-                  </div>
+      {isOpen && <ArchiveDatasetDetails dataset={dataset} />}
+    </div>
+  )
+}
+
+function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
+  const events = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
+  const archivePlayers = useMemo(() => getArchivePlayers(dataset), [dataset])
+  const playerSummaries = useMemo(
+    () => getArchivePlayerSummaries(dataset, archivePlayers),
+    [archivePlayers, dataset],
+  )
+  const firstEventAt = events[0]?.createdAtClientIso ?? null
+  const lastEventAt = events.at(-1)?.createdAtClientIso ?? null
+  const totalScore = playerSummaries.reduce(
+    (sum, summary) => sum + summary.score,
+    0,
+  )
+  const unitLabel = dataset.unit.trim()
+
+  if (events.length === 0) {
+    return (
+      <div className="border-t p-3 sm:p-4">
+        <EmptyState className="p-4">
+          Dieser Datensatz hat keine Ereignisse.
+        </EmptyState>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid gap-3 border-t p-3 sm:p-4">
+      <ProgressChart
+        dataset={dataset}
+        emptyMessage="Dieser Datensatz hat keine auswertbaren Ereignisse."
+        mobileDefaultView="verlauf"
+        players={archivePlayers}
+      />
+
+      <div className="grid gap-2 rounded-md border bg-background p-3 sm:grid-cols-3">
+        <div className="min-w-0">
+          <div className="type-caption text-muted-foreground">Zeitraum</div>
+          <div className="type-label mt-1 truncate">
+            {formatDateRange(firstEventAt, lastEventAt)}
+          </div>
+        </div>
+        <div>
+          <div className="type-caption text-muted-foreground">Ereignisse</div>
+          <div className="type-label mt-1 tabular-nums">
+            {formatNumber(events.length)}
+          </div>
+        </div>
+        <div>
+          <div className="type-caption text-muted-foreground">Gesamtstand</div>
+          <div className="type-label mt-1 tabular-nums">
+            {formatNumber(totalScore)}
+            {unitLabel ? ` ${unitLabel}` : ''}
+          </div>
+        </div>
+      </div>
+
+      {playerSummaries.length === 0 ? (
+        <EmptyState className="p-4">
+          Keine Spieler aus dem Archiv rekonstruierbar.
+        </EmptyState>
+      ) : (
+        <div className="overflow-hidden rounded-md border bg-background">
+          {playerSummaries.map((summary, index) => (
+            <div
+              key={summary.player.id}
+              className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b px-3 py-2 last:border-b-0"
+            >
+              <span className="type-caption text-muted-foreground tabular-nums">
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="size-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: summary.player.color }}
+                  />
+                  <span className="type-label min-w-0 truncate">
+                    {summary.player.name}
+                  </span>
+                  <Badge variant="outline" className="shrink-0">
+                    {formatNumber(summary.eventCount)}
+                  </Badge>
                 </div>
-              ))}
+                <div className="type-caption mt-0.5 truncate text-muted-foreground">
+                  {formatDateRange(summary.firstEventAt, summary.lastEventAt)}
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="type-action tabular-nums">
+                  {formatNumber(summary.score)}
+                </div>
+                {unitLabel && (
+                  <div className="type-caption max-w-24 truncate text-muted-foreground">
+                    {unitLabel}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
