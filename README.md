@@ -24,6 +24,7 @@
 | Random Number Generator | Würfel und Zufallszahlen | Firestore + lokaler Cache |
 | Glücksrad | Gewichtete Einträge und Ziehungsverlauf | Firestore + lokaler Cache |
 | Coinflip | Münzwurf mit Verlauf und Presenter-Ansicht | Firestore + lokaler Cache |
+| Nächste Frage | Quizfragen-Karussell mit verdeckter Antwort und gemerkter Position | Firestore + lokaler Cache |
 | Sushi Map | Besuchte Länder und Bundesländer | Firestore + lokaler Cache |
 | SK Anderten Turnier-App | Swiss-, Rundenturnier- und Hand-and-Brain-Verwaltung | Firestore + lokaler Cache |
 

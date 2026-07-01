@@ -78,7 +78,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {dashboardApps.map((app) => (
           <AppTile key={app.id} app={app} />
         ))}

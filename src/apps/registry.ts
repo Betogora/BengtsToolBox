@@ -4,6 +4,7 @@ import {
   ChartNoAxesCombined,
   ChessKing,
   CircleDot,
+  CircleQuestionMark,
   Coins,
   Dice5,
   ListOrdered,
@@ -138,6 +139,20 @@ const appDefinitions: readonly HubApp[] = [
     loadPage: () =>
       import('@/apps/swiss-tournaments').then(({ SwissTournamentsPage }) => ({
         default: SwissTournamentsPage,
+      })),
+  },
+  {
+    id: 'next-question',
+    title: 'Nächste Frage',
+    description:
+      'Quizfragen-Karussell mit verdeckter Antwort und gemerkter Position.',
+    href: '/apps/next-question',
+    routePath: 'apps/next-question',
+    status: 'Live',
+    Icon: CircleQuestionMark,
+    loadPage: () =>
+      import('@/apps/next-question').then(({ NextQuestionPage }) => ({
+        default: NextQuestionPage,
       })),
   },
 ]

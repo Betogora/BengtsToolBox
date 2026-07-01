@@ -377,6 +377,65 @@ function RandomizerIllustration() {
   )
 }
 
+function NextQuestionIllustration() {
+  return (
+    <SvgShell>
+      <ellipse cx="240" cy="134" fill={palette.navy} opacity="0.12" rx="108" ry="12" />
+      <g opacity="0.86">
+        <rect
+          fill={palette.paleMint}
+          height="94"
+          rx="12"
+          stroke={palette.mint}
+          strokeOpacity="0.38"
+          transform="rotate(10 252 78)"
+          width="170"
+          x="168"
+          y="31"
+        />
+        <rect
+          fill="#f7fbfa"
+          height="98"
+          rx="12"
+          stroke={palette.mint}
+          strokeOpacity="0.46"
+          transform="rotate(5 238 78)"
+          width="184"
+          x="140"
+          y="29"
+        />
+        <rect
+          fill="#ffffff"
+          height="104"
+          rx="12"
+          stroke={palette.fog}
+          strokeWidth="2"
+          width="198"
+          x="108"
+          y="28"
+        />
+        <text
+          fill={palette.navy}
+          fontFamily={illustrationFontFamily}
+          fontSize="58"
+          fontWeight={illustrationFontWeight}
+          opacity="0.62"
+          textAnchor="middle"
+          x="207"
+          y="98"
+        >
+          ?
+        </text>
+        <g opacity="0.72">
+          <circle cx="148" cy="116" r="4" fill={palette.mint} />
+          <circle cx="164" cy="116" r="4" fill={palette.fog} />
+          <circle cx="180" cy="116" r="4" fill={palette.fog} />
+        </g>
+      </g>
+    </SvgShell>
+  )
+}
+
 function SwissTournamentIllustration() {
   return (
     <div className="grid h-full place-items-center">
@@ -407,6 +466,8 @@ export function DashboardIllustration({ appId }: { appId: string }) {
       return <RandomizerIllustration />
     case 'swiss-tournaments':
       return <SwissTournamentIllustration />
+    case 'next-question':
+      return <NextQuestionIllustration />
     default:
       return <ProgressIllustration />
   }

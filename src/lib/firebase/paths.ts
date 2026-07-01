@@ -4,6 +4,8 @@ export const firebasePaths = {
   decisionWheelState: (stateId = 'default') =>
     `apps/decision-wheel/state/${stateId}`,
   coinflipState: (stateId = 'default') => `apps/coinflip/state/${stateId}`,
+  nextQuestionState: (stateId = 'default') =>
+    `apps/next-question/state/${stateId}`,
   schlagDenRaabState: (sessionId = 'default') =>
     `apps/schlag-den-raab/sessions/${sessionId}/state/default`,
   liveBuzzerState: (sessionId = 'default') =>
