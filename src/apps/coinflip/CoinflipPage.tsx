@@ -1,5 +1,4 @@
-import { Coins, History, RotateCcw } from 'lucide-react'
-import { toast } from 'sonner'
+import { Coins, History } from 'lucide-react'
 
 import {
   getCoinflipLabel,
@@ -8,6 +7,7 @@ import {
 import type { CoinflipResult } from '@/apps/coinflip/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 
 function CoinflipPresenter({
   history,
@@ -51,7 +50,7 @@ function CoinflipPresenter({
           {history.length === 0 ? (
             <EmptyState>Noch keine Flips vorhanden.</EmptyState>
           ) : (
-            history.slice(0, 8).map((flipResult, index) => (
+            history.map((flipResult, index) => (
               <div
                 key={flipResult.id}
                 className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
@@ -74,6 +73,7 @@ function CoinflipPresenter({
 export function CoinflipPage() {
   const { data, flip, clearHistory, isLoading, error } = useCoinflip()
   const lastLabel = data.lastFlip ? getCoinflipLabel(data.lastFlip.side) : '-'
+  const visibleHistory = data.history.slice(0, 5)
 
   return (
     <AppPage>
@@ -88,7 +88,7 @@ export function CoinflipPage() {
               Icon: Coins,
               render: () => (
                 <CoinflipPresenter
-                  history={data.history}
+                  history={visibleHistory}
                   lastFlip={data.lastFlip}
                 />
               ),
@@ -123,34 +123,35 @@ export function CoinflipPage() {
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button
-                size="lg"
-                onClick={async () => {
-                  await flip()
-                  toast.success('Münze geworfen.')
-                }}
-              >
-                <Coins className="size-4" />
-                Coinflip
-              </Button>
-              <Button variant="outline" size="lg" onClick={clearHistory}>
-                <RotateCcw className="size-4" />
-                Verlauf leeren
-              </Button>
-            </div>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={async () => {
+                await flip()
+              }}
+            >
+              <Coins className="size-4" />
+              Coinflip
+            </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="size-5 text-primary" />
-              Letzte Ergebnisse
-            </CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <History className="size-5 text-primary" />
+                Verlauf
+              </CardTitle>
+              <AppResetButton
+                title="Verlauf zurücksetzen?"
+                description="Alle bisherigen Münzwürfe und der letzte Flip werden gelöscht."
+                onConfirm={clearHistory}
+              />
+            </div>
           </CardHeader>
           <CardContent>
-            {data.history.length === 0 ? (
+            {visibleHistory.length === 0 ? (
               <EmptyState className="p-8">
                 Noch keine Flips vorhanden.
               </EmptyState>
@@ -171,9 +172,6 @@ export function CoinflipPage() {
                         {getCoinflipLabel(flipResult.side)}
                       </div>
                     </div>
-                    {index < data.history.length - 1 && (
-                      <Separator className="mt-3" />
-                    )}
                   </div>
                 ))}
               </div>

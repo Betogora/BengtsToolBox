@@ -39,7 +39,7 @@ export function useCoinflip(stateId = 'default') {
 
     return store.merge({
       lastFlip: result,
-      history: [result, ...store.data.history].slice(0, 12),
+      history: [result, ...store.data.history].slice(0, 5),
       updatedBy: session.userId,
     })
   }

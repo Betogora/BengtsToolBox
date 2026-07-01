@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  RotateCcw,
   Trophy,
   UsersRound,
 } from 'lucide-react'
@@ -27,7 +26,7 @@ import type {
 } from '@/apps/progress-dashboard/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
@@ -367,19 +366,13 @@ export function ProgressDashboardPage() {
                 {formatNumber(totalEvents)} Ereignisse
               </span>
             </button>
-            <ConfirmButton
+            <AppResetButton
               title="Datensatz archivieren und neu starten?"
               description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
               onConfirm={async () => {
                 await resetAndArchiveDataset()
                 toast.success('Datensatz archiviert und neu gestartet.')
               }}
-              trigger={
-                <Button variant="outline">
-                  <RotateCcw className="size-4" />
-                  Reset
-                </Button>
-              }
             />
           </div>
         </CardHeader>

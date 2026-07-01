@@ -1,3 +1,4 @@
+import { type ChangeEvent, useEffect, useState } from 'react'
 import {
   ArrowLeft,
   CircleQuestionMark,
@@ -19,79 +20,89 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { IftaInput } from '@/components/ui/ifta-field'
 import { cn } from '@/lib/utils'
 
-const MAX_DOT_COUNT = 12
+const CARD_NUMBER_INPUT_ID = 'next-question-card-number'
 
-function ProgressIndicator({
-  currentIndex,
-  currentPosition,
-  questionCount,
-}: {
-  currentIndex: number
-  currentPosition: number
-  questionCount: number
-}) {
-  if (questionCount <= 0) {
-    return null
-  }
-
-  if (questionCount <= MAX_DOT_COUNT) {
-    return (
-      <div
-        aria-label={`Frage ${currentPosition} von ${questionCount}`}
-        className="flex items-center justify-center gap-2"
-      >
-        {Array.from({ length: questionCount }, (_, index) => (
-          <span
-            key={index}
-            aria-hidden="true"
-            className={cn(
-              'size-2 rounded-full bg-muted-foreground/35 transition-colors',
-              index === currentIndex && 'bg-primary',
-            )}
-          />
-        ))}
-      </div>
-    )
+function isEditableElement(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false
   }
 
   return (
-    <div
-      aria-label={`Frage ${currentPosition} von ${questionCount}`}
-      className="mx-auto grid w-full max-w-xs gap-2"
-    >
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-primary transition-[width]"
-          style={{ width: `${(currentPosition / questionCount) * 100}%` }}
-        />
-      </div>
-      <div className="type-caption text-center text-muted-foreground">
-        {currentPosition} / {questionCount}
-      </div>
-    </div>
+    target.isContentEditable ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLInputElement && target.id !== CARD_NUMBER_INPUT_ID)
   )
 }
 
 export function NextQuestionPage() {
   const {
-    currentIndex,
     currentPosition,
     currentQuestion,
     data,
     error,
     isLoading,
+    jumpToQuestion,
     previousQuestion,
     questionCount,
     triggerPrimaryAction,
   } = useNextQuestion()
   const isAnswerVisible = data.isAnswerVisible
+  const [cardNumberDraft, setCardNumberDraft] = useState<string | null>(null)
+  const cardNumberInput =
+    cardNumberDraft ?? (questionCount === 0 ? '' : String(currentPosition))
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        questionCount === 0 ||
+        isEditableElement(event.target)
+      ) {
+        return
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        setCardNumberDraft(null)
+        void previousQuestion()
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        setCardNumberDraft(null)
+        void triggerPrimaryAction()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [previousQuestion, questionCount, triggerPrimaryAction])
+
+  const handleCardNumberChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.currentTarget.value
+
+    setCardNumberDraft(nextValue)
+
+    const nextPosition = Number(nextValue)
+
+    if (Number.isFinite(nextPosition)) {
+      void jumpToQuestion(nextPosition)
+    }
+  }
 
   return (
     <AppPage>
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={CircleQuestionMark} title="Nächste Frage" />
+        <AppPageTitle Icon={StepForward} title="Nächste Frage" />
       </section>
 
       {error && (
@@ -105,7 +116,7 @@ export function NextQuestionPage() {
 
       <Card className="overflow-hidden">
         <CardContent className="grid gap-7 p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <span className="type-label inline-flex min-w-0 items-center gap-2 rounded-md bg-secondary px-3 py-2 text-primary">
               <Globe2 className="size-4 shrink-0" />
               <span className="truncate">
@@ -113,34 +124,53 @@ export function NextQuestionPage() {
               </span>
             </span>
 
-            <span className="type-action shrink-0 tabular-nums">
-              {currentPosition}
-              <span className="text-muted-foreground"> / {questionCount}</span>
-            </span>
+            <div className="flex w-full items-start gap-2 sm:w-auto">
+              <div className="min-w-0 flex-1 sm:w-36 sm:flex-none">
+                <IftaInput
+                  id={CARD_NUMBER_INPUT_ID}
+                  className="pb-2 pt-[1.125rem] leading-5 tabular-nums"
+                  disabled={questionCount === 0}
+                  inputMode="numeric"
+                  label="Kartennummer"
+                  max={questionCount || undefined}
+                  min={1}
+                  pattern="[0-9]*"
+                  step={1}
+                  type="number"
+                  value={cardNumberInput}
+                  onBlur={() => setCardNumberDraft(null)}
+                  onChange={handleCardNumberChange}
+                  onFocus={(event) => {
+                    setCardNumberDraft(event.currentTarget.value)
+                    event.currentTarget.select()
+                  }}
+                />
+              </div>
+              <span className="type-control flex h-11 shrink-0 items-end pb-2 leading-5 tabular-nums text-muted-foreground">
+                / {questionCount}
+              </span>
+            </div>
           </div>
 
           {currentQuestion ? (
             <section className="relative mx-auto w-full max-w-3xl px-2 pb-5 sm:px-7">
               <div
                 aria-hidden="true"
-                className="absolute inset-x-7 top-8 h-full rounded-lg border bg-card opacity-60 shadow-[0_14px_38px_-32px_rgba(6,52,79,0.55)] sm:inset-x-12"
+                className="pointer-events-none absolute inset-x-7 top-8 h-full rounded-lg border bg-card opacity-60 shadow-[0_14px_38px_-32px_rgba(6,52,79,0.55)] sm:inset-x-12"
               />
               <div
                 aria-hidden="true"
-                className="absolute inset-x-4 top-4 h-full rounded-lg border bg-card opacity-80 shadow-[0_14px_38px_-32px_rgba(6,52,79,0.55)] sm:inset-x-9"
+                className="pointer-events-none absolute inset-x-4 top-4 h-full rounded-lg border bg-card opacity-80 shadow-[0_14px_38px_-32px_rgba(6,52,79,0.55)] sm:inset-x-9"
               />
 
               <div className="relative min-h-[21rem] overflow-hidden rounded-lg border bg-card p-6 shadow-[0_20px_56px_-38px_rgba(6,52,79,0.72)] sm:p-8">
                 <CircleQuestionMark
                   aria-hidden="true"
-                  className="absolute right-8 top-20 size-28 text-secondary opacity-60 sm:size-36"
+                  className="pointer-events-none absolute right-6 top-24 size-28 text-secondary opacity-40 sm:right-8 sm:top-20 sm:size-36 sm:opacity-60"
                 />
-                <div className="relative grid min-h-[17rem] content-between gap-7">
+                <div className="relative grid min-h-[17rem] content-between gap-8">
                   <div>
-                    <p className="type-label text-muted-foreground">
-                      Frage {currentPosition}
-                    </p>
-                    <h2 className="type-section-title mt-5 max-w-2xl break-words">
+                    <h2 className="type-page-title max-w-2xl break-words sm:pr-32">
                       {currentQuestion.question}
                     </h2>
                   </div>
@@ -148,21 +178,21 @@ export function NextQuestionPage() {
                   <div
                     aria-live="polite"
                     className={cn(
-                      'min-h-16 rounded-md border border-dashed bg-background px-4 py-3',
+                      'min-h-24 rounded-md border border-dashed bg-background px-5 py-4 sm:px-6 sm:py-5',
                       isAnswerVisible
                         ? 'border-primary/40 bg-secondary/55'
                         : 'text-muted-foreground',
                     )}
                   >
                     {isAnswerVisible ? (
-                      <div className="grid gap-1">
+                      <div className="grid gap-2">
                         <p className="type-label text-primary">Antwort</p>
-                        <p className="type-ui text-foreground">
+                        <p className="type-card-title text-foreground sm:text-xl sm:leading-8">
                           {currentQuestion.answer}
                         </p>
                       </div>
                     ) : (
-                      <div className="type-action flex min-h-9 items-center justify-center gap-2 text-center">
+                      <div className="type-card-title flex min-h-12 items-center justify-center gap-2 text-center">
                         <EyeOff className="size-4" />
                         Antwort ist noch verborgen
                       </div>
@@ -177,9 +207,9 @@ export function NextQuestionPage() {
             </EmptyState>
           )}
 
-          <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
+          <div className="relative z-20 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
-              className="w-full md:w-auto"
+              className="w-full sm:w-auto"
               disabled={questionCount === 0}
               type="button"
               variant="outline"
@@ -189,14 +219,8 @@ export function NextQuestionPage() {
               Zurück
             </Button>
 
-            <ProgressIndicator
-              currentIndex={currentIndex}
-              currentPosition={currentPosition}
-              questionCount={questionCount}
-            />
-
             <Button
-              className="w-full md:w-auto md:min-w-52"
+              className="w-full sm:w-auto sm:min-w-52"
               disabled={questionCount === 0}
               type="button"
               onClick={triggerPrimaryAction}

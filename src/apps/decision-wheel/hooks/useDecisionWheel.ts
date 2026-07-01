@@ -57,7 +57,7 @@ function normalizeState(state: DecisionWheelState): DecisionWheelState {
   return {
     entries: (state.entries ?? []).map(normalizeEntryForStorage),
     lastResult: state.lastResult ?? null,
-    history: (state.history ?? []).slice(0, 12),
+    history: (state.history ?? []).slice(0, 5),
     updatedAt: state.updatedAt,
     updatedBy: state.updatedBy,
   }
@@ -151,7 +151,7 @@ export function useDecisionWheel(stateId = 'default') {
   const commitSpinResult = (result: DecisionWheelResult) =>
     store.merge({
       lastResult: result,
-      history: [result, ...data.history].slice(0, 12),
+      history: [result, ...data.history].slice(0, 5),
       updatedBy: session.userId,
     })
 

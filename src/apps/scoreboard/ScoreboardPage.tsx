@@ -2,7 +2,6 @@ import {
   History,
   ListOrdered,
   Plus,
-  RotateCcw,
   Trophy,
   Undo2,
   UsersRound,
@@ -13,7 +12,7 @@ import type { ScoreboardEvent, ScoreboardPlayer } from '@/apps/scoreboard/types'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
@@ -308,20 +307,13 @@ export function ScoreboardPage() {
             <Undo2 className="size-4" />
             Undo
           </Button>
-          <ConfirmButton
+          <AppResetButton
             title="Scoreboard zurücksetzen?"
             description="Alle Punktestände werden auf 0 gesetzt und der aktuelle Verlauf wird gelöscht."
-            confirmLabel="Reset"
             onConfirm={async () => {
               await resetScores()
               toast.success('Scoreboard wurde zurückgesetzt.')
             }}
-            trigger={
-              <Button variant="outline">
-                <RotateCcw className="size-4" />
-                Reset
-              </Button>
-            }
           />
         </div>
       </section>

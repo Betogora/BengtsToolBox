@@ -25,10 +25,12 @@ function AppTile({ app }: AppTileProps) {
     >
       <Card className="relative h-48 overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/45 group-hover:shadow-[0_18px_46px_-34px_rgba(6,52,79,0.55)]">
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 w-[48%] overflow-hidden opacity-95 [mask-image:linear-gradient(to_left,black_0%,black_72%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 flex items-center justify-end overflow-hidden opacity-95 [mask-image:linear-gradient(to_right,transparent_0%,transparent_42%,black_72%,black_100%)]"
           aria-hidden="true"
         >
-          <DashboardIllustration appId={app.id} />
+          <div className="aspect-[360/160] h-[82%] max-w-none">
+            <DashboardIllustration appId={app.id} />
+          </div>
         </div>
 
         <CardHeader className="relative z-10 flex h-full max-w-[58%] flex-col justify-start gap-3 p-5 sm:p-6">

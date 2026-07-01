@@ -21,6 +21,16 @@ function normalizeQuestionIndex(index: number, questionCount: number) {
   return ((safeIndex % questionCount) + questionCount) % questionCount
 }
 
+function clampQuestionPosition(position: number, questionCount: number) {
+  if (questionCount <= 0) {
+    return 0
+  }
+
+  const safePosition = Number.isFinite(position) ? Math.trunc(position) : 1
+
+  return Math.min(Math.max(safePosition, 1), questionCount)
+}
+
 export function useNextQuestion(stateId = 'default') {
   const session = useAnonymousSession()
   const statePath = useMemo(
@@ -68,6 +78,18 @@ export function useNextQuestion(stateId = 'default') {
     })
   }
 
+  const jumpToQuestion = (position: number) => {
+    if (questionCount === 0) {
+      return Promise.resolve()
+    }
+
+    return store.merge({
+      currentIndex: clampQuestionPosition(position, questionCount) - 1,
+      isAnswerVisible: false,
+      updatedBy: session.userId,
+    })
+  }
+
   const triggerPrimaryAction = () =>
     store.data.isAnswerVisible ? nextQuestion() : showAnswer()
 
@@ -76,6 +98,7 @@ export function useNextQuestion(stateId = 'default') {
     currentIndex,
     currentPosition: questionCount === 0 ? 0 : currentIndex + 1,
     currentQuestion,
+    jumpToQuestion,
     nextQuestion,
     previousQuestion,
     questionCount,

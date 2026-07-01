@@ -4,10 +4,10 @@ import {
   ChartNoAxesCombined,
   ChessKing,
   CircleDot,
-  CircleQuestionMark,
   Coins,
   Dice5,
   ListOrdered,
+  StepForward,
   UtensilsCrossed,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -149,7 +149,7 @@ const appDefinitions: readonly HubApp[] = [
     href: '/apps/next-question',
     routePath: 'apps/next-question',
     status: 'Live',
-    Icon: CircleQuestionMark,
+    Icon: StepForward,
     loadPage: () =>
       import('@/apps/next-question').then(({ NextQuestionPage }) => ({
         default: NextQuestionPage,

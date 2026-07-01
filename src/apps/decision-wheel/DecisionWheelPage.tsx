@@ -4,7 +4,6 @@ import {
   History,
   ListChecks,
   Plus,
-  RotateCcw,
   Shuffle,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,6 +34,7 @@ import {
 } from '@/apps/decision-wheel/wheel'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Button } from '@/components/ui/button'
@@ -248,7 +248,7 @@ export function DecisionWheelPage() {
         </Card>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr] lg:items-start">
+      <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -283,10 +283,11 @@ export function DecisionWheelPage() {
                     Optionen
                   </CardTitle>
                 </div>
-                <Button variant="outline" size="sm" onClick={resetToExamples}>
-                  <RotateCcw className="size-4" />
-                  Reset
-                </Button>
+                <AppResetButton
+                  title="Optionen zurücksetzen?"
+                  description="Alle aktuellen Optionen, Gewichte, Farben und der Verlauf werden auf die Beispielwerte zurückgesetzt."
+                  onConfirm={resetToExamples}
+                />
               </div>
             </CardHeader>
             <CardContent className="grid gap-3">
@@ -424,10 +425,11 @@ export function DecisionWheelPage() {
                     Verlauf
                   </CardTitle>
                 </div>
-                <Button variant="outline" size="sm" onClick={clearHistory}>
-                  <RotateCcw className="size-4" />
-                  Leeren
-                </Button>
+                <AppResetButton
+                  title="Verlauf zurücksetzen?"
+                  description="Alle bisherigen Drehungen und der aktuelle Gewinner werden gelöscht."
+                  onConfirm={clearHistory}
+                />
               </div>
             </CardHeader>
             <CardContent>

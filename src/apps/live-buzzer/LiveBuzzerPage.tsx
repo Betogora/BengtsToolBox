@@ -2,7 +2,6 @@ import {
   Bell,
   History,
   Lock,
-  RotateCcw,
   Trophy,
   Unlock,
   UsersRound,
@@ -20,6 +19,7 @@ import type {
 import { useLiveBuzzer } from '@/apps/live-buzzer/hooks/useLiveBuzzer'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
@@ -298,16 +298,14 @@ export function LiveBuzzerPage() {
                   Sperren
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetAndOpenRound()
+              <AppResetButton
+                title="Runde zurücksetzen und freigeben?"
+                description="Alle sichtbaren Buzzes dieser Runde werden gelöscht und die Runde wird direkt wieder freigegeben."
+                onConfirm={async () => {
+                  await resetAndOpenRound()
                   toast.success('Runde zurückgesetzt und freigegeben.')
                 }}
-              >
-                <RotateCcw className="size-4" />
-                Zurücksetzen und freigeben
-              </Button>
+              />
             </CardContent>
           </Card>
         </div>
@@ -490,10 +488,11 @@ export function LiveBuzzerPage() {
               <History className="size-5 text-primary" />
               Rundenhistorie
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={clearHistory}>
-              <RotateCcw className="size-4" />
-              Leeren
-            </Button>
+            <AppResetButton
+              title="Rundenhistorie zurücksetzen?"
+              description="Alle bisherigen Gewinner der Rundenhistorie werden gelöscht."
+              onConfirm={clearHistory}
+            />
           </div>
         </CardHeader>
         <CardContent>

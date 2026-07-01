@@ -48,7 +48,7 @@ export function useRandomizer(stateId = 'default') {
 
     return store.merge({
       lastRoll: value,
-      history: [result, ...store.data.history].slice(0, 10),
+      history: [result, ...store.data.history].slice(0, 5),
       updatedBy: session.userId,
     })
   }

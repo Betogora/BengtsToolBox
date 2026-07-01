@@ -1,12 +1,12 @@
-import { Dice5, History, RotateCcw } from 'lucide-react'
+import { Dice5, History } from 'lucide-react'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
 import type { RollResult } from '@/apps/randomizer/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -76,7 +76,7 @@ function RandomizerPresenter({
 
 export function RandomizerPage() {
   const { data, updateRange, roll, clearHistory, error } = useRandomizer()
-  const visibleHistory = data.history.slice(0, 10)
+  const visibleHistory = data.history.slice(0, 5)
 
   return (
     <AppPage>
@@ -154,30 +154,26 @@ export function RandomizerPage() {
               <div className="type-metric-xl">
                 {data.lastRoll ?? '-'}
               </div>
-              <div className="type-action flex items-center justify-center gap-2">
-                <Dice5 className="size-5 text-primary" />
-                <span>Würfeln</span>
-              </div>
-            </button>
+            <div className="type-action flex items-center justify-center gap-2">
+              <Dice5 className="size-5 text-primary" />
+              <span>Würfeln</span>
+            </div>
+          </button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 <History className="size-5 text-primary" />
-                Letzte Ergebnisse
+                Verlauf
               </CardTitle>
-              <Button
-                aria-label="Verlauf leeren"
-                variant="outline"
-                size="icon"
-                className="size-10"
-                onClick={clearHistory}
-              >
-                <RotateCcw className="size-4" />
-              </Button>
+              <AppResetButton
+                title="Verlauf zurücksetzen?"
+                description="Alle bisherigen Würfe und der letzte Wurf werden gelöscht."
+                onConfirm={clearHistory}
+              />
             </div>
           </CardHeader>
           <CardContent>
