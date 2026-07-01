@@ -33,12 +33,12 @@ function AppTile({ app }: AppTileProps) {
           </div>
         </div>
 
-        <CardHeader className="relative z-10 flex h-full max-w-[58%] flex-col justify-start gap-3 p-5 sm:p-6">
+        <CardHeader className="relative z-10 flex h-full max-w-[78%] flex-col justify-start gap-3 p-5 sm:p-6">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_16px_34px_-18px_rgba(13,142,144,0.9)] transition-colors group-hover:bg-secondary group-hover:text-primary">
             <app.Icon className="size-6" />
           </div>
 
-          <CardTitle className="type-tile-title hyphens-auto break-words transition-colors group-hover:text-primary">
+          <CardTitle className="type-tile-title hyphens-manual break-words text-balance transition-colors group-hover:text-primary">
             {app.title}
           </CardTitle>
         </CardHeader>

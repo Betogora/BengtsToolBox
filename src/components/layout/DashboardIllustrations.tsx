@@ -438,10 +438,10 @@ function NextQuestionIllustration() {
 
 function SwissTournamentIllustration() {
   return (
-    <div className="grid h-full place-items-center">
+    <div className="flex h-full items-center justify-end">
       <img
         alt=""
-        className="h-[72%] w-[82%] object-contain opacity-72 drop-shadow-sm"
+        className="h-[72%] w-[82%] object-contain object-right opacity-72 drop-shadow-sm"
         src="/sk-anderten-watermark.png"
       />
     </div>
