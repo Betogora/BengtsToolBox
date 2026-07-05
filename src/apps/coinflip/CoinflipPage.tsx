@@ -1,5 +1,14 @@
+import { useEffect, useRef, useState } from 'react'
 import { Coins, History } from 'lucide-react'
+import { toast } from 'sonner'
 
+import {
+  coinFlipSettleDelayMs,
+  getCoinFaceRotation,
+  getCoinFlipRotationDegrees,
+  normalizeCoinRotation,
+} from '@/apps/coinflip/coin'
+import { CoinGraphic } from '@/apps/coinflip/components/CoinGraphic'
 import {
   getCoinflipLabel,
   useCoinflip,
@@ -26,10 +35,19 @@ function CoinflipPresenter({
   history: CoinflipResult[]
   lastFlip: CoinflipResult | null
 }) {
+  const presenterSide = lastFlip?.side ?? null
+  const presenterRotation = getCoinFaceRotation(presenterSide ?? 'heads')
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="grid min-h-[28rem] place-items-center rounded-lg border bg-secondary p-6 text-center shadow-sm">
-        <div>
+        <div className="grid gap-5">
+          <CoinGraphic
+            className="max-w-[20rem]"
+            side={presenterSide}
+            rotation={presenterRotation}
+            isFlipping={false}
+          />
           <p className="type-label text-muted-foreground">
             Letzter Flip
           </p>
@@ -71,9 +89,61 @@ function CoinflipPresenter({
 }
 
 export function CoinflipPage() {
-  const { data, flip, clearHistory, isLoading, error } = useCoinflip()
+  const {
+    clearHistory,
+    commitFlipResult,
+    data,
+    error,
+    isLoading,
+    prepareFlipResult,
+  } = useCoinflip()
+  const [coinRotation, setCoinRotation] = useState(() =>
+    getCoinFaceRotation('heads'),
+  )
+  const [isFlipping, setIsFlipping] = useState(false)
+  const flipTimeoutRef = useRef<number | null>(null)
+  const isFlipLockedRef = useRef(false)
   const lastLabel = data.lastFlip ? getCoinflipLabel(data.lastFlip.side) : '-'
   const visibleHistory = data.history.slice(0, 5)
+  const settledRotation = getCoinFaceRotation(data.lastFlip?.side ?? 'heads')
+  const displayRotation = isFlipping ? coinRotation : settledRotation
+
+  useEffect(
+    () => () => {
+      if (flipTimeoutRef.current) {
+        window.clearTimeout(flipTimeoutRef.current)
+      }
+    },
+    [],
+  )
+
+  const handleFlip = () => {
+    if (isFlipLockedRef.current) {
+      return
+    }
+
+    const result = prepareFlipResult()
+    const targetRotation = getCoinFaceRotation(result.side)
+    const correction =
+      (targetRotation - normalizeCoinRotation(displayRotation) + 360) % 360
+
+    isFlipLockedRef.current = true
+    setIsFlipping(true)
+    setCoinRotation(
+      displayRotation + getCoinFlipRotationDegrees() + correction,
+    )
+    flipTimeoutRef.current = window.setTimeout(() => {
+      commitFlipResult(result)
+        .catch(() => {
+          toast.error('Der Münzwurf konnte nicht gespeichert werden.')
+        })
+        .finally(() => {
+          flipTimeoutRef.current = null
+          isFlipLockedRef.current = false
+          setIsFlipping(false)
+        })
+    }, coinFlipSettleDelayMs)
+  }
 
   return (
     <AppPage>
@@ -116,22 +186,28 @@ export function CoinflipPage() {
             {isLoading && <CardDescription>Synchronisiere...</CardDescription>}
           </CardHeader>
           <CardContent className="grid gap-5">
-            <div className="rounded-lg bg-secondary p-6 text-center">
-              <div className="type-ui text-muted-foreground">Letzter Flip</div>
-              <div className="type-metric-xl mt-3">
-                {lastLabel}
+            <div className="grid gap-4 rounded-lg bg-secondary p-5 text-center">
+              <CoinGraphic
+                side={data.lastFlip?.side ?? null}
+                rotation={displayRotation}
+                isFlipping={isFlipping}
+              />
+              <div>
+                <div className="type-ui text-muted-foreground">Letzter Flip</div>
+                <div className="type-metric-lg mt-1">
+                  {isFlipping ? '...' : lastLabel}
+                </div>
               </div>
             </div>
 
             <Button
               size="lg"
               className="w-full"
-              onClick={async () => {
-                await flip()
-              }}
+              disabled={isFlipping}
+              onClick={handleFlip}
             >
               <Coins className="size-4" />
-              Coinflip
+              {isFlipping ? 'Flip läuft...' : 'Coinflip'}
             </Button>
           </CardContent>
         </Card>
@@ -144,6 +220,7 @@ export function CoinflipPage() {
                 Verlauf
               </CardTitle>
               <AppResetButton
+                disabled={isFlipping}
                 title="Verlauf zurücksetzen?"
                 description="Alle bisherigen Münzwürfe und der letzte Flip werden gelöscht."
                 onConfirm={clearHistory}

@@ -5,6 +5,8 @@ import type {
   CoinflipSide,
   CoinflipState,
 } from '@/apps/coinflip/types'
+import { getRandomCoinSide } from '@/apps/coinflip/coin'
+import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -12,12 +14,6 @@ import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 const initialCoinflipState: CoinflipState = {
   lastFlip: null,
   history: [],
-}
-
-function createId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 export function getCoinflipLabel(side: CoinflipSide) {
@@ -29,20 +25,20 @@ export function useCoinflip(stateId = 'default') {
   const statePath = useMemo(() => firebasePaths.coinflipState(stateId), [stateId])
   const store = useFirestoreDoc<CoinflipState>(statePath, initialCoinflipState)
 
-  const flip = () => {
-    const side: CoinflipSide = Math.random() < 0.5 ? 'heads' : 'tails'
-    const result: CoinflipResult = {
-      id: createId(),
-      side,
-      createdAt: new Date().toISOString(),
-    }
+  const prepareFlipResult = (): CoinflipResult => ({
+    id: `coinflip-${createRandomId()}`,
+    side: getRandomCoinSide(),
+    createdAt: new Date().toISOString(),
+  })
 
-    return store.merge({
+  const commitFlipResult = (result: CoinflipResult) =>
+    store.merge({
       lastFlip: result,
       history: [result, ...store.data.history].slice(0, 5),
       updatedBy: session.userId,
     })
-  }
+
+  const flip = () => commitFlipResult(prepareFlipResult())
 
   const clearHistory = () =>
     store.merge({
@@ -54,6 +50,8 @@ export function useCoinflip(stateId = 'default') {
   return {
     ...store,
     clearHistory,
+    commitFlipResult,
     flip,
+    prepareFlipResult,
   }
 }
