@@ -128,7 +128,10 @@ export function useDecisionWheel(stateId = 'default') {
       updatedBy: session.userId,
     })
 
-  const prepareSpinResult = (entriesSnapshot = data.entries) => {
+  const prepareSpinResult = (
+    entriesSnapshot = data.entries,
+    getDisplayText = getEntryDisplayText,
+  ) => {
     const winner = pickWeightedWinner(entriesSnapshot)
 
     if (!winner) {
@@ -139,7 +142,7 @@ export function useDecisionWheel(stateId = 'default') {
     const result: DecisionWheelResult = {
       id: `result-${createRandomId()}`,
       entryId: winner.id,
-      text: getEntryDisplayText(winner, winnerIndex),
+      text: getDisplayText(winner, winnerIndex),
       color: winner.color,
       weight: winner.weight,
       createdAt: new Date().toISOString(),

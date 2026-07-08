@@ -51,6 +51,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getReadableTextColor } from '@/lib/theme'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 const chartWidth = 1040
@@ -416,10 +417,12 @@ function MobileScoreBars({
   scores: PlayerScore[]
   unit: string
 }) {
+  const { t } = useI18n()
+
   if (scores.length === 0) {
     return (
       <EmptyState className="p-4">
-        Keine Spieler vorhanden.
+        {t('progress.emptyPlayers')}
       </EmptyState>
     )
   }
@@ -482,6 +485,7 @@ function MobilePlayerTimelines({
   chartData: NonNullable<ReturnType<typeof getProgressChartData>>
   unit: string
 }) {
+  const { t } = useI18n()
   const rankedSeries = chartData.rankedScores
     .map((score) =>
       chartData.series.find((entry) => entry.player.id === score.player.id),
@@ -491,7 +495,7 @@ function MobilePlayerTimelines({
   if (rankedSeries.length === 0) {
     return (
       <EmptyState className="p-4">
-        Keine Spieler vorhanden.
+        {t('progress.emptyPlayers')}
       </EmptyState>
     )
   }
@@ -526,7 +530,7 @@ function MobilePlayerTimelines({
             </div>
             <svg
               role="img"
-              aria-label={`${player.name} Zeitverlauf`}
+              aria-label={t('progress.timelineAria', { name: player.name })}
               viewBox={`0 0 ${mobileSparklineWidth} ${mobileSparklineHeight}`}
               className="mt-3 block h-14 w-full overflow-visible"
               preserveAspectRatio="none"
@@ -571,12 +575,14 @@ function MobileProgressChart({
   defaultView?: ProgressChartMobileView
   dataset: ProgressDataset
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="rounded-lg border bg-white p-3 md:hidden">
       <Tabs defaultValue={defaultView} className="gap-3">
         <TabsList className="grid h-10 w-full grid-cols-2 border bg-muted/70">
-          <TabsTrigger value="stand">Stand</TabsTrigger>
-          <TabsTrigger value="verlauf">Verlauf</TabsTrigger>
+          <TabsTrigger value="stand">{t('progress.tab.score')}</TabsTrigger>
+          <TabsTrigger value="verlauf">{t('progress.tab.history')}</TabsTrigger>
         </TabsList>
         <TabsContent value="stand">
           <MobileScoreBars
@@ -595,7 +601,7 @@ function MobileProgressChart({
 
 export function ProgressChart({
   dataset,
-  emptyMessage = 'Noch keine Ereignisse im aktuellen Datensatz.',
+  emptyMessage,
   mobileDefaultView = 'stand',
   players,
 }: {
@@ -604,6 +610,7 @@ export function ProgressChart({
   mobileDefaultView?: ProgressChartMobileView
   players: ProgressPlayer[]
 }) {
+  const { t } = useI18n()
   const chartData = useMemo(
     () => getProgressChartData(dataset, players),
     [dataset, players],
@@ -621,7 +628,7 @@ export function ProgressChart({
   if (!chartData) {
     return (
       <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
-        {emptyMessage}
+        {emptyMessage ?? t('progress.emptyEvents')}
       </EmptyState>
     )
   }
@@ -888,6 +895,7 @@ export function PlayerCard({
   playerScore: PlayerScore
   unit: string
 }) {
+  const { t } = useI18n()
   const { player, score } = playerScore
   const selectedIcon = player.defaultEventIcon ?? 'beer'
   const selectedIconLabel =
@@ -899,7 +907,7 @@ export function PlayerCard({
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <InlineTextEdit
-              ariaLabel={`Name für ${player.name}`}
+              ariaLabel={t('progress.playerNameAria', { name: player.name })}
               className="type-section-title py-1"
               fallback={`Person ${player.position}`}
               inputClassName="type-section-title h-11"
@@ -908,14 +916,18 @@ export function PlayerCard({
             />
           </div>
           <ConfirmButton
-            title="Spieler löschen?"
-            description={`${player.name} wird entfernt. Bestehende Ereignisse bleiben im Datensatz erhalten.`}
+            title={t('progress.playerDeleteTitle')}
+            description={t('progress.playerDeleteDescription', {
+              name: player.name,
+            })}
             onConfirm={() => onRemove(player.id)}
             trigger={
               <Button
                 variant="delete"
                 size="icon"
-                aria-label={`${player.name} entfernen`}
+                aria-label={t('shared.playerCard.removeAria', {
+                  name: player.name,
+                })}
               >
                 <Trash2 className="size-4" />
               </Button>
@@ -927,14 +939,14 @@ export function PlayerCard({
         <div className="flex items-center justify-between gap-3">
           <Input
             type="color"
-            aria-label={`${player.name} Farbe wählen`}
+            aria-label={t('progress.chooseColorAria', { name: player.name })}
             className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
             value={player.color}
             onChange={(event) =>
               onColorChange(player.id, event.currentTarget.value)
             }
           />
-          <div className="grid grid-cols-4 gap-1.5" aria-label="Getraenkeart">
+          <div className="grid grid-cols-4 gap-1.5" aria-label={t('progress.drinkType')}>
             {drinkIcons.map((icon) => {
               const Icon = eventIconComponents[icon.id]
               const isSelected = selectedIcon === icon.id
@@ -951,7 +963,10 @@ export function PlayerCard({
                       ? 'shadow-sm'
                       : 'bg-background text-muted-foreground hover:text-foreground',
                   )}
-                  aria-label={`${icon.label} fuer ${player.name} auswaehlen`}
+                  aria-label={t('progress.chooseDrinkAria', {
+                    drink: icon.label,
+                    name: player.name,
+                  })}
                   aria-pressed={isSelected}
                   title={icon.label}
                   onClick={() => onDefaultIconChange(player.id, icon.id)}
@@ -973,8 +988,11 @@ export function PlayerCard({
           <div className="flex gap-2">
             <Button
               size="icon"
-              aria-label={`${selectedIconLabel} fuer ${player.name} speichern`}
-              title={`${selectedIconLabel} speichern`}
+              aria-label={t('progress.saveDrinkAria', {
+                drink: selectedIconLabel,
+                name: player.name,
+              })}
+              title={t('progress.saveDrinkTitle', { drink: selectedIconLabel })}
               onClick={() => onAddEvent(player, selectedIcon)}
             >
               <Plus className="size-4" />
@@ -1002,12 +1020,13 @@ export function EventTable({
     >,
   ) => void
 }) {
+  const { t } = useI18n()
   const events = getEventTable(dataset.events)
 
   if (events.length === 0) {
     return (
       <EmptyState>
-        Noch keine Ereignisse im aktuellen Datensatz.
+        {t('progress.emptyEvents')}
       </EmptyState>
     )
   }
@@ -1107,11 +1126,11 @@ export function EventTable({
   )
   const renderDeleteButton = (event: ProgressEvent) => (
     <ConfirmButton
-      title="Ereignis löschen?"
-      description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+      title={t('common.event.delete')}
+      description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}
       trigger={
-        <Button variant="delete" size="icon" aria-label="Ereignis löschen">
+        <Button variant="delete" size="icon" aria-label={t('common.event.delete')}>
           <Trash2 className="size-4" />
         </Button>
       }
@@ -1130,14 +1149,14 @@ export function EventTable({
             <div className="mt-3 grid gap-3">
               <div>
                 <div className="type-caption mb-1.5 text-muted-foreground">
-                  Zeitpunkt
+                  {t('progress.time')}
                 </div>
                 {renderDateInput(event)}
               </div>
               <div className="grid gap-3 min-[26rem]:grid-cols-2">
                 <div>
                   <div className="type-caption mb-1.5 text-muted-foreground">
-                    Wert
+                    {t('progress.eventValue')}
                   </div>
                   {renderValueControls(event)}
                 </div>
@@ -1155,11 +1174,11 @@ export function EventTable({
 
       <Table className="min-w-[760px]" containerClassName="hidden md:block">
         <TableHeader>
-            <TableHead>Zeitpunkt</TableHead>
-            <TableHead>Spieler</TableHead>
-            <TableHead>Wert</TableHead>
+            <TableHead>{t('progress.time')}</TableHead>
+            <TableHead>{t('common.player')}</TableHead>
+            <TableHead>{t('progress.eventValue')}</TableHead>
             <TableHead>Icon</TableHead>
-            <TableHead className="text-right">Aktion</TableHead>
+            <TableHead className="text-right">{t('decisionWheel.action')}</TableHead>
         </TableHeader>
         <TableBody>
           {events.map((event) => (
@@ -1259,11 +1278,11 @@ export function EventTable({
               </TableCell>
               <TableCell className="text-right">
                 <ConfirmButton
-                  title="Ereignis löschen?"
-                  description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+                  title={t('common.event.delete')}
+                  description={t('common.event.deleteDescription')}
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
-                    <Button variant="delete" size="icon" aria-label="Ereignis löschen">
+                    <Button variant="delete" size="icon" aria-label={t('common.event.delete')}>
                       <Trash2 className="size-4" />
                     </Button>
                   }
@@ -1286,6 +1305,7 @@ export function ArchiveDatasetCard({
   onDelete: (datasetId: string) => void
   onRename: (datasetId: string, name: string) => void
 }) {
+  const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const eventCount = dataset.events.length
 
@@ -1296,8 +1316,8 @@ export function ArchiveDatasetCard({
           <button
             className="grid size-8 shrink-0 place-items-center rounded-md text-primary transition-colors hover:bg-muted"
             aria-expanded={isOpen}
-            aria-label={`${dataset.name || 'Archivierter Datensatz'} ${
-              isOpen ? 'einklappen' : 'aufklappen'
+            aria-label={`${dataset.name || t('common.archivedDataset')} ${
+              isOpen ? t('common.collapse') : t('common.expand')
             }`}
             onClick={() => setIsOpen((current) => !current)}
           >
@@ -1309,9 +1329,9 @@ export function ArchiveDatasetCard({
           </button>
           <div className="min-w-0 flex-1">
             <InlineTextEdit
-              ariaLabel="Archivname"
+              ariaLabel={t('progress.archiveName')}
               className="type-action"
-              fallback="Archivierter Datensatz"
+              fallback={t('common.archivedDataset')}
               value={dataset.name}
               onSave={(value) => onRename(dataset.id, value)}
             />
@@ -1320,17 +1340,17 @@ export function ArchiveDatasetCard({
                 {formatDateTime(dataset.archivedAtClientIso)}
               </span>
               <Badge variant="outline">
-                {formatNumber(eventCount)} Ereignisse
+                {t('progress.eventCount', { count: formatNumber(eventCount) })}
               </Badge>
             </div>
           </div>
         </div>
         <ConfirmButton
-          title="Datensatz löschen?"
-          description="Der archivierte Datensatz wird dauerhaft entfernt."
+          title={t('common.dataset.delete')}
+          description={t('common.dataset.deleteArchivedDescription')}
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="delete" size="icon" aria-label="Archiv löschen">
+            <Button variant="delete" size="icon" aria-label={t('common.archive.delete')}>
               <Trash2 className="size-4" />
             </Button>
           }
@@ -1342,6 +1362,7 @@ export function ArchiveDatasetCard({
 }
 
 function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
+  const { t } = useI18n()
   const events = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
   const archivePlayers = useMemo(() => getArchivePlayers(dataset), [dataset])
   const playerSummaries = useMemo(
@@ -1360,7 +1381,7 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
     return (
       <div className="border-t p-3 sm:p-4">
         <EmptyState className="p-4">
-          Dieser Datensatz hat keine Ereignisse.
+          {t('progress.emptyArchivedDataset')}
         </EmptyState>
       </div>
     )
@@ -1370,26 +1391,32 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
     <div className="grid gap-3 border-t p-3 sm:p-4">
       <ProgressChart
         dataset={dataset}
-        emptyMessage="Dieser Datensatz hat keine auswertbaren Ereignisse."
+        emptyMessage={t('progress.emptyArchivedUsableEvents')}
         mobileDefaultView="verlauf"
         players={archivePlayers}
       />
 
       <div className="grid gap-2 rounded-md border bg-background p-3 sm:grid-cols-3">
         <div className="min-w-0">
-          <div className="type-caption text-muted-foreground">Zeitraum</div>
+          <div className="type-caption text-muted-foreground">
+            {t('progress.timeRange')}
+          </div>
           <div className="type-label mt-1 truncate">
             {formatDateRange(firstEventAt, lastEventAt)}
           </div>
         </div>
         <div>
-          <div className="type-caption text-muted-foreground">Ereignisse</div>
+          <div className="type-caption text-muted-foreground">
+            {t('progress.events')}
+          </div>
           <div className="type-label mt-1 tabular-nums">
             {formatNumber(events.length)}
           </div>
         </div>
         <div>
-          <div className="type-caption text-muted-foreground">Gesamtstand</div>
+          <div className="type-caption text-muted-foreground">
+            {t('progress.totalScore')}
+          </div>
           <div className="type-label mt-1 tabular-nums">
             {formatNumber(totalScore)}
             {unitLabel ? ` ${unitLabel}` : ''}
@@ -1399,7 +1426,7 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
 
       {playerSummaries.length === 0 ? (
         <EmptyState className="p-4">
-          Keine Spieler aus dem Archiv rekonstruierbar.
+          {t('progress.emptyArchivedPlayers')}
         </EmptyState>
       ) : (
         <div className="overflow-hidden rounded-md border bg-background">

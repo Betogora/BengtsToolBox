@@ -2,12 +2,15 @@ import { Trophy } from 'lucide-react'
 
 import type { DecisionWheelResult } from '@/apps/decision-wheel/types'
 import { getColorWithAlpha } from '@/apps/shared/utils'
+import { useI18n } from '@/lib/i18n'
 
 type ResultPanelProps = {
   result: DecisionWheelResult | null
 }
 
 export function ResultPanel({ result }: ResultPanelProps) {
+  const { t } = useI18n()
+
   return (
     <div
       className="rounded-lg border bg-secondary p-4"
@@ -19,11 +22,11 @@ export function ResultPanel({ result }: ResultPanelProps) {
     >
       <div className="type-ui flex items-center gap-2 text-muted-foreground">
         <Trophy className="size-4" />
-        Gewinner
+        {t('decisionWheel.result.winner')}
       </div>
       <div className="mt-2 flex min-h-10 items-center justify-between gap-3">
         <div className="type-section-title min-w-0 truncate">
-          {result?.text ?? 'Noch nicht gedreht'}
+          {result?.text ?? t('decisionWheel.result.notSpun')}
         </div>
         {result && (
           <span

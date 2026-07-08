@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 type SharedPlayer = {
@@ -46,6 +47,7 @@ export function PlayerCard({
   onTeamChange,
   score,
 }: PlayerCardProps) {
+  const { t } = useI18n()
   const [isEditingName, setIsEditingName] = useState(false)
   const team = appTeams.find((entry) => entry.id === player.teamId)
   const saveName = (name: string) => {
@@ -68,7 +70,9 @@ export function PlayerCard({
             {isEditingName ? (
               <Input
                 key={player.name}
-                aria-label={`Name für Person ${player.position}`}
+                aria-label={t('shared.playerCard.nameAria', {
+                  number: player.position,
+                })}
                 autoFocus
                 defaultValue={player.name}
                 onBlur={(event) => saveName(event.currentTarget.value)}
@@ -93,7 +97,7 @@ export function PlayerCard({
             <Button
               variant="ghost"
               size="icon"
-              aria-label={`${player.name} bearbeiten`}
+              aria-label={t('shared.playerCard.editAria', { name: player.name })}
               onClick={() => setIsEditingName(true)}
             >
               <Pencil className="size-4" />
@@ -102,7 +106,7 @@ export function PlayerCard({
           <Button
             variant="delete"
             size="icon"
-            aria-label={`${player.name} entfernen`}
+            aria-label={t('shared.playerCard.removeAria', { name: player.name })}
             onClick={onRemove}
           >
             <Trash2 className="size-4" />
@@ -127,7 +131,7 @@ export function PlayerCard({
                 <span
                   className={cn('size-3 rounded-full', teamOption.dotClassName)}
                 />
-                {teamOption.buttonLabel}
+                {t(teamOption.buttonLabelKey)}
               </Button>
             )
           })}
@@ -139,13 +143,15 @@ export function PlayerCard({
               <div className="type-metric-lg">
                 {score}
               </div>
-              <div className="type-caption text-muted-foreground">Score</div>
+              <div className="type-caption text-muted-foreground">{t('common.score')}</div>
             </div>
             <div className="flex gap-2">
               <Button
                 size="icon"
                 variant="outline"
-                aria-label={`${player.name} verringern`}
+                aria-label={t('shared.playerCard.decrementAria', {
+                  name: player.name,
+                })}
                 disabled={score <= 0}
                 onClick={onDecrement}
               >
@@ -153,7 +159,9 @@ export function PlayerCard({
               </Button>
               <Button
                 size="icon"
-                aria-label={`${player.name} erhöhen`}
+                aria-label={t('shared.playerCard.incrementAria', {
+                  name: player.name,
+                })}
                 onClick={onIncrement}
               >
                 <Plus className="size-4" />
@@ -161,7 +169,9 @@ export function PlayerCard({
               {onIncrementLarge && (
                 <Button
                   size="sm"
-                  aria-label={`${player.name} um 5 erhöhen`}
+                  aria-label={t('shared.playerCard.incrementLargeAria', {
+                    name: player.name,
+                  })}
                   onClick={onIncrementLarge}
                 >
                   <Plus className="size-4" />
@@ -175,7 +185,9 @@ export function PlayerCard({
         {buzzLabel && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
             <div>
-              <div className="type-ui text-muted-foreground">Buzz</div>
+              <div className="type-ui text-muted-foreground">
+                {t('shared.playerCard.buzz')}
+              </div>
               <div className="type-action mt-1 tabular-nums">
                 {buzzTime ?? '-'}
               </div>

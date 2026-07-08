@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 const CARD_NUMBER_INPUT_ID = 'next-question-card-number'
@@ -39,6 +40,7 @@ function isEditableElement(target: EventTarget | null) {
 }
 
 export function NextQuestionPage() {
+  const { t } = useI18n()
   const {
     currentPosition,
     currentQuestion,
@@ -102,13 +104,13 @@ export function NextQuestionPage() {
   return (
     <AppPage>
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={StepForward} title="Nächste Frage" />
+        <AppPageTitle Icon={StepForward} title={t('app.nextQuestion.title')} />
       </section>
 
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -120,7 +122,7 @@ export function NextQuestionPage() {
             <span className="type-label inline-flex min-w-0 items-center gap-2 rounded-md bg-secondary px-3 py-2 text-primary">
               <Globe2 className="size-4 shrink-0" />
               <span className="truncate">
-                {currentQuestion?.category ?? 'Fragenliste'}
+                {currentQuestion?.category ?? t('nextQuestion.categoryFallback')}
               </span>
             </span>
 
@@ -131,7 +133,7 @@ export function NextQuestionPage() {
                   className="pb-2 pt-[1.125rem] leading-5 tabular-nums"
                   disabled={questionCount === 0}
                   inputMode="numeric"
-                  label="Kartennummer"
+                  label={t('nextQuestion.cardNumber')}
                   max={questionCount || undefined}
                   min={1}
                   pattern="[0-9]*"
@@ -186,7 +188,9 @@ export function NextQuestionPage() {
                   >
                     {isAnswerVisible ? (
                       <div className="grid gap-2">
-                        <p className="type-label text-primary">Antwort</p>
+                        <p className="type-label text-primary">
+                          {t('nextQuestion.answer')}
+                        </p>
                         <p className="type-card-title text-foreground sm:text-xl sm:leading-8">
                           {currentQuestion.answer}
                         </p>
@@ -194,7 +198,7 @@ export function NextQuestionPage() {
                     ) : (
                       <div className="type-card-title flex min-h-12 items-center justify-center gap-2 text-center">
                         <EyeOff className="size-4" />
-                        Antwort ist noch verborgen
+                        {t('nextQuestion.answerHidden')}
                       </div>
                     )}
                   </div>
@@ -203,7 +207,7 @@ export function NextQuestionPage() {
             </section>
           ) : (
             <EmptyState className="mx-auto w-full max-w-3xl p-8">
-              Noch keine Fragen vorhanden.
+              {t('nextQuestion.empty')}
             </EmptyState>
           )}
 
@@ -216,7 +220,7 @@ export function NextQuestionPage() {
               onClick={previousQuestion}
             >
               <ArrowLeft className="size-4" />
-              Zurück
+              {t('nextQuestion.previous')}
             </Button>
 
             <Button
@@ -228,12 +232,12 @@ export function NextQuestionPage() {
               {isAnswerVisible ? (
                 <>
                   <StepForward className="size-4" />
-                  Nächste Frage
+                  {t('nextQuestion.next')}
                 </>
               ) : (
                 <>
                   <Eye className="size-4" />
-                  Antwort anzeigen
+                  {t('nextQuestion.showAnswer')}
                 </>
               )}
             </Button>
@@ -241,7 +245,7 @@ export function NextQuestionPage() {
 
           {isLoading && (
             <p className="type-caption text-center text-muted-foreground">
-              Synchronisiere...
+              {t('common.syncing')}
             </p>
           )}
         </CardContent>

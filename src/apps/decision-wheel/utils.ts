@@ -3,10 +3,11 @@ import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
 export function getEntryDisplayText(
   entry: Pick<DecisionWheelEntry, 'text'>,
   index: number,
+  formatFallback = (optionNumber: number) => `Option ${optionNumber}`,
 ) {
   const trimmedText = entry.text?.trim()
 
-  return trimmedText || `Option ${index + 1}`
+  return trimmedText || formatFallback(index + 1)
 }
 
 export function parseWeightDraft(value: string) {

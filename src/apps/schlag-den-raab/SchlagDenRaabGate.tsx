@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { useI18n } from '@/lib/i18n'
 
 const unlockKey = 'bengts-toolbox:schlag-den-raab:unlocked'
 const password = '5340'
@@ -26,6 +27,7 @@ function unlockSession() {
 }
 
 export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
+  const { t } = useI18n()
   const [isAllowed, setIsAllowed] = useState(isUnlocked)
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState('')
@@ -40,7 +42,7 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
       return
     }
 
-    setError('Das Passwort ist nicht korrekt.')
+    setError(t('raab.passwordError'))
   }
 
   if (isAllowed) {
@@ -61,7 +63,7 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
             <div>
               <IftaInput
                 id="schlag-den-raab-password"
-                label="Passwort"
+                label={t('raab.password')}
                 autoComplete="current-password"
                 autoFocus
                 type="password"
@@ -77,7 +79,7 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
             </div>
             <Button type="submit">
               <LockKeyhole className="size-4" />
-              Freischalten
+              {t('raab.unlock')}
             </Button>
           </form>
         </CardContent>

@@ -26,9 +26,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-
-const scoreboardTitle = 'Scoreboard'
 
 function formatSignedNumber(value: number) {
   const sign = value > 0 ? '+' : ''
@@ -36,24 +35,29 @@ function formatSignedNumber(value: number) {
   return `${sign}${value}`
 }
 
-function formatEventTime(value: string) {
+function formatEventTime(
+  value: string,
+  formatTime: ReturnType<typeof useI18n>['formatTime'],
+) {
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
     return '-'
   }
 
-  return date.toLocaleTimeString([], {
+  return formatTime(date, {
     hour: '2-digit',
     minute: '2-digit',
   })
 }
 
 function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
+  const { formatTime, t } = useI18n()
+
   if (events.length === 0) {
     return (
       <EmptyState className="p-4 text-left">
-        Noch keine Punkte vergeben.
+        {t('scoreboard.emptyHistory')}
       </EmptyState>
     )
   }
@@ -79,7 +83,7 @@ function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
               {formatSignedNumber(event.delta)}
             </Badge>
             <span className="type-caption w-12 text-right text-muted-foreground tabular-nums">
-              {formatEventTime(event.createdAtClientIso)}
+              {formatEventTime(event.createdAtClientIso, formatTime)}
             </span>
           </div>
         </div>
@@ -105,12 +109,15 @@ function ScoreboardPresenter({
     id: string
     memberCount: number
     name: string
+    nameKey: TranslationKey
     score: number
   }>
   totalScore: number
   unassignedScore: number
 }) {
+  const { t } = useI18n()
   const lastEvent = recentEvents[0]
+  const scoreboardTitle = t('app.scoreboard.title')
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -121,7 +128,7 @@ function ScoreboardPresenter({
 
         <div className="mt-6 grid gap-3">
           {sortedPlayers.length === 0 ? (
-            <EmptyState>Keine Personen im Scoreboard.</EmptyState>
+            <EmptyState>{t('scoreboard.emptyPlayers')}</EmptyState>
           ) : (
             sortedPlayers.map((player, index) => (
               <div
@@ -150,7 +157,9 @@ function ScoreboardPresenter({
 
       <aside className="grid content-start gap-4">
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="type-label text-muted-foreground">Führung</p>
+          <p className="type-label text-muted-foreground">
+            {t('progress.leader')}
+          </p>
           <div className="type-section-title mt-2 truncate">
             {leader?.name ?? '-'}
           </div>
@@ -168,21 +177,21 @@ function ScoreboardPresenter({
               <div className="flex items-center justify-between gap-3">
                 <div className="type-action flex min-w-0 items-center gap-2">
                   <span className={cn('size-3 rounded-full', team.dotClassName)} />
-                  <span className="truncate">{team.name}</span>
+                  <span className="truncate">{t(team.nameKey)}</span>
                 </div>
                 <div className="type-metric-md">
                   {team.score}
                 </div>
               </div>
               <div className="type-ui mt-1 tabular-nums">
-                {team.memberCount} Personen
+                {t('scoreboard.memberCount', { count: team.memberCount })}
               </div>
             </div>
           ))}
           {unassignedScore > 0 && (
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="type-action">Kein Team</div>
+                <div className="type-action">{t('scoreboard.noTeam')}</div>
                 <div className="type-metric-md">
                   {unassignedScore}
                 </div>
@@ -195,7 +204,7 @@ function ScoreboardPresenter({
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="type-label text-muted-foreground">
-                Gesamt
+                {t('scoreboard.total')}
               </p>
               <div className="type-metric-md">
                 {totalScore}
@@ -204,7 +213,7 @@ function ScoreboardPresenter({
             {lastEvent && (
               <div className="min-w-0 text-right">
                 <p className="type-label text-muted-foreground">
-                  Letzte Änderung
+                  {t('scoreboard.lastChange')}
                 </p>
                 <div className="type-action truncate">
                   {lastEvent.playerName} {formatSignedNumber(lastEvent.delta)}
@@ -219,6 +228,7 @@ function ScoreboardPresenter({
 }
 
 export function ScoreboardPage() {
+  const { t } = useI18n()
   const {
     addPlayer,
     changeScore,
@@ -238,37 +248,38 @@ export function ScoreboardPage() {
     updatePlayerName,
     updatePlayerTeam,
   } = useScoreboard()
+  const scoreboardTitle = t('app.scoreboard.title')
 
   const handleChangeScore = async (playerId: string, delta: number) => {
     const result = await changeScore(playerId, delta)
 
     if (result === 'saved') {
-      toast.success(`${formatSignedNumber(delta)} gespeichert.`)
+      toast.success(t('scoreboard.saved', { delta: formatSignedNumber(delta) }))
       return
     }
 
     if (result === 'blocked') {
-      toast.error('Der Punktestand kann nicht unter 0 fallen.')
+      toast.error(t('scoreboard.error.scoreBelowZero'))
       return
     }
 
-    toast.error('Person nicht gefunden.')
+    toast.error(t('scoreboard.error.notFound'))
   }
 
   const handleUndo = async () => {
     const result = await undoLastScoreChange()
 
     if (result === 'undone') {
-      toast.success('Letzte Punkteänderung rückgängig gemacht.')
+      toast.success(t('scoreboard.undoSuccess'))
       return
     }
 
     if (result === 'empty') {
-      toast.error('Es gibt noch keine Punkteänderung.')
+      toast.error(t('scoreboard.error.noHistory'))
       return
     }
 
-    toast.error('Die Person der letzten Punkteänderung existiert nicht mehr.')
+    toast.error(t('scoreboard.error.lastPlayerMissing'))
   }
 
   return (
@@ -284,7 +295,7 @@ export function ScoreboardPage() {
             views={[
               {
                 id: 'ranking',
-                label: 'Rangliste',
+                label: t('scoreboard.ranking'),
                 Icon: Trophy,
                 render: () => (
                   <ScoreboardPresenter
@@ -308,11 +319,11 @@ export function ScoreboardPage() {
             Undo
           </Button>
           <AppResetButton
-            title="Scoreboard zurücksetzen?"
-            description="Alle Punktestände werden auf 0 gesetzt und der aktuelle Verlauf wird gelöscht."
+            title={t('scoreboard.resetTitle')}
+            description={t('scoreboard.resetDescription')}
             onConfirm={async () => {
               await resetScores()
-              toast.success('Scoreboard wurde zurückgesetzt.')
+              toast.success(t('scoreboard.resetSuccess'))
             }}
           />
         </div>
@@ -321,7 +332,7 @@ export function ScoreboardPage() {
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -333,16 +344,18 @@ export function ScoreboardPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="size-5 text-primary" />
-                Team-Scores
+                {t('scoreboard.teamScores')}
               </CardTitle>
               {isLoading && (
-                <CardDescription>Synchronisiere...</CardDescription>
+                <CardDescription>{t('common.syncing')}</CardDescription>
               )}
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="rounded-lg bg-secondary p-4">
                 <div className="type-ui text-muted-foreground">
-                  Führung {leader ? leader.name : '-'}
+                  {t('scoreboard.leaderWithName', {
+                    name: leader ? leader.name : '-',
+                  })}
                 </div>
                 <div className="type-metric-lg">
                   {leader?.score ?? 0}
@@ -363,14 +376,14 @@ export function ScoreboardPage() {
                             team.dotClassName,
                           )}
                         />
-                        <span className="min-w-0 truncate">{team.name}</span>
+                        <span className="min-w-0 truncate">{t(team.nameKey)}</span>
                       </div>
                       <div className="type-metric-sm">
                         {team.score}
                       </div>
                     </div>
                     <div className="type-ui mt-1 tabular-nums">
-                      {team.memberCount} Personen
+                      {t('scoreboard.memberCount', { count: team.memberCount })}
                     </div>
                   </div>
                 ))}
@@ -378,20 +391,22 @@ export function ScoreboardPage() {
                 {unassignedPlayers.length > 0 && (
                   <div className="rounded-lg border p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="type-action">Kein Team</div>
+                      <div className="type-action">{t('scoreboard.noTeam')}</div>
                       <div className="type-metric-sm">
                         {unassignedScore}
                       </div>
                     </div>
                     <div className="type-ui mt-1 text-muted-foreground tabular-nums">
-                      {unassignedPlayers.length} Personen
+                      {t('scoreboard.memberCount', {
+                        count: unassignedPlayers.length,
+                      })}
                     </div>
                   </div>
                 )}
               </div>
 
               <div className="type-ui rounded-lg border p-3">
-                <div className="text-muted-foreground">Gesamt</div>
+                <div className="text-muted-foreground">{t('scoreboard.total')}</div>
                 <div className="type-metric-sm">
                   {totalScore}
                 </div>
@@ -403,7 +418,7 @@ export function ScoreboardPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <History className="size-5 text-primary" />
-                Verlauf
+                {t('common.history')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -416,16 +431,16 @@ export function ScoreboardPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="type-section-title flex items-center gap-2">
               <UsersRound className="size-5 text-primary" />
-              Personen
+              {t('scoreboard.people')}
             </h2>
             <Button
               onClick={async () => {
                 await addPlayer()
-                toast.success('Person hinzugefügt.')
+                toast.success(t('scoreboard.personAdded'))
               }}
             >
               <Plus className="size-4" />
-              Person
+              {t('scoreboard.person')}
             </Button>
           </div>
           <Separator />
@@ -441,7 +456,7 @@ export function ScoreboardPage() {
                 onNameChange={(name) => updatePlayerName(player.id, name)}
                 onRemove={async () => {
                   await removePlayer(player.id)
-                  toast.success(`${player.name} wurde entfernt.`)
+                  toast.success(t('scoreboard.personRemoved', { name: player.name }))
                 }}
                 onTeamChange={(teamId) => updatePlayerTeam(player.id, teamId)}
               />
@@ -454,11 +469,11 @@ export function ScoreboardPage() {
                     variant="outline"
                     onClick={async () => {
                       await addPlayer()
-                      toast.success('Person hinzugefügt.')
+                      toast.success(t('scoreboard.personAdded'))
                     }}
                   >
                     <Plus className="size-6" />
-                    Person hinzufügen
+                    {t('scoreboard.addPerson')}
                   </Button>
                 </CardContent>
               </Card>

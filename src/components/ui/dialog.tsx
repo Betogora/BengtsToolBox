@@ -2,6 +2,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
 import type * as React from 'react'
 
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 function Dialog({
@@ -52,6 +53,8 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const { t } = useI18n()
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -67,7 +70,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close className="absolute right-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
             <XIcon className="size-4" />
-            <span className="sr-only">Schliessen</span>
+            <span className="sr-only">{t('common.close')}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>

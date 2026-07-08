@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 export function InlineTextEdit({
@@ -20,6 +21,7 @@ export function InlineTextEdit({
   onSave: (value: string) => void | Promise<void>
   value: string
 }) {
+  const { t } = useI18n()
   const [isEditing, setIsEditing] = useState(false)
   const displayValue = value.trim() || fallback
 
@@ -53,7 +55,7 @@ export function InlineTextEdit({
         {displayValue}
       </span>
       <Button
-        aria-label={`${ariaLabel} bearbeiten`}
+        aria-label={t('common.editAria', { label: ariaLabel })}
         className="size-11 sm:size-9"
         size="icon"
         variant="ghost"

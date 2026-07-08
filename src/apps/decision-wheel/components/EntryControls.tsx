@@ -5,6 +5,7 @@ import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
 import { Button } from '@/components/ui/button'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/lib/i18n'
 
 type EntryControlMode = 'mobile' | 'table'
 
@@ -42,6 +43,8 @@ export function EntryTextControl({
   mode,
   onUpdateEntry,
 }: EntryControlProps) {
+  const { t } = useI18n()
+
   if (mode === 'mobile') {
     return (
       <IftaInput
@@ -58,7 +61,7 @@ export function EntryTextControl({
   return (
     <Input
       id={`entry-text-table-${entry.id}`}
-      aria-label={`Text von Option ${index + 1}`}
+      aria-label={t('decisionWheel.option.textAria', { number: index + 1 })}
       className="max-w-60"
       value={entry.text}
       onChange={(event) =>
@@ -76,11 +79,16 @@ export function EntryWeightControl({
   onClearWeightDraft,
   onWeightChange,
 }: EntryWeightControlProps) {
+  const { t } = useI18n()
+  const entryLabel = getEntryDisplayText(entry, index, (number) =>
+    t('decisionWheel.fallbackOption', { number }),
+  )
+
   if (mode === 'mobile') {
     return (
       <IftaInput
         id={`entry-weight-${entry.id}`}
-        label="Gewicht"
+        label={t('decisionWheel.weight')}
         min={1}
         type="number"
         className="text-center tabular-nums"
@@ -96,7 +104,7 @@ export function EntryWeightControl({
   return (
     <Input
       id={`entry-weight-table-${entry.id}`}
-      aria-label={`Gewicht von ${getEntryDisplayText(entry, index)}`}
+      aria-label={t('decisionWheel.weightAria', { option: entryLabel })}
       min={1}
       type="number"
       className="w-16 text-center tabular-nums"
@@ -115,11 +123,15 @@ export function EntryColorControl({
   mode,
   onUpdateEntry,
 }: EntryControlProps) {
+  const { t } = useI18n()
+  const entryLabel = getEntryDisplayText(entry, index, (number) =>
+    t('decisionWheel.fallbackOption', { number }),
+  )
   const input = (
     <Input
       id={mode === 'mobile' ? `entry-color-${entry.id}` : `entry-color-table-${entry.id}`}
       type="color"
-      aria-label={`${getEntryDisplayText(entry, index)} Farbe wählen`}
+      aria-label={t('decisionWheel.option.colorAria', { option: entryLabel })}
       className={
         mode === 'mobile'
           ? 'h-11 cursor-pointer rounded-md border p-1'
@@ -138,7 +150,7 @@ export function EntryColorControl({
         <Input
           id={`entry-color-${entry.id}`}
           type="color"
-          aria-label={`${getEntryDisplayText(entry, index)} Farbe wÃ¤hlen`}
+          aria-label={t('decisionWheel.option.colorAria', { option: entryLabel })}
           className="h-11 cursor-pointer rounded-md border px-2 pb-1.5 pt-5"
           value={entry.color}
           onChange={(event) =>
@@ -149,7 +161,7 @@ export function EntryColorControl({
           className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-muted-foreground"
           htmlFor={`entry-color-${entry.id}`}
         >
-          Farbe
+          {t('decisionWheel.color')}
         </label>
       </div>
     )
@@ -164,9 +176,14 @@ export function RemoveEntryButton({
   mode,
   onRemoveEntry,
 }: RemoveEntryButtonProps) {
+  const { t } = useI18n()
+  const entryLabel = getEntryDisplayText(entry, index, (number) =>
+    t('decisionWheel.fallbackOption', { number }),
+  )
+
   return (
     <Button
-      aria-label={`${getEntryDisplayText(entry, index)} löschen`}
+      aria-label={t('decisionWheel.option.deleteAria', { option: entryLabel })}
       className={mode === 'mobile' ? 'w-11 px-0' : 'h-9 w-9 px-0'}
       size={mode === 'mobile' ? 'ifta' : 'icon'}
       variant="delete"

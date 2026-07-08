@@ -12,10 +12,12 @@ import {
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
+import type { TranslationKey } from '@/lib/i18n'
+
 export type HubApp = {
   id: string
-  title: string
-  description: string
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
   href: string
   routePath: string
   status: 'Live' | 'Preview'
@@ -31,9 +33,8 @@ export type HubAppRoute = {
 const appDefinitions: readonly HubApp[] = [
   {
     id: 'decision-wheel',
-    title: 'Glücksrad',
-    description:
-      'Decision Wheel für Spieleabende, Aufgaben, Preise und schnelle Auswahl.',
+    titleKey: 'app.decisionWheel.title',
+    descriptionKey: 'app.decisionWheel.description',
     href: '/apps/decision-wheel',
     routePath: 'apps/decision-wheel',
     status: 'Live',
@@ -45,9 +46,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'coinflip',
-    title: 'Coinflip',
-    description:
-      'Schneller Münzwurf mit Verlauf, letztem Ergebnis und Presenter-Ansicht.',
+    titleKey: 'app.coinflip.title',
+    descriptionKey: 'app.coinflip.description',
     href: '/apps/coinflip',
     routePath: 'apps/coinflip',
     status: 'Live',
@@ -59,9 +59,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'progress-dashboard',
-    title: 'Fortschritts-Dashboard',
-    description:
-      'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
+    titleKey: 'app.progressDashboard.title',
+    descriptionKey: 'app.progressDashboard.description',
     href: '/apps/progress-dashboard',
     routePath: 'apps/progress-dashboard',
     status: 'Live',
@@ -73,9 +72,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'scoreboard',
-    title: 'Scoreboard',
-    description:
-      'Live-Scoreboard für Spieleabende, Quiz, Challenges und kleine Turniere.',
+    titleKey: 'app.scoreboard.title',
+    descriptionKey: 'app.scoreboard.description',
     href: '/apps/scoreboard',
     routePath: 'apps/scoreboard',
     status: 'Live',
@@ -87,9 +85,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'live-buzzer',
-    title: 'Live-Buzzer',
-    description:
-      'Quizshow-Buzzer mit automatischen Spielerkarten, Blau/Gelb-Teams und gemeinsamer Rundensteuerung.',
+    titleKey: 'app.liveBuzzer.title',
+    descriptionKey: 'app.liveBuzzer.description',
     href: '/apps/live-buzzer',
     routePath: 'apps/live-buzzer',
     status: 'Live',
@@ -101,9 +98,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'territory-map',
-    title: 'Sushi Map',
-    description:
-      'Interaktive Sushi-Reisekarte für Weltländer und deutsche Bundesländer mit Esserfarben und Live-Sync.',
+    titleKey: 'app.territoryMap.title',
+    descriptionKey: 'app.territoryMap.description',
     href: '/apps/sushi',
     routePath: 'apps/sushi',
     status: 'Live',
@@ -115,9 +111,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'randomizer',
-    title: 'Random Number Generator',
-    description:
-      'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
+    titleKey: 'app.randomizer.title',
+    descriptionKey: 'app.randomizer.description',
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
     status: 'Live',
@@ -129,9 +124,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'swiss-tournaments',
-    title: 'SK Anderten Turnier-App',
-    description:
-      'Schachturniere nach Schweizer System mit Spielern, Paarungen, Ergebnissen, Tie-Breaks und Export.',
+    titleKey: 'app.swissTournaments.title',
+    descriptionKey: 'app.swissTournaments.description',
     href: '/apps/swiss-tournaments',
     routePath: 'apps/swiss-tournaments',
     status: 'Live',
@@ -143,9 +137,8 @@ const appDefinitions: readonly HubApp[] = [
   },
   {
     id: 'next-question',
-    title: 'Nächste Frage',
-    description:
-      'Quizfragen-Karussell mit verdeckter Antwort und gemerkter Position.',
+    titleKey: 'app.nextQuestion.title',
+    descriptionKey: 'app.nextQuestion.description',
     href: '/apps/next-question',
     routePath: 'apps/next-question',
     status: 'Live',

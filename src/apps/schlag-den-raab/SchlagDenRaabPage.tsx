@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 type GameApp = {
@@ -129,6 +130,8 @@ function PlayerScoreSummary({
   player: SchlagDenRaabPlayer
   score: number
 }) {
+  const { t } = useI18n()
+
   return (
     <div
       className={cn(
@@ -140,7 +143,7 @@ function PlayerScoreSummary({
         <div className="min-w-0">
           <div className="type-action truncate">{player.name}</div>
           <div className="type-caption text-muted-foreground">
-            {gameWins} gewonnene Spiele
+            {t('raab.gamesWon', { count: gameWins })}
           </div>
         </div>
         <div className="type-metric-md">{score}</div>
@@ -160,6 +163,7 @@ function ScoreButton({
   player: SchlagDenRaabPlayer
   scoreAfterGame: number
 }) {
+  const { t } = useI18n()
   const isWinner = game.winnerId === player.id
 
   return (
@@ -167,8 +171,14 @@ function ScoreButton({
       type="button"
       aria-label={
         isWinner
-          ? `${player.name} als Gewinner von ${game.title} entfernen`
-          : `${player.name} gewinnt ${game.title} eintragen`
+          ? t('raab.removeWinnerAria', {
+              game: game.title,
+              player: player.name,
+            })
+          : t('raab.registerWinnerAria', {
+              game: game.title,
+              player: player.name,
+            })
       }
       aria-pressed={isWinner}
       className={cn('raab-score-button', isWinner && 'raab-score-button-winner')}
@@ -177,13 +187,14 @@ function ScoreButton({
       {isWinner ? (
         <span className="raab-score-pill">{scoreAfterGame}</span>
       ) : (
-        <span className="sr-only">Kein Punktestand</span>
+        <span className="sr-only">{t('raab.noScore')}</span>
       )}
     </button>
   )
 }
 
 function ScoreOverview() {
+  const { t } = useI18n()
   const {
     archivedDatasets,
     deleteArchivedDataset,
@@ -208,17 +219,17 @@ function ScoreOverview() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <Trophy className="size-5 text-primary" />
-              Abendstand
+              {t('raab.eveningScore')}
             </CardTitle>
             <ConfirmButton
-              title="Abend archivieren und neu starten?"
-              description="Der aktuelle Abend wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Abend mit denselben Spielern."
-              confirmLabel="Neu starten"
+              title={t('raab.archive.restartTitle')}
+              description={t('raab.archive.restartDescription')}
+              confirmLabel={t('raab.archive.restartConfirm')}
               onConfirm={resetEvening}
               trigger={
                 <Button size="sm" variant="outline">
                   <RotateCcw className="size-4" />
-                  Zurücksetzen
+                  {t('common.reset')}
                 </Button>
               }
             />
@@ -227,7 +238,7 @@ function ScoreOverview() {
         <CardContent className="grid gap-4">
           {error && (
             <div className="rounded-md border border-destructive/60 bg-destructive/10 p-3 text-sm text-destructive">
-              Firebase-Fehler: {error.message}
+              {t('common.firebaseError')}: {error.message}
             </div>
           )}
 
@@ -243,7 +254,7 @@ function ScoreOverview() {
             ))}
             <div className="rounded-md border bg-background/75 p-3">
               <div className="type-caption text-muted-foreground">
-                Ausgang
+                {t('raab.outcome')}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant={outcomeVariant(outcome.status)}>
@@ -265,13 +276,15 @@ function ScoreOverview() {
             </colgroup>
             <TableHeader>
               <TableHead className="text-center">#</TableHead>
-              <TableHead>Spiel</TableHead>
+              <TableHead>{t('raab.game')}</TableHead>
               {players.map((player) => (
                 <TableHead key={player.id} className="text-center">
                   <div className="flex justify-center">
                     <InlineTextEdit
                       ariaLabel={`${player.name} Name`}
-                      fallback={`Spieler ${player.position}`}
+                      fallback={t('raab.playerFallback', {
+                        number: player.position,
+                      })}
                       inputClassName="h-8 text-center"
                       value={player.name}
                       onSave={(name) => updatePlayerName(player.id, name)}
@@ -291,9 +304,13 @@ function ScoreOverview() {
                   </TableCell>
                   <TableCell className="min-w-0">
                     <InlineTextEdit
-                      ariaLabel={`Name von Spiel ${row.game.position}`}
+                      ariaLabel={t('raab.gameNameAria', {
+                        number: row.game.position,
+                      })}
                       className="type-label max-w-[18rem]"
-                      fallback={`Spiel ${row.game.position}`}
+                      fallback={t('raab.gameFallback', {
+                        number: row.game.position,
+                      })}
                       inputClassName="h-8"
                       value={row.game.title}
                       onSave={(title) => updateGameTitle(row.game.id, title)}
@@ -336,6 +353,7 @@ function ArchiveSection({
   onDeleteArchivedDataset: (datasetId: string) => void | Promise<void>
   onRenameArchivedDataset: (datasetId: string, name: string) => void | Promise<void>
 }) {
+  const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -352,7 +370,7 @@ function ArchiveSection({
             <ChevronRight className="size-4 shrink-0" />
           )}
           <Archive className="size-5 shrink-0 text-primary" />
-          <span className="type-action">Alte Datensätze</span>
+          <span className="type-action">{t('common.oldDatasets')}</span>
           <Badge variant="secondary">{archivedDatasets.length}</Badge>
         </button>
       </CardHeader>
@@ -360,7 +378,7 @@ function ArchiveSection({
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (
             <div className="type-ui rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-              Noch keine archivierten Datensätze.
+              {t('raab.archive.empty')}
             </div>
           ) : (
             archivedDatasets.map((dataset) => (
@@ -387,6 +405,7 @@ function ArchiveDatasetCard({
   onDelete: (datasetId: string) => void | Promise<void>
   onRename: (datasetId: string, name: string) => void | Promise<void>
 }) {
+  const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const summary = getSchlagDenRaabSummary(dataset)
   const playedGames =
@@ -408,24 +427,24 @@ function ArchiveDatasetCard({
           )}
           <div className="min-w-0">
             <InlineTextEdit
-              ariaLabel="Archivname"
+              ariaLabel={t('progress.archiveName')}
               className="type-action"
-              fallback="Archivierter Datensatz"
+              fallback={t('common.archivedDataset')}
               value={dataset.name}
               onSave={(value) => onRename(dataset.id, value)}
             />
             <div className="type-caption mt-1 text-muted-foreground">
-              {formatDateTime(dataset.archivedAtClientIso)} - {playedGames}{' '}
-              Spiele
+              {formatDateTime(dataset.archivedAtClientIso)} -{' '}
+              {t('raab.gameCount', { count: playedGames })}
             </div>
           </div>
         </button>
         <ConfirmButton
-          title="Datensatz löschen?"
-          description="Der archivierte Abend wird dauerhaft entfernt."
+          title={t('common.dataset.delete')}
+          description={t('raab.archive.deleteDescription')}
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="delete" size="icon" aria-label="Archiv löschen">
+            <Button variant="delete" size="icon" aria-label={t('common.archive.delete')}>
               <Trash2 className="size-4" />
             </Button>
           }
@@ -445,7 +464,7 @@ function ArchiveDatasetCard({
             ))}
             <div className="rounded-md border bg-background/75 p-3">
               <div className="type-caption text-muted-foreground">
-                Ausgang
+                {t('raab.outcome')}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant={outcomeVariant(summary.outcome.status)}>
@@ -468,6 +487,8 @@ function ReadOnlyArchiveTable({
   players: SchlagDenRaabPlayer[]
   rows: ReturnType<typeof getSchlagDenRaabSummary>['rows']
 }) {
+  const { t } = useI18n()
+
   return (
     <Table
       className="raab-score-table"
@@ -481,7 +502,7 @@ function ReadOnlyArchiveTable({
       </colgroup>
       <TableHeader>
         <TableHead className="text-center">#</TableHead>
-        <TableHead>Spiel</TableHead>
+        <TableHead>{t('raab.game')}</TableHead>
         {players.map((player) => (
           <TableHead key={player.id} className="text-center">
             {player.name}
@@ -526,6 +547,8 @@ function ReadOnlyArchiveTable({
 }
 
 export function SchlagDenRaabPage() {
+  const { t } = useI18n()
+
   return (
     <AppPage className="gap-7 lg:py-12" width="wide">
       <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
@@ -540,7 +563,9 @@ export function SchlagDenRaabPage() {
             <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/18">
               <Layers3 className="size-5" />
             </div>
-            <CardTitle className="whitespace-nowrap">{games.length} Apps</CardTitle>
+            <CardTitle className="whitespace-nowrap">
+              {t('dashboard.appCount', { count: games.length })}
+            </CardTitle>
           </CardHeader>
         </Card>
       </section>

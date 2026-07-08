@@ -4,12 +4,15 @@ import { Link } from 'react-router-dom'
 import { dashboardApps, type HubApp } from '@/apps/registry'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
+import { useI18n } from '@/lib/i18n'
 
 type AppTileProps = {
   app: HubApp
 }
 
 function AppTile({ app }: AppTileProps) {
+  const { t } = useI18n()
+  const appTitle = t(app.titleKey)
   const prefetchApp = () => {
     void app.loadPage()
   }
@@ -17,7 +20,7 @@ function AppTile({ app }: AppTileProps) {
   return (
     <Link
       to={app.href}
-      aria-label={`${app.title} öffnen`}
+      aria-label={t('common.openApp', { app: appTitle })}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       onFocus={prefetchApp}
       onMouseEnter={prefetchApp}
@@ -39,7 +42,7 @@ function AppTile({ app }: AppTileProps) {
           </div>
 
           <CardTitle className="type-tile-title hyphens-manual break-words text-balance transition-colors group-hover:text-primary">
-            {app.title}
+            {appTitle}
           </CardTitle>
         </CardHeader>
       </Card>
@@ -48,23 +51,25 @@ function AppTile({ app }: AppTileProps) {
 }
 
 export function DashboardPage() {
+  const { t } = useI18n()
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 pb-6 pt-8 sm:px-6 lg:gap-8 lg:pb-8 lg:pt-12">
       <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
         <div className="min-w-0">
           <h1 className="type-dashboard-title text-foreground">
-            App-Hub
+            {t('dashboard.title')}
           </h1>
           <div className="mt-5 h-2 w-16 rounded-full bg-primary sm:w-20" />
         </div>
 
         <div className="flex shrink-0 items-center gap-3 justify-self-end max-[28rem]:justify-self-start">
           <Card className="grid h-[72px] w-[72px] place-items-center overflow-hidden bg-white p-2 shadow-[0_18px_46px_-30px_rgba(6,52,79,0.55)]">
-            <img
-              src="/qrcode.svg"
-              alt="QR-Code zur App-Hub Homepage"
-              className="size-full rounded-md"
-            />
+              <img
+                src="/qrcode.svg"
+              alt={t('dashboard.qrAlt')}
+                className="size-full rounded-md"
+              />
           </Card>
 
           <Card className="h-[72px] w-fit border-primary/20 bg-primary text-primary-foreground shadow-[0_18px_46px_-30px_rgba(13,142,144,0.9)]">
@@ -73,7 +78,7 @@ export function DashboardPage() {
                 <Layers3 className="size-5" />
               </div>
               <CardTitle className="whitespace-nowrap">
-                {dashboardApps.length} Apps
+                {t('dashboard.appCount', { count: dashboardApps.length })}
               </CardTitle>
             </CardHeader>
           </Card>

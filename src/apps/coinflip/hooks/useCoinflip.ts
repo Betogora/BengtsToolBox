@@ -16,8 +16,8 @@ const initialCoinflipState: CoinflipState = {
   history: [],
 }
 
-export function getCoinflipLabel(side: CoinflipSide) {
-  return side === 'heads' ? 'Kopf' : 'Zahl'
+export function getCoinflipLabelKey(side: CoinflipSide) {
+  return side === 'heads' ? 'coinflip.face.heads' : 'coinflip.face.tails'
 }
 
 export function useCoinflip(stateId = 'default') {

@@ -39,9 +39,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-
-const podiumLabels = ['Gold', 'Silber', 'Bronze'] as const
 
 function getPodiumRowClass(rank: number) {
   return cn(
@@ -78,6 +77,8 @@ function ProgressDashboardPresenter({
   totalScore: number
   unitLabel: string
 }) {
+  const { t } = useI18n()
+  const podiumLabels = ['Gold', 'Silber', 'Bronze'] as const
   const rankedPlayerScores = [...playerScores].sort(
     (left, right) =>
       right.score - left.score ||
@@ -106,7 +107,9 @@ function ProgressDashboardPresenter({
 
       <aside className="grid content-start gap-4">
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="type-label text-muted-foreground">Führung</p>
+          <p className="type-label text-muted-foreground">
+            {t('progress.leader')}
+          </p>
           <div className="type-section-title mt-2 truncate">
             {leader?.player.name ?? '-'}
           </div>
@@ -114,7 +117,7 @@ function ProgressDashboardPresenter({
             {formatNumber(leader?.score ?? 0)}
           </div>
           <p className="type-ui mt-2 text-muted-foreground">
-            von {formatNumber(totalScore)}
+            {t('progress.ofTotal', { total: formatNumber(totalScore) })}
             {unitLabel ? ` ${unitLabel}` : ''}
           </p>
         </div>
@@ -123,12 +126,12 @@ function ProgressDashboardPresenter({
           <div className="flex items-center gap-2">
             <Trophy className="size-5 text-primary" />
             <h2 className="type-section-title">
-              Topliste
+              {t('progress.topList')}
             </h2>
           </div>
           <div className="mt-5 grid gap-3">
             {playerScores.length === 0 ? (
-              <EmptyState>Keine Spieler vorhanden.</EmptyState>
+              <EmptyState>{t('progress.emptyPlayers')}</EmptyState>
             ) : (
               rankedPlayerScores.map((playerScore, index) => {
                 const rank = index + 1
@@ -141,7 +144,9 @@ function ProgressDashboardPresenter({
                   >
                     <div
                       aria-label={
-                        podiumLabel ? `${podiumLabel}: Platz ${rank}` : `Platz ${rank}`
+                        podiumLabel
+                          ? `${podiumLabel}: ${t('progress.rank', { rank })}`
+                          : t('progress.rank', { rank })
                       }
                       className={getPodiumRankClass(rank)}
                       title={podiumLabel}
@@ -172,6 +177,7 @@ function ProgressDashboardPresenter({
 }
 
 export function ProgressDashboardPage() {
+  const { t } = useI18n()
   const {
     activeDataset,
     addEvent,
@@ -202,6 +208,7 @@ export function ProgressDashboardPage() {
   const chartAccentStyle = {
     '--progress-accent': leader?.player.color ?? 'var(--primary)',
   } as CSSProperties
+  const appTitle = t('app.progressDashboard.title')
 
   return (
     <AppPage width="wide">
@@ -209,16 +216,16 @@ export function ProgressDashboardPage() {
         <div className="min-w-0">
           <AppPageTitle
             Icon={ChartNoAxesCombined}
-            title="Fortschritts-Dashboard"
+            title={appTitle}
           />
         </div>
         <div className="flex flex-wrap gap-2">
           <PresenterLauncher
-            appTitle="Fortschritts-Dashboard"
+            appTitle={appTitle}
             views={[
               {
                 id: 'overview',
-                label: 'Überblick',
+                label: t('progress.chart.overview'),
                 Icon: ChartNoAxesCombined,
                 render: () => (
                   <ProgressDashboardPresenter
@@ -234,7 +241,9 @@ export function ProgressDashboardPage() {
               },
             ]}
           />
-          <Badge variant="outline">{players.length} Spieler</Badge>
+          <Badge variant="outline">
+            {t('common.playerCount', { count: players.length })}
+          </Badge>
           <Badge variant="outline">
             {formatNumber(totalEvents)}
             {unitLabel ? ` ${unitLabel}` : ''}
@@ -245,7 +254,7 @@ export function ProgressDashboardPage() {
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -257,7 +266,7 @@ export function ProgressDashboardPage() {
             <div className="type-ui flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Trophy className="size-4 text-[var(--progress-accent)]" />
-                Führung
+                {t('progress.leader')}
               </div>
               <div className="type-action min-w-0 truncate">
                 {leader ? leader.player.name : '-'}
@@ -267,15 +276,15 @@ export function ProgressDashboardPage() {
                   {formatNumber(leader?.score ?? 0)}
                 </span>
                 <span>
-                  von {formatNumber(totalScore)}
+                  {t('progress.ofTotal', { total: formatNumber(totalScore) })}
                   {unitLabel ? ` ${unitLabel}` : ''}
                 </span>
               </div>
             </div>
             <div className="w-full md:w-64">
               <IftaInput
-                aria-label="Einheit"
-                label="Einheit"
+                aria-label={t('progress.unitAria')}
+                label={t('progress.unitAria')}
                 value={activeDataset.unit}
                 onChange={(event) =>
                   updateActiveDatasetMeta('unit', event.currentTarget.value)
@@ -296,10 +305,12 @@ export function ProgressDashboardPage() {
         <div>
           <h2 className="type-section-title flex items-center gap-2">
             <UsersRound className="size-5 text-primary" />
-            Spieler
+            {t('progress.players')}
           </h2>
           {isLoading && (
-            <p className="type-ui mt-1 text-muted-foreground">Synchronisiere...</p>
+            <p className="type-ui mt-1 text-muted-foreground">
+              {t('common.syncing')}
+            </p>
           )}
         </div>
       </section>
@@ -315,9 +326,13 @@ export function ProgressDashboardPage() {
               const didSave = await addEvent(player, icon)
 
               if (didSave) {
-                toast.success(icon === 'schnaps' ? '+0,5 gespeichert.' : '+1 gespeichert.')
+                toast.success(
+                  t('progress.savedDelta', {
+                    delta: icon === 'schnaps' ? '+0,5' : '+1',
+                  }),
+                )
               } else {
-                toast.error('Der Stand kann nicht unter 0 fallen.')
+                toast.error(t('progress.scoreBelowZero'))
               }
             }}
             onColorChange={(playerId, color) => updatePlayerColor(playerId, color)}
@@ -327,7 +342,7 @@ export function ProgressDashboardPage() {
             onNameChange={(playerId, name) => updatePlayerName(playerId, name)}
             onRemove={async (playerId) => {
               await removePlayer(playerId)
-              toast.success('Spieler wurde entfernt.')
+              toast.success(t('progress.playerRemoved'))
             }}
           />
         ))}
@@ -338,11 +353,11 @@ export function ProgressDashboardPage() {
               variant="outline"
               onClick={async () => {
                 await addPlayer()
-                toast.success('Person hinzugefügt.')
+                toast.success(t('progress.playerAdded'))
               }}
             >
               <Plus className="size-6" />
-              Spieler hinzufügen
+              {t('progress.addPlayer')}
             </Button>
           </CardContent>
         </Card>
@@ -361,17 +376,17 @@ export function ProgressDashboardPage() {
                 <ChevronRight className="size-4 shrink-0" />
               )}
               <BarChart3 className="size-5 text-primary" />
-              <span className="type-action">Datensatz</span>
+              <span className="type-action">{t('common.dataset')}</span>
               <span className="type-caption text-muted-foreground">
-                {formatNumber(totalEvents)} Ereignisse
+                {t('progress.eventCount', { count: formatNumber(totalEvents) })}
               </span>
             </button>
             <AppResetButton
-              title="Datensatz archivieren und neu starten?"
-              description="Der aktuelle Datensatz wird als alter Datensatz gespeichert. Danach startet ein neuer leerer Datensatz."
+              title={t('progress.archive.restartTitle')}
+              description={t('progress.archive.restartDescription')}
               onConfirm={async () => {
                 await resetAndArchiveDataset()
-                toast.success('Datensatz archiviert und neu gestartet.')
+                toast.success(t('progress.archive.restartSuccess'))
               }}
             />
           </div>
@@ -383,7 +398,7 @@ export function ProgressDashboardPage() {
             icons={progressEventIcons}
             onDeleteEvent={async (eventId) => {
               await deleteEvent(eventId)
-              toast.success('Ereignis gelöscht.')
+              toast.success(t('progress.eventDeleted'))
             }}
             onUpdateEvent={(eventId, partialValue) => updateEvent(eventId, partialValue)}
           />
@@ -395,13 +410,13 @@ export function ProgressDashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Archive className="size-5 text-primary" />
-            Alte Datensätze
+            {t('common.oldDatasets')}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (
             <EmptyState>
-              Noch keine archivierten Datensätze.
+              {t('progress.oldDatasetsEmpty')}
             </EmptyState>
           ) : (
             archivedDatasets.map((dataset) => (
@@ -410,7 +425,7 @@ export function ProgressDashboardPage() {
                 dataset={dataset}
                 onDelete={async (datasetId) => {
                   await deleteDataset(datasetId)
-                  toast.success('Datensatz gelöscht.')
+                  toast.success(t('progress.datasetDeleted'))
                 }}
                 onRename={(datasetId, name) =>
                   updateArchivedDatasetName(datasetId, name)

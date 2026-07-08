@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { useI18n } from '@/lib/i18n'
 
 function RandomizerPresenter({
   history,
@@ -27,18 +28,20 @@ function RandomizerPresenter({
   max: number
   min: number
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <section className="grid min-h-[28rem] place-items-center rounded-lg border bg-secondary p-6 text-center shadow-sm">
         <div>
           <p className="type-label text-muted-foreground">
-            Letzter Wurf
+            {t('randomizer.lastRoll')}
           </p>
           <div className="type-metric-xl mt-4">
             {lastRoll ?? '-'}
           </div>
           <p className="type-action mt-5 tabular-nums">
-            {min} bis {max}
+            {t('randomizer.range', { max, min })}
           </p>
         </div>
       </section>
@@ -47,12 +50,12 @@ function RandomizerPresenter({
         <div className="flex items-center gap-2">
           <History className="size-5 text-primary" />
           <h2 className="type-section-title">
-            Letzte Ergebnisse
+            {t('common.latestResults')}
           </h2>
         </div>
         <div className="mt-5 grid gap-3">
           {history.length === 0 ? (
-            <EmptyState>Noch keine Würfe vorhanden.</EmptyState>
+            <EmptyState>{t('randomizer.empty')}</EmptyState>
           ) : (
             history.map((rollResult, index) => (
               <div
@@ -60,7 +63,9 @@ function RandomizerPresenter({
                 className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
               >
                 <div className="type-label">
-                  Wurf {history.length - index}
+                  {t('randomizer.resultNumber', {
+                    number: history.length - index,
+                  })}
                 </div>
                 <div className="type-metric-lg">
                   {rollResult.value}
@@ -75,19 +80,21 @@ function RandomizerPresenter({
 }
 
 export function RandomizerPage() {
+  const { t } = useI18n()
   const { data, updateRange, roll, clearHistory, error } = useRandomizer()
+  const appTitle = t('app.randomizer.title')
   const visibleHistory = data.history.slice(0, 5)
 
   return (
     <AppPage>
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={Dice5} title="Random Number Generator" />
+        <AppPageTitle Icon={Dice5} title={appTitle} />
         <PresenterLauncher
-          appTitle="Random Number Generator"
+          appTitle={appTitle}
           views={[
             {
               id: 'last-roll',
-              label: 'Letzter Wurf',
+              label: t('randomizer.lastRoll'),
               Icon: Dice5,
               render: () => (
                 <RandomizerPresenter
@@ -105,7 +112,7 @@ export function RandomizerPage() {
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -124,7 +131,7 @@ export function RandomizerPage() {
               <div>
                 <IftaInput
                   id="min-value"
-                  label="Minimum"
+                  label={t('randomizer.minimum')}
                   type="number"
                   value={data.min}
                   onChange={(event) =>
@@ -135,7 +142,7 @@ export function RandomizerPage() {
               <div>
                 <IftaInput
                   id="max-value"
-                  label="Maximum"
+                  label={t('randomizer.maximum')}
                   type="number"
                   value={data.max}
                   onChange={(event) =>
@@ -147,7 +154,7 @@ export function RandomizerPage() {
 
             <button
               type="button"
-              aria-label="Würfeln"
+              aria-label={t('randomizer.action.roll')}
               className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg bg-secondary p-6 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               onClick={roll}
             >
@@ -156,7 +163,7 @@ export function RandomizerPage() {
               </div>
             <div className="type-action flex items-center justify-center gap-2">
               <Dice5 className="size-5 text-primary" />
-              <span>Würfeln</span>
+              <span>{t('randomizer.action.roll')}</span>
             </div>
           </button>
           </CardContent>
@@ -167,11 +174,11 @@ export function RandomizerPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 <History className="size-5 text-primary" />
-                Verlauf
+                {t('common.history')}
               </CardTitle>
               <AppResetButton
-                title="Verlauf zurücksetzen?"
-                description="Alle bisherigen Würfe und der letzte Wurf werden gelöscht."
+                title={t('randomizer.resetTitle')}
+                description={t('randomizer.resetDescription')}
                 onConfirm={clearHistory}
               />
             </div>
@@ -179,7 +186,7 @@ export function RandomizerPage() {
           <CardContent>
             {visibleHistory.length === 0 ? (
               <EmptyState className="p-8">
-                Noch keine Würfe vorhanden.
+                {t('randomizer.empty')}
               </EmptyState>
             ) : (
               <div className="divide-y">
@@ -189,7 +196,9 @@ export function RandomizerPage() {
                     className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
                   >
                     <div className="type-label">
-                      Wurf {visibleHistory.length - index}
+                      {t('randomizer.resultNumber', {
+                        number: visibleHistory.length - index,
+                      })}
                     </div>
                     <div className="type-metric-sm">
                       {rollResult.value}

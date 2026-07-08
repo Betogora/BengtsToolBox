@@ -11,10 +11,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { useI18n } from '@/lib/i18n'
 
 export function ConfirmButton({
   children,
-  confirmLabel = 'Bestätigen',
+  confirmLabel,
   description,
   onConfirm,
   title,
@@ -27,9 +28,11 @@ export function ConfirmButton({
   title: string
   trigger: ReactNode
 }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
+  const resolvedConfirmLabel = confirmLabel ?? t('common.confirm')
 
   const handleConfirm = async () => {
     if (isConfirming) return
@@ -65,7 +68,7 @@ export function ConfirmButton({
         {children}
         <DialogFooter>
           <DialogClose asChild>
-            <Button disabled={isConfirming} variant="outline">Abbrechen</Button>
+            <Button disabled={isConfirming} variant="outline">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             ref={confirmButtonRef}
@@ -73,7 +76,7 @@ export function ConfirmButton({
             variant="destructive"
             onClick={() => void handleConfirm()}
           >
-            {confirmLabel}
+            {resolvedConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

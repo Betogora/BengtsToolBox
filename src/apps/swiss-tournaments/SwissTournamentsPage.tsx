@@ -89,27 +89,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
-const resultOptions: Array<{ value: GameResult; label: string }> = [
+const resultOptions: Array<{ value: GameResult; labelKey?: TranslationKey; label: string }> = [
   { value: '1-0', label: '1 - 0' },
   { value: '0-1', label: '0 - 1' },
   { value: '0.5-0.5', label: '1/2 - 1/2' },
-  { value: 'forfeit-1-0', label: 'kampflos 1 - 0' },
-  { value: 'forfeit-0-1', label: 'kampflos 0 - 1' },
+  { value: 'forfeit-1-0', labelKey: 'swiss.result.forfeit', label: '1 - 0' },
+  { value: 'forfeit-0-1', labelKey: 'swiss.result.forfeit', label: '0 - 1' },
 ]
 const openResultValue = 'open'
 type ResultSelectValue = GameResult | typeof openResultValue
 
-const byeScoreOptions: Array<{ value: ByeScore; label: string }> = [
-  { value: 1, label: '1 Punkt' },
-  { value: 0.5, label: '1/2 Punkt' },
-  { value: 0, label: '0 Punkte' },
+const byeScoreOptions: Array<{ value: ByeScore; label: string; labelEn: string }> = [
+  { value: 1, label: '1 Punkt', labelEn: '1 point' },
+  { value: 0.5, label: '1/2 Punkt', labelEn: '1/2 point' },
+  { value: 0, label: '0 Punkte', labelEn: '0 points' },
 ]
 
-const byePolicyOptions: Array<{ value: ByePolicy; label: string }> = [
-  { value: 'protectLateEntrants', label: 'Späte Spieler schützen' },
-  { value: 'lowestScore', label: 'Niedrigste Scoregruppe' },
+const byePolicyOptions: Array<{ value: ByePolicy; labelKey: TranslationKey }> = [
+  { value: 'protectLateEntrants', labelKey: 'swiss.byePolicy.protectLateEntrants' },
+  { value: 'lowestScore', labelKey: 'swiss.byePolicy.lowestScore' },
 ]
 
 const appTitle = 'SK Anderten Turnier-App'
@@ -127,10 +128,10 @@ function roleLabel(icon: ReactNode, label: string) {
   )
 }
 
-const statusLabels: Record<PlayerStatus, string> = {
-  active: 'aktiv',
-  inactive: 'inaktiv',
-  withdrawn: 'ausgeschieden',
+const statusLabelKeys: Record<PlayerStatus, TranslationKey> = {
+  active: 'swiss.status.active',
+  inactive: 'swiss.status.inactive',
+  withdrawn: 'swiss.status.withdrawn',
 }
 
 function playerName(tournament: Tournament, playerId?: string) {
@@ -149,16 +150,16 @@ function pairingPlayerIds(pairing: Pairing) {
   ].filter((playerId): playerId is string => typeof playerId === 'string')
 }
 
-function tournamentFormatLabel(format?: Tournament['format']) {
+function tournamentFormatLabelKey(format?: Tournament['format']): TranslationKey {
   if (format === 'roundRobin') {
-    return 'Round Robin'
+    return 'swiss.format.roundRobin'
   }
 
   if (format === 'handAndBrain') {
-    return 'Hand and Brain'
+    return 'swiss.format.handAndBrain'
   }
 
-  return 'Swiss'
+  return 'swiss.format.swiss'
 }
 
 function renderTournamentFormatIcon(format?: Tournament['format']) {
@@ -198,9 +199,12 @@ function hasMissingGameResult(pairing: Pairing) {
   return !pairing.isBye && !pairing.result
 }
 
-function resultLabel(result?: GameResult) {
+function resultLabel(
+  result: GameResult | undefined,
+  t: ReturnType<typeof useI18n>['t'],
+) {
   if (!result) {
-    return 'offen'
+    return t('swiss.result.open')
   }
 
   if (result === 'bye-0.5') {
@@ -213,11 +217,25 @@ function resultLabel(result?: GameResult) {
 
   return (
     resultOptions.find((option) => option.value === result)?.label ??
-    result.replaceAll('forfeit-', 'kampflos ').replaceAll('-', ' - ')
+    result.replaceAll('forfeit-', `${t('swiss.result.forfeit')} `).replaceAll('-', ' - ')
   )
 }
 
-function formatDateTime(value?: string) {
+function resultOptionLabel(
+  option: (typeof resultOptions)[number],
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  if (option.labelKey) {
+    return `${t(option.labelKey)} ${option.label}`
+  }
+
+  return option.label
+}
+
+function formatSwissDateTime(
+  value: string | undefined,
+  formatter: ReturnType<typeof useI18n>['formatDateTime'],
+) {
   if (!value) {
     return '-'
   }
@@ -228,13 +246,7 @@ function formatDateTime(value?: string) {
     return '-'
   }
 
-  return new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date)
+  return formatter(date)
 }
 
 function isRoundCompleteForProgress(round: Round) {
@@ -293,6 +305,16 @@ function defaultRoundsForFormat(
   return swissRoundsForPlayerCount(playerCount)
 }
 
+function normalizeRoundCountInput(value: string) {
+  const parsedValue = Number(value)
+
+  if (!Number.isFinite(parsedValue)) {
+    return 1
+  }
+
+  return Math.max(1, Math.floor(parsedValue) || 1)
+}
+
 function TournamentCompleteBanner({
   completedRounds,
   label,
@@ -302,12 +324,14 @@ function TournamentCompleteBanner({
   label: string
   numberOfRounds: number
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="type-action flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950">
       <CheckCircle2 className="size-5 shrink-0" />
       <span>{label}</span>
       <Badge className="border-emerald-300 bg-emerald-50 text-emerald-950" variant="outline">
-        {completedRounds}/{numberOfRounds} Runden
+        {completedRounds}/{numberOfRounds} {t('swiss.rounds')}
       </Badge>
     </div>
   )
@@ -400,12 +424,16 @@ function RoundProgress({
   currentRound: number
   numberOfRounds: number
 }) {
+  const { t } = useI18n()
   const totalRounds = Math.max(1, numberOfRounds)
   const visibleCurrentRound = Math.min(Math.max(currentRound, 1), totalRounds)
 
   return (
     <div
-      aria-label={`Rundenfortschritt ${visibleCurrentRound} von ${totalRounds}`}
+      aria-label={t('swiss.roundProgressAria', {
+        current: visibleCurrentRound,
+        total: totalRounds,
+      })}
       className="grid grid-cols-[repeat(var(--round-count),minmax(0,1fr))] gap-1.5 md:gap-1"
       style={{ '--round-count': totalRounds } as CSSProperties}
     >
@@ -432,13 +460,14 @@ function TournamentFormatCard({
 }: {
   format: TournamentFormat
 }) {
-  const label = tournamentFormatLabel(format)
+  const { t } = useI18n()
+  const label = t(tournamentFormatLabelKey(format))
 
   return (
     <Card>
       <CardHeader className="grid grid-cols-1 items-center gap-3 p-4">
         <CardDescription className="sr-only">
-          Turniermodus
+          {t('swiss.format.label')}
         </CardDescription>
         <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
           {renderTournamentFormatIcon(format)}
@@ -458,6 +487,7 @@ function TournamentFormatPicker({
   format: TournamentFormat
   onFormatChange: (format: TournamentFormat) => void
 }) {
+  const { t } = useI18n()
   const optionClass = (isActive: boolean, isDisabled = false) =>
     cn(
       'flex h-9 min-w-0 items-center gap-1.5 rounded-md border px-2.5 text-left transition-colors',
@@ -469,7 +499,7 @@ function TournamentFormatPicker({
 
   return (
     <div className="grid gap-2">
-      <Label>Turniermodus</Label>
+      <Label>{t('swiss.format.label')}</Label>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <button
           aria-pressed={format === 'swiss'}
@@ -480,7 +510,7 @@ function TournamentFormatPicker({
           <Swords className="size-4 shrink-0" />
           <span className="min-w-0">
             <span className="type-action block whitespace-nowrap">
-              {tournamentFormatLabel('swiss')}
+              {t(tournamentFormatLabelKey('swiss'))}
             </span>
           </span>
         </button>
@@ -493,7 +523,7 @@ function TournamentFormatPicker({
           <GitBranch className="size-4 shrink-0" />
           <span className="min-w-0">
             <span className="type-action block whitespace-nowrap">
-              {tournamentFormatLabel('roundRobin')}
+              {t(tournamentFormatLabelKey('roundRobin'))}
             </span>
           </span>
         </button>
@@ -506,7 +536,7 @@ function TournamentFormatPicker({
           <Brain className="size-4 shrink-0" />
           <span className="min-w-0">
             <span className="type-action block whitespace-nowrap">
-              {tournamentFormatLabel('handAndBrain')}
+              {t(tournamentFormatLabelKey('handAndBrain'))}
             </span>
           </span>
         </button>
@@ -552,23 +582,30 @@ function tournamentPlayersToDraftPlayers(tournament?: Tournament | null): DraftP
     }))
 }
 
-function defaultTournamentName(format: TournamentFormat = 'swiss') {
-  const formatter = new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+function defaultTournamentName(
+  format: TournamentFormat,
+  t: ReturnType<typeof useI18n>['t'],
+  formatDateTime: ReturnType<typeof useI18n>['formatDateTime'],
+) {
+  return t('swiss.defaultTournamentName', {
+    date: formatDateTime(new Date(), {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }),
+    format: t(tournamentFormatLabelKey(format)),
   })
-
-  const label = tournamentFormatLabel(format)
-
-  return `${label} vom ${formatter.format(new Date())}`
 }
 
-function isDefaultTournamentName(value: string) {
+function isDefaultTournamentName(
+  value: string,
+  t: ReturnType<typeof useI18n>['t'],
+  formatDateTime: ReturnType<typeof useI18n>['formatDateTime'],
+) {
   return (
-    value === defaultTournamentName('swiss') ||
-    value === defaultTournamentName('roundRobin') ||
-    value === defaultTournamentName('handAndBrain')
+    value === defaultTournamentName('swiss', t, formatDateTime) ||
+    value === defaultTournamentName('roundRobin', t, formatDateTime) ||
+    value === defaultTournamentName('handAndBrain', t, formatDateTime)
   )
 }
 
@@ -585,12 +622,17 @@ function TournamentCreator({
   onCreated?: () => void
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
 }) {
-  const [name, setName] = useState(defaultTournamentName)
-  const [numberOfRounds, setNumberOfRounds] = useState(() =>
-    swissRoundsForPlayerCount(
-      tournamentPlayersToDraftPlayers(initialTournament).filter(
-        (player) => player.name.trim().length > 0 && player.status === 'active',
-      ).length,
+  const { language, t, formatDateTime } = useI18n()
+  const [name, setName] = useState(() =>
+    defaultTournamentName('swiss', t, formatDateTime),
+  )
+  const [roundsInput, setRoundsInput] = useState(() =>
+    String(
+      swissRoundsForPlayerCount(
+        tournamentPlayersToDraftPlayers(initialTournament).filter(
+          (player) => player.name.trim().length > 0 && player.status === 'active',
+        ).length,
+      ),
     ),
   )
   const [roundsManuallyEdited, setRoundsManuallyEdited] = useState(false)
@@ -614,14 +656,19 @@ function TournamentCreator({
     cleanPlayerCount,
     roundRobinCycles,
   )
+  const normalizedManualRoundCount = normalizeRoundCountInput(roundsInput)
   const effectiveNumberOfRounds =
     format === 'roundRobin' || !roundsManuallyEdited
       ? automaticRoundCount
-      : numberOfRounds
+      : normalizedManualRoundCount
+  const roundInputValue =
+    format === 'roundRobin' || !roundsManuallyEdited
+      ? String(automaticRoundCount)
+      : roundsInput
   const handleFormatChange = (nextFormat: TournamentFormat) => {
     setName((currentName) =>
-      isDefaultTournamentName(currentName)
-        ? defaultTournamentName(nextFormat)
+      isDefaultTournamentName(currentName, t, formatDateTime)
+        ? defaultTournamentName(nextFormat, t, formatDateTime)
         : currentName,
     )
     setByeScore(1)
@@ -660,20 +707,25 @@ function TournamentCreator({
         <div className="grid gap-2 md:grid-cols-2 md:gap-3">
           <IftaInput
             id="swiss-name"
-            label="Turniername"
+            label={t('swiss.tournamentName')}
             value={name}
             onChange={(event) => setName(event.currentTarget.value)}
           />
           <IftaInput
             id="swiss-rounds"
-            label="Runden"
+            label={t('swiss.rounds')}
             min={1}
             readOnly={format === 'roundRobin'}
             type="number"
-            value={effectiveNumberOfRounds}
+            value={roundInputValue}
+            onBlur={() => {
+              if (roundsManuallyEdited) {
+                setRoundsInput(String(normalizedManualRoundCount))
+              }
+            }}
             onChange={(event) => {
               setRoundsManuallyEdited(true)
-              setNumberOfRounds(Number(event.currentTarget.value))
+              setRoundsInput(event.currentTarget.value)
             }}
           />
         </div>
@@ -687,12 +739,12 @@ function TournamentCreator({
                 setInitialSeedingMode(value as SeedingMode)
               }
             >
-              <IftaSelectTrigger label="Sortierung">
+              <IftaSelectTrigger label={t('swiss.sorting')}>
                 <SelectValue />
               </IftaSelectTrigger>
               <SelectContent>
-                <SelectItem value="rating">nach Rating</SelectItem>
-                <SelectItem value="random">zufällig</SelectItem>
+                <SelectItem value="rating">{t('swiss.sorting.rating')}</SelectItem>
+                <SelectItem value="random">{t('swiss.sorting.random')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -701,13 +753,13 @@ function TournamentCreator({
               value={String(byeScore)}
               onValueChange={(value) => setByeScore(Number(value) as ByeScore)}
             >
-              <IftaSelectTrigger label="Punkte pro Bye">
+              <IftaSelectTrigger label={t('swiss.pointsPerBye')}>
                 <SelectValue />
               </IftaSelectTrigger>
               <SelectContent>
                 {byeScoreOptions.map((option) => (
                   <SelectItem key={option.value} value={String(option.value)}>
-                    {option.label}
+                    {language === 'en' ? option.labelEn : option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -717,7 +769,7 @@ function TournamentCreator({
 
         <div className="grid gap-2 md:gap-3">
           <div className="flex items-center">
-            <Label>Spieler</Label>
+            <Label>{t('swiss.players')}</Label>
           </div>
 
           <div className="grid gap-2 md:gap-3">
@@ -730,17 +782,17 @@ function TournamentCreator({
             >
               <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
                 <IftaInput
-                  aria-label="Neuer Spielername"
-                  label="Name"
-                  placeholder="Neuer Spieler"
+                  aria-label={t('swiss.newPlayerNameAria')}
+                  label={t('common.name')}
+                  placeholder={t('swiss.newPlayer')}
                   value={newDraftPlayerName}
                   onChange={(event) =>
                     setNewDraftPlayerName(event.currentTarget.value)
                   }
                 />
                 <IftaInput
-                  aria-label="Neues Spielerrating"
-                  label="Rating"
+                  aria-label={t('swiss.newPlayerRatingAria')}
+                  label={t('common.rating')}
                   placeholder="DWZ"
                   type="number"
                   value={newDraftPlayerRating}
@@ -756,15 +808,15 @@ function TournamentCreator({
                   disabled={newDraftPlayerName.trim().length === 0}
                 >
                   <CirclePlus className="size-4" />
-                  <span className="sm:sr-only md:not-sr-only">Spieler hinzufügen</span>
+                  <span className="sm:sr-only md:not-sr-only">{t('swiss.addPlayer')}</span>
                 </Button>
               </div>
             </form>
 
             <div className="grid gap-2 md:hidden">
               <div className="type-field-label grid grid-cols-[minmax(0,1fr)_7rem] gap-2 px-2 text-muted-foreground">
-                <span>Name</span>
-                <span>Rating</span>
+                <span>{t('common.name')}</span>
+                <span>{t('common.rating')}</span>
               </div>
               {players.map((player, index) => (
                 <div
@@ -776,14 +828,16 @@ function TournamentCreator({
                       #{index + 1}
                     </span>
                     <Badge className="h-6" variant={statusVariant(player.status)}>
-                      {statusLabels[player.status]}
+                      {t(statusLabelKeys[player.status])}
                     </Badge>
                   </div>
 
                   <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
                     <Input
                       id={`swiss-create-mobile-name-${player.id}`}
-                      aria-label={`Name von Spieler ${index + 1}`}
+                      aria-label={t('swiss.playerNameByIndexAria', {
+                        number: index + 1,
+                      })}
                       value={player.name}
                       onChange={(event) =>
                         setPlayers((currentPlayers) =>
@@ -797,7 +851,11 @@ function TournamentCreator({
                     />
                     <Input
                       id={`swiss-create-mobile-rating-${player.id}`}
-                      aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                      aria-label={
+                        player.name
+                          ? t('swiss.playerRatingAria', { name: player.name })
+                          : t('swiss.playerRatingByIndexAria', { number: index + 1 })
+                      }
                       type="number"
                       value={player.rating}
                       onChange={(event) =>
@@ -829,18 +887,24 @@ function TournamentCreator({
                       }
                     >
                       <IftaSelectTrigger
-                        aria-label={`Status von ${player.name || `Spieler ${index + 1}`}`}
-                        label="Status"
+                        aria-label={
+                          player.name
+                            ? t('swiss.playerStatusAria', { name: player.name })
+                            : t('swiss.playerStatusByIndexAria', { number: index + 1 })
+                        }
+                        label={t('common.status')}
                       >
                         <SelectValue />
                       </IftaSelectTrigger>
                       <SelectContent>
-                        <SelectItem value="active">aktiv</SelectItem>
-                        <SelectItem value="inactive">inaktiv</SelectItem>
+                        <SelectItem value="active">{t('swiss.status.active')}</SelectItem>
+                        <SelectItem value="inactive">{t('swiss.status.inactive')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button
-                      aria-label={`${player.name || 'Spieler'} entfernen`}
+                      aria-label={t('swiss.playerRemoveAria', {
+                        name: player.name || t('common.player'),
+                      })}
                       className="h-11 w-9 px-0"
                       size="ifta"
                       type="button"
@@ -861,10 +925,10 @@ function TournamentCreator({
             <Table className="min-w-[46rem]" containerClassName="hidden md:block">
               <TableHeader>
                 <TableHead>#</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Aktion</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('common.rating')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead>{t('common.action')}</TableHead>
               </TableHeader>
               <TableBody>
                 {players.map((player, index) => (
@@ -873,7 +937,9 @@ function TournamentCreator({
                     <TableCell>
                       <Input
                         id={`swiss-create-name-${player.id}`}
-                        aria-label={`Name von Spieler ${index + 1}`}
+                        aria-label={t('swiss.playerNameByIndexAria', {
+                          number: index + 1,
+                        })}
                         value={player.name}
                         onChange={(event) =>
                           setPlayers((currentPlayers) =>
@@ -889,7 +955,11 @@ function TournamentCreator({
                     <TableCell>
                       <Input
                         id={`swiss-create-rating-${player.id}`}
-                        aria-label={`Rating von ${player.name || `Spieler ${index + 1}`}`}
+                        aria-label={
+                          player.name
+                            ? t('swiss.playerRatingAria', { name: player.name })
+                            : t('swiss.playerRatingByIndexAria', { number: index + 1 })
+                        }
                         className="w-28"
                         type="number"
                         value={player.rating}
@@ -906,7 +976,7 @@ function TournamentCreator({
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(player.status)}>
-                        {statusLabels[player.status]}
+                        {t(statusLabelKeys[player.status])}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -927,18 +997,26 @@ function TournamentCreator({
                           }
                         >
                           <SelectTrigger
-                            aria-label={`Status von ${player.name || `Spieler ${index + 1}`}`}
+                            aria-label={
+                              player.name
+                                ? t('swiss.playerStatusAria', { name: player.name })
+                                : t('swiss.playerStatusByIndexAria', {
+                                    number: index + 1,
+                                  })
+                            }
                             className="w-40"
                           >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="active">aktiv</SelectItem>
-                            <SelectItem value="inactive">inaktiv</SelectItem>
+                            <SelectItem value="active">{t('swiss.status.active')}</SelectItem>
+                            <SelectItem value="inactive">{t('swiss.status.inactive')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button
-                          aria-label={`${player.name || 'Spieler'} entfernen`}
+                          aria-label={t('swiss.playerRemoveAria', {
+                            name: player.name || t('common.player'),
+                          })}
                           className="h-9"
                           size="sm"
                           variant="delete"
@@ -989,23 +1067,23 @@ function TournamentCreator({
                 byeScore,
                 roundRobinCycles,
               })
-              toast.success('Turnier wurde angelegt.')
+              toast.success(t('swiss.createSuccess'))
               onCreated?.()
             } catch (error) {
               const message =
                 error instanceof Error
                   ? error.message
-                  : 'Das Turnier konnte nicht angelegt werden.'
+                  : t('swiss.createFallbackError')
 
               setCreateError(message)
-              toast.error('Turnier konnte nicht angelegt werden.')
+              toast.error(t('swiss.createToastError'))
             } finally {
               setIsCreating(false)
             }
           }}
         >
           <ArrowRight className="size-4" />
-          {isCreating ? 'Turnier wird gestartet' : 'Turnier starten'}
+          {isCreating ? t('swiss.startingTournament') : t('swiss.startTournament')}
         </Button>
       </CardContent>
     </Card>
@@ -1021,6 +1099,7 @@ function NewTournamentDialog({
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
   trigger?: ReactNode
 }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
   return (
@@ -1029,7 +1108,7 @@ function NewTournamentDialog({
         {trigger ?? (
           <Button>
             <Plus className="size-4" />
-            Neues Turnier
+            {t('swiss.newTournament')}
           </Button>
         )}
       </DialogTrigger>
@@ -1037,10 +1116,10 @@ function NewTournamentDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <CirclePlus className="size-5 text-primary" />
-            Neues Turnier anlegen
+            {t('swiss.createDialogTitle')}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Turniermodus, Einstellungen und Spieler für ein neues Turnier festlegen.
+            {t('swiss.settingsDialogDescription')}
           </DialogDescription>
         </DialogHeader>
         {open && (
@@ -1073,6 +1152,7 @@ function ArchivedTournamentsList({
   onExportCsv: (tournament: Tournament) => void
   onPrint: (tournament: Tournament) => void
 }) {
+  const { t, formatDateTime } = useI18n()
   const topPlayers = (entry: ArchivedTournamentSummary) =>
     entry.standings
       .slice(0, 3)
@@ -1081,7 +1161,7 @@ function ArchivedTournamentsList({
   const actions = (tournament: Tournament) => (
     <div className="flex flex-nowrap items-center gap-1.5">
       <Button
-        aria-label={`${tournament.name} als PDF drucken`}
+        aria-label={t('swiss.printPdfAria', { name: tournament.name })}
         size="sm"
         variant="outline"
         onClick={() => onPrint(tournament)}
@@ -1090,7 +1170,7 @@ function ArchivedTournamentsList({
         PDF
       </Button>
       <Button
-        aria-label={`${tournament.name} als Rangliste CSV exportieren`}
+        aria-label={t('swiss.exportCsvAria', { name: tournament.name })}
         size="sm"
         variant="outline"
         onClick={() => onExportCsv(tournament)}
@@ -1099,13 +1179,13 @@ function ArchivedTournamentsList({
         CSV
       </Button>
       <ConfirmButton
-        title="Vergangenes Turnier löschen?"
-        description={`"${tournament.name}" wird dauerhaft aus der Liste vergangener Turniere entfernt.`}
-        confirmLabel="Löschen"
+        title={t('swiss.archived.deleteTitle')}
+        description={t('swiss.archived.deleteDescription', { name: tournament.name })}
+        confirmLabel={t('common.delete')}
         onConfirm={() => onDelete(tournament)}
         trigger={
           <Button
-            aria-label={`${tournament.name} löschen`}
+            aria-label={t('swiss.playerRemoveAria', { name: tournament.name })}
             size="sm"
             variant="delete"
           >
@@ -1119,7 +1199,7 @@ function ArchivedTournamentsList({
   if (entries.length === 0) {
     return (
       <EmptyState className="p-4 text-left">
-        Noch keine vergangenen Turniere gespeichert.
+        {t('swiss.archived.empty')}
       </EmptyState>
     )
   }
@@ -1139,16 +1219,16 @@ function ArchivedTournamentsList({
                   {entry.category}
                 </Badge>
                 <Badge variant="outline">
-                  {entry.completedRounds}/{entry.tournament.numberOfRounds} Runden
+                  {entry.completedRounds}/{entry.tournament.numberOfRounds} {t('swiss.rounds')}
                 </Badge>
                 <Badge variant="outline">
-                  {entry.tournament.players.length} Spieler
+                  {t('swiss.playerCount', { count: entry.tournament.players.length })}
                 </Badge>
               </div>
             </div>
             <div className="type-caption grid gap-1 text-muted-foreground">
-              <span>{formatDateTime(entry.tournament.archivedAtClientIso)}</span>
-              <span className="line-clamp-2">Top 3: {topPlayers(entry)}</span>
+              <span>{formatSwissDateTime(entry.tournament.archivedAtClientIso, formatDateTime)}</span>
+              <span className="line-clamp-2">{t('swiss.topThree')}: {topPlayers(entry)}</span>
             </div>
             {actions(entry.tournament)}
           </div>
@@ -1157,12 +1237,12 @@ function ArchivedTournamentsList({
 
       <Table className="min-w-[58rem]" containerClassName="hidden md:block">
           <TableHeader>
-              <TableHead>Turnier</TableHead>
-              <TableHead>Archiviert</TableHead>
-              <TableHead>Kategorie</TableHead>
-              <TableHead>Umfang</TableHead>
-              <TableHead>Top 3</TableHead>
-              <TableHead>Aktionen</TableHead>
+              <TableHead>{t('swiss.tournamentName')}</TableHead>
+              <TableHead>{t('swiss.archived')}</TableHead>
+              <TableHead>{t('swiss.category')}</TableHead>
+              <TableHead>{t('swiss.scope')}</TableHead>
+              <TableHead>{t('swiss.topThree')}</TableHead>
+              <TableHead>{t('common.actions')}</TableHead>
           </TableHeader>
           <TableBody>
             {entries.map((entry) => (
@@ -1171,7 +1251,7 @@ function ArchivedTournamentsList({
                   <span className="block truncate">{entry.tournament.name}</span>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {formatDateTime(entry.tournament.archivedAtClientIso)}
+                  {formatSwissDateTime(entry.tournament.archivedAtClientIso, formatDateTime)}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">
@@ -1179,8 +1259,8 @@ function ArchivedTournamentsList({
                   </Badge>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {entry.tournament.players.length} Spieler, {entry.completedRounds}/
-                  {entry.tournament.numberOfRounds} Runden
+                  {t('swiss.playerCount', { count: entry.tournament.players.length })}, {entry.completedRounds}/
+                  {entry.tournament.numberOfRounds} {t('swiss.rounds')}
                 </TableCell>
                 <TableCell className="max-w-72 text-muted-foreground">
                   <span className="line-clamp-2">{topPlayers(entry)}</span>
@@ -1203,13 +1283,15 @@ function SwissStandingsPresenter({
   standings: ReturnType<typeof useSwissTournaments>['standings']
   tournament: Tournament
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="grid gap-6">
       <section className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="type-label text-muted-foreground">
-              {tournamentFormatLabel(tournament.format)}
+              {t(tournamentFormatLabelKey(tournament.format))}
             </p>
             <h2 className="type-section-title truncate">
               {tournament.name}
@@ -1218,7 +1300,7 @@ function SwissStandingsPresenter({
           <Badge variant="outline">
             {round
               ? getRoundDisplayLabel(tournament, round.roundNumber)
-              : 'Keine Runde'}
+              : t('swiss.emptyRound')}
           </Badge>
         </div>
       </section>
@@ -1226,20 +1308,20 @@ function SwissStandingsPresenter({
       <section className="rounded-lg border bg-card p-5 shadow-sm">
         <div className="mb-5 flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
-          <h3 className="type-section-title">Rangliste</h3>
+          <h3 className="type-section-title">{t('swiss.ranking')}</h3>
         </div>
         {standings.length === 0 ? (
-          <EmptyState>Noch keine Rangliste vorhanden.</EmptyState>
+          <EmptyState>{t('swiss.emptyStandings')}</EmptyState>
         ) : (
           <Table className="min-w-[44rem]">
             <TableHeader>
-              <TableHead>Platz</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Punkte</TableHead>
-              <TableHead>Buchholz</TableHead>
-              <TableHead>SB</TableHead>
-              <TableHead>Siege</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t('swiss.rank')}</TableHead>
+              <TableHead>{t('common.name')}</TableHead>
+              <TableHead>{t('swiss.standings.points')}</TableHead>
+              <TableHead>{t('swiss.table.buchholz')}</TableHead>
+              <TableHead>{t('swiss.table.sb')}</TableHead>
+              <TableHead>{t('swiss.table.wins')}</TableHead>
+              <TableHead>{t('common.status')}</TableHead>
             </TableHeader>
             <TableBody>
               {standings.map((row) => (
@@ -1267,7 +1349,7 @@ function SwissStandingsPresenter({
                   <TableCell className="tabular-nums">{row.wins}</TableCell>
                   <TableCell>
                     <Badge variant={statusVariant(row.status)}>
-                      {statusLabels[row.status]}
+                      {t(statusLabelKeys[row.status])}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -1281,6 +1363,7 @@ function SwissStandingsPresenter({
 }
 
 export function SwissTournamentsPage() {
+  const { language, t } = useI18n()
   const app = useSwissTournaments()
   const tournament = app.activeTournament
   const [isArchiveOpen, setIsArchiveOpen] = useState(false)
@@ -1353,12 +1436,12 @@ export function SwissTournamentsPage() {
   const archivedTournamentSummaries = useMemo(
     () =>
       app.archivedTournaments.map((entry) => ({
-        category: tournamentFormatLabel(entry.format),
+        category: t(tournamentFormatLabelKey(entry.format)),
         completedRounds: completedRoundCount(entry),
         standings: recalculateStandings(entry),
         tournament: entry,
       })),
-    [app.archivedTournaments],
+    [app.archivedTournaments, t],
   )
   const visibleStandingsTournament = printTournament ?? tournament
   const visibleStandings = useMemo(
@@ -1412,8 +1495,8 @@ export function SwissTournamentsPage() {
         <AppTitleHeader />
         <Card>
           <CardHeader>
-            <CardTitle>Daten werden geladen</CardTitle>
-            <CardDescription>Gespeicherte Turniere werden synchronisiert.</CardDescription>
+            <CardTitle>{t('swiss.loadingTitle')}</CardTitle>
+            <CardDescription>{t('swiss.loadingDescription')}</CardDescription>
           </CardHeader>
         </Card>
       </AppPage>
@@ -1427,7 +1510,7 @@ export function SwissTournamentsPage() {
         {app.error && (
           <Card className="border-destructive">
             <CardHeader>
-              <CardTitle>Sync-Fehler</CardTitle>
+              <CardTitle>{t('common.syncError')}</CardTitle>
               <CardDescription>{app.error.message}</CardDescription>
             </CardHeader>
           </Card>
@@ -1435,9 +1518,9 @@ export function SwissTournamentsPage() {
         <Card>
           <CardHeader className="gap-4">
             <div className="grid gap-1">
-              <CardTitle>Kein aktives Turnier</CardTitle>
+              <CardTitle>{t('swiss.noActiveTitle')}</CardTitle>
               <CardDescription>
-                Lege ein neues Turnier im Dialog an.
+                {t('swiss.noActiveDescription')}
               </CardDescription>
             </div>
             <div>
@@ -1463,7 +1546,7 @@ export function SwissTournamentsPage() {
     )
     setNewPlayerName('')
     setNewPlayerRating('')
-    toast.success('Spieler wurde hinzugefügt.')
+    toast.success(t('swiss.addedPlayer'))
   }
 
   const canRemovePlayer = (playerId: string) =>
@@ -1513,7 +1596,7 @@ export function SwissTournamentsPage() {
           views={[
             {
               id: 'standings',
-              label: 'Rangliste',
+              label: t('swiss.ranking'),
               Icon: Trophy,
               render: () => (
                 <SwissStandingsPresenter
@@ -1530,7 +1613,7 @@ export function SwissTournamentsPage() {
       {app.error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Sync-Fehler</CardTitle>
+            <CardTitle>{t('common.syncError')}</CardTitle>
             <CardDescription>{app.error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -1540,19 +1623,19 @@ export function SwissTournamentsPage() {
         <TabsList className="swiss-print-hidden grid h-auto w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="overview" className="min-w-0">
             <LayoutDashboard className="size-5 text-primary" />
-            Übersicht
+            {t('swiss.overview')}
           </TabsTrigger>
           <TabsTrigger value="players" className="min-w-0">
             <UsersRound className="size-5 text-primary" />
-            Spieler
+            {t('swiss.players')}
           </TabsTrigger>
           <TabsTrigger value="pairings" className="min-w-0">
             <Swords className="size-5 text-primary" />
-            Paarungen
+            {t('swiss.pairings')}
           </TabsTrigger>
           <TabsTrigger value="standings" className="min-w-0">
             <Trophy className="size-5 text-primary" />
-            Rangliste
+            {t('swiss.ranking')}
           </TabsTrigger>
         </TabsList>
 
@@ -1561,7 +1644,7 @@ export function SwissTournamentsPage() {
             <Card>
               <CardHeader className="gap-3 p-4 md:gap-2">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
-                  <CardDescription>Aktuelle Runde</CardDescription>
+                  <CardDescription>{t('swiss.currentRound')}</CardDescription>
                   <CardTitle className="type-section-title">
                     {tournament.currentRound}/{tournament.numberOfRounds}
                   </CardTitle>
@@ -1582,7 +1665,7 @@ export function SwissTournamentsPage() {
                 <Button className="h-full min-h-0 w-full rounded-lg px-4 text-base shadow-sm">
                   <Plus className="size-5" />
                   <span className="min-w-0 truncate">
-                    Neues Turnier
+                    {t('swiss.newTournament')}
                   </span>
                 </Button>
               }
@@ -1593,24 +1676,26 @@ export function SwissTournamentsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ListChecks className="size-5 text-primary" />
-                Aktuelle Runde
+                {t('swiss.currentRound')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {currentRound ? (
                 <div className="grid gap-3">
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline">Runde {currentRound.roundNumber}</Badge>
+                    <Badge variant="outline">
+                      {t('common.round', { number: currentRound.roundNumber })}
+                    </Badge>
                     <Badge>{currentRound.status}</Badge>
                     <Badge variant="secondary">
-                      {currentRound.pairings.length} Bretter/Byes
+                      {t('swiss.boardCount', { count: currentRound.pairings.length })}
                     </Badge>
                   </div>
                   <PairingsTable tournament={tournament} pairings={currentRound.pairings} />
                 </div>
               ) : (
                 <EmptyState className="text-left">
-                  Noch keine Runde erzeugt.
+                  {t('swiss.noRoundCreated')}
                 </EmptyState>
               )}
             </CardContent>
@@ -1620,14 +1705,14 @@ export function SwissTournamentsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="size-5 text-primary" />
-                Einstellungen und Export
+                {t('swiss.settingsExport')}
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="grid gap-3">
                   <IftaInput
-                    label="Turniername"
+                    label={t('swiss.tournamentName')}
                     value={tournament.name}
                     onChange={(event) =>
                       void app.updateTournamentMeta({
@@ -1637,7 +1722,7 @@ export function SwissTournamentsPage() {
                   />
                   {(tournament.format ?? 'swiss') !== 'roundRobin' && (
                     <IftaInput
-                      label="Runden"
+                      label={t('swiss.rounds')}
                       min={Math.max(1, highestCompletedRoundNumber(tournament))}
                       type="number"
                       value={tournament.numberOfRounds}
@@ -1660,14 +1745,14 @@ export function SwissTournamentsPage() {
                   >
                     <IftaSelectTrigger
                       className={singleLineSelectTriggerClass}
-                      label="Punkte pro Bye"
+                      label={t('swiss.pointsPerBye')}
                     >
                       <SelectValue />
                     </IftaSelectTrigger>
                     <SelectContent>
                       {byeScoreOptions.map((option) => (
                         <SelectItem key={option.value} value={String(option.value)}>
-                          {option.label}
+                          {language === 'en' ? option.labelEn : option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1682,14 +1767,14 @@ export function SwissTournamentsPage() {
                   >
                     <IftaSelectTrigger
                       className={singleLineSelectTriggerClass}
-                      label="Bye-Vergabe"
+                      label={t('swiss.byePolicy')}
                     >
                       <SelectValue />
                     </IftaSelectTrigger>
                     <SelectContent>
                       {byePolicyOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {t(option.labelKey)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1722,7 +1807,7 @@ export function SwissTournamentsPage() {
                   <span className="flex min-w-0 items-center gap-2">
                     <Archive className="size-5 shrink-0 text-primary" />
                     <span className="type-action truncate">
-                      Vergangene Turniere
+                      {t('common.oldDatasets')}
                     </span>
                     <Badge variant="secondary">{archivedTournamentSummaries.length}</Badge>
                   </span>
@@ -1738,7 +1823,7 @@ export function SwissTournamentsPage() {
                     entries={archivedTournamentSummaries}
                     onDelete={async (archivedTournament) => {
                       await app.deleteTournament(archivedTournament.id)
-                      toast.success('Vergangenes Turnier wurde gelöscht.')
+                      toast.success(t('swiss.tournamentDeleted'))
                     }}
                     onExportCsv={app.exportStandingsCsv}
                     onPrint={printPage}
@@ -1754,7 +1839,7 @@ export function SwissTournamentsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UsersRound className="size-5 text-primary" />
-                Spieler verwalten
+                {t('swiss.managePlayers')}
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -1767,13 +1852,13 @@ export function SwissTournamentsPage() {
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 md:grid-cols-[1fr_10rem_auto] md:gap-3">
                   <IftaInput
-                    label="Name"
-                    placeholder="Neuer Spieler"
+                    label={t('common.name')}
+                    placeholder={t('swiss.newPlayer')}
                     value={newPlayerName}
                     onChange={(event) => setNewPlayerName(event.currentTarget.value)}
                   />
                   <IftaInput
-                    label="Rating"
+                    label={t('common.rating')}
                     placeholder="DWZ"
                     type="number"
                     value={newPlayerRating}
@@ -1787,15 +1872,15 @@ export function SwissTournamentsPage() {
                     disabled={newPlayerName.trim().length === 0}
                   >
                     <CirclePlus className="size-4" />
-                    Spieler hinzufügen
+                    {t('swiss.addPlayer')}
                   </Button>
                 </div>
               </form>
 
               <div className="grid gap-2 md:hidden">
                 <div className="type-field-label grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2 px-2 text-muted-foreground">
-                  <span>Name</span>
-                  <span>Rating</span>
+                  <span>{t('common.name')}</span>
+                  <span>{t('common.rating')}</span>
                 </div>
                 {tournament.players.map((player, index) => {
                   const canRemove = canRemovePlayer(player.id)
@@ -1811,17 +1896,17 @@ export function SwissTournamentsPage() {
                             #{index + 1}
                           </span>
                           <Badge className="h-6" variant={statusVariant(player.status)}>
-                            {statusLabels[player.status]}
+                            {t(statusLabelKeys[player.status])}
                           </Badge>
                         </div>
                         <span className="type-caption text-muted-foreground tabular-nums">
-                          ab Runde {player.addedInRound}
+                          {t('swiss.playerFromRound', { number: player.addedInRound })}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-2">
                         <Input
-                          aria-label={`Name von ${player.name}`}
+                          aria-label={t('swiss.playerNameAria', { name: player.name })}
                           value={player.name}
                           onChange={(event) =>
                             void app.updatePlayer(player.id, {
@@ -1831,7 +1916,7 @@ export function SwissTournamentsPage() {
                           }
                         />
                         <Input
-                          aria-label={`Rating von ${player.name}`}
+                          aria-label={t('swiss.playerRatingAria', { name: player.name })}
                           type="number"
                           value={player.rating ?? ''}
                           onChange={(event) =>
@@ -1855,24 +1940,24 @@ export function SwissTournamentsPage() {
                             )
                           }
                         >
-                          <IftaSelectTrigger label="Status">
+                          <IftaSelectTrigger label={t('common.status')}>
                             <SelectValue />
                           </IftaSelectTrigger>
                           <SelectContent>
-                            <SelectItem value="active">aktiv</SelectItem>
-                            <SelectItem value="inactive">inaktiv</SelectItem>
-                            <SelectItem value="withdrawn">ausgeschieden</SelectItem>
+                            <SelectItem value="active">{t('swiss.status.active')}</SelectItem>
+                            <SelectItem value="inactive">{t('swiss.status.inactive')}</SelectItem>
+                            <SelectItem value="withdrawn">{t('swiss.status.withdrawn')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Button
-                          aria-label={`${player.name} entfernen`}
+                          aria-label={t('swiss.playerRemoveAria', { name: player.name })}
                           className="h-11 w-9 px-0"
                           size="ifta"
                           disabled={!canRemove}
                           title={
                             canRemove
-                              ? `${player.name} entfernen`
-                              : 'Spieler ist bereits in einer Runde verwendet.'
+                              ? t('swiss.playerRemoveAria', { name: player.name })
+                              : t('swiss.playerAlreadyUsed')
                           }
                           variant="delete"
                           onClick={async () => {
@@ -1881,7 +1966,7 @@ export function SwissTournamentsPage() {
                             }
 
                             await app.removePlayer(player.id)
-                            toast.success(`${player.name} wurde entfernt.`)
+                            toast.success(t('swiss.playerRemoved', { name: player.name }))
                           }}
                         >
                           <Trash2 className="size-4" />
@@ -1895,11 +1980,11 @@ export function SwissTournamentsPage() {
               <Table className="min-w-[52rem]" containerClassName="hidden md:block">
                   <TableHeader>
                       <TableHead>#</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>Ab Runde</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Aktion</TableHead>
+                      <TableHead>{t('common.name')}</TableHead>
+                      <TableHead>{t('common.rating')}</TableHead>
+                      <TableHead>{t('swiss.status.fromRound', { number: '' }).trim()}</TableHead>
+                      <TableHead>{t('common.status')}</TableHead>
+                      <TableHead>{t('common.action')}</TableHead>
                   </TableHeader>
                   <TableBody>
                     {tournament.players.map((player, index) => {
@@ -1910,7 +1995,7 @@ export function SwissTournamentsPage() {
                         <TableCell className="tabular-nums">{index + 1}</TableCell>
                         <TableCell>
                           <Input
-                            aria-label={`Name von ${player.name}`}
+                            aria-label={t('swiss.playerNameAria', { name: player.name })}
                             value={player.name}
                             onChange={(event) =>
                               void app.updatePlayer(player.id, {
@@ -1922,7 +2007,7 @@ export function SwissTournamentsPage() {
                         </TableCell>
                         <TableCell>
                           <Input
-                            aria-label={`Rating von ${player.name}`}
+                            aria-label={t('swiss.playerRatingAria', { name: player.name })}
                             className="w-28"
                             type="number"
                             value={player.rating ?? ''}
@@ -1939,7 +2024,7 @@ export function SwissTournamentsPage() {
                         <TableCell className="tabular-nums">{player.addedInRound}</TableCell>
                         <TableCell>
                           <Badge variant={statusVariant(player.status)}>
-                            {statusLabels[player.status]}
+                            {t(statusLabelKeys[player.status])}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -1954,26 +2039,26 @@ export function SwissTournamentsPage() {
                               }
                             >
                               <SelectTrigger
-                                aria-label={`Status von ${player.name}`}
+                                aria-label={t('swiss.playerStatusAria', { name: player.name })}
                                 className="w-40"
                               >
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="active">aktiv</SelectItem>
-                                <SelectItem value="inactive">inaktiv</SelectItem>
-                                <SelectItem value="withdrawn">ausgeschieden</SelectItem>
+                                <SelectItem value="active">{t('swiss.status.active')}</SelectItem>
+                                <SelectItem value="inactive">{t('swiss.status.inactive')}</SelectItem>
+                                <SelectItem value="withdrawn">{t('swiss.status.withdrawn')}</SelectItem>
                               </SelectContent>
                             </Select>
                             <Button
-                              aria-label={`${player.name} entfernen`}
+                              aria-label={t('swiss.playerRemoveAria', { name: player.name })}
                               className="h-9"
                               disabled={!canRemove}
                               size="sm"
                               title={
                                 canRemove
-                                  ? `${player.name} entfernen`
-                                  : 'Spieler ist bereits in einer Runde verwendet.'
+                                  ? t('swiss.playerRemoveAria', { name: player.name })
+                                  : t('swiss.playerAlreadyUsed')
                               }
                               variant="delete"
                               onClick={async () => {
@@ -1982,7 +2067,7 @@ export function SwissTournamentsPage() {
                                 }
 
                                 await app.removePlayer(player.id)
-                                toast.success(`${player.name} wurde entfernt.`)
+                                toast.success(t('swiss.playerRemoved', { name: player.name }))
                               }}
                             >
                               <Trash2 className="size-4" />
@@ -2004,7 +2089,7 @@ export function SwissTournamentsPage() {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Swords className="size-5 text-primary" />
-                  Paarungen
+                  {t('swiss.pairings')}
                 </CardTitle>
               </div>
             </CardHeader>
@@ -2029,7 +2114,7 @@ export function SwissTournamentsPage() {
                       {round.roundNumber === completionBannerBeforeRoundNumber && (
                         <TournamentCompleteBanner
                           completedRounds={tournament.numberOfRounds}
-                          label="Turnier beendet"
+                          label={t('swiss.tournamentComplete')}
                           numberOfRounds={tournament.numberOfRounds}
                         />
                       )}
@@ -2046,30 +2131,39 @@ export function SwissTournamentsPage() {
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <CardTitle>{roundLabel}</CardTitle>
                             <Badge variant={isCurrentRound ? 'default' : 'outline'}>
-                              {isCurrentRound ? 'aktuell' : 'archiviert'}
+                              {isCurrentRound
+                                ? t('swiss.currentTournament')
+                                : t('swiss.archivedTournament')}
                             </Badge>
                             <Badge variant="secondary">{round.status}</Badge>
                             <Badge variant="outline">
-                              {round.pairings.length} Bretter/Byes
+                              {t('swiss.boardCount', { count: round.pairings.length })}
                             </Badge>
                           </div>
                           <div className="flex w-full min-w-0 flex-col justify-end gap-2 md:w-auto md:flex-row">
                             {canGoBackToRound && currentRound && (
                               <ConfirmButton
-                                title={`Zu Runde ${round.roundNumber} zurückgehen?`}
-                                description={`Runde ${currentRound.roundNumber} wird gelöscht. Runde ${round.roundNumber} wird wieder geöffnet und kann bearbeitet werden.`}
-                                confirmLabel="Zurückgehen"
+                                title={t('swiss.backToRoundTitle', {
+                                  number: round.roundNumber,
+                                })}
+                                description={t('swiss.backToRoundDescription', {
+                                  current: currentRound.roundNumber,
+                                  target: round.roundNumber,
+                                })}
+                                confirmLabel={t('swiss.backToRound')}
                                 onConfirm={async () => {
                                   await app.goBackToPreviousRound()
                                   toast.success(
-                                    `Runde ${round.roundNumber} wurde wieder geöffnet.`,
+                                    t('swiss.backToRoundSuccess', {
+                                      number: round.roundNumber,
+                                    }),
                                   )
                                 }}
                                 trigger={
                                   <Button
-                                    aria-label="Runde wieder bearbeiten"
+                                    aria-label={t('swiss.backToRoundAria')}
                                     className="h-8 w-full shrink-0 p-0 md:w-10"
-                                    title="Runde wieder bearbeiten"
+                                    title={t('swiss.backToRoundAria')}
                                     variant="outline"
                                   >
                                     <Pencil className="size-4" />
@@ -2085,7 +2179,7 @@ export function SwissTournamentsPage() {
                                   onClick={() => void app.generateRound()}
                                 >
                                   <Plus className="size-4" />
-                                  Neue Runde
+                                  {t('swiss.newRound')}
                                 </Button>
                                 {isEditable && (
                                   <Button
@@ -2095,31 +2189,35 @@ export function SwissTournamentsPage() {
                                     onClick={() => void app.regenerateRound()}
                                   >
                                     <RefreshCw className="size-4" />
-                                    Neu erzeugen
+                                    {t('swiss.regenerate')}
                                   </Button>
                                 )}
                                 <ConfirmButton
-                                title={`${roundLabel} löschen?`}
+                                title={t('swiss.deleteRoundTitle', { round: roundLabel })}
                                 description={
                                   index + 1 < displayedRounds.length
-                                    ? 'Die aktuelle Runde und alle Paarungen darin werden gelöscht. Die vorherige Runde wird wieder geöffnet und kann bearbeitet werden.'
-                                    : 'Die aktuelle Runde und alle Paarungen darin werden gelöscht.'
+                                    ? t('swiss.deleteRoundDescriptionWithPrevious')
+                                    : t('swiss.deleteRoundDescription')
                                 }
-                                confirmLabel="Löschen"
+                                confirmLabel={t('common.delete')}
                                 onConfirm={async () => {
                                   await app.deleteLatestRound()
                                   toast.success(
                                     index + 1 < displayedRounds.length
-                                      ? `${roundLabel} wurde gelöscht. Die vorherige Runde ist wieder bearbeitbar.`
-                                      : `${roundLabel} wurde gelöscht.`,
+                                      ? t('swiss.deleteRoundSuccessWithPrevious', {
+                                          round: roundLabel,
+                                        })
+                                      : t('swiss.deleteRoundSuccess', {
+                                          round: roundLabel,
+                                        }),
                                   )
                                 }}
                                 trigger={
                                   <Button
-                                    aria-label="Aktuelle Runde löschen"
+                                    aria-label={t('swiss.deleteRound')}
                                     className="h-8 w-full p-0 md:w-10"
                                     size="sm"
-                                    title="Aktuelle Runde löschen"
+                                    title={t('swiss.deleteRound')}
                                     variant="delete"
                                   >
                                     <Trash2 className="size-4" />
@@ -2162,20 +2260,20 @@ export function SwissTournamentsPage() {
                               <div className="grid gap-2">
                                 <div className="type-action flex items-center gap-2">
                                   <Brain className="size-4 text-primary" />
-                                  Hand-and-Brain-Brett fixieren
+                                  {t('swiss.handAndBrainFixBoard')}
                                 </div>
                                 <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                                   <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualWhiteBrain} onValueChange={setManualWhiteBrain}>
                                       <IftaSelectTrigger
-                                        aria-label="Weiß Brain"
+                                        aria-label={t('swiss.whiteBrain')}
                                         className={singleLineSelectTriggerClass}
                                         label={roleLabel(
                                           <Brain className="size-3 shrink-0 text-primary" />,
-                                          'Weiß Brain',
+                                          t('swiss.whiteBrain'),
                                         )}
                                       >
-                                        <SelectValue placeholder="offen" />
+                                        <SelectValue placeholder={t('swiss.result.open')} />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteBrain).map((player) => (
@@ -2187,14 +2285,14 @@ export function SwissTournamentsPage() {
                                     </Select>
                                     <Select value={manualWhiteHand} onValueChange={setManualWhiteHand}>
                                       <IftaSelectTrigger
-                                        aria-label="Weiß Hand"
+                                        aria-label={t('swiss.whiteHand')}
                                         className={singleLineSelectTriggerClass}
                                         label={roleLabel(
                                           <Hand className="size-3 shrink-0 text-primary" />,
-                                          'Weiß Hand',
+                                          t('swiss.whiteHand'),
                                         )}
                                       >
-                                        <SelectValue placeholder="offen" />
+                                        <SelectValue placeholder={t('swiss.result.open')} />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualWhiteHand).map((player) => (
@@ -2208,14 +2306,14 @@ export function SwissTournamentsPage() {
                                   <div className="grid gap-2 sm:grid-cols-2 lg:contents">
                                     <Select value={manualBlackBrain} onValueChange={setManualBlackBrain}>
                                       <IftaSelectTrigger
-                                        aria-label="Schwarz Brain"
+                                        aria-label={t('swiss.blackBrain')}
                                         className={singleLineSelectTriggerClass}
                                         label={roleLabel(
                                           <Brain className="size-3 shrink-0 text-primary" />,
-                                          'Schwarz Brain',
+                                          t('swiss.blackBrain'),
                                         )}
                                       >
-                                        <SelectValue placeholder="offen" />
+                                        <SelectValue placeholder={t('swiss.result.open')} />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackBrain).map((player) => (
@@ -2227,14 +2325,14 @@ export function SwissTournamentsPage() {
                                     </Select>
                                     <Select value={manualBlackHand} onValueChange={setManualBlackHand}>
                                       <IftaSelectTrigger
-                                        aria-label="Schwarz Hand"
+                                        aria-label={t('swiss.blackHand')}
                                         className={singleLineSelectTriggerClass}
                                         label={roleLabel(
                                           <Hand className="size-3 shrink-0 text-primary" />,
-                                          'Schwarz Hand',
+                                          t('swiss.blackHand'),
                                         )}
                                       >
-                                        <SelectValue placeholder="offen" />
+                                        <SelectValue placeholder={t('swiss.result.open')} />
                                       </IftaSelectTrigger>
                                       <SelectContent>
                                         {handBrainOptionFor(manualBlackHand).map((player) => (
@@ -2268,10 +2366,10 @@ export function SwissTournamentsPage() {
                                       setManualWhiteHand('')
                                       setManualBlackBrain('')
                                       setManualBlackHand('')
-                                      toast.success('Hand-and-Brain-Brett fixiert.')
+                                      toast.success(t('swiss.handAndBrainFixed'))
                                     }}
                                   >
-                                    H&B fixieren
+                                    {t('swiss.handAndBrainFix')}
                                   </Button>
                                 </div>
                               </div>
@@ -2279,15 +2377,15 @@ export function SwissTournamentsPage() {
                             <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
                                 <IftaSelectTrigger
-                                  aria-label="Weiß"
+                                  aria-label={t('swiss.white')}
                                   className={singleLineSelectTriggerClass}
                                   containerClassName="lg:col-span-2"
                                   label={roleLabel(
                                     <ChessKing className="size-3 shrink-0 text-primary" />,
-                                    'Weiß',
+                                    t('swiss.white'),
                                   )}
                                 >
-                                  <SelectValue placeholder="offen" />
+                                  <SelectValue placeholder={t('swiss.result.open')} />
                                 </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualWhiteOptions.map((player) => (
@@ -2299,15 +2397,15 @@ export function SwissTournamentsPage() {
                               </Select>
                               <Select value={manualBlack} onValueChange={setManualBlack}>
                                 <IftaSelectTrigger
-                                  aria-label="Schwarz"
+                                  aria-label={t('swiss.black')}
                                   className={singleLineSelectTriggerClass}
                                   containerClassName="lg:col-span-2"
                                   label={roleLabel(
                                     <ChessKing className="size-3 shrink-0 text-primary" />,
-                                    'Schwarz',
+                                    t('swiss.black'),
                                   )}
                                 >
-                                  <SelectValue placeholder="offen" />
+                                  <SelectValue placeholder={t('swiss.result.open')} />
                                 </IftaSelectTrigger>
                                 <SelectContent>
                                   {manualBlackOptions.map((player) => (
@@ -2333,10 +2431,12 @@ export function SwissTournamentsPage() {
                                   )
                                   setManualWhite('')
                                   setManualBlack('')
-                                  toast.success('Manuelle Paarung fixiert.')
+                                  toast.success(t('swiss.manualPairingFixed'))
                                 }}
                               >
-                                {tournament.format === 'handAndBrain' ? 'Einzel fixieren' : 'Fixieren'}
+                                {tournament.format === 'handAndBrain'
+                                  ? t('swiss.singleGameFix')
+                                  : t('swiss.fix')}
                               </Button>
                             </div>
                           </div>
@@ -2348,14 +2448,14 @@ export function SwissTournamentsPage() {
                 })
               ) : (
                 <div className="type-ui flex flex-col gap-3 rounded-md border border-dashed p-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                  <span>Erzeuge die erste Runde, sobald Spieler angelegt sind.</span>
+                  <span>{t('swiss.firstRoundHint')}</span>
                   <Button
                     className="w-full sm:w-auto"
                     disabled={!canGenerateRound}
                     onClick={() => void app.generateRound()}
                   >
                     <Plus className="size-4" />
-                    Neue Runde
+                    {t('swiss.newRound')}
                   </Button>
                 </div>
               )}
@@ -2385,6 +2485,7 @@ function ResultCorrectionBadge({
   pairing: Pairing
   shouldConfirmRegeneration?: (pairingId: string, result?: GameResult) => boolean
 }) {
+  const { t } = useI18n()
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -2402,7 +2503,7 @@ function ResultCorrectionBadge({
 
     try {
       await onCorrect(pairing.id, result)
-      toast.success('Ergebnis wurde korrigiert.')
+      toast.success(t('swiss.result.correctSuccess'))
     } finally {
       setIsSaving(false)
     }
@@ -2451,22 +2552,24 @@ function ResultCorrectionBadge({
         onValueChange={(value) => void handleCorrection(value as ResultSelectValue)}
       >
         <SelectTrigger
-          aria-label={`Ergebnis ${resultLabel(pairing.result)} korrigieren`}
+          aria-label={t('swiss.result.correctAria', {
+            result: resultLabel(pairing.result, t),
+          })}
           className={cn(
             'type-caption inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 shadow-none',
             'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
             '[&>span]:truncate [&>svg]:hidden',
             !pairing.result && 'bg-muted text-muted-foreground',
           )}
-          title="Ergebnis korrigieren"
+          title={t('swiss.result.correctTitle')}
         >
-          <SelectValue placeholder="offen" />
+          <SelectValue placeholder={t('swiss.result.open')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={openResultValue}>offen</SelectItem>
+          <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
           {resultOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
-              {option.label}
+              {resultOptionLabel(option, t)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -2485,17 +2588,13 @@ function ResultCorrectionBadge({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Paarungen neu erzeugen?</DialogTitle>
-            <DialogDescription>
-              Diese Ergebnis-Korrektur erzeugt die Paarungen der aktuellen Runde
-              neu, weil dort noch keine Ergebnisse eingetragen sind. Bereits
-              laufende Partien können dadurch andere Gegner oder Farben bekommen.
-            </DialogDescription>
+            <DialogTitle>{t('swiss.result.regeneratePairingsTitle')}</DialogTitle>
+            <DialogDescription>{t('swiss.result.correctDescription')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button disabled={isSaving} variant="outline">
-                Abbrechen
+                {t('common.cancel')}
               </Button>
             </DialogClose>
             <Button
@@ -2504,7 +2603,7 @@ function ResultCorrectionBadge({
               variant="destructive"
               onClick={() => void handleConfirmCorrection()}
             >
-              Neu erzeugen
+              {t('swiss.regenerate')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2537,6 +2636,7 @@ function PairingsTable({
   resultCorrectionEnabled?: boolean
   showWarnings?: boolean
 }) {
+  const { t } = useI18n()
   const canChangePairings = editable
   const handleResultSelect = (pairingId: string, value: ResultSelectValue) => {
     onResultChange?.(
@@ -2632,14 +2732,17 @@ function PairingsTable({
     return playerName(tournament, pairing.blackPlayerId)
   }
   const pairingRemoveLabel = (pairing: Pairing) =>
-    `Fixierte Paarung ${whiteLabel(pairing)} gegen ${blackLabel(pairing)} lösen`
+    t('swiss.fixedPairingRemoveAria', {
+      black: blackLabel(pairing),
+      white: whiteLabel(pairing),
+    })
 
   const canCorrectResult = (pairing: Pairing) =>
     resultCorrectionEnabled && !pairing.isBye && Boolean(onResultCorrection)
 
   const renderMobileResult = (pairing: Pairing) => {
     if (pairing.isBye) {
-      return <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
+      return <Badge variant="secondary">{resultLabel(pairing.result, t)}</Badge>
     }
 
     if (editable && onResultChange) {
@@ -2650,14 +2753,14 @@ function PairingsTable({
             handleResultSelect(pairing.id, value as ResultSelectValue)
           }
         >
-          <SelectTrigger className="w-full" label="Ergebnis">
-            <SelectValue placeholder="offen" />
+          <SelectTrigger className="w-full" label={t('swiss.result')}>
+            <SelectValue placeholder={t('swiss.result.open')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={openResultValue}>offen</SelectItem>
+            <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
             {resultOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {resultOptionLabel(option, t)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -2677,7 +2780,7 @@ function PairingsTable({
 
     return (
       <Badge variant={pairing.result ? 'outline' : 'secondary'}>
-        {resultLabel(pairing.result)}
+        {resultLabel(pairing.result, t)}
       </Badge>
     )
   }
@@ -2693,13 +2796,10 @@ function PairingsTable({
             className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950"
             title={removeLabel}
           >
-            <span className="px-2 py-0.5">FIXIERT</span>
+            <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
             {editable && onManualPairingRemove && (
               <Button
-                aria-label={`Fixierte Paarung ${playerName(
-                  tournament,
-                  pairing.whitePlayerId,
-                )} gegen ${playerName(tournament, pairing.blackPlayerId)} lösen`}
+                aria-label={pairingRemoveLabel(pairing)}
                 className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
                 disabled={!canChangePairings}
                 size="icon"
@@ -2751,10 +2851,10 @@ function PairingsTable({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="type-action tabular-nums whitespace-nowrap">
-                  Brett {pairing.boardNumber}
+                  {t('swiss.board')} {pairing.boardNumber}
                   {pairing.kind === 'single' && (
                     <Badge className="ml-2 align-middle" variant="secondary">
-                      Einzelpartie
+                      {t('swiss.singleGame')}
                     </Badge>
                   )}
                 </div>
@@ -2763,13 +2863,13 @@ function PairingsTable({
               <div className="mt-2.5 grid grid-cols-2 gap-2">
                 <div className="min-w-0">
                   <div className="type-caption text-muted-foreground">
-                    Wei&szlig;
+                    {t('swiss.table.white')}
                   </div>
                   <div className="whitespace-normal">{whiteName}</div>
                 </div>
                 <div className="min-w-0">
                   <div className="type-caption text-muted-foreground">
-                    Schwarz
+                    {t('swiss.table.black')}
                   </div>
                   <div className="whitespace-normal">{blackName}</div>
                 </div>
@@ -2777,7 +2877,7 @@ function PairingsTable({
               <div className="mt-2.5">
                 {(!editable || !onResultChange) && (
                   <div className="type-caption mb-1.5 text-muted-foreground">
-                    Ergebnis
+                    {t('swiss.result')}
                   </div>
                 )}
                 {renderMobileResult(pairing)}
@@ -2799,11 +2899,11 @@ function PairingsTable({
             {showWarnings && <col className="w-56" />}
           </colgroup>
           <TableHeader>
-            <TableHead>Brett</TableHead>
-            <TableHead>Weiß</TableHead>
-            <TableHead>Schwarz</TableHead>
-            <TableHead>Ergebnis</TableHead>
-            {showWarnings && <TableHead>Hinweise</TableHead>}
+            <TableHead>{t('swiss.board')}</TableHead>
+            <TableHead>{t('swiss.table.white')}</TableHead>
+            <TableHead>{t('swiss.table.black')}</TableHead>
+            <TableHead>{t('swiss.result')}</TableHead>
+            {showWarnings && <TableHead>{t('swiss.hints')}</TableHead>}
           </TableHeader>
           <TableBody>
           {pairings.map((pairing) => {
@@ -2821,7 +2921,7 @@ function PairingsTable({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span>{pairing.boardNumber}</span>
                   {pairing.kind === 'single' && (
-                    <Badge variant="secondary">Einzelpartie</Badge>
+                    <Badge variant="secondary">{t('swiss.singleGame')}</Badge>
                   )}
                 </div>
               </TableCell>
@@ -2833,7 +2933,7 @@ function PairingsTable({
               </TableCell>
               <TableCell>
                 {pairing.isBye ? (
-                  <Badge variant="secondary">{resultLabel(pairing.result)}</Badge>
+                  <Badge variant="secondary">{resultLabel(pairing.result, t)}</Badge>
                 ) : editable && onResultChange ? (
                   <Select
                     value={pairing.result ?? openResultValue}
@@ -2842,13 +2942,13 @@ function PairingsTable({
                     }
                   >
                     <SelectTrigger className="w-28">
-                      <SelectValue placeholder="offen" />
+                      <SelectValue placeholder={t('swiss.result.open')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={openResultValue}>offen</SelectItem>
+                      <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
                       {resultOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {resultOptionLabel(option, t)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2861,7 +2961,7 @@ function PairingsTable({
                   />
                 ) : (
                   <Badge variant={pairing.result ? 'outline' : 'secondary'}>
-                    {resultLabel(pairing.result)}
+                    {resultLabel(pairing.result, t)}
                   </Badge>
                 )}
               </TableCell>
@@ -2870,7 +2970,7 @@ function PairingsTable({
                   <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
                       <span className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950">
-                        <span className="px-2 py-0.5">FIXIERT</span>
+                        <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
                         {editable && onManualPairingRemove && (
                           <Button
                             aria-label={pairingRemoveLabel(pairing)}
@@ -2925,6 +3025,7 @@ function StandingsTable({
   tournamentFormat: Tournament['format']
   tournamentName: string
 }) {
+  const { t } = useI18n()
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
   const podiumClass = (rank: number) =>
     rank === 1
@@ -2960,7 +3061,10 @@ function StandingsTable({
     '--swiss-round-cell-width': `${roundCellLabelWidth * 0.45 + 1.85}rem`,
     '--swiss-round-grid-columns': visibleRoundGridColumns,
   } as CSSProperties
-  const hardshipLabel = tournamentFormat === 'handAndBrain' ? 'Pech' : 'Byes'
+  const hardshipLabel =
+    tournamentFormat === 'handAndBrain'
+      ? t('swiss.hardship.handAndBrain')
+      : t('swiss.hardship.byes')
   const hardshipCount = (row: (typeof standings)[number]) =>
     tournamentFormat === 'handAndBrain'
       ? row.receivedByes + row.receivedSingleGames
@@ -2974,7 +3078,7 @@ function StandingsTable({
         </div>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
-          Rangliste
+          {t('swiss.ranking')}
         </CardTitle>
       </CardHeader>
       <CardContent style={roundCellWidthStyle}>
@@ -2990,11 +3094,11 @@ function StandingsTable({
               <col className="w-9" />
             </colgroup>
             <TableHeader>
-                <TableHead className="px-1.5 py-2">Platz</TableHead>
-                <TableHead className="py-2 pl-4 pr-1.5">Name</TableHead>
-                <TableHead className="px-1 py-2 text-center">Punkte</TableHead>
-                <TableHead className="px-1 py-2 text-center">Buchholz</TableHead>
-                <TableHead className="px-1 py-2 text-center">SB</TableHead>
+                <TableHead className="px-1.5 py-2">{t('swiss.rank')}</TableHead>
+                <TableHead className="py-2 pl-4 pr-1.5">{t('common.name')}</TableHead>
+                <TableHead className="px-1 py-2 text-center">{t('swiss.standings.points')}</TableHead>
+                <TableHead className="px-1 py-2 text-center">{t('swiss.table.buchholz')}</TableHead>
+                <TableHead className="px-1 py-2 text-center">{t('swiss.table.sb')}</TableHead>
             </TableHeader>
             <TableBody>
               {standings.map((row) => {
@@ -3055,13 +3159,13 @@ function StandingsTable({
                               ))}
                             </div>
                             <div className="type-field-label flex flex-wrap items-center gap-2 text-muted-foreground">
-                              <span>Siege: {row.wins}</span>
+                              <span>{t('swiss.table.wins')}: {row.wins}</span>
                               <span>{hardshipLabel}: {hardshipCount(row)}</span>
                               <Badge
                                 className="h-5 px-1.5"
                                 variant={statusVariant(row.status)}
                               >
-                                {statusLabels[row.status]}
+                                  {t(statusLabelKeys[row.status])}
                               </Badge>
                             </div>
                           </div>
@@ -3079,15 +3183,15 @@ function StandingsTable({
           containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
         >
             <TableHeader>
-                <TableHead>Platz</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Punkte</TableHead>
-                <TableHead>Buchholz</TableHead>
-                <TableHead>SB</TableHead>
-                <TableHead>Siege</TableHead>
-                <TableHead className="swiss-rounds-heading">Runden</TableHead>
+                <TableHead>{t('swiss.rank')}</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('swiss.standings.points')}</TableHead>
+                <TableHead>{t('swiss.table.buchholz')}</TableHead>
+                <TableHead>{t('swiss.table.sb')}</TableHead>
+                <TableHead>{t('swiss.table.wins')}</TableHead>
+                <TableHead className="swiss-rounds-heading">{t('swiss.rounds')}</TableHead>
                 <TableHead className="swiss-export-hidden-column">{hardshipLabel}</TableHead>
-                <TableHead className="swiss-export-hidden-column">Status</TableHead>
+                <TableHead className="swiss-export-hidden-column">{t('common.status')}</TableHead>
             </TableHeader>
             <TableBody>
               {standings.map((row) => (
@@ -3125,7 +3229,7 @@ function StandingsTable({
                   </TableCell>
                   <TableCell className="swiss-export-hidden-column">
                     <Badge variant={statusVariant(row.status)}>
-                      {statusLabels[row.status]}
+                      {t(statusLabelKeys[row.status])}
                     </Badge>
                   </TableCell>
                 </TableRow>

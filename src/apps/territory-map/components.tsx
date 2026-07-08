@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/lib/i18n'
 
 function toDateInputValue(value: string) {
   const date = new Date(value)
@@ -100,6 +101,7 @@ export const TerritoryShape = memo(function TerritoryShape({
   players: TerritoryPlayer[]
   territory: Territory
 }) {
+  const { t } = useI18n()
   const owners = claim?.owners?.length
     ? claim.owners
     : claim
@@ -121,7 +123,7 @@ export const TerritoryShape = memo(function TerritoryShape({
   const ownerLabel =
     owners.length > 0
       ? owners.map((owner) => owner.playerName).join(', ')
-      : 'Unbereist'
+      : t('territory.unvisited')
 
   return (
     <>
@@ -182,6 +184,7 @@ export function ClaimDialog({
   players: TerritoryPlayer[]
   territory: Territory | null
 }) {
+  const { t } = useI18n()
   const [selectedPlayerId, setSelectedPlayerId] = useState(
     claim?.playerId ?? players[0]?.id ?? unclaimedValue,
   )
@@ -200,11 +203,13 @@ export function ClaimDialog({
     <Dialog open={Boolean(territory)} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{territory.name} Sushi-bereisen?</DialogTitle>
+          <DialogTitle>
+            {t('territory.claimDialogTitle', { territory: territory.name })}
+          </DialogTitle>
           <DialogDescription>
             {claim
-              ? `Aktuell bereist von ${ownerNames}.`
-              : 'Dieses Territorium ist noch frei.'}
+              ? t('territory.currentVisitedBy', { names: ownerNames ?? '-' })
+              : t('territory.unclaimed')}
           </DialogDescription>
         </DialogHeader>
 
@@ -229,8 +234,12 @@ export function ClaimDialog({
                 }, 250)
               }}
             >
-              <IftaSelectTrigger id="claim-player" className="w-full" label="Sushi-Tourist">
-                <SelectValue placeholder="Sushi-Tourist wählen" />
+              <IftaSelectTrigger
+                id="claim-player"
+                className="w-full"
+                label={t('territory.tourist')}
+              >
+                <SelectValue placeholder={t('territory.selectTourist')} />
               </IftaSelectTrigger>
               <SelectContent>
                 {players.map((player) => (
@@ -238,7 +247,9 @@ export function ClaimDialog({
                     {player.name}
                   </SelectItem>
                 ))}
-                <SelectItem value={unclaimedValue}>Unbereist</SelectItem>
+                <SelectItem value={unclaimedValue}>
+                  {t('territory.unvisited')}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -247,7 +258,7 @@ export function ClaimDialog({
             size="ifta"
             onClick={() => onClaim(selectedPlayerId)}
           >
-            Nigiri gegessen
+            {t('territory.claimAction')}
           </Button>
         </div>
       </DialogContent>
@@ -260,6 +271,8 @@ export function AddEaterCard({
 }: {
   onAdd: () => Promise<void>
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="rounded-md border border-dashed bg-background p-3">
       <Button
@@ -268,7 +281,7 @@ export function AddEaterCard({
         onClick={() => void onAdd()}
       >
         <CirclePlus className="size-4" />
-        Sushi-Tourist hinzufügen
+        {t('territory.addTourist')}
       </Button>
     </div>
   )
@@ -285,12 +298,13 @@ export function TerritoryEventTable({
   onUpdateEvent: ReturnType<typeof useTerritoryMap>['updateEvent']
   players: TerritoryPlayer[]
 }) {
+  const { t } = useI18n()
   const events = getEventTable(dataset.events)
 
   if (events.length === 0) {
     return (
       <EmptyState>
-        Noch keine Bereisungen im aktuellen Datensatz.
+        {t('territory.emptyEvents')}
       </EmptyState>
     )
   }
@@ -360,14 +374,14 @@ export function TerritoryEventTable({
   )
   const renderDeleteButton = (event: TerritoryVisitEvent) => (
     <ConfirmButton
-      title="Bereisung löschen?"
-      description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+      title={t('territory.claimDeleteTitle')}
+      description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}
       trigger={
         <Button
           variant="delete"
           size="icon"
-          aria-label="Bereisung löschen"
+          aria-label={t('territory.claimDeleteTitle')}
         >
           <Trash2 className="size-4" />
         </Button>
@@ -400,7 +414,7 @@ export function TerritoryEventTable({
                     </span>
                   </div>
                   <div className="type-caption mt-1 text-muted-foreground">
-                    {territory?.name ?? 'Territorium'}
+                    {territory?.name ?? t('territory.territory')}
                   </div>
                 </div>
                 {renderDeleteButton(event)}
@@ -408,19 +422,19 @@ export function TerritoryEventTable({
               <div className="mt-3 grid gap-3">
                 <div>
                   <div className="type-caption mb-1.5 text-muted-foreground">
-                    Datum
+                    {t('territory.date')}
                   </div>
                   {renderDateInput(event)}
                 </div>
                 <div>
                   <div className="type-caption mb-1.5 text-muted-foreground">
-                    Spieler
+                    {t('territory.player')}
                   </div>
                   {renderPlayerSelect(event)}
                 </div>
                 <div>
                   <div className="type-caption mb-1.5 text-muted-foreground">
-                    Territorium
+                    {t('territory.territory')}
                   </div>
                   {renderTerritorySelect(event)}
                 </div>
@@ -432,10 +446,10 @@ export function TerritoryEventTable({
 
       <Table className="min-w-[780px]" containerClassName="hidden md:block">
         <TableHeader>
-            <TableHead>Datum</TableHead>
-            <TableHead>Spieler</TableHead>
-            <TableHead>Territorium</TableHead>
-            <TableHead className="text-right">Aktion</TableHead>
+            <TableHead>{t('territory.date')}</TableHead>
+            <TableHead>{t('territory.player')}</TableHead>
+            <TableHead>{t('territory.territory')}</TableHead>
+            <TableHead className="text-right">{t('decisionWheel.action')}</TableHead>
         </TableHeader>
         <TableBody>
           {events.map((event) => (
@@ -505,14 +519,14 @@ export function TerritoryEventTable({
               </TableCell>
               <TableCell className="text-right">
                 <ConfirmButton
-                  title="Bereisung löschen?"
-                  description="Diese Zeile wird aus dem aktuellen Datensatz entfernt."
+                  title={t('territory.claimDeleteTitle')}
+                  description={t('common.event.deleteDescription')}
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
                     <Button
                       variant="delete"
                       size="icon"
-                      aria-label="Bereisung löschen"
+                      aria-label={t('territory.claimDeleteTitle')}
                     >
                       <Trash2 className="size-4" />
                     </Button>

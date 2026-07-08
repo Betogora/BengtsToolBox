@@ -17,6 +17,7 @@ import {
   wheelRadius,
   wheelSize,
 } from '@/apps/decision-wheel/wheel'
+import { useI18n } from '@/lib/i18n'
 import { getReadableTextColor } from '@/lib/theme'
 
 type WheelGraphicProps = {
@@ -32,6 +33,7 @@ export function WheelGraphic({
   rotation,
   isSpinning,
 }: WheelGraphicProps) {
+  const { t } = useI18n()
   const segments = useMemo(() => getSegments(entries), [entries])
   const labelFontSize = useMemo(
     () => getWheelLabelFontSize(segments),
@@ -44,7 +46,7 @@ export function WheelGraphic({
   if (entries.length === 0) {
     return (
       <div className="type-ui flex aspect-square w-full items-center justify-center rounded-full border border-dashed bg-secondary text-center text-muted-foreground sm:max-w-[30rem]">
-        Keine Optionen im Rad.
+        {t('decisionWheel.wheel.empty')}
       </div>
     )
   }
@@ -73,7 +75,7 @@ export function WheelGraphic({
         viewBox={`0 0 ${wheelSize} ${wheelSize}`}
         className="relative z-[1] size-full"
         role="img"
-        aria-label="Glücksrad"
+        aria-label={t('decisionWheel.wheel.label')}
         style={
           {
             transform: `rotate(${rotation}deg)`,
@@ -92,7 +94,9 @@ export function WheelGraphic({
           const isDimmed = hasHighlightedSegment && !isHighlighted
           const labelText = canRenderWheelLabel(segment, availableLabelWidth)
             ? shortenWheelLabelToWidth(
-                getEntryDisplayText(segment, index),
+                getEntryDisplayText(segment, index, (number) =>
+                  t('decisionWheel.fallbackOption', { number }),
+                ),
                 availableLabelWidth,
                 labelFontSize,
               )

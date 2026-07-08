@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 export type PresenterViewDefinition = {
@@ -48,11 +49,12 @@ function requestPresenterFullscreen() {
 
 export function PresenterLauncher({
   appTitle,
-  buttonLabel = 'Presenter',
+  buttonLabel,
   className,
   disabled,
   views,
 }: PresenterLauncherProps) {
+  const { t } = useI18n()
   const launcherRef = useRef<HTMLButtonElement>(null)
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [isChooserOpen, setIsChooserOpen] = useState(false)
@@ -128,15 +130,15 @@ export function PresenterLauncher({
         onClick={handleLaunch}
       >
         <Monitor className="size-4" />
-        {buttonLabel}
+        {buttonLabel ?? t('common.presenter')}
       </Button>
 
       <Dialog open={isChooserOpen} onOpenChange={setIsChooserOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Presenter-Ansicht wählen</DialogTitle>
+            <DialogTitle>{t('presenter.chooseTitle')}</DialogTitle>
             <DialogDescription>
-              Wähle, welche Ausgabe im Fullscreen angezeigt wird.
+              {t('presenter.chooseDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
@@ -191,6 +193,7 @@ function PresenterStage({
   onExit: () => void
   view: PresenterViewDefinition
 }) {
+  const { t } = useI18n()
   const exitButtonRef = useRef<HTMLButtonElement>(null)
   const ViewIcon = view.Icon
 
@@ -216,7 +219,7 @@ function PresenterStage({
 
   return (
     <div
-      aria-label={`${appTitle} Presenter`}
+      aria-label={t('presenter.aria', { app: appTitle })}
       aria-modal="true"
       className="fixed inset-0 z-[100] overflow-auto bg-background text-foreground"
       role="dialog"
@@ -238,14 +241,14 @@ function PresenterStage({
           </div>
           <Button
             ref={exitButtonRef}
-            aria-label="Presenter beenden"
+            aria-label={t('presenter.exitAria')}
             className="shrink-0"
             type="button"
             variant="outline"
             onClick={onExit}
           >
             <X className="size-4" />
-            Beenden
+            {t('common.end')}
           </Button>
         </header>
         <main

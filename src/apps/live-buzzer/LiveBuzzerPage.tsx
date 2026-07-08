@@ -32,6 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 function timestampToDate(value: BuzzerTimestamp, fallbackIso?: string | null) {
@@ -46,14 +47,22 @@ function timestampToDate(value: BuzzerTimestamp, fallbackIso?: string | null) {
   return fallbackIso ? new Date(fallbackIso) : null
 }
 
-function formatBuzzTime(value: BuzzerTimestamp, fallbackIso?: string | null) {
+function formatBuzzTime(
+  value: BuzzerTimestamp,
+  fallbackIso: string | null | undefined,
+  formatTime: ReturnType<typeof useI18n>['formatTime'],
+) {
   const date = timestampToDate(value, fallbackIso)
 
   if (!date || Number.isNaN(date.getTime())) {
     return '-'
   }
 
-  return date.toLocaleTimeString()
+  return formatTime(date, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
 }
 
 function displayPlayerName(player: { name: string }) {
@@ -103,23 +112,28 @@ function LiveBuzzerPresenter({
   roundNumber: number
   sessionState: BuzzerSessionState
   winner: BuzzerPlayer | null
-  winnerTeam: { className: string; name: string } | null | undefined
+  winnerTeam:
+    | { className: string; name: string; nameKey: TranslationKey }
+    | null
+    | undefined
 }) {
+  const { formatTime, t } = useI18n()
+
   return (
     <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="rounded-lg border bg-primary p-6 text-primary-foreground shadow-sm">
         <div className="type-section-title">
-          {winner ? displayPlayerName(winner) : 'Bereit'}
+          {winner ? displayPlayerName(winner) : t('liveBuzzer.ready')}
         </div>
         <div className="type-metric-xl mt-8">
-          {winnerTeam?.name ?? '-'}
+          {winnerTeam ? t(winnerTeam.nameKey) : '-'}
         </div>
         <div className="mt-6 flex flex-wrap gap-2">
           <Badge className="bg-white text-primary">
-            Runde {roundNumber}
+            {t('common.round', { number: roundNumber })}
           </Badge>
           <Badge className="bg-white text-primary">
-            {sessionState.isOpen ? 'Live' : 'Gesperrt'}
+            {sessionState.isOpen ? 'Live' : t('liveBuzzer.status.locked')}
           </Badge>
         </div>
       </div>
@@ -128,12 +142,12 @@ function LiveBuzzerPresenter({
         <div className="flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
           <h2 className="type-section-title">
-            Buzz-Reihenfolge
+            {t('liveBuzzer.buzzOrder')}
           </h2>
         </div>
         <div className="mt-5 grid gap-3">
           {buzzedPlayers.length === 0 ? (
-            <EmptyState className="p-8">Noch kein Buzz.</EmptyState>
+            <EmptyState className="p-8">{t('liveBuzzer.emptyBuzz')}</EmptyState>
           ) : (
             buzzedPlayers
               .slice()
@@ -155,13 +169,14 @@ function LiveBuzzerPresenter({
                       {formatBuzzTime(
                         player.buzzedAt,
                         player.buzzedAtClientIso,
+                        formatTime,
                       )}
                     </div>
                   </div>
                   {winner?.id === player.id && (
                     <Badge className={winnerTeam?.className}>
                       <Trophy className="size-3.5" />
-                      Gewinner
+                      {t('liveBuzzer.status.winner')}
                     </Badge>
                   )}
                 </div>
@@ -174,6 +189,7 @@ function LiveBuzzerPresenter({
 }
 
 export function LiveBuzzerPage() {
+  const { formatDateTime, formatTime, t } = useI18n()
   const {
     buzz,
     buzzRanks,
@@ -198,6 +214,7 @@ export function LiveBuzzerPage() {
     winnerTeam,
   } = useLiveBuzzer()
   const [isSoundEnabled, setIsSoundEnabled] = useState(false)
+  const appTitle = t('app.liveBuzzer.title')
 
   const selectedHasBuzzed = Boolean(
     selectedPlayer?.buzzedAt ?? selectedPlayer?.buzzedAtClientIso,
@@ -211,20 +228,26 @@ export function LiveBuzzerPage() {
   return (
     <AppPage>
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={Bell} title="Live-Buzzer" />
+        <AppPageTitle Icon={Bell} title={appTitle} />
         <div className="flex flex-wrap gap-2">
           <Badge variant={sessionState.isOpen ? 'default' : 'secondary'}>
-            Runde {roundNumber} -{' '}
-            {sessionState.isOpen ? 'Freigegeben' : 'Gesperrt'}
+            {t('liveBuzzer.roundStatus', {
+              number: roundNumber,
+              status: sessionState.isOpen
+                ? t('liveBuzzer.status.released')
+                : t('liveBuzzer.status.locked'),
+            })}
           </Badge>
-          <Badge variant="outline">{players.length} Spieler</Badge>
+          <Badge variant="outline">
+            {t('common.playerCount', { count: players.length })}
+          </Badge>
         </div>
       </section>
 
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -236,9 +259,9 @@ export function LiveBuzzerPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UsersRound className="size-5 text-primary" />
-                Meine Spielerkarte
+                {t('liveBuzzer.card.mine')}
               </CardTitle>
-              {isLoading && <CardDescription>Synchronisiere...</CardDescription>}
+              {isLoading && <CardDescription>{t('common.syncing')}</CardDescription>}
             </CardHeader>
             <CardContent>
               {selectedPlayer ? (
@@ -249,7 +272,7 @@ export function LiveBuzzerPage() {
                   onNameChange={(name) => updatePlayerName(selectedPlayer.id, name)}
                   onRemove={async () => {
                     await removePlayer(selectedPlayer.id)
-                    toast.success('Spieler wurde entfernt.')
+                    toast.success(t('liveBuzzer.playerRemoved'))
                   }}
                   onTeamChange={(teamId) =>
                     updatePlayerTeam(selectedPlayer.id, teamId)
@@ -257,7 +280,7 @@ export function LiveBuzzerPage() {
                 />
               ) : (
                 <EmptyState className="p-8">
-                  Spieler wird angelegt...
+                  {t('liveBuzzer.card.creating')}
                 </EmptyState>
               )}
             </CardContent>
@@ -267,12 +290,11 @@ export function LiveBuzzerPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Unlock className="size-5 text-primary" />
-                Rundensteuerung
+                {t('liveBuzzer.roundControl')}
               </CardTitle>
               {!isRealtime && (
                 <CardDescription>
-                  Lokaler Modus: mehrere Geraete werden erst mit Firebase
-                  synchronisiert.
+                  {t('liveBuzzer.localMode')}
                 </CardDescription>
               )}
             </CardHeader>
@@ -281,29 +303,29 @@ export function LiveBuzzerPage() {
                 <Button
                   onClick={() => {
                     openRound()
-                    toast.success('Runde freigegeben.')
+                    toast.success(t('liveBuzzer.roundOpened'))
                   }}
                 >
                   <Unlock className="size-4" />
-                  Freigeben
+                  {t('liveBuzzer.action.release')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
                     closeRound()
-                    toast.success('Runde gesperrt.')
+                    toast.success(t('liveBuzzer.roundClosed'))
                   }}
                 >
                   <Lock className="size-4" />
-                  Sperren
+                  {t('liveBuzzer.action.lock')}
                 </Button>
               </div>
               <AppResetButton
-                title="Runde zurücksetzen und freigeben?"
-                description="Alle sichtbaren Buzzes dieser Runde werden gelöscht und die Runde wird direkt wieder freigegeben."
+                title={t('liveBuzzer.roundResetTitle')}
+                description={t('liveBuzzer.roundResetDescription')}
                 onConfirm={async () => {
                   await resetAndOpenRound()
-                  toast.success('Runde zurückgesetzt und freigegeben.')
+                  toast.success(t('liveBuzzer.roundReset'))
                 }}
               />
             </CardContent>
@@ -337,34 +359,39 @@ export function LiveBuzzerPage() {
                 }
 
                 if (result === 'winner') {
-                  toast.success('Gewinner-Buzz registriert.')
+                  toast.success(t('liveBuzzer.buzz.saved'))
                 } else if (result === 'late') {
-                  toast.success('Nachbuzz registriert.')
+                  toast.success(t('liveBuzzer.buzz.lateSaved'))
                 } else if (result === 'already-buzzed') {
-                  toast.error('Du hast in dieser Runde bereits gebuzzert.')
+                  toast.error(t('liveBuzzer.buzz.alreadyBuzzed'))
                 } else {
-                  toast.error('Diese Runde ist gesperrt.')
+                  toast.error(t('liveBuzzer.buzz.locked'))
                 }
               }}
             >
               <Bell className="size-20 sm:size-24" />
-              {winner && winner.id !== selectedPlayerId ? 'NACHBUZZERN' : 'BUZZ'}
+              {winner && winner.id !== selectedPlayerId
+                ? t('liveBuzzer.action.lateBuzz')
+                : t('liveBuzzer.action.buzz')}
             </Button>
 
             <div className="rounded-lg border p-4">
-              <div className="type-ui text-muted-foreground">Ergebnis</div>
+              <div className="type-ui text-muted-foreground">
+                {t('liveBuzzer.result')}
+              </div>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="type-card-title min-h-7">
                   {winner ? displayPlayerName(winner) : '-'}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={winnerTeam?.className} variant="outline">
-                    {winnerTeam?.name ?? 'Kein Team'}
+                    {winnerTeam ? t(winnerTeam.nameKey) : t('common.noTeam')}
                   </Badge>
                   <span className="type-card-title tabular-nums">
                     {formatBuzzTime(
                       sessionState.lastBuzzedAt,
                       sessionState.lastBuzzedAtClientIso,
+                      formatTime,
                     )}
                   </span>
                 </div>
@@ -379,7 +406,7 @@ export function LiveBuzzerPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UsersRound className="size-5 text-primary" />
-              Teams
+              {t('liveBuzzer.teams')}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -395,12 +422,12 @@ export function LiveBuzzerPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="type-action flex items-center gap-2">
                     <span className={cn('size-3 rounded-full', team.dotClassName)} />
-                    {team.name}
+                    {t(team.nameKey)}
                   </div>
                   {team.isWinner && <Trophy className="size-4" />}
                 </div>
                 <div className="type-ui mt-2 tabular-nums">
-                  {team.memberCount} Mitglieder
+                  {t('liveBuzzer.memberCount', { count: team.memberCount })}
                 </div>
               </div>
             ))}
@@ -412,16 +439,16 @@ export function LiveBuzzerPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="size-5 text-primary" />
-                Spielerübersicht
+                {t('liveBuzzer.overview')}
               </CardTitle>
               <div className="flex flex-wrap gap-2">
                 <PresenterLauncher
-                  appTitle="Live-Buzzer"
+                  appTitle={appTitle}
                   className="h-8 px-3"
                   views={[
                     {
                       id: 'live',
-                      label: 'Live-Ansicht',
+                      label: t('liveBuzzer.presenter.liveView'),
                       Icon: Bell,
                       render: () => (
                         <LiveBuzzerPresenter
@@ -448,7 +475,7 @@ export function LiveBuzzerPage() {
                   ) : (
                     <VolumeX className="size-4" />
                   )}
-                  Sound
+                  {t('liveBuzzer.sound')}
                 </Button>
               </div>
             </div>
@@ -463,15 +490,29 @@ export function LiveBuzzerPage() {
                 <PlayerCard
                   key={player.id}
                   player={player}
-                  buzzLabel={isWinner ? 'Gewinner' : hasBuzzed ? 'Gebuzzert' : 'Bereit'}
+                  buzzLabel={
+                    isWinner
+                      ? t('liveBuzzer.status.winner')
+                      : hasBuzzed
+                        ? t('liveBuzzer.status.buzzed')
+                        : t('liveBuzzer.ready')
+                  }
                   buzzRank={rank}
-                  buzzTime={formatBuzzTime(player.buzzedAt, player.buzzedAtClientIso)}
+                  buzzTime={formatBuzzTime(
+                    player.buzzedAt,
+                    player.buzzedAtClientIso,
+                    formatTime,
+                  )}
                   isHighlighted={selectedPlayerId === player.id}
                   isWinner={isWinner}
                   onNameChange={(name) => updatePlayerName(player.id, name)}
                   onRemove={async () => {
                     await removePlayer(player.id)
-                    toast.success(`${displayPlayerName(player)} wurde entfernt.`)
+                    toast.success(
+                      t('scoreboard.personRemoved', {
+                        name: displayPlayerName(player),
+                      }),
+                    )
                   }}
                   onTeamChange={(teamId) => updatePlayerTeam(player.id, teamId)}
                 />
@@ -486,11 +527,11 @@ export function LiveBuzzerPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <History className="size-5 text-primary" />
-              Rundenhistorie
+              {t('liveBuzzer.history')}
             </CardTitle>
             <AppResetButton
-              title="Rundenhistorie zurücksetzen?"
-              description="Alle bisherigen Gewinner der Rundenhistorie werden gelöscht."
+              title={t('liveBuzzer.history.resetTitle')}
+              description={t('liveBuzzer.history.resetDescription')}
               onConfirm={clearHistory}
             />
           </div>
@@ -498,7 +539,7 @@ export function LiveBuzzerPage() {
         <CardContent>
           {sessionState.history.length === 0 ? (
             <EmptyState>
-              Noch keine Gewinner vorhanden.
+              {t('liveBuzzer.emptyWinners')}
             </EmptyState>
           ) : (
             <div className="grid gap-3">
@@ -514,14 +555,17 @@ export function LiveBuzzerPage() {
                   >
                     <div>
                       <div className="type-action">
-                        Runde {entry.roundNumber}: {entry.winnerPlayerName}
+                        {t('liveBuzzer.winnerLine', {
+                          name: entry.winnerPlayerName,
+                          round: entry.roundNumber,
+                        })}
                       </div>
                       <div className="type-ui text-muted-foreground">
-                        {new Date(entry.createdAt).toLocaleString()}
+                        {formatDateTime(entry.createdAt)}
                       </div>
                     </div>
                     <Badge className={team?.className} variant="outline">
-                      {team?.name ?? 'Kein Team'}
+                      {team ? t(team.nameKey) : t('common.noTeam')}
                     </Badge>
                   </div>
                 )

@@ -4,7 +4,9 @@ import {
   coinFlipDurationMs,
   getCoinFaceRotation,
 } from '@/apps/coinflip/coin'
+import { getCoinflipLabelKey } from '@/apps/coinflip/hooks/useCoinflip'
 import type { CoinflipSide } from '@/apps/coinflip/types'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 type CoinGraphicProps = {
@@ -114,12 +116,15 @@ export function CoinGraphic({
   rotation,
   side,
 }: CoinGraphicProps) {
+  const { t } = useI18n()
   const settledSide = side ?? 'heads'
   const accessibleState = isFlipping
-    ? 'Münzwurf läuft'
+    ? t('coinflip.graphic.flipping')
     : side
-      ? `Münze zeigt ${settledSide === 'heads' ? 'Kopf' : 'Zahl'}`
-      : 'Münze bereit'
+      ? t('coinflip.graphic.showing', {
+          side: t(getCoinflipLabelKey(settledSide)),
+        })
+      : t('coinflip.graphic.ready')
 
   return (
     <div

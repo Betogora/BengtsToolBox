@@ -10,7 +10,7 @@ import {
 } from '@/apps/coinflip/coin'
 import { CoinGraphic } from '@/apps/coinflip/components/CoinGraphic'
 import {
-  getCoinflipLabel,
+  getCoinflipLabelKey,
   useCoinflip,
 } from '@/apps/coinflip/hooks/useCoinflip'
 import type { CoinflipResult } from '@/apps/coinflip/types'
@@ -27,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useI18n } from '@/lib/i18n'
 
 function CoinflipPresenter({
   history,
@@ -35,6 +36,7 @@ function CoinflipPresenter({
   history: CoinflipResult[]
   lastFlip: CoinflipResult | null
 }) {
+  const { t } = useI18n()
   const presenterSide = lastFlip?.side ?? null
   const presenterRotation = getCoinFaceRotation(presenterSide ?? 'heads')
 
@@ -49,10 +51,10 @@ function CoinflipPresenter({
             isFlipping={false}
           />
           <p className="type-label text-muted-foreground">
-            Letzter Flip
+            {t('coinflip.lastFlip')}
           </p>
           <div className="type-metric-xl mt-4">
-            {lastFlip ? getCoinflipLabel(lastFlip.side) : '-'}
+            {lastFlip ? t(getCoinflipLabelKey(lastFlip.side)) : '-'}
           </div>
         </div>
       </section>
@@ -61,12 +63,12 @@ function CoinflipPresenter({
         <div className="flex items-center gap-2">
           <History className="size-5 text-primary" />
           <h2 className="type-section-title">
-            Letzte Ergebnisse
+            {t('common.latestResults')}
           </h2>
         </div>
         <div className="mt-5 grid gap-3">
           {history.length === 0 ? (
-            <EmptyState>Noch keine Flips vorhanden.</EmptyState>
+            <EmptyState>{t('coinflip.empty')}</EmptyState>
           ) : (
             history.map((flipResult, index) => (
               <div
@@ -74,10 +76,10 @@ function CoinflipPresenter({
                 className="flex items-center justify-between gap-4 rounded-md border bg-background p-4"
               >
                 <div className="type-label">
-                  Flip {history.length - index}
+                  {t('coinflip.resultNumber', { number: history.length - index })}
                 </div>
                 <div className="type-metric-md">
-                  {getCoinflipLabel(flipResult.side)}
+                  {t(getCoinflipLabelKey(flipResult.side))}
                 </div>
               </div>
             ))
@@ -89,6 +91,7 @@ function CoinflipPresenter({
 }
 
 export function CoinflipPage() {
+  const { formatDateTime, t } = useI18n()
   const {
     clearHistory,
     commitFlipResult,
@@ -103,7 +106,8 @@ export function CoinflipPage() {
   const [isFlipping, setIsFlipping] = useState(false)
   const flipTimeoutRef = useRef<number | null>(null)
   const isFlipLockedRef = useRef(false)
-  const lastLabel = data.lastFlip ? getCoinflipLabel(data.lastFlip.side) : '-'
+  const appTitle = t('app.coinflip.title')
+  const lastLabel = data.lastFlip ? t(getCoinflipLabelKey(data.lastFlip.side)) : '-'
   const visibleHistory = data.history.slice(0, 5)
   const settledRotation = getCoinFaceRotation(data.lastFlip?.side ?? 'heads')
   const displayRotation = isFlipping ? coinRotation : settledRotation
@@ -135,7 +139,7 @@ export function CoinflipPage() {
     flipTimeoutRef.current = window.setTimeout(() => {
       commitFlipResult(result)
         .catch(() => {
-          toast.error('Der Münzwurf konnte nicht gespeichert werden.')
+          toast.error(t('coinflip.error.save'))
         })
         .finally(() => {
           flipTimeoutRef.current = null
@@ -148,13 +152,13 @@ export function CoinflipPage() {
   return (
     <AppPage>
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={Coins} title="Coinflip" />
+        <AppPageTitle Icon={Coins} title={appTitle} />
         <PresenterLauncher
-          appTitle="Coinflip"
+          appTitle={appTitle}
           views={[
             {
               id: 'last-flip',
-              label: 'Letzter Flip',
+              label: t('coinflip.lastFlip'),
               Icon: Coins,
               render: () => (
                 <CoinflipPresenter
@@ -170,7 +174,7 @@ export function CoinflipPage() {
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -181,9 +185,9 @@ export function CoinflipPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Coins className="size-5 text-primary" />
-              Münze
+              {t('coinflip.section.coin')}
             </CardTitle>
-            {isLoading && <CardDescription>Synchronisiere...</CardDescription>}
+            {isLoading && <CardDescription>{t('common.syncing')}</CardDescription>}
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="grid gap-4 rounded-lg bg-secondary p-5 text-center">
@@ -193,7 +197,9 @@ export function CoinflipPage() {
                 isFlipping={isFlipping}
               />
               <div>
-                <div className="type-ui text-muted-foreground">Letzter Flip</div>
+                <div className="type-ui text-muted-foreground">
+                  {t('coinflip.lastFlip')}
+                </div>
                 <div className="type-metric-lg mt-1">
                   {isFlipping ? '...' : lastLabel}
                 </div>
@@ -207,7 +213,7 @@ export function CoinflipPage() {
               onClick={handleFlip}
             >
               <Coins className="size-4" />
-              {isFlipping ? 'Flip läuft...' : 'Coinflip'}
+              {isFlipping ? t('coinflip.action.flipping') : t('coinflip.action.flip')}
             </Button>
           </CardContent>
         </Card>
@@ -217,12 +223,12 @@ export function CoinflipPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 <History className="size-5 text-primary" />
-                Verlauf
+                {t('common.history')}
               </CardTitle>
               <AppResetButton
                 disabled={isFlipping}
-                title="Verlauf zurücksetzen?"
-                description="Alle bisherigen Münzwürfe und der letzte Flip werden gelöscht."
+                title={t('coinflip.resetTitle')}
+                description={t('coinflip.resetDescription')}
                 onConfirm={clearHistory}
               />
             </div>
@@ -230,7 +236,7 @@ export function CoinflipPage() {
           <CardContent>
             {visibleHistory.length === 0 ? (
               <EmptyState className="p-8">
-                Noch keine Flips vorhanden.
+                {t('coinflip.empty')}
               </EmptyState>
             ) : (
               <div className="grid gap-3">
@@ -239,14 +245,16 @@ export function CoinflipPage() {
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <div className="type-label">
-                          Flip {data.history.length - index}
+                          {t('coinflip.resultNumber', {
+                            number: data.history.length - index,
+                          })}
                         </div>
                         <div className="type-caption text-muted-foreground">
-                          {new Date(flipResult.createdAt).toLocaleString()}
+                          {formatDateTime(flipResult.createdAt)}
                         </div>
                       </div>
                       <div className="type-metric-sm">
-                        {getCoinflipLabel(flipResult.side)}
+                        {t(getCoinflipLabelKey(flipResult.side))}
                       </div>
                     </div>
                   </div>

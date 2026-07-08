@@ -87,7 +87,7 @@ Wichtig:
 Für eine reguläre Dashboard-App einen Eintrag in `src/apps/registry.ts` ergänzen:
 
 - stabile, URL-taugliche `id`
-- sichtbarer `title` und kurze `description`
+- sichtbare `titleKey` und `descriptionKey` aus dem globalen Translation-Katalog
 - übereinstimmende `href` und `routePath`
 - `status`, Lucide `Icon` und dynamischer `loadPage`
 
@@ -95,7 +95,13 @@ Dashboard, Router und Lazy Loading übernehmen den Rest. Ein separater Eintrag i
 
 Falls die App eine eigene Vorschau auf der Dashboard-Kachel braucht, `AppPreview` in `src/components/layout/DashboardPage.tsx` ergänzen. Ohne Sonderfall wird eine neutrale Vorschau verwendet.
 
-## 6. UX und Barrierefreiheit prüfen
+## 6. UI-Texte und Sprache pflegen
+
+Neue sichtbare UI-Texte, ARIA-Labels, Tooltips, Toasts, Dialogtexte, Empty/Error States und Registry-Metadaten werden in `src/lib/i18n/translations.ts` als flache Keys eingetragen. Deutsch ist die vollständige Quelle; Englisch muss dieselben Keys im `en`-Katalog erhalten.
+
+Komponenten lesen Texte über `useI18n()` und `t(key, params?)`. Gespeicherte Domainwerte wie Spieler-, Turnier- oder Datensatznamen werden nicht übersetzt oder migriert; nur generierte Fallback-Anzeigen wie `Spieler {number}` sollen sprachabhängig gerendert werden.
+
+## 7. UX und Barrierefreiheit prüfen
 
 - Der erste Screen zeigt das Werkzeug, keine vorgeschaltete Marketing-Landingpage.
 - Mobile Breiten und Touch-Bedienung funktionieren ohne horizontales Scrollen.
@@ -105,7 +111,7 @@ Falls die App eine eigene Vorschau auf der Dashboard-Kachel braucht, `AppPreview
 - Destruktive Aktionen verlangen eine angemessene Bestätigung.
 - Farbe ist nie der einzige Informationsträger.
 
-## 7. Verifizieren
+## 8. Verifizieren
 
 Mindestens:
 

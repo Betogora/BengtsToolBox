@@ -47,7 +47,6 @@ import {
 } from '@/apps/territory-map/data/territories'
 import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
 import {
-  mapLabels,
   mapZoomLevels,
   tapMoveThreshold,
   unclaimedValue,
@@ -78,6 +77,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/lib/i18n'
 
 type SushiScore = {
   player: TerritoryPlayer
@@ -424,6 +424,7 @@ function PresenterTerritoryShape({
   players,
   territory,
 }: PresenterTerritoryShapeProps) {
+  const { t } = useI18n()
   const owners = claim?.owners?.length
     ? claim.owners
     : claim
@@ -445,7 +446,7 @@ function PresenterTerritoryShape({
   const ownerLabel =
     owners.length > 0
       ? owners.map((owner) => owner.playerName).join(', ')
-      : 'Unbereist'
+      : t('territory.unvisited')
 
   return (
     <>
@@ -498,6 +499,7 @@ function TerritoryMapPresenter({
   sushiScores: SushiScore[]
   territories: Territory[]
 }) {
+  const { t } = useI18n()
   const patternPrefix = `presenter-territory-${activeMap}`
   const claimedCount = Object.keys(claims).length
   const coverageLabel =
@@ -510,18 +512,22 @@ function TerritoryMapPresenter({
       <section className="overflow-hidden rounded-lg border bg-secondary shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-card/85 p-4">
           <div>
-            <p className="type-label text-muted-foreground">Karte</p>
+            <p className="type-label text-muted-foreground">{t('territory.map')}</p>
             <h2 className="type-section-title">
-              {mapLabels[activeMap]}
+              {t(activeMap === 'world' ? 'territory.map.world' : 'territory.map.germany')}
             </h2>
           </div>
-          <Badge variant="outline">{coverageLabel} bereist</Badge>
+          <Badge variant="outline">
+            {t('territory.coverageVisited', { coverage: coverageLabel })}
+          </Badge>
         </div>
         <div className="h-[62svh] min-h-[24rem] bg-secondary">
           <svg
             viewBox={mapViewBoxes[activeMap]}
             className="block size-full"
-            aria-label={mapLabels[activeMap]}
+            aria-label={t(
+              activeMap === 'world' ? 'territory.map.world' : 'territory.map.germany',
+            )}
             role="img"
           >
             <defs>
@@ -546,7 +552,7 @@ function TerritoryMapPresenter({
                 fill="var(--muted-foreground)"
                 fontSize="14"
               >
-                Karte wird geladen...
+                {t('territory.loadingMap')}
               </text>
             ) : (
               territories.map((territory) => (
@@ -568,12 +574,12 @@ function TerritoryMapPresenter({
           <div className="flex items-center gap-2">
             <Trophy className="size-5 text-primary" />
             <h2 className="type-section-title">
-              Punktzahl
+              {t('territory.score')}
             </h2>
           </div>
           <div className="mt-5 grid gap-3">
             {sushiScores.length === 0 ? (
-              <EmptyState>Keine Sushi-Touristen vorhanden.</EmptyState>
+              <EmptyState>{t('territory.emptyTourists')}</EmptyState>
             ) : (
               sushiScores.map((score, index) => (
                 <div
@@ -600,7 +606,7 @@ function TerritoryMapPresenter({
         </div>
 
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="type-label text-muted-foreground">Legende</p>
+          <p className="type-label text-muted-foreground">{t('territory.legend')}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {players.map((player) => (
               <Badge key={player.id} variant="outline">
@@ -664,6 +670,7 @@ function CollapsibleCardHeader({
 }
 
 export function TerritoryMapPage() {
+  const { t } = useI18n()
   const {
     activeDataset,
     addPlayer,
@@ -763,6 +770,7 @@ export function TerritoryMapPage() {
     () => getAchievements(activeDataset.events),
     [activeDataset.events],
   )
+  const appTitle = t('app.territoryMap.title')
 
   const applyLiveTransform = () => {
     rafRef.current = null
@@ -1056,14 +1064,14 @@ export function TerritoryMapPage() {
     <AppPage className="gap-5 py-6 lg:py-6" width="wide">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <AppPageTitle Icon={UtensilsCrossed} title="Sushi Map" />
+          <AppPageTitle Icon={UtensilsCrossed} title={appTitle} />
         </div>
         <PresenterLauncher
-          appTitle="Sushi Map"
+          appTitle={appTitle}
           views={[
             {
               id: 'map',
-              label: 'Karte',
+              label: t('territory.map'),
               Icon: MapPinned,
               render: () => (
                 <TerritoryMapPresenter
@@ -1083,7 +1091,7 @@ export function TerritoryMapPage() {
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -1103,13 +1111,13 @@ export function TerritoryMapPage() {
                     value="world"
                     className="data-[state=active]:bg-background/75"
                   >
-                    Welt
+                    {t('territory.world')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="germany"
                     className="data-[state=active]:bg-background/75"
                   >
-                    Deutschland
+                    {t('territory.map.germany')}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -1118,8 +1126,8 @@ export function TerritoryMapPage() {
                 variant="outline"
                 size="icon"
                 className="size-10 shrink-0 bg-background/75 sm:size-9"
-                aria-label="Rauszoomen"
-                title="Rauszoomen"
+                aria-label={t('territory.zoomOut')}
+                title={t('territory.zoomOut')}
                 disabled={zoomLevelIndex === 0}
                 onClick={() => applyZoomLevel(zoomLevelIndex - 1)}
               >
@@ -1129,8 +1137,8 @@ export function TerritoryMapPage() {
                 variant="outline"
                 size="icon"
                 className="size-10 shrink-0 bg-background/75 sm:size-9"
-                aria-label="Reinzoomen"
-                title="Reinzoomen"
+                aria-label={t('territory.zoomIn')}
+                title={t('territory.zoomIn')}
                 disabled={zoomLevelIndex === mapZoomLevels.length - 1}
                 onClick={() => applyZoomLevel(zoomLevelIndex + 1)}
               >
@@ -1247,7 +1255,11 @@ export function TerritoryMapPage() {
                 ref={svgRef}
                 viewBox={mapViewBoxes[state.activeMap]}
                 className="block size-full"
-                aria-label={mapLabels[state.activeMap]}
+                aria-label={t(
+                  state.activeMap === 'world'
+                    ? 'territory.map.world'
+                    : 'territory.map.germany',
+                )}
               >
                 <defs>
                   <pattern
@@ -1276,7 +1288,7 @@ export function TerritoryMapPage() {
                       fill="var(--muted-foreground)"
                       fontSize="14"
                     >
-                      Karte wird geladen...
+                      {t('territory.loadingMap')}
                     </text>
                   )}
                   {territories.map((territory) => (
@@ -1300,7 +1312,7 @@ export function TerritoryMapPage() {
             <CollapsibleCardHeader
               icon={<Users className="size-5" />}
               isOpen={isSushiTouristOpen}
-              title="Sushi-Tourist"
+              title={t('territory.tourist')}
               onToggle={() => setIsSushiTouristOpen((current) => !current)}
             />
             {isSushiTouristOpen && (
@@ -1318,7 +1330,9 @@ export function TerritoryMapPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <InlineTextEdit
-                        ariaLabel={`Name für ${player.name}`}
+                        ariaLabel={t('territory.touristNameAria', {
+                          name: player.name,
+                        })}
                         fallback={`Sushi-Tourist ${player.position}`}
                         value={player.name}
                         onSave={(value) => updatePlayerName(player.id, value)}
@@ -1326,7 +1340,9 @@ export function TerritoryMapPage() {
                     </div>
                     <Input
                       type="color"
-                      aria-label={`${player.name} Farbe wählen`}
+                      aria-label={t('territory.touristColorAria', {
+                        name: player.name,
+                      })}
                       className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
                       value={player.color}
                       onChange={(event) =>
@@ -1338,7 +1354,9 @@ export function TerritoryMapPage() {
                         variant="delete"
                         size="icon"
                         className="size-11 sm:size-9"
-                        aria-label={`${player.name} entfernen`}
+                        aria-label={t('shared.playerCard.removeAria', {
+                          name: player.name,
+                        })}
                         onClick={() => void removePlayer(player.id)}
                       >
                         <Trash2 className="size-4" />
@@ -1351,7 +1369,7 @@ export function TerritoryMapPage() {
               ))}
               <AddEaterCard onAdd={handleAddEater} />
               {isLoading && players.length === 0 && (
-                <p className="type-ui text-muted-foreground">Synchronisiere...</p>
+                <p className="type-ui text-muted-foreground">{t('common.syncing')}</p>
               )}
               </CardContent>
             )}
@@ -1361,7 +1379,7 @@ export function TerritoryMapPage() {
             <CollapsibleCardHeader
               icon={<ListOrdered className="size-5" />}
               isOpen={isScoreOpen}
-              title="Punktzahl"
+              title={t('territory.score')}
               onToggle={() => setIsScoreOpen((current) => !current)}
             />
             {isScoreOpen && (
@@ -1374,10 +1392,16 @@ export function TerritoryMapPage() {
                       <col className="w-14" />
                     </colgroup>
                     <TableHeader>
-                        <TableHead className="px-2 py-2">Spieler</TableHead>
-                        <TableHead className="px-1 py-2 text-right">Welt</TableHead>
+                        <TableHead className="px-2 py-2">
+                          {t('territory.player')}
+                        </TableHead>
+                        <TableHead className="px-1 py-2 text-right">
+                          {t('territory.world')}
+                        </TableHead>
                         <TableHead className="px-1 py-2 text-right">DE</TableHead>
-                        <TableHead className="px-2 py-2 text-right">Gesamt</TableHead>
+                        <TableHead className="px-2 py-2 text-right">
+                          {t('territory.total')}
+                        </TableHead>
                     </TableHeader>
                     <TableBody>
                       {sushiScores.map((score) => (
@@ -1407,10 +1431,16 @@ export function TerritoryMapPage() {
                 </Table>
                 <Table className="min-w-[34rem]" containerClassName="hidden md:block">
                     <TableHeader>
-                        <TableHead>Spieler</TableHead>
-                        <TableHead className="text-right">Welt</TableHead>
-                        <TableHead className="text-right">Deutschland</TableHead>
-                        <TableHead className="text-right">Gesamt</TableHead>
+                        <TableHead>{t('territory.player')}</TableHead>
+                        <TableHead className="text-right">
+                          {t('territory.world')}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t('territory.map.germany')}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t('territory.total')}
+                        </TableHead>
                     </TableHeader>
                     <TableBody>
                       {sushiScores.map((score) => (
@@ -1497,7 +1527,7 @@ export function TerritoryMapPage() {
         <CollapsibleCardHeader
           icon={<BarChart3 className="size-5" />}
           isOpen={isDatasetOpen}
-          title="Datensatz"
+          title={t('territory.datasetTitle')}
           onToggle={() => setIsDatasetOpen((current) => !current)}
         />
         {isDatasetOpen && (
@@ -1507,7 +1537,7 @@ export function TerritoryMapPage() {
               players={players}
               onDeleteEvent={async (eventId) => {
                 await deleteEvent(eventId)
-                toast.success('Bereisung gelöscht.')
+                toast.success(t('territory.claimDeleted'))
               }}
               onUpdateEvent={(eventId, partialValue) =>
                 updateEvent(eventId, partialValue)

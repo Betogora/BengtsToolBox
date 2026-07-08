@@ -23,6 +23,7 @@ import type {
   DecisionWheelResult,
 } from '@/apps/decision-wheel/types'
 import {
+  getEntryDisplayText,
   getRenderableWheelEntries,
   parseWeightDraft,
 } from '@/apps/decision-wheel/utils'
@@ -54,6 +55,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/lib/i18n'
 
 function DecisionWheelPresenter({
   entries,
@@ -66,6 +68,8 @@ function DecisionWheelPresenter({
   lastResult: DecisionWheelResult | null
   rotation: number
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="rounded-lg border bg-card p-6 shadow-sm">
@@ -80,14 +84,16 @@ function DecisionWheelPresenter({
       <aside className="grid content-start gap-4">
         <ResultPanel result={lastResult} />
         <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="type-label text-muted-foreground">Optionen</p>
+          <p className="type-label text-muted-foreground">
+            {t('decisionWheel.options')}
+          </p>
           <div className="type-metric-lg mt-2">
             {entries.length}
           </div>
         </div>
         <div className="rounded-lg border bg-card p-5 shadow-sm">
           <p className="type-label text-muted-foreground">
-            Drehungen
+            {t('decisionWheel.spins')}
           </p>
           <div className="type-metric-lg mt-2">
             {historyCount}
@@ -99,6 +105,7 @@ function DecisionWheelPresenter({
 }
 
 export function DecisionWheelPage() {
+  const { formatDateTime, t } = useI18n()
   const {
     addEntry,
     clearHistory,
@@ -126,6 +133,7 @@ export function DecisionWheelPage() {
   )
   const visibleEntries = spinEntries ?? wheelEntries
   const canSpin = wheelEntries.length > 0 && !isSpinning
+  const appTitle = t('app.decisionWheel.title')
 
   useEffect(
     () => () => {
@@ -142,10 +150,14 @@ export function DecisionWheelPage() {
     }
 
     const entriesBeforeSpin = wheelEntries
-    const result = prepareSpinResult(entriesBeforeSpin)
+    const result = prepareSpinResult(entriesBeforeSpin, (entry, index) =>
+      getEntryDisplayText(entry, index, (number) =>
+        t('decisionWheel.fallbackOption', { number }),
+      ),
+    )
 
     if (!result) {
-      toast.error('Lege zuerst mindestens eine Option an.')
+      toast.error(t('decisionWheel.error.noOptions'))
       return
     }
 
@@ -177,7 +189,7 @@ export function DecisionWheelPage() {
           }))
         })
         .catch(() => {
-          toast.error('Das Ergebnis konnte nicht gespeichert werden.')
+          toast.error(t('decisionWheel.error.saveResult'))
         })
         .finally(() => {
           spinTimeoutRef.current = null
@@ -218,13 +230,13 @@ export function DecisionWheelPage() {
       <ConfettiOverlay color={confetti.color} trigger={confetti.trigger} />
 
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={CircleDot} title="Glücksrad" />
+        <AppPageTitle Icon={CircleDot} title={appTitle} />
         <PresenterLauncher
-          appTitle="Glücksrad"
+          appTitle={appTitle}
           views={[
             {
               id: 'wheel',
-              label: 'Rad',
+              label: t('decisionWheel.wheel.title'),
               Icon: CircleDot,
               render: () => (
                 <DecisionWheelPresenter
@@ -242,7 +254,7 @@ export function DecisionWheelPage() {
       {error && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle>Firebase-Fehler</CardTitle>
+            <CardTitle>{t('common.firebaseError')}</CardTitle>
             <CardDescription>{error.message}</CardDescription>
           </CardHeader>
         </Card>
@@ -253,7 +265,7 @@ export function DecisionWheelPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CircleDot className="size-5 text-primary" />
-              Rad
+              {t('decisionWheel.wheel.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
@@ -266,7 +278,9 @@ export function DecisionWheelPage() {
 
             <Button size="lg" disabled={!canSpin} onClick={handleSpin}>
               <Shuffle className="size-4" />
-              {isSpinning ? 'Dreht...' : 'Drehen'}
+              {isSpinning
+                ? t('decisionWheel.wheel.spinning')
+                : t('decisionWheel.wheel.spin')}
             </Button>
 
             <ResultPanel result={data.lastResult} />
@@ -280,12 +294,12 @@ export function DecisionWheelPage() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <ListChecks className="size-5 text-primary" />
-                    Optionen
+                    {t('decisionWheel.options')}
                   </CardTitle>
                 </div>
                 <AppResetButton
-                  title="Optionen zurücksetzen?"
-                  description="Alle aktuellen Optionen, Gewichte, Farben und der Verlauf werden auf die Beispielwerte zurückgesetzt."
+                  title={t('decisionWheel.options.resetTitle')}
+                  description={t('decisionWheel.options.resetDescription')}
                   onConfirm={resetToExamples}
                 />
               </div>
@@ -293,8 +307,7 @@ export function DecisionWheelPage() {
             <CardContent className="grid gap-3">
               {data.entries.length === 0 ? (
                 <EmptyState>
-                  Keine Optionen vorhanden. Füge eine Option hinzu oder setze die
-                  Liste zurück.
+                  {t('decisionWheel.emptyOptions')}
                 </EmptyState>
               ) : (
                 <>
@@ -352,9 +365,15 @@ export function DecisionWheelPage() {
                     <TableHeader>
                       <TableHead className="w-10 px-2">#</TableHead>
                       <TableHead className="px-2">Text</TableHead>
-                      <TableHead className="w-20 px-2">Gewicht</TableHead>
-                      <TableHead className="w-14 px-2">Farbe</TableHead>
-                      <TableHead className="w-20 px-2 text-center">Aktion</TableHead>
+                      <TableHead className="w-20 px-2">
+                        {t('decisionWheel.weight')}
+                      </TableHead>
+                      <TableHead className="w-14 px-2">
+                        {t('decisionWheel.color')}
+                      </TableHead>
+                      <TableHead className="w-20 px-2 text-center">
+                        {t('decisionWheel.action')}
+                      </TableHead>
                     </TableHeader>
                     <TableBody>
                       {data.entries.map((entry, index) => (
@@ -410,7 +429,7 @@ export function DecisionWheelPage() {
                   onClick={addEntry}
                 >
                   <Plus className="size-4" />
-                  Option hinzufügen
+                  {t('decisionWheel.addOption')}
                 </Button>
               </div>
             </CardContent>
@@ -422,12 +441,12 @@ export function DecisionWheelPage() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <History className="size-5 text-primary" />
-                    Verlauf
+                    {t('common.history')}
                   </CardTitle>
                 </div>
                 <AppResetButton
-                  title="Verlauf zurücksetzen?"
-                  description="Alle bisherigen Drehungen und der aktuelle Gewinner werden gelöscht."
+                  title={t('decisionWheel.history.resetTitle')}
+                  description={t('decisionWheel.history.resetDescription')}
                   onConfirm={clearHistory}
                 />
               </div>
@@ -435,7 +454,7 @@ export function DecisionWheelPage() {
             <CardContent>
               {data.history.length === 0 ? (
                 <EmptyState>
-                  Noch keine Drehungen vorhanden.
+                  {t('decisionWheel.emptyHistory')}
                 </EmptyState>
               ) : (
                 <div className="grid gap-3">
@@ -445,7 +464,7 @@ export function DecisionWheelPage() {
                         <div className="min-w-0">
                           <div className="type-label truncate">{result.text}</div>
                           <div className="type-caption text-muted-foreground">
-                            {new Date(result.createdAt).toLocaleString()}
+                            {formatDateTime(result.createdAt)}
                           </div>
                         </div>
                         <span
