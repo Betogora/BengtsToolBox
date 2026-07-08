@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CircleDot,
   History,
@@ -17,6 +17,7 @@ import {
 } from '@/apps/decision-wheel/components/EntryControls'
 import { ResultPanel } from '@/apps/decision-wheel/components/ResultPanel'
 import { WheelGraphic } from '@/apps/decision-wheel/components/WheelGraphic'
+import { WinnerAnnouncement } from '@/apps/decision-wheel/components/WinnerAnnouncement'
 import { useDecisionWheel } from '@/apps/decision-wheel/hooks/useDecisionWheel'
 import type {
   DecisionWheelEntry,
@@ -112,6 +113,7 @@ export function DecisionWheelPage() {
     data,
     error,
     commitSpinResult,
+    isLoading,
     prepareSpinResult,
     removeEntry,
     resetToExamples,
@@ -125,8 +127,14 @@ export function DecisionWheelPage() {
     color: string | null
     trigger: number
   }>({ color: null, trigger: 0 })
+  const [winnerAnnouncementResult, setWinnerAnnouncementResult] =
+    useState<DecisionWheelResult | null>(null)
+  const [isWinnerAnnouncementOpen, setIsWinnerAnnouncementOpen] =
+    useState(false)
   const spinTimeoutRef = useRef<number | null>(null)
   const isSpinLockedRef = useRef(false)
+  const observedResultIdRef = useRef(data.lastResult?.id ?? null)
+  const hasObservedInitialResultRef = useRef(!isLoading)
   const wheelEntries = useMemo(
     () => getRenderableWheelEntries(data.entries, weightDrafts),
     [data.entries, weightDrafts],
@@ -143,6 +151,60 @@ export function DecisionWheelPage() {
     },
     [],
   )
+
+  useEffect(() => {
+    const currentResult = data.lastResult
+    const currentResultId = currentResult?.id ?? null
+
+    if (isLoading) {
+      observedResultIdRef.current = currentResultId
+      return
+    }
+
+    if (!hasObservedInitialResultRef.current) {
+      hasObservedInitialResultRef.current = true
+      observedResultIdRef.current = currentResultId
+      return
+    }
+
+    if (observedResultIdRef.current === currentResultId) {
+      return
+    }
+
+    observedResultIdRef.current = currentResultId
+
+    const announcementTimeoutId = window.setTimeout(() => {
+      if (!currentResult) {
+        setIsWinnerAnnouncementOpen(false)
+        setWinnerAnnouncementResult(null)
+        return
+      }
+
+      setWinnerAnnouncementResult(currentResult)
+      setIsWinnerAnnouncementOpen(true)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(announcementTimeoutId)
+    }
+  }, [data.lastResult, isLoading])
+
+  const closeWinnerAnnouncement = useCallback(() => {
+    setIsWinnerAnnouncementOpen(false)
+  }, [])
+
+  const clearWinnerAnnouncement = useCallback(() => {
+    observedResultIdRef.current = null
+    setIsWinnerAnnouncementOpen(false)
+    setWinnerAnnouncementResult(null)
+  }, [])
+
+  const showWinnerAnnouncement = useCallback((result: DecisionWheelResult) => {
+    hasObservedInitialResultRef.current = true
+    observedResultIdRef.current = result.id
+    setWinnerAnnouncementResult(result)
+    setIsWinnerAnnouncementOpen(true)
+  }, [])
 
   const handleSpin = () => {
     if (isSpinLockedRef.current) {
@@ -177,6 +239,7 @@ export function DecisionWheelPage() {
       (360 - normalizeRotation(currentRotation + targetAngle)) % 360
 
     isSpinLockedRef.current = true
+    closeWinnerAnnouncement()
     setSpinEntries(entriesBeforeSpin)
     setIsSpinning(true)
     setRotation(rotation + spinFullRotationDegrees + correction)
@@ -187,6 +250,7 @@ export function DecisionWheelPage() {
             color: result.color,
             trigger: currentConfetti.trigger + 1,
           }))
+          showWinnerAnnouncement(result)
         })
         .catch(() => {
           toast.error(t('decisionWheel.error.saveResult'))
@@ -225,9 +289,26 @@ export function DecisionWheelPage() {
     }
   }
 
+  const handleResetToExamples = () => {
+    clearWinnerAnnouncement()
+
+    return resetToExamples()
+  }
+
+  const handleClearHistory = () => {
+    clearWinnerAnnouncement()
+
+    return clearHistory()
+  }
+
   return (
     <AppPage>
       <ConfettiOverlay color={confetti.color} trigger={confetti.trigger} />
+      <WinnerAnnouncement
+        result={winnerAnnouncementResult}
+        open={isWinnerAnnouncementOpen}
+        onClose={closeWinnerAnnouncement}
+      />
 
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <AppPageTitle Icon={CircleDot} title={appTitle} />
@@ -300,7 +381,7 @@ export function DecisionWheelPage() {
                 <AppResetButton
                   title={t('decisionWheel.options.resetTitle')}
                   description={t('decisionWheel.options.resetDescription')}
-                  onConfirm={resetToExamples}
+                  onConfirm={handleResetToExamples}
                 />
               </div>
             </CardHeader>
@@ -447,7 +528,7 @@ export function DecisionWheelPage() {
                 <AppResetButton
                   title={t('decisionWheel.history.resetTitle')}
                   description={t('decisionWheel.history.resetDescription')}
-                  onConfirm={clearHistory}
+                  onConfirm={handleClearHistory}
                 />
               </div>
             </CardHeader>
