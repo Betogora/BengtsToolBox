@@ -642,10 +642,10 @@ select {
   }
 
   .swiss-round-grid {
-    display: flex;
-    flex-wrap: wrap;
-    width: 100%;
+    display: grid;
+    width: max-content;
     max-width: 100%;
+    grid-template-columns: repeat(var(--swiss-round-grid-columns, 1), var(--swiss-round-cell-width, minmax(2.75rem, max-content)));
     gap: 4px 6px;
   }
 

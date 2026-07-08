@@ -49,18 +49,16 @@ export function AppShell() {
             <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_rgba(13,142,144,0.9)]">
               <BriefcaseBusiness className="size-5" />
             </span>
-            <span className="min-w-0 max-[26rem]:hidden">
+            <span className="hidden min-w-0 sm:block">
               <span className="type-brand block whitespace-nowrap text-foreground">
                 BengtsToolBox
               </span>
             </span>
           </Link>
 
-          <div className="flex min-w-0 flex-1 items-center justify-start">
-            <LanguageSelector />
-          </div>
-
           <div className="flex shrink-0 items-center gap-2">
+            <LanguageSelector />
+
             <nav className="hidden items-center gap-1 md:flex">
               {navigationItems.map(({ href, labelKey, Icon }) => (
                 <NavLink
@@ -80,23 +78,23 @@ export function AppShell() {
             </nav>
 
             <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="icon" aria-label={t('nav.menu')}>
-                  <Menu className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {navigationItems.map(({ href, labelKey, Icon }) => (
-                  <DropdownMenuItem key={href} asChild>
-                    <Link to={href} className="gap-2">
-                      <Icon className="size-4" />
-                      {t(labelKey)}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" size="icon" aria-label={t('nav.menu')}>
+                    <Menu className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {navigationItems.map(({ href, labelKey, Icon }) => (
+                    <DropdownMenuItem key={href} asChild>
+                      <Link to={href} className="gap-2">
+                        <Icon className="size-4" />
+                        {t(labelKey)}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

@@ -24,9 +24,9 @@ export type RoundStatus = 'draft' | 'completed'
 
 export type TournamentArchiveReason = 'newTournament' | 'reset'
 
-export type TournamentFormat = 'swiss' | 'roundRobin' | 'handAndBrain'
+export type TournamentFormat = 'swiss' | 'roundRobin' | 'handAndBrain' | 'marioKart'
 
-export type PairingKind = 'standard' | 'handAndBrain' | 'single'
+export type PairingKind = 'standard' | 'handAndBrain' | 'single' | 'marioKart'
 
 export type PairingWarning = {
   id: string
@@ -37,6 +37,15 @@ export type PairingWarning = {
 export type HandBrainSide = {
   handPlayerId: string
   brainPlayerId: string
+}
+
+export type MarioKartRacerRole = 'scoring' | 'extra'
+
+export type MarioKartRacer = {
+  playerId: string
+  role: MarioKartRacerRole
+  placement?: number
+  ingamePoints?: number
 }
 
 export type Player = {
@@ -68,6 +77,7 @@ export type Pairing = {
     white: HandBrainSide
     black: HandBrainSide
   }
+  marioKartRacers?: MarioKartRacer[]
   result?: GameResult
   isManual: boolean
   isBye: boolean
@@ -114,6 +124,10 @@ export type StandingRow = {
   roundHistory: StandingRoundCell[]
   receivedByes: number
   receivedSingleGames: number
+  marioKartWins: number
+  marioKartIngamePoints: number
+  marioKartAveragePlacement: number | null
+  marioKartExtraRides: number
   status: PlayerStatus
 }
 
@@ -156,4 +170,7 @@ export type PlayerScoreSummary = {
   roles: Array<'hand' | 'brain' | '-'>
   byes: number
   singleGames: number
+  marioKartIngamePoints: number
+  marioKartPlacements: number[]
+  marioKartExtraRides: number
 }

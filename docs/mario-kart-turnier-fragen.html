@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fragenbogen: Mario Kart Turniermodus</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #17202a;
+      --muted: #5f6b7a;
+      --line: #d9dee7;
+      --accent: #1f6feb;
+      --accent-soft: #e9f1ff;
+      --ok: #0f766e;
+      --warn: #a16207;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(980px, calc(100vw - 32px));
+      margin: 32px auto;
+      padding: 0 0 48px;
+    }
+
+    header, section, .question {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(23, 32, 42, 0.06);
+    }
+
+    header {
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(1.7rem, 3vw, 2.35rem); }
+    h2 { font-size: 1.25rem; margin-bottom: 14px; }
+    h3 { font-size: 1rem; }
+    p { margin: 8px 0 0; }
+    small, .muted { color: var(--muted); }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 10px 14px;
+    }
+
+    section {
+      padding: 22px;
+      margin-top: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+    }
+
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 12px 14px;
+      border-radius: 6px;
+    }
+
+    .recommendation {
+      color: var(--ok);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .risk {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .question {
+      padding: 16px;
+      margin-top: 12px;
+      box-shadow: none;
+    }
+
+    .why {
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    label {
+      display: block;
+      margin-top: 9px;
+      padding-left: 26px;
+      position: relative;
+    }
+
+    input[type="radio"], input[type="checkbox"] {
+      left: 0;
+      position: absolute;
+      top: 2px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 64px;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      resize: vertical;
+      font: inherit;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 6px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #eef2f7; }
+
+    @media print {
+      body { background: #fff; }
+      main { width: 100%; margin: 0; }
+      header, section, .question { box-shadow: none; break-inside: avoid; }
+      button { display: none; }
+      textarea { min-height: 52px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Fragenbogen: vierter Turniermodus "Mario Kart"</h1>
+      <p>
+        Ziel: Aus der Idee einen implementierbaren Modus fuer die bestehende Turnier-App machen:
+        Schweizer System, aber mit 2 bis 4 Fahrern pro Lobby/Grand Prix, dynamischen Teilnehmern,
+        fairen Wiederholungsfahrern und einer nachvollziehbaren Rangliste.
+      </p>
+      <div class="toolbar">
+        <small>Ausfuellen, speichern oder als PDF drucken.</small>
+        <button type="button" onclick="window.print()">Drucken / PDF</button>
+      </div>
+    </header>
+
+    <section>
+      <h2>Vorgeschlagene Grundannahme</h2>
+      <p class="note">
+        Eine Runde besteht aus mehreren Lobbys. Jeder aktive Spieler faehrt genau einmal zaehlend.
+        Lobbys werden moeglichst gleich gross gebildet. Bei 9 aktiven Spielern waere die Default-Aufteilung
+        also 3-3-3; optionale vierte Sitze koennen mit nicht zaehlenden Wiederholungsfahrern gefuellt werden.
+      </p>
+    </section>
+
+    <section>
+      <h2>Wiederverwendung aus der bestehenden App</h2>
+      <div class="grid">
+        <div>
+          <h3>Direkt wiederverwendbar</h3>
+          <ul>
+            <li>Turnierauswahl, Archiv, Tabs, Druck/CSV, Ranglisten-Layout</li>
+            <li>Spielerstatus: aktiv, inaktiv, ausgeschieden, Status ab Runde</li>
+            <li>Nachruecker-Logik und Regeneration ungespielter Draft-Runden</li>
+            <li>Warnungs-Badges, manuelle Fixierung, Runden abschliessen/korrigieren</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Anzupassen</h3>
+          <ul>
+            <li>"Brett" wird zu "Lobby" oder "Grand Prix"</li>
+            <li>"Weiss/Schwarz" wird zu "Fahrer 1-4" bzw. Platz 1-4</li>
+            <li>Hand-and-Brain-Viererlogik wird zur Lobby-Gruppenlogik</li>
+            <li>Bye/Pech-Spalte wird zu "Aussetzen / Extra-Fahrt / Gastfahrt"</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Neu zu modellieren</h3>
+          <ul>
+            <li>Mehrpersonen-Ergebnis statt Schachresultat</li>
+            <li>Zaehlende Fahrer vs. Wiederholungsfahrer/Gastfahrer</li>
+            <li>Lobby-Groessen 2, 3, 4 mit normalisierter Wertung</li>
+            <li>Pairwise-Gegnerhistorie in Mehrspieler-Lobbys</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <form>
+      <section>
+        <h2>A. Begriffe und Turniereinheit</h2>
+
+        <article class="question">
+          <h3>1. Wie soll eine zaehlende Einheit heissen?</h3>
+          <p class="why">Der Name erscheint in Buttons, Tabellen, Exporten und Korrekturdialogen.</p>
+          <label><input type="radio" name="q1" checked /> Mario Kart Grand Prix <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q1" /> Lobby</label>
+          <label><input type="radio" name="q1" /> Partie</label>
+          <label><input type="radio" name="q1" /> Anderer Begriff:</label>
+          <textarea placeholder="Antwort / anderer Begriff"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>2. Was ist eine Turnierrunde?</h3>
+          <p class="why">Das entscheidet, wann die naechste Schweizer Runde erzeugt werden darf.</p>
+          <label><input type="radio" name="q2" checked /> Eine Runde ist fertig, wenn jeder aktive Spieler genau einmal zaehlend gefahren ist. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q2" /> Eine Runde ist eine feste Anzahl Lobbys, auch wenn nicht alle gefahren sind.</label>
+          <label><input type="radio" name="q2" /> Eine Runde entspricht einem echten Spielabend, flexibel abschliessbar.</label>
+          <textarea placeholder="Antwort / Sonderfall"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>3. Wie viele Rennen stecken in einem Grand Prix?</h3>
+          <p class="why">Die App kann entweder nur das Endergebnis oder Track-fuer-Track-Daten erfassen.</p>
+          <label><input type="radio" name="q3" checked /> Ein Grand Prix ist eine fertige Mario-Kart-Serie; die App erfasst nur das Endergebnis. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q3" /> Die App soll 4 Einzelrennen pro Grand Prix erfassen.</label>
+          <label><input type="radio" name="q3" /> Die Anzahl Rennen pro Grand Prix ist einstellbar.</label>
+          <textarea placeholder="Antwort / gewuenschte Detailtiefe"></textarea>
+        </article>
+      </section>
+
+      <section>
+        <h2>B. Lobbygroessen und Wiederholungsfahrer</h2>
+
+        <article class="question">
+          <h3>4. Welche zaehlenden Lobbygroessen sind erlaubt?</h3>
+          <p class="why">Bei 5, 6, 7, 9 oder 10 Spielern entstehen sonst unfaire Einzel-Lobbys.</p>
+          <label><input type="radio" name="q4" checked /> 2 bis 4 zaehlende Fahrer; 1 zaehlender Fahrer ist nie erlaubt. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q4" /> Nur 3 oder 4 zaehlende Fahrer.</label>
+          <label><input type="radio" name="q4" /> Immer 4 Fahrer, notfalls mit zaehlenden Wiederholungen.</label>
+          <textarea placeholder="Antwort / Mindestgroesse"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>5. Welche Default-Aufteilung soll die App vorschlagen?</h3>
+          <p class="why">Diese Regel klaert den 9-Spieler-Fall und macht die Automatik vorhersagbar.</p>
+          <label><input type="radio" name="q5" checked /> Moeglichst gleichmaessige zaehlende Gruppen: 5=3-2, 6=3-3, 7=4-3, 8=4-4, 9=3-3-3, 10=4-3-3, 11=4-4-3. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q5" /> Moeglichst viele Vierergruppen, Rest mit Bye/Computer.</label>
+          <label><input type="radio" name="q5" /> Immer Vierer-Lobbys, fehlende Plaetze werden durch Wiederholungsfahrer gefuellt.</label>
+          <textarea placeholder="Antwort / abweichende Aufteilung"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>6. Sollen optionale vierte Sitze angezeigt werden?</h3>
+          <p class="why">Beispiel 9 Spieler: zaehlend 3-3-3, aber real koennen je Lobby vier Menschen fahren.</p>
+          <label><input type="radio" name="q6" checked /> Ja, die App zeigt optionale nicht zaehlende Wiederholungsfahrer pro Lobby an. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q6" /> Nein, nur zaehlende Fahrer werden angezeigt.</label>
+          <label><input type="radio" name="q6" /> Ja, aber nur wenn die Lobby sonst weniger als 3 Fahrer haette.</label>
+          <textarea placeholder="Antwort / gewuenschte Anzeige"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>7. Zaehlt ein Wiederholungsfahrer in seiner Extra-Fahrt fuer die Rangliste?</h3>
+          <p class="why">Das ist der wichtigste Fairness-Schalter fuer 4-4-4 bei 9 Spielern.</p>
+          <label><input type="radio" name="q7" checked /> Nein. Extra-Fahrten sind echte Gegner, aber nicht zaehlend fuer deren eigene Rangliste. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q7" /> Ja, alle Fahrten zaehlen immer.</label>
+          <label><input type="radio" name="q7" /> Konfigurierbar pro Lobby.</label>
+          <textarea placeholder="Antwort / Begruendung"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>8. Wie soll ein nicht zaehlender Fahrer die Punkte der zaehlenden Fahrer beeinflussen?</h3>
+          <p class="why">Wenn der Gast gewinnt, ist offen, ob die zaehlenden Spieler nach realem Platz oder internem Platz gewertet werden.</p>
+          <label><input type="radio" name="q8" checked /> Gewertet wird die Platzierung unter den zaehlenden Fahrern; Realplatz/Ingame-Punkte bleiben als Zusatzinfo. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q8" /> Gewertet wird der reale Zieleinlauf inklusive Gastfahrer.</label>
+          <label><input type="radio" name="q8" /> Der Turnierleiter entscheidet je Lobby.</label>
+          <textarea placeholder="Antwort / Beispiel"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>9. Wie werden Wiederholungsfahrer ausgewaehlt?</h3>
+          <p class="why">Die App braucht eine Rotation, damit nicht immer dieselben extra fahren oder aussetzen.</p>
+          <label><input type="radio" name="q9" checked /> Spieler mit den wenigsten Extra-Fahrten, danach passende Scoregruppe, danach wenigste Gegnerwiederholung. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q9" /> Freiwillige werden manuell ausgewaehlt.</label>
+          <label><input type="radio" name="q9" /> Zufall unter aktiven Spielern.</label>
+          <textarea placeholder="Antwort / Prioritaet"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>10. Sind Computergegner erlaubt?</h3>
+          <p class="why">Mario Kart kann CPUs auffuellen, aber die Turnier-App muss entscheiden, ob das als echter Gegner reicht.</p>
+          <label><input type="radio" name="q10" checked /> CPUs duerfen im Spiel existieren, werden aber nicht als Turniergegner modelliert; keine Solo-Lobbys. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q10" /> CPUs sind als Fuellplaetze sichtbar und beeinflussen Punkte.</label>
+          <label><input type="radio" name="q10" /> Keine CPUs im Turniermodus.</label>
+          <textarea placeholder="Antwort / CPU-Regel"></textarea>
+        </article>
+      </section>
+
+      <section>
+        <h2>C. Schweizer System fuer Mehrspieler-Lobbys</h2>
+
+        <article class="question">
+          <h3>11. Was ist die primaere Scoregruppe?</h3>
+          <p class="why">Danach bildet das Schweizer System neue Lobbys.</p>
+          <label><input type="radio" name="q11" checked /> Turnierpunkte aus Platzierung unter zaehlenden Fahrern. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q11" /> Reine Ingame-Punkte aus Mario Kart.</label>
+          <label><input type="radio" name="q11" /> Durchschnittsplatzierung.</label>
+          <textarea placeholder="Antwort / Score-Definition"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>12. Welche Punkteformel soll gelten?</h3>
+          <p class="why">Unterschiedliche Lobbygroessen muessen vergleichbar bleiben.</p>
+          <label><input type="radio" name="q12" checked /> Normalisiert: 4er = 1 / 0,7 / 0,3 / 0; 3er = 1 / 0,5 / 0; 2er = 1 / 0. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q12" /> Integer: 4er = 4 / 3 / 2 / 1; 3er = 3 / 2 / 1; 2er = 2 / 1.</label>
+          <label><input type="radio" name="q12" /> Ingame-Punkte direkt uebernehmen.</label>
+          <label><input type="radio" name="q12" /> Eigene Tabelle:</label>
+          <textarea placeholder="Antwort / Punktetabelle"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>13. Welche Tie-Breaks sollen die Rangliste sortieren?</h3>
+          <p class="why">Die vorhandene App nutzt Buchholz, Sonneborn-Berger, Siege, direkte Begegnung, Seed.</p>
+          <label><input type="checkbox" name="q13" checked /> Lobby-Buchholz: Staerke der bisherigen Mitfahrer <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q13" checked /> Grand-Prix-Siege / erste Plaetze <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q13" checked /> Ingame-Gesamtpunkte als spaeter Tie-Break <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q13" /> Direkter Vergleich nur, wenn Spieler gemeinsam in Lobbys waren</label>
+          <textarea placeholder="Antwort / Tie-Break-Reihenfolge"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>14. Wie hart sollen Gegnerwiederholungen vermieden werden?</h3>
+          <p class="why">In Mehrspieler-Lobbys hat jeder Fahrer mehrere Gegner pro Runde.</p>
+          <label><input type="radio" name="q14" checked /> Paarweise Wiederholungen stark bestrafen, aber erlauben, wenn sonst keine faire Runde moeglich ist. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q14" /> Wiederholungen sind bis zur Unmoeglichkeit verboten.</label>
+          <label><input type="radio" name="q14" /> Nur identische Lobbys verhindern, einzelne Wiederholungen sind egal.</label>
+          <textarea placeholder="Antwort / Schwelle"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>15. Welche Optimierungsreihenfolge soll der Generator beachten?</h3>
+          <p class="why">Wenn nicht alles gleichzeitig perfekt geht, braucht die App klare Prioritaeten.</p>
+          <label><input type="radio" name="q15" checked /> 1. gleiche Scoregruppe, 2. gleiche Lobbygroesse, 3. wenig Gegnerwiederholung, 4. faire Extra-/Bye-Verteilung, 5. Seed-Zufriedenheit. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q15" /> 1. keine Gegnerwiederholung, 2. Scoregruppe, 3. Lobbygroesse.</label>
+          <label><input type="radio" name="q15" /> 1. Vierer-Lobbys, 2. Scoregruppe, 3. Wiederholungen.</label>
+          <textarea placeholder="Antwort / Reihenfolge"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>16. Wie soll die erste Runde gesetzt werden?</h3>
+          <p class="why">Die App hat bereits Rating- oder Zufallsseeding.</p>
+          <label><input type="radio" name="q16" checked /> Zufall/Seed-Schlange gleichmaessig auf Lobbys verteilen. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q16" /> Nach Rating/Staerke sortieren: starke Spieler zusammen.</label>
+          <label><input type="radio" name="q16" /> Nach Rating/Staerke verteilen: starke Spieler trennen.</label>
+          <textarea placeholder="Antwort / Startlogik"></textarea>
+        </article>
+      </section>
+
+      <section>
+        <h2>D. Dynamische Teilnehmer</h2>
+
+        <article class="question">
+          <h3>17. Was passiert mit Nachrueckern?</h3>
+          <p class="why">Die bestehende App kann Spieler ab der naechsten Runde aktiv fuehren.</p>
+          <label><input type="radio" name="q17" checked /> Nachruecker starten ab der naechsten offenen Runde mit 0 Punkten und werden in niedrige Scoregruppen gepaart. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q17" /> Nachruecker erhalten Durchschnittspunkte fuer verpasste Runden.</label>
+          <label><input type="radio" name="q17" /> Nachruecker duerfen nur als nicht zaehlende Gastfahrer einsteigen.</label>
+          <textarea placeholder="Antwort / Nachrueckerwertung"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>18. Was bedeutet "inaktiv" im Mario-Kart-Modus?</h3>
+          <p class="why">Inaktive Spieler sollen keine Lobby blockieren, aber spaeter wiederkommen koennen.</p>
+          <label><input type="radio" name="q18" checked /> Inaktiv ab Runde X: keine zaehlende Lobby und keine Extra-Fahrt, bis wieder aktiv. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q18" /> Inaktiv darf als optionaler Gastfahrer vorgeschlagen werden.</label>
+          <label><input type="radio" name="q18" /> Inaktiv wird wie ausgeschieden behandelt.</label>
+          <textarea placeholder="Antwort / Rueckkehrregel"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>19. Gibt es echte Byes?</h3>
+          <p class="why">Durch 2er/3er-Lobbys kann man viele Byes vermeiden; manchmal bleibt aber ein Sonderfall.</p>
+          <label><input type="radio" name="q19" checked /> Nur bei weniger als 2 aktiven Spielern oder wenn der Turnierleiter bewusst aussetzen laesst. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q19" /> Ja, wie im normalen Swiss-Modus bei ungerader Spielerzahl.</label>
+          <label><input type="radio" name="q19" /> Nein, immer mit Wiederholungsfahrern/CPUs auffuellen.</label>
+          <textarea placeholder="Antwort / Bye-Punkte"></textarea>
+        </article>
+      </section>
+
+      <section>
+        <h2>E. Ergebniseingabe und Sonderfaelle</h2>
+
+        <article class="question">
+          <h3>20. Was soll der Turnierleiter eingeben?</h3>
+          <p class="why">Das bestimmt Datenmodell und Geschwindigkeit am Spielabend.</p>
+          <label><input type="radio" name="q20" checked /> Platzierung der zaehlenden Fahrer plus optionale Ingame-Punkte. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q20" /> Nur Ingame-Punkte; Platzierung wird daraus berechnet.</label>
+          <label><input type="radio" name="q20" /> Voller Zieleinlauf inklusive Gastfahrer/CPU.</label>
+          <textarea placeholder="Antwort / Eingabemaske"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>21. Wie werden Disconnects, DNFs und kampflose Wertungen behandelt?</h3>
+          <p class="why">Schachartige Forfeit-Resultate reichen fuer eine Vierer-Lobby nicht aus.</p>
+          <label><input type="radio" name="q21" checked /> Status pro Fahrer: normal, DNF, Disconnect, kampflos; Punkte danach automatisch gemaess Regel. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q21" /> Turnierleiter gibt manuelle Punkte ein.</label>
+          <label><input type="radio" name="q21" /> Sonderfaelle werden ausserhalb der App geklaert.</label>
+          <textarea placeholder="Antwort / Sonderwertung"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>22. Wie werden Punktgleichheiten innerhalb einer Lobby geloest?</h3>
+          <p class="why">Mario-Kart-GPs koennen gleiche Ingame-Punkte produzieren.</p>
+          <label><input type="radio" name="q22" checked /> Manuelle Reihenfolge eingeben; die App warnt bei gleichen Ingame-Punkten. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q22" /> Gleicher Platz und geteilte Turnierpunkte.</label>
+          <label><input type="radio" name="q22" /> Entscheidungsrennen ausserhalb der App.</label>
+          <textarea placeholder="Antwort / Tie-Regel"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>23. Welche manuellen Fixes braucht der Modus?</h3>
+          <p class="why">Die vorhandene App kann Pairings fixieren; Mario Kart braucht Lobby-Fixes.</p>
+          <label><input type="checkbox" name="q23" checked /> Lobby mit 2 bis 4 zaehlenden Fahrern fixieren <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q23" checked /> Nicht zaehlende Wiederholungsfahrer fixieren <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q23" /> Einzelne Fahrer zwischen Lobbys tauschen</label>
+          <label><input type="checkbox" name="q23" /> Punkte manuell ueberschreiben</label>
+          <textarea placeholder="Antwort / benoetigte Admin-Aktionen"></textarea>
+        </article>
+      </section>
+
+      <section>
+        <h2>F. Anzeige, Export und UX</h2>
+
+        <article class="question">
+          <h3>24. Welche Spalten braucht die Rangliste?</h3>
+          <p class="why">Die bestehende Tabelle ist dicht, aber fuer Mario Kart muessen andere Kennzahlen sichtbar sein.</p>
+          <label><input type="checkbox" name="q24" checked /> Platz, Name, Turnierpunkte <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q24" checked /> Lobby-Buchholz / Gegnerstaerke <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q24" checked /> Grand-Prix-Siege und Durchschnittsplatz <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q24" checked /> Ingame-Gesamtpunkte <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q24" /> Extra-Fahrten, Byes, Status</label>
+          <textarea placeholder="Antwort / Spaltenreihenfolge"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>25. Wie sollen Rundenchips in der Rangliste aussehen?</h3>
+          <p class="why">Aktuell zeigen Chips Gegner, Farbe/Rolle und Ergebnis; Mario Kart braucht kompakte Lobby-Historie.</p>
+          <label><input type="radio" name="q25" checked /> "L2 P1 +1,0" mit Tooltip fuer Mitfahrer und Ingame-Punkte. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q25" /> Nur Platzierung: "1/4", "2/3".</label>
+          <label><input type="radio" name="q25" /> Ausfuehrlich: alle Mitfahrer direkt im Chip.</label>
+          <textarea placeholder="Antwort / Anzeigeformat"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>26. Welche Warnungen soll die App anzeigen?</h3>
+          <p class="why">Warnungen helfen, ohne den Turnierleiter zu blockieren.</p>
+          <label><input type="checkbox" name="q26" checked /> Lobby verbindet unterschiedliche Scoregruppen <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q26" checked /> Gegnerwiederholung unvermeidbar <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q26" checked /> Spieler hat viele Extra-Fahrten oder Byes <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q26" checked /> Lobby hat nur 2 zaehlende Fahrer <span class="recommendation">Empfehlung</span></label>
+          <textarea placeholder="Antwort / weitere Warnungen"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>27. Soll der Modus einen eigenen visuellen Akzent bekommen?</h3>
+          <p class="why">Die App soll konsistent bleiben, aber der Modus darf als Spielmodus erkennbar sein.</p>
+          <label><input type="radio" name="q27" checked /> Ja: vorhandene Cards, Tabs und Tabellen behalten; neues Icon, Labels und kleine Fahrer-Badges. <span class="recommendation">Empfehlung</span></label>
+          <label><input type="radio" name="q27" /> Nein: exakt wie Swiss/Hand-and-Brain aussehen.</label>
+          <label><input type="radio" name="q27" /> Staerker spielerisch mit eigenem Farbschema.</label>
+          <textarea placeholder="Antwort / Stilrichtung"></textarea>
+        </article>
+
+        <article class="question">
+          <h3>28. Was muss der CSV/PDF-Export enthalten?</h3>
+          <p class="why">Nach dem Spielabend soll das Ergebnis nachvollziehbar bleiben.</p>
+          <label><input type="checkbox" name="q28" checked /> Rangliste mit Punkten und Tie-Breaks <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q28" checked /> Pro Runde: Lobby, Platz, Mitfahrer, Extra-/Gaststatus <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q28" checked /> Ingame-Punkte, falls erfasst <span class="recommendation">Empfehlung</span></label>
+          <label><input type="checkbox" name="q28" /> Nur kompakte Endrangliste</label>
+          <textarea placeholder="Antwort / Exportumfang"></textarea>
+        </article>
+      </section>
+
+      <section>
+        <h2>G. Entscheidungsblock fuer den Konzeptor</h2>
+        <p>Bitte diese fuenf Punkte zuerst beantworten; sie blockieren die technische Spezifikation am staerksten.</p>
+        <ol>
+          <li>Wird bei 9 Spielern zaehlend 3-3-3 gespielt, mit optionalen nicht zaehlenden vierten Fahrern?</li>
+          <li>Werden Turnierpunkte nach Platzierung unter zaehlenden Fahrern vergeben?</li>
+          <li>Sollen Ingame-Punkte nur Tie-Break/Zusatzinfo sein oder die Hauptwertung?</li>
+          <li>Duerfen 2er-Lobbys zaehlen, wenn sonst ein einzelner Spieler uebrig bleibt?</li>
+          <li>Wie hart muessen Gegnerwiederholungen vermieden werden?</li>
+        </ol>
+      </section>
+    </form>
+  </main>
+</body>
+</html>

@@ -4,17 +4,20 @@ import {
   addPlayerAfterStart,
   correctResult,
   createManualHandBrainPairing,
+  createManualMarioKartPairing,
   createManualPairing,
   createTournament,
   deleteLatestRound,
   getCurrentDraftRound,
   getNextAllowedRoundNumber,
+  isPairingComplete,
   recalculateStandings,
   removePlayerFromTournament,
   reopenPreviousRound,
   resetTournamentProgress,
   setPlayerStatus,
   standingsToCsv,
+  updateMarioKartResult,
   updateResult,
   upsertRound,
 } from '@/apps/swiss-tournaments/logic'
@@ -128,7 +131,24 @@ function pairingPlayerIds(pairing: Pairing) {
     pairing.handBrainSides?.white.handPlayerId,
     pairing.handBrainSides?.black.brainPlayerId,
     pairing.handBrainSides?.black.handPlayerId,
+    ...(pairing.marioKartRacers?.map((racer) => racer.playerId) ?? []),
   ].filter((playerId): playerId is string => typeof playerId === 'string')
+}
+
+function pairingScoringPlayerIds(pairing: Pairing) {
+  if (pairing.isBye) {
+    return pairing.byePlayerId ? [pairing.byePlayerId] : []
+  }
+
+  if (pairing.kind === 'marioKart') {
+    return (
+      pairing.marioKartRacers
+        ?.filter((racer) => racer.role === 'scoring')
+        .map((racer) => racer.playerId) ?? []
+    )
+  }
+
+  return pairingPlayerIds(pairing)
 }
 
 export function useSwissTournaments(sessionId = 'default') {
@@ -362,7 +382,7 @@ export function useSwissTournaments(sessionId = 'default') {
 
       if (
         latestRound.status !== 'draft' ||
-        latestRound.pairings.some((pairing) => !pairing.isBye && !pairing.result)
+        latestRound.pairings.some((pairing) => !isPairingComplete(pairing))
       ) {
         return tournament
       }
@@ -422,7 +442,7 @@ export function useSwissTournaments(sessionId = 'default') {
       const fixedPlayerIds = new Set(
         existing.pairings
           .filter((pairing) => pairing.isManual)
-          .flatMap(pairingPlayerIds),
+          .flatMap(pairingScoringPlayerIds),
       )
 
       if (
@@ -474,7 +494,7 @@ export function useSwissTournaments(sessionId = 'default') {
       const fixedPlayerIds = new Set(
         existing.pairings
           .filter((pairing) => pairing.isManual)
-          .flatMap(pairingPlayerIds),
+          .flatMap(pairingScoringPlayerIds),
       )
 
       if (
@@ -487,6 +507,59 @@ export function useSwissTournaments(sessionId = 'default') {
       const fixedPairings = [
         ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
         createManualHandBrainPairing(tournament, roundNumber, handBrainSides),
+      ]
+
+      return upsertRound(tournament, roundNumber, fixedPairings)
+    })
+
+  const addManualMarioKartPairing = (
+    roundNumber: number,
+    scoringPlayerIds: string[],
+    extraPlayerId?: string,
+  ) =>
+    updateActiveTournament((tournament) => {
+      const existing = tournament.rounds.find(
+        (round) => round.roundNumber === roundNumber,
+      )
+      const latestRound = [...tournament.rounds].sort(
+        (left, right) => right.roundNumber - left.roundNumber,
+      )[0]
+
+      if (
+        tournament.format !== 'marioKart' ||
+        !existing ||
+        existing.status !== 'draft' ||
+        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
+        existing.roundNumber !== latestRound?.roundNumber
+      ) {
+        return tournament
+      }
+
+      const cleanScoringIds = scoringPlayerIds.filter(Boolean)
+      const fixedPlayerIds = new Set(
+        existing.pairings
+          .filter((pairing) => pairing.isManual)
+          .flatMap(pairingScoringPlayerIds),
+      )
+
+      if (
+        cleanScoringIds.length < 2 ||
+        cleanScoringIds.length > 4 ||
+        new Set(cleanScoringIds).size !== cleanScoringIds.length ||
+        cleanScoringIds.some((playerId) => fixedPlayerIds.has(playerId)) ||
+        (extraPlayerId ? cleanScoringIds.includes(extraPlayerId) : false)
+      ) {
+        return tournament
+      }
+
+      const fixedPairings = [
+        ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
+        createManualMarioKartPairing(
+          tournament,
+          roundNumber,
+          cleanScoringIds,
+          extraPlayerId,
+        ),
       ]
 
       return upsertRound(tournament, roundNumber, fixedPairings)
@@ -527,7 +600,7 @@ export function useSwissTournaments(sessionId = 'default') {
         !latestRound ||
         latestRound.roundNumber !== roundNumber ||
         latestRound.status !== 'draft' ||
-        latestRound.pairings.some((pairing) => !pairing.isBye && !pairing.result)
+        latestRound.pairings.some((pairing) => !isPairingComplete(pairing))
       ) {
         return tournament
       }
@@ -579,6 +652,16 @@ export function useSwissTournaments(sessionId = 'default') {
       updateResult(tournament, roundNumber, pairingId, result),
     )
 
+  const setMarioKartResult = (
+    roundNumber: number,
+    pairingId: string,
+    playerId: string,
+    partial: { placement?: number; ingamePoints?: number },
+  ) =>
+    updateActiveTournament((tournament) =>
+      updateMarioKartResult(tournament, roundNumber, pairingId, playerId, partial),
+    )
+
   const correctPairingResult = (
     roundNumber: number,
     pairingId: string,
@@ -603,6 +686,7 @@ export function useSwissTournaments(sessionId = 'default') {
   return {
     activeTournament,
     addManualHandBrainPairing,
+    addManualMarioKartPairing,
     addManualPairing,
     addPlayer,
     archivedTournaments,
@@ -624,6 +708,7 @@ export function useSwissTournaments(sessionId = 'default') {
     resetTournament,
     selectTournament,
     session,
+    setMarioKartResult,
     setResult,
     setRoundByeScore,
     standings,

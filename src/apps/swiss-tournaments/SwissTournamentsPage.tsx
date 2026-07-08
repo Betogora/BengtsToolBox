@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   CirclePlus,
   Download,
+  Gamepad2,
   GitBranch,
   Hand,
   LayoutDashboard,
@@ -29,6 +30,7 @@ import {
   canRemovePlayerFromTournament,
   formatPoints,
   getRoundDisplayLabel,
+  isPairingComplete,
   recalculateStandings,
   willResultCorrectionRegenerateCurrentDraftRound,
 } from '@/apps/swiss-tournaments/logic'
@@ -43,6 +45,7 @@ import type {
   ByeScore,
   GameResult,
   InitialPlayerStatus,
+  MarioKartRacer,
   Pairing,
   PairingWarning,
   PlayerStatus,
@@ -147,7 +150,24 @@ function pairingPlayerIds(pairing: Pairing) {
     pairing.handBrainSides?.white.handPlayerId,
     pairing.handBrainSides?.black.brainPlayerId,
     pairing.handBrainSides?.black.handPlayerId,
+    ...(pairing.marioKartRacers?.map((racer) => racer.playerId) ?? []),
   ].filter((playerId): playerId is string => typeof playerId === 'string')
+}
+
+function pairingScoringPlayerIds(pairing: Pairing) {
+  if (pairing.isBye) {
+    return pairing.byePlayerId ? [pairing.byePlayerId] : []
+  }
+
+  if (pairing.kind === 'marioKart') {
+    return (
+      pairing.marioKartRacers
+        ?.filter((racer) => racer.role === 'scoring')
+        .map((racer) => racer.playerId) ?? []
+    )
+  }
+
+  return pairingPlayerIds(pairing)
 }
 
 function tournamentFormatLabelKey(format?: Tournament['format']): TranslationKey {
@@ -159,7 +179,15 @@ function tournamentFormatLabelKey(format?: Tournament['format']): TranslationKey
     return 'swiss.format.handAndBrain'
   }
 
+  if (format === 'marioKart') {
+    return 'swiss.format.marioKart'
+  }
+
   return 'swiss.format.swiss'
+}
+
+function pairingCountLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.lobbyCount' : 'swiss.boardCount'
 }
 
 function renderTournamentFormatIcon(format?: Tournament['format']) {
@@ -169,6 +197,10 @@ function renderTournamentFormatIcon(format?: Tournament['format']) {
 
   if (format === 'handAndBrain') {
     return <Brain className="size-5 shrink-0" />
+  }
+
+  if (format === 'marioKart') {
+    return <Gamepad2 className="size-5 shrink-0" />
   }
 
   return <Swords className="size-5 shrink-0" />
@@ -196,7 +228,7 @@ function statusVariant(status: PlayerStatus) {
 }
 
 function hasMissingGameResult(pairing: Pairing) {
-  return !pairing.isBye && !pairing.result
+  return !isPairingComplete(pairing)
 }
 
 function resultLabel(
@@ -302,6 +334,10 @@ function defaultRoundsForFormat(
     return 5
   }
 
+  if (format === 'marioKart') {
+    return 5
+  }
+
   return swissRoundsForPlayerCount(playerCount)
 }
 
@@ -370,6 +406,22 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeMeta> = {
   'missing-player': {
     label: 'FEHLT',
     className: 'border-rose-300 bg-rose-100 text-rose-950',
+  },
+  'mario-kart-bye-extra': {
+    label: 'EXTRA',
+    className: 'border-cyan-300 bg-cyan-100 text-cyan-950',
+  },
+  'mario-kart-repeat-opponent': {
+    label: 'REPEAT',
+    className: 'border-amber-500 bg-amber-200 text-amber-950',
+  },
+  'mario-kart-score-gap': {
+    label: 'SCORE',
+    className: 'border-orange-500 bg-orange-200 text-orange-950',
+  },
+  'mario-kart-three-player-lobby': {
+    label: '3ER',
+    className: 'border-sky-300 bg-sky-100 text-sky-950',
   },
   'multiple-byes': {
     label: 'BYE',
@@ -500,7 +552,7 @@ function TournamentFormatPicker({
   return (
     <div className="grid gap-2">
       <Label>{t('swiss.format.label')}</Label>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <button
           aria-pressed={format === 'swiss'}
           className={optionClass(format === 'swiss')}
@@ -537,6 +589,19 @@ function TournamentFormatPicker({
           <span className="min-w-0">
             <span className="type-action block whitespace-nowrap">
               {t(tournamentFormatLabelKey('handAndBrain'))}
+            </span>
+          </span>
+        </button>
+        <button
+          aria-pressed={format === 'marioKart'}
+          className={optionClass(format === 'marioKart')}
+          type="button"
+          onClick={() => onFormatChange('marioKart')}
+        >
+          <Gamepad2 className="size-4 shrink-0" />
+          <span className="min-w-0">
+            <span className="type-action block whitespace-nowrap">
+              {t(tournamentFormatLabelKey('marioKart'))}
             </span>
           </span>
         </button>
@@ -605,7 +670,8 @@ function isDefaultTournamentName(
   return (
     value === defaultTournamentName('swiss', t, formatDateTime) ||
     value === defaultTournamentName('roundRobin', t, formatDateTime) ||
-    value === defaultTournamentName('handAndBrain', t, formatDateTime)
+    value === defaultTournamentName('handAndBrain', t, formatDateTime) ||
+    value === defaultTournamentName('marioKart', t, formatDateTime)
   )
 }
 
@@ -671,7 +737,7 @@ function TournamentCreator({
         ? defaultTournamentName(nextFormat, t, formatDateTime)
         : currentName,
     )
-    setByeScore(1)
+    setByeScore(nextFormat === 'marioKart' ? 0.5 : 1)
     setFormat(nextFormat)
   }
   const handleAddDraftPlayer = () => {
@@ -1284,6 +1350,11 @@ function SwissStandingsPresenter({
   tournament: Tournament
 }) {
   const { t } = useI18n()
+  const isMarioKart = tournament.format === 'marioKart'
+  const primaryPointsLabel = isMarioKart
+    ? t('swiss.marioKartTournamentPoints')
+    : t('swiss.standings.points')
+  const winsLabel = isMarioKart ? t('swiss.marioKartWins') : t('swiss.table.wins')
 
   return (
     <div className="grid gap-6">
@@ -1313,14 +1384,24 @@ function SwissStandingsPresenter({
         {standings.length === 0 ? (
           <EmptyState>{t('swiss.emptyStandings')}</EmptyState>
         ) : (
-          <Table className="min-w-[44rem]">
+          <Table className={cn('min-w-[44rem]', isMarioKart && 'min-w-[52rem]')}>
             <TableHeader>
               <TableHead>{t('swiss.rank')}</TableHead>
               <TableHead>{t('common.name')}</TableHead>
-              <TableHead>{t('swiss.standings.points')}</TableHead>
-              <TableHead>{t('swiss.table.buchholz')}</TableHead>
-              <TableHead>{t('swiss.table.sb')}</TableHead>
-              <TableHead>{t('swiss.table.wins')}</TableHead>
+              <TableHead>{primaryPointsLabel}</TableHead>
+              {isMarioKart ? (
+                <>
+                  <TableHead>{winsLabel}</TableHead>
+                  <TableHead>{t('swiss.marioKartIngamePoints')}</TableHead>
+                  <TableHead>{t('swiss.marioKartAveragePlacement')}</TableHead>
+                </>
+              ) : (
+                <>
+                  <TableHead>{t('swiss.table.buchholz')}</TableHead>
+                  <TableHead>{t('swiss.table.sb')}</TableHead>
+                  <TableHead>{winsLabel}</TableHead>
+                </>
+              )}
               <TableHead>{t('common.status')}</TableHead>
             </TableHeader>
             <TableBody>
@@ -1340,13 +1421,29 @@ function SwissStandingsPresenter({
                       {formatPoints(row.points)}
                     </span>
                   </TableCell>
-                  <TableCell className="tabular-nums">
-                    {formatPoints(row.buchholz)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {formatPoints(row.sonnebornBerger)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">{row.wins}</TableCell>
+                  {isMarioKart ? (
+                    <>
+                      <TableCell className="tabular-nums">{row.marioKartWins}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {row.marioKartIngamePoints}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {row.marioKartAveragePlacement === null
+                          ? '-'
+                          : formatPoints(row.marioKartAveragePlacement)}
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="tabular-nums">
+                        {formatPoints(row.buchholz)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {formatPoints(row.sonnebornBerger)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">{row.wins}</TableCell>
+                    </>
+                  )}
                   <TableCell>
                     <Badge variant={statusVariant(row.status)}>
                       {t(statusLabelKeys[row.status])}
@@ -1375,6 +1472,12 @@ export function SwissTournamentsPage() {
   const [manualWhiteHand, setManualWhiteHand] = useState('')
   const [manualBlackBrain, setManualBlackBrain] = useState('')
   const [manualBlackHand, setManualBlackHand] = useState('')
+  const [manualMarioKartPlayers, setManualMarioKartPlayers] = useState<string[]>([
+    '',
+    '',
+    '',
+    '',
+  ])
   const [printTournament, setPrintTournament] = useState<Tournament | null>(null)
   const currentRound = useMemo(
     () =>
@@ -1554,7 +1657,7 @@ export function SwissTournamentsPage() {
   const manuallyUsedPlayerIds = new Set(
     (draftRound?.pairings ?? [])
       .filter((pairing) => pairing.isManual)
-      .flatMap(pairingPlayerIds),
+      .flatMap(pairingScoringPlayerIds),
   )
   const manualHandBrainIds = [
     manualWhiteBrain,
@@ -1586,6 +1689,20 @@ export function SwissTournamentsPage() {
     manualHandBrainIds.every(Boolean) &&
     new Set(manualHandBrainIds).size === 4 &&
     manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
+  const manualMarioKartScoringIds = manualMarioKartPlayers.filter(Boolean)
+  const canAddManualMarioKartPairing =
+    tournament.format === 'marioKart' &&
+    manualMarioKartScoringIds.length >= 2 &&
+    manualMarioKartScoringIds.length <= 4 &&
+    new Set(manualMarioKartScoringIds).size === manualMarioKartScoringIds.length &&
+    manualMarioKartScoringIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
+  const marioKartOptionFor = (currentPlayerId: string) =>
+    tournament.players.filter(
+      (player) =>
+        !manuallyUsedPlayerIds.has(player.id) &&
+        (player.id === currentPlayerId ||
+          !manualMarioKartPlayers.some((playerId) => playerId === player.id)),
+    )
 
   return (
     <AppPage className="swiss-tournaments-page" width="wide">
@@ -1688,7 +1805,9 @@ export function SwissTournamentsPage() {
                     </Badge>
                     <Badge>{currentRound.status}</Badge>
                     <Badge variant="secondary">
-                      {t('swiss.boardCount', { count: currentRound.pairings.length })}
+                      {t(pairingCountLabelKey(tournament.format), {
+                        count: currentRound.pairings.length,
+                      })}
                     </Badge>
                   </div>
                   <PairingsTable tournament={tournament} pairings={currentRound.pairings} />
@@ -2137,7 +2256,9 @@ export function SwissTournamentsPage() {
                             </Badge>
                             <Badge variant="secondary">{round.status}</Badge>
                             <Badge variant="outline">
-                              {t('swiss.boardCount', { count: round.pairings.length })}
+                              {t(pairingCountLabelKey(tournament.format), {
+                                count: round.pairings.length,
+                              })}
                             </Badge>
                           </div>
                           <div className="flex w-full min-w-0 flex-col justify-end gap-2 md:w-auto md:flex-row">
@@ -2253,9 +2374,88 @@ export function SwissTournamentsPage() {
                           onResultChange={(pairingId, result) =>
                             void app.setResult(round.roundNumber, pairingId, result)
                           }
+                          onMarioKartResultChange={(pairingId, playerId, partial) =>
+                            void app.setMarioKartResult(
+                              round.roundNumber,
+                              pairingId,
+                              playerId,
+                              partial,
+                            )
+                          }
                         />
                         {isEditable && draftRound && (
                           <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+                            {tournament.format === 'marioKart' && (
+                              <div className="grid gap-2">
+                                <div className="type-action flex items-center gap-2">
+                                  <Gamepad2 className="size-4 text-primary" />
+                                  {t('swiss.marioKartFixLobby')}
+                                </div>
+                                <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
+                                  {manualMarioKartPlayers.map((playerId, index) => (
+                                    <Select
+                                      key={index}
+                                      value={playerId || openResultValue}
+                                      onValueChange={(value) =>
+                                        setManualMarioKartPlayers((currentPlayers) =>
+                                          currentPlayers.map((entry, playerIndex) =>
+                                            playerIndex === index
+                                              ? value === openResultValue
+                                                ? ''
+                                                : value
+                                              : entry,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      <IftaSelectTrigger
+                                        aria-label={t('swiss.marioKartDriverNumber', {
+                                          number: index + 1,
+                                        })}
+                                        className={singleLineSelectTriggerClass}
+                                        label={roleLabel(
+                                          <Gamepad2 className="size-3 shrink-0 text-primary" />,
+                                          t('swiss.marioKartDriverNumber', {
+                                            number: index + 1,
+                                          }),
+                                        )}
+                                      >
+                                        <SelectValue placeholder={t('swiss.result.open')} />
+                                      </IftaSelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value={openResultValue}>
+                                          {t('swiss.result.open')}
+                                        </SelectItem>
+                                        {marioKartOptionFor(playerId).map((player) => (
+                                          <SelectItem key={player.id} value={player.id}>
+                                            {player.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ))}
+                                  <Button
+                                    className="h-9 w-full lg:h-11"
+                                    size="ifta"
+                                    disabled={!canAddManualMarioKartPairing}
+                                    onClick={async () => {
+                                      if (!canAddManualMarioKartPairing) {
+                                        return
+                                      }
+
+                                      await app.addManualMarioKartPairing(
+                                        draftRound.roundNumber,
+                                        manualMarioKartScoringIds,
+                                      )
+                                      setManualMarioKartPlayers(['', '', '', ''])
+                                      toast.success(t('swiss.marioKartFixed'))
+                                    }}
+                                  >
+                                    {t('swiss.marioKartFix')}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                             {tournament.format === 'handAndBrain' && (
                               <div className="grid gap-2">
                                 <div className="type-action flex items-center gap-2">
@@ -2374,6 +2574,7 @@ export function SwissTournamentsPage() {
                                 </div>
                               </div>
                             )}
+                            {tournament.format !== 'marioKart' && (
                             <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
                               <Select value={manualWhite} onValueChange={setManualWhite}>
                                 <IftaSelectTrigger
@@ -2439,6 +2640,7 @@ export function SwissTournamentsPage() {
                                   : t('swiss.fix')}
                               </Button>
                             </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -2615,6 +2817,7 @@ function ResultCorrectionBadge({
 function PairingsTable({
   editable = false,
   onManualPairingRemove,
+  onMarioKartResultChange,
   onResultCorrection,
   onResultChange,
   shouldConfirmResultCorrection,
@@ -2625,6 +2828,11 @@ function PairingsTable({
 }: {
   editable?: boolean
   onManualPairingRemove?: (pairingId: string) => void
+  onMarioKartResultChange?: (
+    pairingId: string,
+    playerId: string,
+    partial: { placement?: number; ingamePoints?: number },
+  ) => void
   onResultCorrection?: (pairingId: string, result?: GameResult) => unknown
   onResultChange?: (pairingId: string, result?: GameResult) => void
   shouldConfirmResultCorrection?: (
@@ -2831,6 +3039,260 @@ function PairingsTable({
           })
         )}
       </div>
+    )
+  }
+
+  if (tournament.format === 'marioKart') {
+    const scoringRacers = (pairing: Pairing) =>
+      pairing.marioKartRacers?.filter((racer) => racer.role === 'scoring') ?? []
+    const extraRacers = (pairing: Pairing) =>
+      pairing.marioKartRacers?.filter((racer) => racer.role === 'extra') ?? []
+    const placementOptions = (pairing: Pairing) =>
+      Array.from({ length: scoringRacers(pairing).length }, (_, index) => index + 1)
+    const roleBadge = (racer: MarioKartRacer) => (
+      <Badge variant={racer.role === 'scoring' ? 'default' : 'secondary'}>
+        {racer.role === 'scoring' ? t('swiss.marioKartScoring') : t('swiss.marioKartExtra')}
+      </Badge>
+    )
+    const renderPlacement = (pairing: Pairing, racer: MarioKartRacer) => {
+      if (pairing.isBye || racer.role === 'extra') {
+        return <Badge variant="secondary">-</Badge>
+      }
+
+      if (editable && onMarioKartResultChange) {
+        return (
+          <Select
+            value={racer.placement ? String(racer.placement) : openResultValue}
+            onValueChange={(value) =>
+              onMarioKartResultChange(
+                pairing.id,
+                racer.playerId,
+                {
+                  placement:
+                    value === openResultValue
+                      ? undefined
+                      : Number(value),
+                },
+              )
+            }
+          >
+            <SelectTrigger
+              aria-label={t('swiss.marioKartPlacement')}
+              className="h-9 w-24"
+            >
+              <SelectValue placeholder={t('swiss.result.open')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
+              {placementOptions(pairing).map((placement) => (
+                <SelectItem
+                  key={placement}
+                  value={String(placement)}
+                  disabled={scoringRacers(pairing).some(
+                    (entry) =>
+                      entry.playerId !== racer.playerId &&
+                      entry.placement === placement,
+                  )}
+                >
+                  {placement}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
+      }
+
+      return (
+        <Badge variant={racer.placement ? 'outline' : 'secondary'}>
+          {racer.placement ?? t('swiss.result.open')}
+        </Badge>
+      )
+    }
+    const renderIngamePoints = (pairing: Pairing, racer: MarioKartRacer) => {
+      if (pairing.isBye || racer.role === 'extra') {
+        return <span className="text-muted-foreground">-</span>
+      }
+
+      if (editable && onMarioKartResultChange) {
+        return (
+          <Input
+            aria-label={t('swiss.marioKartIngamePointsFor', {
+              name: playerName(tournament, racer.playerId),
+            })}
+            className="h-9 w-24"
+            inputMode="numeric"
+            type="number"
+            value={racer.ingamePoints ?? ''}
+            onChange={(event) =>
+              onMarioKartResultChange(
+                pairing.id,
+                racer.playerId,
+                {
+                  ingamePoints:
+                    event.currentTarget.value.trim() === ''
+                      ? undefined
+                      : Number(event.currentTarget.value),
+                },
+              )
+            }
+          />
+        )
+      }
+
+      return (
+        <span className="tabular-nums">
+          {typeof racer.ingamePoints === 'number' ? racer.ingamePoints : '-'}
+        </span>
+      )
+    }
+    const renderRacers = (pairing: Pairing) => [
+      ...scoringRacers(pairing),
+      ...extraRacers(pairing),
+    ]
+    const lobbyLabel = (pairing: Pairing) =>
+      pairing.isBye
+        ? `${t('swiss.marioKartBye')} ${playerName(tournament, pairing.byePlayerId)}`
+        : `${t('swiss.marioKartLobby')} ${pairing.boardNumber}`
+
+    return (
+      <>
+        <div className="grid gap-2 md:hidden">
+          {pairings.map((pairing) => (
+            <div
+              key={pairing.id}
+              className={cn(
+                'rounded-md border bg-card p-2.5 text-sm',
+                pairing.isManual && 'bg-primary/5',
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="type-action tabular-nums">{lobbyLabel(pairing)}</div>
+                {showWarnings && renderMobileWarnings(pairing)}
+              </div>
+              {pairing.isBye && (
+                <div className="mt-2">
+                  <Badge variant="secondary">{resultLabel(pairing.result, t)}</Badge>
+                </div>
+              )}
+              <div className="mt-2 grid gap-2">
+                {renderRacers(pairing).map((racer) => (
+                  <div
+                    key={`${pairing.id}-${racer.playerId}-${racer.role}`}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border bg-background px-2 py-1.5"
+                  >
+                    <div className="min-w-0">
+                      <div className="type-label truncate">
+                        {playerName(tournament, racer.playerId)}
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {roleBadge(racer)}
+                      </div>
+                    </div>
+                    <div className="grid justify-items-end gap-1">
+                      {renderPlacement(pairing, racer)}
+                      {renderIngamePoints(pairing, racer)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <Table className="min-w-[56rem] table-fixed" containerClassName="hidden md:block">
+          <colgroup>
+            <col className="w-36" />
+            <col />
+            <col className="w-32" />
+            <col className="w-28" />
+            <col className="w-28" />
+            {showWarnings && <col className="w-56" />}
+          </colgroup>
+          <TableHeader>
+            <TableHead>{t('swiss.marioKartLobby')}</TableHead>
+            <TableHead>{t('common.name')}</TableHead>
+            <TableHead>{t('swiss.marioKartRole')}</TableHead>
+            <TableHead>{t('swiss.marioKartPlacement')}</TableHead>
+            <TableHead>{t('swiss.marioKartIngamePoints')}</TableHead>
+            {showWarnings && <TableHead>{t('swiss.hints')}</TableHead>}
+          </TableHeader>
+          <TableBody>
+            {pairings.map((pairing) => {
+              const visibleWarnings = visibleWarningsForPairing(pairing)
+              const racers = renderRacers(pairing)
+              const rowSpan = Math.max(1, racers.length)
+
+              return (
+                <Fragment key={pairing.id}>
+                  {(racers.length > 0 ? racers : [{ playerId: pairing.byePlayerId ?? '', role: 'extra' as const }]).map((racer, index) => (
+                    <TableRow
+                      key={`${pairing.id}-${racer.playerId || 'bye'}-${index}`}
+                      className={cn('align-top', pairing.isManual && 'bg-primary/5')}
+                    >
+                      {index === 0 && (
+                        <TableCell className="tabular-nums" rowSpan={rowSpan}>
+                          <div className="grid gap-1">
+                            <span>{lobbyLabel(pairing)}</span>
+                            {pairing.isBye && (
+                              <Badge variant="secondary">{resultLabel(pairing.result, t)}</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                      <TableCell>{playerName(tournament, racer.playerId)}</TableCell>
+                      <TableCell>{roleBadge(racer)}</TableCell>
+                      <TableCell>{renderPlacement(pairing, racer)}</TableCell>
+                      <TableCell>{renderIngamePoints(pairing, racer)}</TableCell>
+                      {showWarnings && index === 0 && (
+                        <TableCell rowSpan={rowSpan}>
+                          <div className="flex flex-wrap gap-1">
+                            {pairing.isManual && (
+                              <span className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950">
+                                <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
+                                {editable && onManualPairingRemove && (
+                                  <Button
+                                    aria-label={pairingRemoveLabel(pairing)}
+                                    className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+                                    disabled={!canChangePairings}
+                                    size="icon"
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => onManualPairingRemove?.(pairing.id)}
+                                  >
+                                    <X className="size-3" />
+                                  </Button>
+                                )}
+                              </span>
+                            )}
+                            {visibleWarnings.length === 0 && !pairing.isManual ? (
+                              <Badge variant="outline">OK</Badge>
+                            ) : (
+                              visibleWarnings.map((entry) => {
+                                const badgeMeta = pairingWarningBadgeMeta(entry)
+
+                                return (
+                                  <Badge
+                                    key={entry.id}
+                                    className={cn('type-action', badgeMeta.className)}
+                                    title={entry.message}
+                                    variant="outline"
+                                  >
+                                    {badgeMeta.label}
+                                  </Badge>
+                                )
+                              })
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </Fragment>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </>
     )
   }
 
@@ -3052,7 +3514,7 @@ function StandingsTable({
     0,
     ...standings.map((row) => row.roundHistory.length),
   )
-  const visibleRoundGridColumns = Math.min(Math.max(roundColumnCount, 1), 6)
+  const visibleRoundGridColumns = Math.min(Math.max(roundColumnCount, 1), 3)
   const roundCellLabelWidth = Math.max(
     4,
     ...standings.flatMap((row) => row.roundHistory.map((cell) => cell.label.length)),
@@ -3062,13 +3524,24 @@ function StandingsTable({
     '--swiss-round-grid-columns': visibleRoundGridColumns,
   } as CSSProperties
   const hardshipLabel =
-    tournamentFormat === 'handAndBrain'
+    tournamentFormat === 'marioKart'
+      ? t('swiss.hardship.marioKart')
+      : tournamentFormat === 'handAndBrain'
       ? t('swiss.hardship.handAndBrain')
       : t('swiss.hardship.byes')
   const hardshipCount = (row: (typeof standings)[number]) =>
-    tournamentFormat === 'handAndBrain'
+    tournamentFormat === 'marioKart'
+      ? row.receivedByes + row.marioKartExtraRides
+      : tournamentFormat === 'handAndBrain'
       ? row.receivedByes + row.receivedSingleGames
       : row.receivedByes
+  const isMarioKart = tournamentFormat === 'marioKart'
+  const primaryPointsLabel = isMarioKart
+    ? t('swiss.marioKartTournamentPoints')
+    : t('swiss.standings.points')
+  const winsLabel = isMarioKart ? t('swiss.marioKartWins') : t('swiss.table.wins')
+  const winsCount = (row: (typeof standings)[number]) =>
+    isMarioKart ? row.marioKartWins : row.wins
 
   return (
     <Card className="swiss-standings-card">
@@ -3096,9 +3569,18 @@ function StandingsTable({
             <TableHeader>
                 <TableHead className="px-1.5 py-2">{t('swiss.rank')}</TableHead>
                 <TableHead className="py-2 pl-4 pr-1.5">{t('common.name')}</TableHead>
-                <TableHead className="px-1 py-2 text-center">{t('swiss.standings.points')}</TableHead>
-                <TableHead className="px-1 py-2 text-center">{t('swiss.table.buchholz')}</TableHead>
-                <TableHead className="px-1 py-2 text-center">{t('swiss.table.sb')}</TableHead>
+                <TableHead className="px-1 py-2 text-center">{primaryPointsLabel}</TableHead>
+                {isMarioKart ? (
+                  <>
+                    <TableHead className="px-1 py-2 text-center">{t('swiss.marioKartIngamePoints')}</TableHead>
+                    <TableHead className="px-1 py-2 text-center">{t('swiss.marioKartAveragePlacement')}</TableHead>
+                  </>
+                ) : (
+                  <>
+                    <TableHead className="px-1 py-2 text-center">{t('swiss.table.buchholz')}</TableHead>
+                    <TableHead className="px-1 py-2 text-center">{t('swiss.table.sb')}</TableHead>
+                  </>
+                )}
             </TableHeader>
             <TableBody>
               {standings.map((row) => {
@@ -3133,12 +3615,27 @@ function StandingsTable({
                           {formatPoints(row.points)}
                         </span>
                       </TableCell>
-                      <TableCell className="px-1 py-2 text-center tabular-nums">
-                        {formatPoints(row.buchholz)}
-                      </TableCell>
-                      <TableCell className="px-1 py-2 text-center tabular-nums">
-                        {formatPoints(row.sonnebornBerger)}
-                      </TableCell>
+                      {isMarioKart ? (
+                        <>
+                          <TableCell className="px-1 py-2 text-center tabular-nums">
+                            {row.marioKartIngamePoints}
+                          </TableCell>
+                          <TableCell className="px-1 py-2 text-center tabular-nums">
+                            {row.marioKartAveragePlacement === null
+                              ? '-'
+                              : formatPoints(row.marioKartAveragePlacement)}
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="px-1 py-2 text-center tabular-nums">
+                            {formatPoints(row.buchholz)}
+                          </TableCell>
+                          <TableCell className="px-1 py-2 text-center tabular-nums">
+                            {formatPoints(row.sonnebornBerger)}
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                     {isExpanded && (
                       <TableRow
@@ -3147,7 +3644,7 @@ function StandingsTable({
                       >
                         <TableCell className="px-2 pb-2 pt-0" colSpan={5}>
                           <div className="grid gap-2 py-2">
-                            <div className="flex flex-wrap gap-1">
+                            <div className="swiss-round-grid">
                               {row.roundHistory.map((cell) => (
                                 <span
                                   key={`${row.playerId}-${cell.roundNumber}`}
@@ -3159,7 +3656,18 @@ function StandingsTable({
                               ))}
                             </div>
                             <div className="type-field-label flex flex-wrap items-center gap-2 text-muted-foreground">
-                              <span>{t('swiss.table.wins')}: {row.wins}</span>
+                              <span>{winsLabel}: {winsCount(row)}</span>
+                              {isMarioKart && (
+                                <>
+                                  <span>{t('swiss.marioKartIngamePoints')}: {row.marioKartIngamePoints}</span>
+                                  <span>
+                                    {t('swiss.marioKartAveragePlacement')}:{' '}
+                                    {row.marioKartAveragePlacement === null
+                                      ? '-'
+                                      : formatPoints(row.marioKartAveragePlacement)}
+                                  </span>
+                                </>
+                              )}
                               <span>{hardshipLabel}: {hardshipCount(row)}</span>
                               <Badge
                                 className="h-5 px-1.5"
@@ -3179,16 +3687,26 @@ function StandingsTable({
         </Table>
 
         <Table
-          className="swiss-standings-table min-w-[68rem]"
+          className={cn('swiss-standings-table', isMarioKart ? 'min-w-[66rem]' : 'min-w-[68rem]')}
           containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
         >
             <TableHeader>
                 <TableHead>{t('swiss.rank')}</TableHead>
                 <TableHead>{t('common.name')}</TableHead>
-                <TableHead>{t('swiss.standings.points')}</TableHead>
-                <TableHead>{t('swiss.table.buchholz')}</TableHead>
-                <TableHead>{t('swiss.table.sb')}</TableHead>
-                <TableHead>{t('swiss.table.wins')}</TableHead>
+                <TableHead>{primaryPointsLabel}</TableHead>
+                {isMarioKart ? (
+                  <>
+                    <TableHead>{winsLabel}</TableHead>
+                    <TableHead>{t('swiss.marioKartIngamePoints')}</TableHead>
+                    <TableHead>{t('swiss.marioKartAveragePlacement')}</TableHead>
+                  </>
+                ) : (
+                  <>
+                    <TableHead>{t('swiss.table.buchholz')}</TableHead>
+                    <TableHead>{t('swiss.table.sb')}</TableHead>
+                    <TableHead>{winsLabel}</TableHead>
+                  </>
+                )}
                 <TableHead className="swiss-rounds-heading">{t('swiss.rounds')}</TableHead>
                 <TableHead className="swiss-export-hidden-column">{hardshipLabel}</TableHead>
                 <TableHead className="swiss-export-hidden-column">{t('common.status')}</TableHead>
@@ -3206,11 +3724,25 @@ function StandingsTable({
                       {formatPoints(row.points)}
                     </span>
                   </TableCell>
-                  <TableCell className="tabular-nums">{formatPoints(row.buchholz)}</TableCell>
-                  <TableCell className="tabular-nums">
-                    {formatPoints(row.sonnebornBerger)}
-                  </TableCell>
-                  <TableCell className="tabular-nums">{row.wins}</TableCell>
+                  {isMarioKart ? (
+                    <>
+                      <TableCell className="tabular-nums">{row.marioKartWins}</TableCell>
+                      <TableCell className="tabular-nums">{row.marioKartIngamePoints}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {row.marioKartAveragePlacement === null
+                          ? '-'
+                          : formatPoints(row.marioKartAveragePlacement)}
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="tabular-nums">{formatPoints(row.buchholz)}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {formatPoints(row.sonnebornBerger)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">{row.wins}</TableCell>
+                    </>
+                  )}
                   <TableCell className="swiss-round-table-cell">
                     <div className="swiss-round-grid">
                       {row.roundHistory.map((cell) => (
