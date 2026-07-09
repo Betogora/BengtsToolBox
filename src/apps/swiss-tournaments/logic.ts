@@ -2733,6 +2733,28 @@ function marioKartCycleNumberForPlayers(
   )
 }
 
+export function getMarioKartFillInPlayerIds(tournament: Tournament, pairing: Pairing) {
+  if (pairingKind(pairing) !== 'marioKart' || pairing.isBye) {
+    return [] as string[]
+  }
+
+  const summaries = getSummaryBeforeRound(tournament, pairing.roundNumber)
+  const scoringIds = marioKartScoringPlayerIds(pairing)
+  const cycleNumber =
+    pairing.marioKartCycleNumber ??
+    (scoringIds.length > 0
+      ? Math.min(
+          ...scoringIds.map(
+            (playerId) => summaries[playerId]?.marioKartGames ?? 0,
+          ),
+        ) + 1
+      : 1)
+
+  return scoringIds.filter(
+    (playerId) => (summaries[playerId]?.marioKartGames ?? 0) >= cycleNumber,
+  )
+}
+
 function marioKartLobbyNumberForCycle(
   tournament: Tournament,
   roundNumber: number,

@@ -4,6 +4,7 @@ import {
   Brain,
   ChevronDown,
   ChessKing,
+  Check,
   CheckCircle2,
   CirclePlus,
   Download,
@@ -29,6 +30,7 @@ import { toast } from 'sonner'
 import {
   canRemovePlayerFromTournament,
   formatPoints,
+  getMarioKartFillInPlayerIds,
   getNextAllowedRoundNumber,
   getRoundDisplayLabel,
   isPairingComplete,
@@ -187,8 +189,8 @@ function tournamentFormatLabelKey(format?: Tournament['format']): TranslationKey
   return 'swiss.format.swiss'
 }
 
-function pairingCountLabelKey(format?: Tournament['format']): TranslationKey {
-  return format === 'marioKart' ? 'swiss.lobbyCount' : 'swiss.boardCount'
+function shouldShowPairingCountBadge(format?: Tournament['format']) {
+  return format !== 'marioKart'
 }
 
 function plannedUnitLabelKey(format?: Tournament['format']): TranslationKey {
@@ -462,96 +464,150 @@ function TournamentCompleteBanner({
   )
 }
 
-type PairingWarningBadgeMeta = {
-  label: string
+type PairingWarningBadgeDefinition = {
+  labelKey: TranslationKey
+  titleKey: TranslationKey
   className: string
 }
 
-const warningBadgeMeta: Record<string, PairingWarningBadgeMeta> = {
+type PairingWarningBadgeMeta = {
+  className: string
+  label: string
+  title: string
+}
+
+const marioKartHiddenWarningIds = new Set([
+  'bye-cycle-restarted',
+  'mario-kart-bye-extra',
+  'multiple-byes',
+])
+
+const warningBadgeMeta: Record<string, PairingWarningBadgeDefinition> = {
   'bye-cycle-restarted': {
-    label: 'BYE',
+    labelKey: 'swiss.warning.byeCycleRestarted.label',
+    titleKey: 'swiss.warning.byeCycleRestarted.title',
     className: 'border-amber-300 bg-amber-100 text-amber-950',
   },
   'color-imbalance': {
-    label: 'FARBE',
+    labelKey: 'swiss.warning.colorImbalance.label',
+    titleKey: 'swiss.warning.colorImbalance.title',
     className: 'border-sky-300 bg-sky-100 text-sky-950',
   },
   'duplicate-round-player': {
-    label: 'DOPPELT',
+    labelKey: 'swiss.warning.duplicateRoundPlayer.label',
+    titleKey: 'swiss.warning.duplicateRoundPlayer.title',
     className: 'border-red-300 bg-red-100 text-red-950',
   },
   'forced-floater': {
-    label: 'FLOATER',
+    labelKey: 'swiss.warning.forcedFloater.label',
+    titleKey: 'swiss.warning.forcedFloater.title',
     className: 'border-violet-300 bg-violet-100 text-violet-950',
   },
   'inactive-player': {
-    label: 'INAKTIV',
+    labelKey: 'swiss.warning.inactivePlayer.label',
+    titleKey: 'swiss.warning.inactivePlayer.title',
     className: 'border-slate-300 bg-slate-100 text-slate-950',
   },
   'large-point-gap': {
-    label: 'ABSTAND',
+    labelKey: 'swiss.warning.largePointGap.label',
+    titleKey: 'swiss.warning.largePointGap.title',
     className: 'border-orange-300 bg-orange-100 text-orange-950',
   },
   'missing-player': {
-    label: 'FEHLT',
+    labelKey: 'swiss.warning.missingPlayer.label',
+    titleKey: 'swiss.warning.missingPlayer.title',
     className: 'border-rose-300 bg-rose-100 text-rose-950',
   },
   'mario-kart-bye-extra': {
-    label: 'EXTRA',
+    labelKey: 'swiss.warning.marioKartByeExtra.label',
+    titleKey: 'swiss.warning.marioKartByeExtra.title',
     className: 'border-cyan-300 bg-cyan-100 text-cyan-950',
   },
   'mario-kart-score-gap': {
-    label: 'SCORE',
+    labelKey: 'swiss.warning.marioKartScoreGap.label',
+    titleKey: 'swiss.warning.marioKartScoreGap.title',
     className: 'border-orange-500 bg-orange-200 text-orange-950',
   },
   'mario-kart-three-player-lobby': {
-    label: '3ER',
+    labelKey: 'swiss.warning.marioKartThreePlayerLobby.label',
+    titleKey: 'swiss.warning.marioKartThreePlayerLobby.title',
     className: 'border-sky-300 bg-sky-100 text-sky-950',
   },
   'multiple-byes': {
-    label: 'BYE',
+    labelKey: 'swiss.warning.multipleByes.label',
+    titleKey: 'swiss.warning.multipleByes.title',
     className: 'border-amber-300 bg-amber-100 text-amber-950',
   },
   'non-fide-fallback': {
-    label: 'FALLBACK',
+    labelKey: 'swiss.warning.nonFideFallback.label',
+    titleKey: 'swiss.warning.nonFideFallback.title',
     className: 'border-fuchsia-300 bg-fuchsia-100 text-fuchsia-950',
   },
   'repeat-pairing': {
-    label: 'REPEAT',
+    labelKey: 'swiss.warning.repeatPairing.label',
+    titleKey: 'swiss.warning.repeatPairing.title',
     className: 'border-red-300 bg-red-100 text-red-950',
   },
   'repeat-hand-brain-partner': {
-    label: 'DUO',
+    labelKey: 'swiss.warning.repeatHandBrainPartner.label',
+    titleKey: 'swiss.warning.repeatHandBrainPartner.title',
     className: 'border-amber-300 bg-amber-100 text-amber-950',
   },
   'repeat-hand-brain-roles': {
-    label: 'ROLLE',
+    labelKey: 'swiss.warning.repeatHandBrainRoles.label',
+    titleKey: 'swiss.warning.repeatHandBrainRoles.title',
     className: 'border-sky-300 bg-sky-100 text-sky-950',
   },
   'repeat-hand-brain-team': {
-    label: 'TEAM',
+    labelKey: 'swiss.warning.repeatHandBrainTeam.label',
+    titleKey: 'swiss.warning.repeatHandBrainTeam.title',
     className: 'border-red-300 bg-red-100 text-red-950',
   },
   'same-player': {
-    label: 'SPIELER',
+    labelKey: 'swiss.warning.samePlayer.label',
+    titleKey: 'swiss.warning.samePlayer.title',
     className: 'border-red-300 bg-red-100 text-red-950',
   },
   'third-color': {
-    label: 'FARBE',
+    labelKey: 'swiss.warning.thirdColor.label',
+    titleKey: 'swiss.warning.thirdColor.title',
     className: 'border-sky-300 bg-sky-100 text-sky-950',
   },
 }
 
-function pairingWarningBadgeMeta(warning: PairingWarning): PairingWarningBadgeMeta {
-  return (
-    warningBadgeMeta[warning.id] ?? {
-      label: warning.severity === 'hard' ? 'STOPP' : 'HINWEIS',
-      className:
-        warning.severity === 'hard'
-          ? 'border-red-300 bg-red-100 text-red-950'
-          : 'border-lime-300 bg-lime-100 text-lime-950',
+function pairingWarningBadgeMeta(
+  warning: PairingWarning,
+  t: ReturnType<typeof useI18n>['t'],
+): PairingWarningBadgeMeta {
+  const badgeMeta = warningBadgeMeta[warning.id]
+
+  if (badgeMeta) {
+    return {
+      className: badgeMeta.className,
+      label: t(badgeMeta.labelKey),
+      title: t(badgeMeta.titleKey),
     }
-  )
+  }
+
+  const isHardWarning = warning.severity === 'hard'
+
+  return {
+    label: t(
+      isHardWarning
+        ? 'swiss.warning.fallbackHard.label'
+        : 'swiss.warning.fallbackSoft.label',
+    ),
+    title:
+      warning.message ||
+      t(
+        isHardWarning
+          ? 'swiss.warning.fallbackHard.title'
+          : 'swiss.warning.fallbackSoft.title',
+      ),
+    className: isHardWarning
+      ? 'border-red-300 bg-red-100 text-red-950'
+      : 'border-lime-300 bg-lime-100 text-lime-950',
+  }
 }
 
 function RoundProgress({
@@ -1910,11 +1966,13 @@ export function SwissTournamentsPage() {
                         : t('common.round', { number: currentRound.roundNumber })}
                     </Badge>
                     <Badge>{currentRound.status}</Badge>
-                    <Badge variant="secondary">
-                      {t(pairingCountLabelKey(tournament.format), {
-                        count: currentRound.pairings.length,
-                      })}
-                    </Badge>
+                    {shouldShowPairingCountBadge(tournament.format) && (
+                      <Badge variant="secondary">
+                        {t('swiss.boardCount', {
+                          count: currentRound.pairings.length,
+                        })}
+                      </Badge>
+                    )}
                   </div>
                   <PairingsTable tournament={tournament} pairings={currentRound.pairings} />
                 </div>
@@ -2369,11 +2427,13 @@ export function SwissTournamentsPage() {
                                 : t('swiss.archivedTournament')}
                             </Badge>
                             <Badge variant="secondary">{round.status}</Badge>
-                            <Badge variant="outline">
-                              {t(pairingCountLabelKey(tournament.format), {
-                                count: round.pairings.length,
-                              })}
-                            </Badge>
+                            {shouldShowPairingCountBadge(tournament.format) && (
+                              <Badge variant="outline">
+                                {t('swiss.boardCount', {
+                                  count: round.pairings.length,
+                                })}
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex w-full min-w-0 flex-col justify-end gap-2 md:w-auto md:flex-row">
                             {canGoBackToRound && currentRound && (
@@ -2969,8 +3029,22 @@ function PairingsTable({
   const visibleWarningsForPairing = (pairing: Pairing) =>
     (pairing.warnings ?? []).filter(
       (warning) =>
-        tournament.format !== 'roundRobin' || warning.id !== 'large-point-gap',
+        (tournament.format !== 'roundRobin' || warning.id !== 'large-point-gap') &&
+        (tournament.format !== 'marioKart' ||
+          !marioKartHiddenWarningIds.has(warning.id)),
     )
+  const marioKartFillInPlayerIdsByPairingId = useMemo(() => {
+    if (tournament.format !== 'marioKart') {
+      return new Map<string, Set<string>>()
+    }
+
+    return new Map(
+      pairings.map((pairing) => [
+        pairing.id,
+        new Set(getMarioKartFillInPlayerIds(tournament, pairing)),
+      ]),
+    )
+  }, [pairings, tournament])
   const sideLabel = (
     side: NonNullable<Pairing['handBrainSides']>['white'] | undefined,
   ) => {
@@ -3138,13 +3212,13 @@ function PairingsTable({
           <Badge variant="outline">OK</Badge>
         ) : (
           visibleWarnings.map((entry) => {
-            const badgeMeta = pairingWarningBadgeMeta(entry)
+            const badgeMeta = pairingWarningBadgeMeta(entry, t)
 
             return (
               <Badge
                 key={entry.id}
                 className={cn('type-action', badgeMeta.className)}
-                title={entry.message}
+                title={badgeMeta.title}
                 variant="outline"
               >
                 {badgeMeta.label}
@@ -3297,19 +3371,29 @@ function PairingsTable({
 
       if (onMarioKartResultChange) {
         return (
-          <input
-            aria-label={t('swiss.marioKartEventFor', {
-              name: playerName(tournament, racer.playerId),
-            })}
-            checked={Boolean(racer.event)}
-            className="h-4 w-4 rounded border-border accent-primary"
-            type="checkbox"
-            onChange={(event) =>
-              onMarioKartResultChange(pairing.id, racer.playerId, {
-                event: event.currentTarget.checked,
-              })
-            }
-          />
+          <label className="inline-flex h-9 cursor-pointer items-center justify-center">
+            <input
+              aria-label={t('swiss.marioKartEventFor', {
+                name: playerName(tournament, racer.playerId),
+              })}
+              checked={Boolean(racer.event)}
+              className="peer sr-only"
+              type="checkbox"
+              onChange={(event) =>
+                onMarioKartResultChange(pairing.id, racer.playerId, {
+                  event: event.currentTarget.checked,
+                })
+              }
+            />
+            <span
+              aria-hidden="true"
+              className="grid size-5 place-items-center rounded border border-input bg-background shadow-xs transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50"
+            >
+              {racer.event && (
+                <Check className="size-3.5 stroke-[3] text-primary-foreground" />
+              )}
+            </span>
+          </label>
         )
       }
 
@@ -3323,6 +3407,28 @@ function PairingsTable({
       ...scoringRacers(pairing),
       ...extraRacers(pairing),
     ]
+    const isFillInRacer = (pairing: Pairing, racer: MarioKartRacer) =>
+      racer.role === 'scoring' &&
+      (marioKartFillInPlayerIdsByPairingId.get(pairing.id)?.has(racer.playerId) ??
+        false)
+    const renderRacerBadges = (pairing: Pairing, racer: MarioKartRacer) => (
+      <>
+        {racer.role === 'extra' && (
+          <Badge variant="secondary">{t('swiss.marioKartExtra')}</Badge>
+        )}
+        {isFillInRacer(pairing, racer) && (
+          <Badge
+            className="border-teal-300 bg-teal-100 text-teal-950"
+            title={t('swiss.warning.marioKartFillIn.title')}
+            variant="outline"
+          >
+            {t('swiss.warning.marioKartFillIn.label')}
+          </Badge>
+        )}
+      </>
+    )
+    const eventResultCellClass = (racer: MarioKartRacer) =>
+      cn('transition-colors', racer.event && 'bg-secondary/60')
     const lobbyLabel = (pairing: Pairing) =>
       pairing.isBye
         ? `${t('swiss.marioKartBye')} ${playerName(tournament, pairing.byePlayerId)}`
@@ -3352,17 +3458,18 @@ function PairingsTable({
                 {renderRacers(pairing).map((racer) => (
                   <div
                     key={`${pairing.id}-${racer.playerId}-${racer.role}`}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border bg-background px-2 py-1.5"
+                    className={cn(
+                      'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border bg-background px-2 py-1.5 transition-colors',
+                      racer.event && 'border-primary/25 bg-secondary/60',
+                    )}
                   >
                     <div className="min-w-0">
-                      <div className="type-label truncate">
-                        {playerName(tournament, racer.playerId)}
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span className="type-label min-w-0 truncate">
+                          {playerName(tournament, racer.playerId)}
+                        </span>
+                        {renderRacerBadges(pairing, racer)}
                       </div>
-                      {racer.role === 'extra' && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          <Badge variant="secondary">{t('swiss.marioKartExtra')}</Badge>
-                        </div>
-                      )}
                     </div>
                     <div className="grid justify-items-end gap-1">
                       {renderGameCount(pairing, racer)}
@@ -3407,7 +3514,10 @@ function PairingsTable({
                   {(racers.length > 0 ? racers : [{ playerId: pairing.byePlayerId ?? '', role: 'extra' as const }]).map((racer, index) => (
                     <TableRow
                       key={`${pairing.id}-${racer.playerId || 'bye'}-${index}`}
-                      className={cn('align-top', pairing.isManual && 'bg-primary/5')}
+                      className={cn(
+                        'align-top transition-colors',
+                        pairing.isManual && 'bg-primary/5',
+                      )}
                     >
                       {index === 0 && (
                         <TableCell className="tabular-nums" rowSpan={rowSpan}>
@@ -3419,20 +3529,26 @@ function PairingsTable({
                           </div>
                         </TableCell>
                       )}
-                      <TableCell>
+                      <TableCell className={eventResultCellClass(racer)}>
                         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                           <span className="min-w-0 truncate">
                             {playerName(tournament, racer.playerId)}
                           </span>
-                          {racer.role === 'extra' && (
-                            <Badge variant="secondary">{t('swiss.marioKartExtra')}</Badge>
-                          )}
+                          {renderRacerBadges(pairing, racer)}
                         </div>
                       </TableCell>
-                      <TableCell>{renderGameCount(pairing, racer)}</TableCell>
-                      <TableCell>{renderPlacement(pairing, racer)}</TableCell>
-                      <TableCell>{renderIngamePoints(pairing, racer)}</TableCell>
-                      <TableCell>{renderEvent(pairing, racer)}</TableCell>
+                      <TableCell className={eventResultCellClass(racer)}>
+                        {renderGameCount(pairing, racer)}
+                      </TableCell>
+                      <TableCell className={eventResultCellClass(racer)}>
+                        {renderPlacement(pairing, racer)}
+                      </TableCell>
+                      <TableCell className={eventResultCellClass(racer)}>
+                        {renderIngamePoints(pairing, racer)}
+                      </TableCell>
+                      <TableCell className={cn('align-middle', eventResultCellClass(racer))}>
+                        {renderEvent(pairing, racer)}
+                      </TableCell>
                       {showWarnings && index === 0 && (
                         <TableCell rowSpan={rowSpan}>
                           <div className="flex flex-wrap gap-1">
@@ -3458,13 +3574,13 @@ function PairingsTable({
                               <Badge variant="outline">OK</Badge>
                             ) : (
                               visibleWarnings.map((entry) => {
-                                const badgeMeta = pairingWarningBadgeMeta(entry)
+                                const badgeMeta = pairingWarningBadgeMeta(entry, t)
 
                                 return (
                                   <Badge
                                     key={entry.id}
                                     className={cn('type-action', badgeMeta.className)}
-                                    title={entry.message}
+                                    title={badgeMeta.title}
                                     variant="outline"
                                   >
                                     {badgeMeta.label}
@@ -3642,13 +3758,13 @@ function PairingsTable({
                       <Badge variant="outline">OK</Badge>
                     ) : (
                       visibleWarnings.map((entry) => {
-                        const badgeMeta = pairingWarningBadgeMeta(entry)
+                        const badgeMeta = pairingWarningBadgeMeta(entry, t)
 
                         return (
                           <Badge
                             key={entry.id}
                             className={cn('type-action', badgeMeta.className)}
-                            title={entry.message}
+                            title={badgeMeta.title}
                             variant="outline"
                           >
                             {badgeMeta.label}
@@ -3759,7 +3875,7 @@ function StandingsTable({
         ? 'border border-border bg-background text-muted-foreground'
         : cell.event
           ? 'border border-emerald-300 bg-emerald-100 text-emerald-950'
-          : 'border border-border bg-muted text-muted-foreground',
+          : 'border border-red-300 bg-red-100 text-red-950',
     )
   const eventCellLabel = (cell: StandingHistoryCell) =>
     cell.outcome === 'open'

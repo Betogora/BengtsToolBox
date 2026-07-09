@@ -310,7 +310,6 @@ export const de = {
   'swiss.backToRound': 'Zurückgehen',
   'swiss.board': 'Brett',
   'swiss.boardCount': '{count} Bretter/Byes',
-  'swiss.lobbyCount': 'Lobbys: {count}',
   'swiss.byePolicy': 'Bye-Vergabe',
   'swiss.byePolicy.lowestScore': 'Niedrigste Scoregruppe',
   'swiss.byePolicy.protectLateEntrants': 'Späte Spieler schützen',
@@ -352,6 +351,69 @@ export const de = {
   'swiss.hardship.handAndBrain': 'Pech',
   'swiss.hardship.marioKart': 'Rennen',
   'swiss.hints': 'Hinweise',
+  'swiss.warning.byeCycleRestarted.label': 'BYE',
+  'swiss.warning.byeCycleRestarted.title':
+    'Alle aktiven Spieler hatten bereits gleich viele Byes.',
+  'swiss.warning.colorImbalance.label': 'FARBE',
+  'swiss.warning.colorImbalance.title':
+    'Die Farbbilanz eines Spielers würde zu stark kippen.',
+  'swiss.warning.duplicateRoundPlayer.label': 'DOPPELT',
+  'swiss.warning.duplicateRoundPlayer.title':
+    'Ein Spieler oder Fahrer ist mehrfach eingeteilt.',
+  'swiss.warning.fallbackHard.label': 'STOPP',
+  'swiss.warning.fallbackHard.title':
+    'Unbekannter harter Konflikt in dieser Paarung.',
+  'swiss.warning.fallbackSoft.label': 'HINWEIS',
+  'swiss.warning.fallbackSoft.title':
+    'Unbekannter weicher Hinweis zu dieser Paarung.',
+  'swiss.warning.forcedFloater.label': 'FLOATER',
+  'swiss.warning.forcedFloater.title':
+    'Diese Paarung verbindet unterschiedliche Scoregroups.',
+  'swiss.warning.inactivePlayer.label': 'INAKTIV',
+  'swiss.warning.inactivePlayer.title':
+    'Ein eingeteilter Spieler ist in dieser Runde nicht aktiv.',
+  'swiss.warning.largePointGap.label': 'ABSTAND',
+  'swiss.warning.largePointGap.title':
+    'Die Punktdifferenz ist ungewöhnlich hoch.',
+  'swiss.warning.marioKartByeExtra.label': 'EXTRA',
+  'swiss.warning.marioKartByeExtra.title':
+    'Dieses Bye enthält eine optionale Extra-Fahrt ohne Wertung.',
+  'swiss.warning.marioKartFillIn.label': 'FÜLLER',
+  'swiss.warning.marioKartFillIn.title':
+    'Dieser Fahrer füllt die Lobby auf, weil sonst keine volle Lobby aus den am wenigsten gefahrenen Fahrern möglich ist.',
+  'swiss.warning.marioKartScoreGap.label': 'SCORE',
+  'swiss.warning.marioKartScoreGap.title':
+    'Die Score-Differenz dieser Lobby ist ungewöhnlich hoch.',
+  'swiss.warning.marioKartThreePlayerLobby.label': '3ER',
+  'swiss.warning.marioKartThreePlayerLobby.title':
+    'Diese Lobby hat nur drei zählende Fahrer.',
+  'swiss.warning.missingPlayer.label': 'FEHLT',
+  'swiss.warning.missingPlayer.title':
+    'Diese Paarung oder Lobby ist unvollständig.',
+  'swiss.warning.multipleByes.label': 'BYE',
+  'swiss.warning.multipleByes.title':
+    'Ein Spieler hat bereits ein Bye erhalten.',
+  'swiss.warning.nonFideFallback.label': 'FALLBACK',
+  'swiss.warning.nonFideFallback.title':
+    'Diese Paarung ist nur als Vereins-Fallback möglich.',
+  'swiss.warning.repeatHandBrainPartner.label': 'DUO',
+  'swiss.warning.repeatHandBrainPartner.title':
+    'Diese Spieler waren bereits auf derselben Seite.',
+  'swiss.warning.repeatHandBrainRoles.label': 'ROLLE',
+  'swiss.warning.repeatHandBrainRoles.title':
+    'Dieses Duo hatte bereits dieselbe Hand/Brain-Verteilung.',
+  'swiss.warning.repeatHandBrainTeam.label': 'TEAM',
+  'swiss.warning.repeatHandBrainTeam.title':
+    'Diese Team-gegen-Team-Konstellation gab es bereits.',
+  'swiss.warning.repeatPairing.label': 'REPEAT',
+  'swiss.warning.repeatPairing.title':
+    'Diese Spieler haben bereits gegeneinander gespielt.',
+  'swiss.warning.samePlayer.label': 'SPIELER',
+  'swiss.warning.samePlayer.title':
+    'Ein Spieler kann nicht gegen sich selbst spielen.',
+  'swiss.warning.thirdColor.label': 'FARBE',
+  'swiss.warning.thirdColor.title':
+    'Ein Spieler würde zum dritten Mal in Folge dieselbe Farbe erhalten.',
   'swiss.loadingDescription': 'Gespeicherte Turniere werden synchronisiert.',
   'swiss.loadingTitle': 'Daten werden geladen',
   'swiss.manualPairingFixed': 'Manuelle Paarung fixiert.',
@@ -800,7 +862,6 @@ export const en: Record<TranslationKey, string> = {
   'swiss.backToRound': 'Go back',
   'swiss.board': 'Board',
   'swiss.boardCount': '{count} boards/byes',
-  'swiss.lobbyCount': 'Lobbies: {count}',
   'swiss.byePolicy': 'Bye assignment',
   'swiss.byePolicy.lowestScore': 'Lowest score group',
   'swiss.byePolicy.protectLateEntrants': 'Protect late players',
@@ -842,6 +903,69 @@ export const en: Record<TranslationKey, string> = {
   'swiss.hardship.handAndBrain': 'Hardship',
   'swiss.hardship.marioKart': 'Races',
   'swiss.hints': 'Hints',
+  'swiss.warning.byeCycleRestarted.label': 'BYE',
+  'swiss.warning.byeCycleRestarted.title':
+    'All active players had already received the same number of byes.',
+  'swiss.warning.colorImbalance.label': 'COLOR',
+  'swiss.warning.colorImbalance.title':
+    'A player would receive too large a color imbalance.',
+  'swiss.warning.duplicateRoundPlayer.label': 'DUPLICATE',
+  'swiss.warning.duplicateRoundPlayer.title':
+    'A player or driver is assigned more than once.',
+  'swiss.warning.fallbackHard.label': 'STOP',
+  'swiss.warning.fallbackHard.title':
+    'Unknown hard conflict in this pairing.',
+  'swiss.warning.fallbackSoft.label': 'HINT',
+  'swiss.warning.fallbackSoft.title':
+    'Unknown soft hint for this pairing.',
+  'swiss.warning.forcedFloater.label': 'FLOATER',
+  'swiss.warning.forcedFloater.title':
+    'This pairing connects different score groups.',
+  'swiss.warning.inactivePlayer.label': 'INACTIVE',
+  'swiss.warning.inactivePlayer.title':
+    'An assigned player is not active in this round.',
+  'swiss.warning.largePointGap.label': 'GAP',
+  'swiss.warning.largePointGap.title':
+    'The point difference is unusually high.',
+  'swiss.warning.marioKartByeExtra.label': 'EXTRA',
+  'swiss.warning.marioKartByeExtra.title':
+    'This bye contains an optional extra ride without scoring.',
+  'swiss.warning.marioKartFillIn.label': 'FILLER',
+  'swiss.warning.marioKartFillIn.title':
+    'This driver fills the lobby because no full lobby can be made only from the drivers with the fewest races.',
+  'swiss.warning.marioKartScoreGap.label': 'SCORE',
+  'swiss.warning.marioKartScoreGap.title':
+    'The score gap in this lobby is unusually high.',
+  'swiss.warning.marioKartThreePlayerLobby.label': '3P',
+  'swiss.warning.marioKartThreePlayerLobby.title':
+    'This lobby has only three scoring drivers.',
+  'swiss.warning.missingPlayer.label': 'MISSING',
+  'swiss.warning.missingPlayer.title':
+    'This pairing or lobby is incomplete.',
+  'swiss.warning.multipleByes.label': 'BYE',
+  'swiss.warning.multipleByes.title':
+    'A player has already received a bye.',
+  'swiss.warning.nonFideFallback.label': 'FALLBACK',
+  'swiss.warning.nonFideFallback.title':
+    'This pairing is only possible as a club fallback.',
+  'swiss.warning.repeatHandBrainPartner.label': 'DUO',
+  'swiss.warning.repeatHandBrainPartner.title':
+    'These players were already on the same side.',
+  'swiss.warning.repeatHandBrainRoles.label': 'ROLE',
+  'swiss.warning.repeatHandBrainRoles.title':
+    'This duo already had the same hand/brain split.',
+  'swiss.warning.repeatHandBrainTeam.label': 'TEAM',
+  'swiss.warning.repeatHandBrainTeam.title':
+    'This team-versus-team constellation already happened.',
+  'swiss.warning.repeatPairing.label': 'REPEAT',
+  'swiss.warning.repeatPairing.title':
+    'These players have already played against each other.',
+  'swiss.warning.samePlayer.label': 'PLAYER',
+  'swiss.warning.samePlayer.title':
+    'A player cannot play against themselves.',
+  'swiss.warning.thirdColor.label': 'COLOR',
+  'swiss.warning.thirdColor.title':
+    'A player would receive the same color for the third time in a row.',
   'swiss.loadingDescription': 'Saved tournaments are syncing.',
   'swiss.loadingTitle': 'Loading data',
   'swiss.manualPairingFixed': 'Manual pairing fixed.',
