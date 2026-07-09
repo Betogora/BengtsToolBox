@@ -46,6 +46,7 @@ export type MarioKartRacer = {
   role: MarioKartRacerRole
   placement?: number
   ingamePoints?: number
+  event?: boolean
 }
 
 export type Player = {
@@ -78,6 +79,8 @@ export type Pairing = {
     black: HandBrainSide
   }
   marioKartRacers?: MarioKartRacer[]
+  marioKartCycleNumber?: number
+  marioKartCycleLobbyNumber?: number
   result?: GameResult
   isManual: boolean
   isBye: boolean
@@ -128,6 +131,8 @@ export type StandingRow = {
   marioKartIngamePoints: number
   marioKartAveragePlacement: number | null
   marioKartExtraRides: number
+  marioKartGames: number
+  marioKartEvents: number
   status: PlayerStatus
 }
 
@@ -137,6 +142,7 @@ export type StandingRoundCell = {
   title: string
   color: Color
   outcome: 'win' | 'draw' | 'loss' | 'bye' | 'open'
+  event?: boolean
 }
 
 export type SwissTournamentsState = {
@@ -173,4 +179,8 @@ export type PlayerScoreSummary = {
   marioKartIngamePoints: number
   marioKartPlacements: number[]
   marioKartExtraRides: number
+  marioKartGames: number
+  marioKartEvents: number
+  marioKartFillIns: number
+  marioKartLastFillInRound: number | null
 }

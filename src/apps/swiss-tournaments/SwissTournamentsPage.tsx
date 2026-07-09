@@ -29,6 +29,7 @@ import { toast } from 'sonner'
 import {
   canRemovePlayerFromTournament,
   formatPoints,
+  getNextAllowedRoundNumber,
   getRoundDisplayLabel,
   isPairingComplete,
   recalculateStandings,
@@ -188,6 +189,42 @@ function tournamentFormatLabelKey(format?: Tournament['format']): TranslationKey
 
 function pairingCountLabelKey(format?: Tournament['format']): TranslationKey {
   return format === 'marioKart' ? 'swiss.lobbyCount' : 'swiss.boardCount'
+}
+
+function plannedUnitLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.plannedLobbies' : 'swiss.rounds'
+}
+
+function completedUnitLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.playedLobbies' : 'swiss.rounds'
+}
+
+function currentUnitLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.currentLobby' : 'swiss.currentRound'
+}
+
+function newUnitLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.newLobby' : 'swiss.newRound'
+}
+
+function emptyUnitLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.noLobbyCreated' : 'swiss.noRoundCreated'
+}
+
+function firstUnitHintLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.firstLobbyHint' : 'swiss.firstRoundHint'
+}
+
+function marioKartLobbyLabel(pairing: Pairing, t: ReturnType<typeof useI18n>['t']) {
+  if (pairing.isBye) {
+    return t('swiss.marioKartBye')
+  }
+
+  if (pairing.marioKartCycleNumber && pairing.marioKartCycleLobbyNumber) {
+    return `${t('swiss.marioKartLobby')} ${pairing.marioKartCycleNumber}.${pairing.marioKartCycleLobbyNumber}`
+  }
+
+  return `${t('swiss.marioKartLobby')} ${pairing.boardNumber}`
 }
 
 function renderTournamentFormatIcon(format?: Tournament['format']) {
@@ -355,19 +392,19 @@ function TournamentCompleteBanner({
   completedRounds,
   label,
   numberOfRounds,
+  unitLabel,
 }: {
   completedRounds: number
   label: string
   numberOfRounds: number
+  unitLabel: string
 }) {
-  const { t } = useI18n()
-
   return (
     <div className="type-action flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950">
       <CheckCircle2 className="size-5 shrink-0" />
       <span>{label}</span>
       <Badge className="border-emerald-300 bg-emerald-50 text-emerald-950" variant="outline">
-        {completedRounds}/{numberOfRounds} {t('swiss.rounds')}
+        {completedRounds}/{numberOfRounds} {unitLabel}
       </Badge>
     </div>
   )
@@ -471,9 +508,11 @@ function pairingWarningBadgeMeta(warning: PairingWarning): PairingWarningBadgeMe
 
 function RoundProgress({
   currentRound,
+  isMarioKart = false,
   numberOfRounds,
 }: {
   currentRound: number
+  isMarioKart?: boolean
   numberOfRounds: number
 }) {
   const { t } = useI18n()
@@ -482,7 +521,7 @@ function RoundProgress({
 
   return (
     <div
-      aria-label={t('swiss.roundProgressAria', {
+      aria-label={t(isMarioKart ? 'swiss.lobbyProgressAria' : 'swiss.roundProgressAria', {
         current: visibleCurrentRound,
         total: totalRounds,
       })}
@@ -779,7 +818,7 @@ function TournamentCreator({
           />
           <IftaInput
             id="swiss-rounds"
-            label={t('swiss.rounds')}
+            label={t(plannedUnitLabelKey(format))}
             min={1}
             readOnly={format === 'roundRobin'}
             type="number"
@@ -814,6 +853,7 @@ function TournamentCreator({
               </SelectContent>
             </Select>
           </div>
+          {format !== 'marioKart' && (
           <div>
             <Select
               value={String(byeScore)}
@@ -831,6 +871,7 @@ function TournamentCreator({
               </SelectContent>
             </Select>
           </div>
+          )}
         </div>
 
         <div className="grid gap-2 md:gap-3">
@@ -1285,7 +1326,8 @@ function ArchivedTournamentsList({
                   {entry.category}
                 </Badge>
                 <Badge variant="outline">
-                  {entry.completedRounds}/{entry.tournament.numberOfRounds} {t('swiss.rounds')}
+                  {entry.completedRounds}/{entry.tournament.numberOfRounds}{' '}
+                  {t(completedUnitLabelKey(entry.tournament.format))}
                 </Badge>
                 <Badge variant="outline">
                   {t('swiss.playerCount', { count: entry.tournament.players.length })}
@@ -1326,7 +1368,7 @@ function ArchivedTournamentsList({
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {t('swiss.playerCount', { count: entry.tournament.players.length })}, {entry.completedRounds}/
-                  {entry.tournament.numberOfRounds} {t('swiss.rounds')}
+                  {entry.tournament.numberOfRounds} {t(completedUnitLabelKey(entry.tournament.format))}
                 </TableCell>
                 <TableCell className="max-w-72 text-muted-foreground">
                   <span className="line-clamp-2">{topPlayers(entry)}</span>
@@ -1499,7 +1541,7 @@ export function SwissTournamentsPage() {
     }
 
     if (tournament.rounds.length === 0) {
-      return tournament.numberOfRounds > 0
+      return getNextAllowedRoundNumber(tournament) !== null
     }
 
     if (!currentRound) {
@@ -1507,7 +1549,7 @@ export function SwissTournamentsPage() {
     }
 
     if (currentRound.status === 'completed') {
-      return !draftRound
+      return !draftRound && getNextAllowedRoundNumber(tournament) !== null
     }
 
     return (
@@ -1638,6 +1680,8 @@ export function SwissTournamentsPage() {
     )
   }
 
+  const isMarioKartTournament = tournament.format === 'marioKart'
+
   const handleAddPlayer = async () => {
     if (newPlayerName.trim().length === 0) {
       return
@@ -1690,8 +1734,14 @@ export function SwissTournamentsPage() {
     new Set(manualHandBrainIds).size === 4 &&
     manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
   const manualMarioKartScoringIds = manualMarioKartPlayers.filter(Boolean)
+  const hasManualMarioKartLobby = Boolean(
+    draftRound?.pairings.some(
+      (pairing) => pairing.isManual && pairing.kind === 'marioKart',
+    ),
+  )
   const canAddManualMarioKartPairing =
     tournament.format === 'marioKart' &&
+    !hasManualMarioKartLobby &&
     manualMarioKartScoringIds.length >= 2 &&
     manualMarioKartScoringIds.length <= 4 &&
     new Set(manualMarioKartScoringIds).size === manualMarioKartScoringIds.length &&
@@ -1761,13 +1811,14 @@ export function SwissTournamentsPage() {
             <Card>
               <CardHeader className="gap-3 p-4 md:gap-2">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
-                  <CardDescription>{t('swiss.currentRound')}</CardDescription>
+                  <CardDescription>{t(currentUnitLabelKey(tournament.format))}</CardDescription>
                   <CardTitle className="type-section-title">
                     {tournament.currentRound}/{tournament.numberOfRounds}
                   </CardTitle>
                 </div>
                 <RoundProgress
                   currentRound={tournament.currentRound}
+                  isMarioKart={isMarioKartTournament}
                   numberOfRounds={tournament.numberOfRounds}
                 />
               </CardHeader>
@@ -1793,7 +1844,7 @@ export function SwissTournamentsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ListChecks className="size-5 text-primary" />
-                {t('swiss.currentRound')}
+                {t(currentUnitLabelKey(tournament.format))}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1801,7 +1852,9 @@ export function SwissTournamentsPage() {
                 <div className="grid gap-3">
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">
-                      {t('common.round', { number: currentRound.roundNumber })}
+                      {isMarioKartTournament
+                        ? getRoundDisplayLabel(tournament, currentRound.roundNumber)
+                        : t('common.round', { number: currentRound.roundNumber })}
                     </Badge>
                     <Badge>{currentRound.status}</Badge>
                     <Badge variant="secondary">
@@ -1814,7 +1867,7 @@ export function SwissTournamentsPage() {
                 </div>
               ) : (
                 <EmptyState className="text-left">
-                  {t('swiss.noRoundCreated')}
+                  {t(emptyUnitLabelKey(tournament.format))}
                 </EmptyState>
               )}
             </CardContent>
@@ -1841,7 +1894,7 @@ export function SwissTournamentsPage() {
                   />
                   {(tournament.format ?? 'swiss') !== 'roundRobin' && (
                     <IftaInput
-                      label={t('swiss.rounds')}
+                      label={t(plannedUnitLabelKey(tournament.format))}
                       min={Math.max(1, highestCompletedRoundNumber(tournament))}
                       type="number"
                       value={tournament.numberOfRounds}
@@ -1854,6 +1907,7 @@ export function SwissTournamentsPage() {
                   )}
                 </div>
                 <div className="grid gap-3">
+                  {!isMarioKartTournament && (
                   <Select
                     value={String(tournament.settings.byeScore)}
                     onValueChange={(value) =>
@@ -1876,6 +1930,8 @@ export function SwissTournamentsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
+                  {!isMarioKartTournament && (
                   <Select
                     value={tournament.settings.byePolicy}
                     onValueChange={(value) =>
@@ -1898,6 +1954,7 @@ export function SwissTournamentsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
                 </div>
               </div>
 
@@ -2235,6 +2292,7 @@ export function SwissTournamentsPage() {
                           completedRounds={tournament.numberOfRounds}
                           label={t('swiss.tournamentComplete')}
                           numberOfRounds={tournament.numberOfRounds}
+                          unitLabel={t(completedUnitLabelKey(tournament.format))}
                         />
                       )}
                       <Card
@@ -2300,7 +2358,7 @@ export function SwissTournamentsPage() {
                                   onClick={() => void app.generateRound()}
                                 >
                                   <Plus className="size-4" />
-                                  {t('swiss.newRound')}
+                                  {t(newUnitLabelKey(tournament.format))}
                                 </Button>
                                 {isEditable && (
                                   <Button
@@ -2650,14 +2708,14 @@ export function SwissTournamentsPage() {
                 })
               ) : (
                 <div className="type-ui flex flex-col gap-3 rounded-md border border-dashed p-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                  <span>{t('swiss.firstRoundHint')}</span>
+                  <span>{t(firstUnitHintLabelKey(tournament.format))}</span>
                   <Button
                     className="w-full sm:w-auto"
                     disabled={!canGenerateRound}
                     onClick={() => void app.generateRound()}
                   >
                     <Plus className="size-4" />
-                    {t('swiss.newRound')}
+                    {t(newUnitLabelKey(tournament.format))}
                   </Button>
                 </div>
               )}
@@ -2831,7 +2889,7 @@ function PairingsTable({
   onMarioKartResultChange?: (
     pairingId: string,
     playerId: string,
-    partial: { placement?: number; ingamePoints?: number },
+    partial: { placement?: number; ingamePoints?: number; event?: boolean },
   ) => void
   onResultCorrection?: (pairingId: string, result?: GameResult) => unknown
   onResultChange?: (pairingId: string, result?: GameResult) => void
@@ -3049,11 +3107,42 @@ function PairingsTable({
       pairing.marioKartRacers?.filter((racer) => racer.role === 'extra') ?? []
     const placementOptions = (pairing: Pairing) =>
       Array.from({ length: scoringRacers(pairing).length }, (_, index) => index + 1)
-    const roleBadge = (racer: MarioKartRacer) => (
-      <Badge variant={racer.role === 'scoring' ? 'default' : 'secondary'}>
-        {racer.role === 'scoring' ? t('swiss.marioKartScoring') : t('swiss.marioKartExtra')}
-      </Badge>
-    )
+    const hasCompleteMarioKartResult = (pairing: Pairing) => {
+      const racers = scoringRacers(pairing)
+      const placements = racers
+        .map((racer) => racer.placement)
+        .filter((placement): placement is number => typeof placement === 'number')
+
+      return (
+        racers.length >= 2 &&
+        placements.length === racers.length &&
+        new Set(placements).size === placements.length &&
+        placements.every((placement) => placement >= 1 && placement <= racers.length)
+      )
+    }
+    const gameCountThroughPairing = (pairing: Pairing, playerId: string) =>
+      tournament.rounds
+        .filter((round) => round.roundNumber <= pairing.roundNumber)
+        .flatMap((round) => round.pairings)
+        .filter((entry) => entry.kind === 'marioKart')
+        .filter((entry) => entry.roundNumber <= pairing.roundNumber)
+        .filter((entry) =>
+          entry.marioKartRacers?.some(
+            (racer) => racer.role === 'scoring' && racer.playerId === playerId,
+          ),
+        )
+        .filter(hasCompleteMarioKartResult).length
+    const renderGameCount = (pairing: Pairing, racer: MarioKartRacer) => {
+      if (pairing.isBye || racer.role === 'extra') {
+        return <span className="text-muted-foreground">-</span>
+      }
+
+      return (
+        <Badge variant="outline">
+          {gameCountThroughPairing(pairing, racer.playerId)}
+        </Badge>
+      )
+    }
     const renderPlacement = (pairing: Pairing, racer: MarioKartRacer) => {
       if (pairing.isBye || racer.role === 'extra') {
         return <Badge variant="secondary">-</Badge>
@@ -3145,6 +3234,35 @@ function PairingsTable({
         </span>
       )
     }
+    const renderEvent = (pairing: Pairing, racer: MarioKartRacer) => {
+      if (pairing.isBye || racer.role === 'extra') {
+        return <span className="text-muted-foreground">-</span>
+      }
+
+      if (onMarioKartResultChange) {
+        return (
+          <input
+            aria-label={t('swiss.marioKartEventFor', {
+              name: playerName(tournament, racer.playerId),
+            })}
+            checked={Boolean(racer.event)}
+            className="h-4 w-4 rounded border-border accent-primary"
+            type="checkbox"
+            onChange={(event) =>
+              onMarioKartResultChange(pairing.id, racer.playerId, {
+                event: event.currentTarget.checked,
+              })
+            }
+          />
+        )
+      }
+
+      return (
+        <Badge variant={racer.event ? 'default' : 'secondary'}>
+          {racer.event ? t('swiss.eventYes') : t('swiss.eventNo')}
+        </Badge>
+      )
+    }
     const renderRacers = (pairing: Pairing) => [
       ...scoringRacers(pairing),
       ...extraRacers(pairing),
@@ -3152,7 +3270,7 @@ function PairingsTable({
     const lobbyLabel = (pairing: Pairing) =>
       pairing.isBye
         ? `${t('swiss.marioKartBye')} ${playerName(tournament, pairing.byePlayerId)}`
-        : `${t('swiss.marioKartLobby')} ${pairing.boardNumber}`
+        : marioKartLobbyLabel(pairing, t)
 
     return (
       <>
@@ -3184,13 +3302,17 @@ function PairingsTable({
                       <div className="type-label truncate">
                         {playerName(tournament, racer.playerId)}
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {roleBadge(racer)}
-                      </div>
+                      {racer.role === 'extra' && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <Badge variant="secondary">{t('swiss.marioKartExtra')}</Badge>
+                        </div>
+                      )}
                     </div>
                     <div className="grid justify-items-end gap-1">
+                      {renderGameCount(pairing, racer)}
                       {renderPlacement(pairing, racer)}
                       {renderIngamePoints(pairing, racer)}
+                      {renderEvent(pairing, racer)}
                     </div>
                   </div>
                 ))}
@@ -3199,21 +3321,23 @@ function PairingsTable({
           ))}
         </div>
 
-        <Table className="min-w-[56rem] table-fixed" containerClassName="hidden md:block">
+        <Table className="min-w-[64rem] table-fixed" containerClassName="hidden md:block">
           <colgroup>
             <col className="w-36" />
             <col />
-            <col className="w-32" />
             <col className="w-28" />
             <col className="w-28" />
+            <col className="w-28" />
+            <col className="w-24" />
             {showWarnings && <col className="w-56" />}
           </colgroup>
           <TableHeader>
             <TableHead>{t('swiss.marioKartLobby')}</TableHead>
             <TableHead>{t('common.name')}</TableHead>
-            <TableHead>{t('swiss.marioKartRole')}</TableHead>
+            <TableHead>{t('swiss.marioKartGames')}</TableHead>
             <TableHead>{t('swiss.marioKartPlacement')}</TableHead>
             <TableHead>{t('swiss.marioKartIngamePoints')}</TableHead>
+            <TableHead>{t('swiss.marioKartEvent')}</TableHead>
             {showWarnings && <TableHead>{t('swiss.hints')}</TableHead>}
           </TableHeader>
           <TableBody>
@@ -3239,10 +3363,20 @@ function PairingsTable({
                           </div>
                         </TableCell>
                       )}
-                      <TableCell>{playerName(tournament, racer.playerId)}</TableCell>
-                      <TableCell>{roleBadge(racer)}</TableCell>
+                      <TableCell>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          <span className="min-w-0 truncate">
+                            {playerName(tournament, racer.playerId)}
+                          </span>
+                          {racer.role === 'extra' && (
+                            <Badge variant="secondary">{t('swiss.marioKartExtra')}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{renderGameCount(pairing, racer)}</TableCell>
                       <TableCell>{renderPlacement(pairing, racer)}</TableCell>
                       <TableCell>{renderIngamePoints(pairing, racer)}</TableCell>
+                      <TableCell>{renderEvent(pairing, racer)}</TableCell>
                       {showWarnings && index === 0 && (
                         <TableCell rowSpan={rowSpan}>
                           <div className="flex flex-wrap gap-1">
@@ -3525,13 +3659,13 @@ function StandingsTable({
   } as CSSProperties
   const hardshipLabel =
     tournamentFormat === 'marioKart'
-      ? t('swiss.hardship.marioKart')
+      ? t('swiss.marioKartGames')
       : tournamentFormat === 'handAndBrain'
       ? t('swiss.hardship.handAndBrain')
       : t('swiss.hardship.byes')
   const hardshipCount = (row: (typeof standings)[number]) =>
     tournamentFormat === 'marioKart'
-      ? row.receivedByes + row.marioKartExtraRides
+      ? row.marioKartGames
       : tournamentFormat === 'handAndBrain'
       ? row.receivedByes + row.receivedSingleGames
       : row.receivedByes
@@ -3539,9 +3673,34 @@ function StandingsTable({
   const primaryPointsLabel = isMarioKart
     ? t('swiss.marioKartTournamentPoints')
     : t('swiss.standings.points')
+  const mobilePrimaryPointsLabel = isMarioKart ? 'TP' : primaryPointsLabel
   const winsLabel = isMarioKart ? t('swiss.marioKartWins') : t('swiss.table.wins')
   const winsCount = (row: (typeof standings)[number]) =>
     isMarioKart ? row.marioKartWins : row.wins
+  const eventStandings = isMarioKart
+    ? [...standings]
+        .sort(
+          (left, right) =>
+            right.marioKartEvents - left.marioKartEvents ||
+            left.rank - right.rank,
+        )
+        .map((row, index) => ({ ...row, eventRank: index + 1 }))
+    : []
+  const eventCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
+    cn(
+      'type-caption swiss-round-cell inline-flex h-7 min-w-11 items-center justify-center rounded px-2 tabular-nums',
+      cell.outcome === 'open'
+        ? 'border border-border bg-background text-muted-foreground'
+        : cell.event
+          ? 'border border-emerald-300 bg-emerald-100 text-emerald-950'
+          : 'border border-border bg-muted text-muted-foreground',
+    )
+  const eventCellLabel = (cell: (typeof standings)[number]['roundHistory'][number]) =>
+    cell.outcome === 'open'
+      ? '-'
+      : cell.event
+        ? t('swiss.eventYes')
+        : t('swiss.eventNo')
 
   return (
     <Card className="swiss-standings-card">
@@ -3569,7 +3728,9 @@ function StandingsTable({
             <TableHeader>
                 <TableHead className="px-1.5 py-2">{t('swiss.rank')}</TableHead>
                 <TableHead className="py-2 pl-4 pr-1.5">{t('common.name')}</TableHead>
-                <TableHead className="px-1 py-2 text-center">{primaryPointsLabel}</TableHead>
+                <TableHead className="px-1 py-2 text-center" title={primaryPointsLabel}>
+                  {mobilePrimaryPointsLabel}
+                </TableHead>
                 {isMarioKart ? (
                   <>
                     <TableHead className="px-1 py-2 text-center">{t('swiss.marioKartIngamePoints')}</TableHead>
@@ -3660,6 +3821,8 @@ function StandingsTable({
                               {isMarioKart && (
                                 <>
                                   <span>{t('swiss.marioKartIngamePoints')}: {row.marioKartIngamePoints}</span>
+                                  <span>{t('swiss.marioKartGames')}: {row.marioKartGames}</span>
+                                  <span>{t('swiss.marioKartEvents')}: {row.marioKartEvents}</span>
                                   <span>
                                     {t('swiss.marioKartAveragePlacement')}:{' '}
                                     {row.marioKartAveragePlacement === null
@@ -3707,7 +3870,9 @@ function StandingsTable({
                     <TableHead>{winsLabel}</TableHead>
                   </>
                 )}
-                <TableHead className="swiss-rounds-heading">{t('swiss.rounds')}</TableHead>
+                <TableHead className="swiss-rounds-heading">
+                  {isMarioKart ? t('swiss.playedLobbies') : t('swiss.rounds')}
+                </TableHead>
                 <TableHead className="swiss-export-hidden-column">{hardshipLabel}</TableHead>
                 <TableHead className="swiss-export-hidden-column">{t('common.status')}</TableHead>
             </TableHeader>
@@ -3768,6 +3933,104 @@ function StandingsTable({
               ))}
             </TableBody>
         </Table>
+        {isMarioKart && (
+          <div className="mt-6 grid gap-3">
+            <div className="flex items-center gap-2">
+              <Trophy className="size-5 text-primary" />
+              <h3 className="type-section-title">{t('swiss.marioKartEventRanking')}</h3>
+            </div>
+            <Table
+              className="table-fixed"
+              containerClassName="swiss-standings-mobile md:hidden"
+            >
+              <colgroup>
+                <col className="w-11" />
+                <col />
+                <col className="w-20" />
+              </colgroup>
+              <TableHeader>
+                <TableHead className="px-1.5 py-2">{t('swiss.rank')}</TableHead>
+                <TableHead className="py-2 pl-4 pr-1.5">{t('common.name')}</TableHead>
+                <TableHead className="px-1 py-2 text-center">
+                  {t('swiss.marioKartEvents')}
+                </TableHead>
+              </TableHeader>
+              <TableBody>
+                {eventStandings.map((row) => (
+                  <Fragment key={`event-mobile-${row.playerId}`}>
+                    <TableRow className={podiumClass(row.eventRank)}>
+                      <TableCell className="px-1.5 py-2 tabular-nums">
+                        {row.eventRank}
+                      </TableCell>
+                      <TableCell className="type-label min-w-0 py-2 pl-4 pr-1.5">
+                        <span className="block min-w-0 truncate">{row.playerName}</span>
+                      </TableCell>
+                      <TableCell className="px-1 py-2 text-center tabular-nums">
+                        <span className="type-action inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-primary">
+                          {row.marioKartEvents}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className={podiumClass(row.eventRank)}>
+                      <TableCell className="px-2 pb-2 pt-0" colSpan={3}>
+                        <div className="swiss-round-grid py-2">
+                          {row.roundHistory.map((cell) => (
+                            <span
+                              key={`${row.playerId}-event-${cell.roundNumber}`}
+                              className={eventCellClass(cell)}
+                              title={cell.title}
+                            >
+                              {eventCellLabel(cell)}
+                            </span>
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </Fragment>
+                ))}
+              </TableBody>
+            </Table>
+            <Table
+              className="swiss-standings-table min-w-[44rem]"
+              containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
+            >
+              <TableHeader>
+                <TableHead>{t('swiss.rank')}</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('swiss.marioKartEvents')}</TableHead>
+                <TableHead className="swiss-rounds-heading">
+                  {t('swiss.marioKartEventHistory')}
+                </TableHead>
+              </TableHeader>
+              <TableBody>
+                {eventStandings.map((row) => (
+                  <TableRow key={`event-${row.playerId}`} className={podiumClass(row.eventRank)}>
+                    <TableCell className="tabular-nums">{row.eventRank}</TableCell>
+                    <TableCell className="type-label">{row.playerName}</TableCell>
+                    <TableCell className="tabular-nums">
+                      <span className="type-action inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-primary">
+                        {row.marioKartEvents}
+                      </span>
+                    </TableCell>
+                    <TableCell className="swiss-round-table-cell">
+                      <div className="swiss-round-grid">
+                        {row.roundHistory.map((cell) => (
+                          <span
+                            key={`${row.playerId}-event-${cell.roundNumber}`}
+                            className={eventCellClass(cell)}
+                            title={cell.title}
+                          >
+                            {eventCellLabel(cell)}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
         <div className="swiss-export-qr hidden" aria-hidden="true">
           <img
             src={tournamentWebsiteQrUrl}
