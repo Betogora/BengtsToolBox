@@ -24,7 +24,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { Fragment, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -125,6 +125,132 @@ const tournamentWebsiteQrUrl = '/qrcode.svg'
 const singleLineSelectTriggerClass =
   'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
 
+const marioKartRankGradients: Record<number | 'default', readonly string[]> = {
+  1: ['#fff7a8', '#ffd83f', '#b58c18', '#ffe877'],
+  2: ['#ffffff', '#dff6f7', '#9fb3bb', '#f4ffff'],
+  3: ['#ffe6ca', '#d99c62', '#a56936', '#f7cfaa'],
+  default: ['#f4f7f8', '#9aa8ae', '#4d6870', '#c8d2d6'],
+}
+
+function ordinalSuffix(rank: number) {
+  const remainder = rank % 100
+
+  if (remainder >= 11 && remainder <= 13) {
+    return 'th'
+  }
+
+  switch (rank % 10) {
+    case 1:
+      return 'st'
+    case 2:
+      return 'nd'
+    case 3:
+      return 'rd'
+    default:
+      return 'th'
+  }
+}
+
+function RankPlacement({
+  className,
+  isMarioKart,
+  rank,
+}: {
+  className?: string
+  isMarioKart: boolean
+  rank: number
+}) {
+  const gradientId = `mario-kart-rank-gradient-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+  const shadowId = `mario-kart-rank-shadow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+
+  if (!isMarioKart || !Number.isInteger(rank) || rank < 1) {
+    return <>{rank}</>
+  }
+
+  const rankText = String(rank)
+  const rankDigitCount = rankText.length
+  const gradientStops = marioKartRankGradients[rank] ?? marioKartRankGradients.default
+  const isCompactRank = rankDigitCount <= 2
+  const viewBoxWidth = rankDigitCount === 1 ? 86 : rankDigitCount === 2 ? 96 : 116
+  const numberFontSize = isCompactRank ? (rankDigitCount === 1 ? 45 : 40) : 34
+  const suffixFontSize = isCompactRank ? (rankDigitCount === 1 ? 17 : 14) : 12
+  const letterSpacing = rankDigitCount === 1 ? -3 : -4
+
+  return (
+    <span
+      aria-label={String(rank)}
+      className={cn('inline-flex h-[30px] w-16 max-w-full items-center align-middle', className)}
+    >
+      <span className="sr-only">{rank}</span>
+      <svg
+        aria-hidden="true"
+        className="block h-full w-full"
+        focusable="false"
+        preserveAspectRatio="xMidYMid meet"
+        viewBox={`0 0 ${viewBoxWidth} 46`}
+      >
+        <defs>
+          <linearGradient
+            id={gradientId}
+            x1="8"
+            x2={viewBoxWidth - 8}
+            y1="2"
+            y2="45"
+            gradientUnits="userSpaceOnUse"
+          >
+            {gradientStops.map((color, index) => (
+              <stop
+                key={color}
+                offset={index === 0 ? '0' : index === 1 ? '0.48' : index === 2 ? '0.72' : '1'}
+                stopColor={color}
+              />
+            ))}
+          </linearGradient>
+          <filter id={shadowId} x="-20%" y="-30%" width="140%" height="160%">
+            <feDropShadow
+              dx="2"
+              dy="2"
+              floodColor="#1b2228"
+              floodOpacity="0.58"
+              stdDeviation="1.1"
+            />
+          </filter>
+        </defs>
+        <g filter={`url(#${shadowId})`} transform="translate(3 0) skewX(-8)">
+          <text
+            dominantBaseline="alphabetic"
+            fill={`url(#${gradientId})`}
+            fontFamily="Arial Black, Impact, sans-serif"
+            fontWeight="900"
+            paintOrder="stroke"
+            stroke="#26313a"
+            strokeLinejoin="round"
+            strokeWidth={rankDigitCount === 1 ? 5 : 4.5}
+            x={rankDigitCount === 1 ? 6 : 4}
+            y={rankDigitCount === 1 ? 40 : 39}
+          >
+            <tspan
+              fontSize={numberFontSize}
+              letterSpacing={letterSpacing}
+            >
+              {rankText}
+            </tspan>
+            <tspan
+              dx="3"
+              dy="-1"
+              fontSize={suffixFontSize}
+              letterSpacing="-1"
+              strokeWidth={rankDigitCount === 1 ? 3.5 : 3}
+            >
+              {ordinalSuffix(rank)}
+            </tspan>
+          </text>
+        </g>
+      </svg>
+    </span>
+  )
+}
+
 function roleLabel(icon: ReactNode, label: string) {
   return (
     <span className="flex min-w-0 items-center gap-1">
@@ -203,6 +329,10 @@ function completedUnitLabelKey(format?: Tournament['format']): TranslationKey {
 
 function currentUnitLabelKey(format?: Tournament['format']): TranslationKey {
   return format === 'marioKart' ? 'swiss.currentLobby' : 'swiss.currentRound'
+}
+
+function currentProgressUnitLabelKey(format?: Tournament['format']): TranslationKey {
+  return format === 'marioKart' ? 'swiss.currentMarioKartRace' : currentUnitLabelKey(format)
 }
 
 function newUnitLabelKey(format?: Tournament['format']): TranslationKey {
@@ -329,10 +459,16 @@ function isRoundCompleteForProgress(round: Round) {
 
 function completedRoundCount(tournament: Tournament) {
   if (tournament.format === 'marioKart') {
-    return recalculateStandings(tournament).reduce(
-      (highestRaceCount, row) => Math.max(highestRaceCount, row.marioKartGames),
-      0,
+    const activeRows = recalculateStandings(tournament).filter(
+      (row) => row.status === 'active',
     )
+
+    return activeRows.length > 0
+      ? Math.min(
+          tournament.numberOfRounds,
+          ...activeRows.map((row) => row.marioKartGames),
+        )
+      : 0
   }
 
   const completedRegularRounds = new Set(
@@ -357,7 +493,7 @@ function currentMarioKartRaceCount(tournament: Tournament, completedRaces: numbe
     0,
   ) ?? 0
 
-  return Math.max(completedRaces, currentLobbyRace)
+  return currentLobbyRace > 0 ? currentLobbyRace : completedRaces
 }
 
 function currentUnitCount(tournament: Tournament, completedUnits: number) {
@@ -392,7 +528,15 @@ function completionBannerRoundNumber(
   }
 
   if (tournament.format === 'marioKart') {
-    return displayedRounds[0]?.roundNumber ?? null
+    return (
+      displayedRounds.find((round) => {
+        const cycleNumber =
+          round.pairings.find((pairing) => pairing.kind === 'marioKart')
+            ?.marioKartCycleNumber ?? round.roundNumber
+
+        return cycleNumber <= tournament.numberOfRounds
+      })?.roundNumber ?? null
+    )
   }
 
   return displayedRounds.find(
@@ -574,6 +718,12 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeDefinition> = {
     className: 'border-sky-300 bg-sky-100 text-sky-950',
   },
 }
+
+const pairingHintBadgeClassName = 'type-action uppercase'
+const fixedPairingHintClassName = cn(
+  pairingHintBadgeClassName,
+  'inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950',
+)
 
 function pairingWarningBadgeMeta(
   warning: PairingWarning,
@@ -1560,7 +1710,9 @@ function SwissStandingsPresenter({
                     row.rank === 3 && 'bg-[#e8c0a0]/55',
                   )}
                 >
-                  <TableCell className="tabular-nums">{row.rank}</TableCell>
+                  <TableCell className="tabular-nums">
+                    <RankPlacement isMarioKart={isMarioKart} rank={row.rank} />
+                  </TableCell>
                   <TableCell className="type-label">{row.playerName}</TableCell>
                   <TableCell className="tabular-nums">
                     <span className="type-action inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-primary">
@@ -1843,6 +1995,19 @@ export function SwissTournamentsPage() {
     new Set(manualHandBrainIds).size === 4 &&
     manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
   const manualMarioKartScoringIds = manualMarioKartPlayers.filter(Boolean)
+  const manualMarioKartRaceCounts = manualMarioKartScoringIds.map(
+    (playerId) =>
+      app.standings.find((row) => row.playerId === playerId)?.marioKartGames ?? 0,
+  )
+  const manualMarioKartScoringLimit =
+    manualMarioKartRaceCounts.length > 0
+      ? Math.max(tournament.numberOfRounds, Math.min(...manualMarioKartRaceCounts) + 1)
+      : tournament.numberOfRounds
+  const hasManualMarioKartScoringPlayerWithOpenRace = manualMarioKartScoringIds.some(
+    (playerId) =>
+      (app.standings.find((row) => row.playerId === playerId)?.marioKartGames ?? 0) <
+      manualMarioKartScoringLimit,
+  )
   const hasManualMarioKartLobby = Boolean(
     draftRound?.pairings.some(
       (pairing) => pairing.isManual && pairing.kind === 'marioKart',
@@ -1854,6 +2019,7 @@ export function SwissTournamentsPage() {
     manualMarioKartScoringIds.length >= 2 &&
     manualMarioKartScoringIds.length <= 4 &&
     new Set(manualMarioKartScoringIds).size === manualMarioKartScoringIds.length &&
+    hasManualMarioKartScoringPlayerWithOpenRace &&
     manualMarioKartScoringIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
   const marioKartOptionFor = (currentPlayerId: string) =>
     tournament.players.filter(
@@ -1920,7 +2086,9 @@ export function SwissTournamentsPage() {
             <Card>
               <CardHeader className="gap-3 p-4 md:gap-2">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
-                  <CardDescription>{t(currentUnitLabelKey(tournament.format))}</CardDescription>
+                  <CardDescription>
+                    {t(currentProgressUnitLabelKey(tournament.format))}
+                  </CardDescription>
                   <CardTitle className="type-section-title">
                     {currentUnitProgress}/{tournament.numberOfRounds}
                   </CardTitle>
@@ -3189,7 +3357,7 @@ function PairingsTable({
       <div className="flex flex-wrap gap-1">
         {pairing.isManual && (
           <span
-            className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950"
+            className={fixedPairingHintClassName}
             title={removeLabel}
           >
             <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
@@ -3209,7 +3377,9 @@ function PairingsTable({
           </span>
         )}
         {visibleWarnings.length === 0 && !pairing.isManual ? (
-          <Badge variant="outline">OK</Badge>
+          <Badge className={pairingHintBadgeClassName} variant="outline">
+            OK
+          </Badge>
         ) : (
           visibleWarnings.map((entry) => {
             const badgeMeta = pairingWarningBadgeMeta(entry, t)
@@ -3217,7 +3387,7 @@ function PairingsTable({
             return (
               <Badge
                 key={entry.id}
-                className={cn('type-action', badgeMeta.className)}
+                className={cn(pairingHintBadgeClassName, badgeMeta.className)}
                 title={badgeMeta.title}
                 variant="outline"
               >
@@ -3235,19 +3405,27 @@ function PairingsTable({
       pairing.marioKartRacers?.filter((racer) => racer.role === 'scoring') ?? []
     const extraRacers = (pairing: Pairing) =>
       pairing.marioKartRacers?.filter((racer) => racer.role === 'extra') ?? []
+    const lobbyRacers = (pairing: Pairing) => pairing.marioKartRacers ?? []
     const placementOptions = (pairing: Pairing) =>
-      Array.from({ length: scoringRacers(pairing).length }, (_, index) => index + 1)
+      Array.from({ length: lobbyRacers(pairing).length }, (_, index) => index + 1)
     const hasCompleteMarioKartResult = (pairing: Pairing) => {
       const racers = scoringRacers(pairing)
-      const placements = racers
+      const allPlacements = lobbyRacers(pairing)
         .map((racer) => racer.placement)
         .filter((placement): placement is number => typeof placement === 'number')
+      const scoringPlacements = racers
+        .map((racer) => racer.placement)
+        .filter((placement): placement is number => typeof placement === 'number')
+      const minimumScoringRacers = extraRacers(pairing).length > 0 ? 1 : 2
+      const placementLimit = Math.max(racers.length, lobbyRacers(pairing).length)
 
       return (
-        racers.length >= 2 &&
-        placements.length === racers.length &&
-        new Set(placements).size === placements.length &&
-        placements.every((placement) => placement >= 1 && placement <= racers.length)
+        racers.length >= minimumScoringRacers &&
+        scoringPlacements.length === racers.length &&
+        new Set(allPlacements).size === allPlacements.length &&
+        allPlacements.every(
+          (placement) => placement >= 1 && placement <= placementLimit,
+        )
       )
     }
     const gameCountThroughPairing = (pairing: Pairing, playerId: string) =>
@@ -3273,8 +3451,12 @@ function PairingsTable({
         </Badge>
       )
     }
+    const isListedMarioKartRacer = (pairing: Pairing, racer: MarioKartRacer) =>
+      pairing.marioKartRacers?.some(
+        (entry) => entry.playerId === racer.playerId,
+      ) ?? false
     const renderPlacement = (pairing: Pairing, racer: MarioKartRacer) => {
-      if (pairing.isBye || racer.role === 'extra') {
+      if (pairing.isBye && !isListedMarioKartRacer(pairing, racer)) {
         return <Badge variant="secondary">-</Badge>
       }
 
@@ -3307,7 +3489,7 @@ function PairingsTable({
                 <SelectItem
                   key={placement}
                   value={String(placement)}
-                  disabled={scoringRacers(pairing).some(
+                  disabled={lobbyRacers(pairing).some(
                     (entry) =>
                       entry.playerId !== racer.playerId &&
                       entry.placement === placement,
@@ -3328,7 +3510,7 @@ function PairingsTable({
       )
     }
     const renderIngamePoints = (pairing: Pairing, racer: MarioKartRacer) => {
-      if (pairing.isBye || racer.role === 'extra') {
+      if (pairing.isBye && !isListedMarioKartRacer(pairing, racer)) {
         return <span className="text-muted-foreground">-</span>
       }
 
@@ -3365,7 +3547,7 @@ function PairingsTable({
       )
     }
     const renderEvent = (pairing: Pairing, racer: MarioKartRacer) => {
-      if (pairing.isBye || racer.role === 'extra') {
+      if (pairing.isBye && !isListedMarioKartRacer(pairing, racer)) {
         return <span className="text-muted-foreground">-</span>
       }
 
@@ -3403,30 +3585,90 @@ function PairingsTable({
         </Badge>
       )
     }
-    const renderRacers = (pairing: Pairing) => [
-      ...scoringRacers(pairing),
-      ...extraRacers(pairing),
-    ]
     const isFillInRacer = (pairing: Pairing, racer: MarioKartRacer) =>
-      racer.role === 'scoring' &&
       (marioKartFillInPlayerIdsByPairingId.get(pairing.id)?.has(racer.playerId) ??
         false)
-    const renderRacerBadges = (pairing: Pairing, racer: MarioKartRacer) => (
-      <>
-        {racer.role === 'extra' && (
-          <Badge variant="secondary">{t('swiss.marioKartExtra')}</Badge>
-        )}
-        {isFillInRacer(pairing, racer) && (
-          <Badge
-            className="border-teal-300 bg-teal-100 text-teal-950"
-            title={t('swiss.warning.marioKartFillIn.title')}
-            variant="outline"
-          >
-            {t('swiss.warning.marioKartFillIn.label')}
-          </Badge>
-        )}
-      </>
+    const renderRacers = (pairing: Pairing) => [
+      ...[...scoringRacers(pairing)].sort(
+        (left, right) =>
+          Number(isFillInRacer(pairing, left)) -
+          Number(isFillInRacer(pairing, right)),
+      ),
+      ...extraRacers(pairing),
+    ]
+    const renderFillInBadge = () => (
+      <Badge
+        className={cn(pairingHintBadgeClassName, 'border-teal-300 bg-teal-100 text-teal-950')}
+        title={t('swiss.warning.marioKartFillIn.title')}
+        variant="outline"
+      >
+        {t('swiss.warning.marioKartFillIn.label')}
+      </Badge>
     )
+    const renderExtraHintBadge = () => (
+      <Badge
+        className={cn(pairingHintBadgeClassName, 'border-sky-300 bg-sky-100 text-sky-950')}
+        title={t('swiss.warning.marioKartExtra.title')}
+        variant="outline"
+      >
+        {t('swiss.marioKartExtra')}
+      </Badge>
+    )
+    const renderMarioKartRacerHints = (
+      pairing: Pairing,
+      racer: MarioKartRacer,
+      index: number,
+      visibleWarnings: PairingWarning[],
+    ) => {
+      const hasFillInHint = isFillInRacer(pairing, racer)
+      const hasPairingHints = index === 0 && (pairing.isManual || visibleWarnings.length > 0)
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {hasFillInHint && renderFillInBadge()}
+          {racer.role === 'extra' && renderExtraHintBadge()}
+          {index === 0 && pairing.isManual && (
+            <span className={fixedPairingHintClassName}>
+              <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
+              {editable && onManualPairingRemove && (
+                <Button
+                  aria-label={pairingRemoveLabel(pairing)}
+                  className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+                  disabled={!canChangePairings}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onManualPairingRemove?.(pairing.id)}
+                >
+                  <X className="size-3" />
+                </Button>
+              )}
+            </span>
+          )}
+          {index === 0 && visibleWarnings.length > 0 && (
+            visibleWarnings.map((entry) => {
+              const badgeMeta = pairingWarningBadgeMeta(entry, t)
+
+              return (
+                <Badge
+                  key={entry.id}
+                  className={cn(pairingHintBadgeClassName, badgeMeta.className)}
+                  title={badgeMeta.title}
+                  variant="outline"
+                >
+                  {badgeMeta.label}
+                </Badge>
+              )
+            })
+          )}
+          {!hasFillInHint && !hasPairingHints && index === 0 && (
+            <Badge className={pairingHintBadgeClassName} variant="outline">
+              OK
+            </Badge>
+          )}
+        </div>
+      )
+    }
     const eventResultCellClass = (racer: MarioKartRacer) =>
       cn('transition-colors', racer.event && 'bg-secondary/60')
     const lobbyLabel = (pairing: Pairing) =>
@@ -3468,10 +3710,11 @@ function PairingsTable({
                         <span className="type-label min-w-0 truncate">
                           {playerName(tournament, racer.playerId)}
                         </span>
-                        {renderRacerBadges(pairing, racer)}
                       </div>
                     </div>
                     <div className="grid justify-items-end gap-1">
+                      {showWarnings && isFillInRacer(pairing, racer) && renderFillInBadge()}
+                      {showWarnings && racer.role === 'extra' && renderExtraHintBadge()}
                       {renderGameCount(pairing, racer)}
                       {renderPlacement(pairing, racer)}
                       {renderIngamePoints(pairing, racer)}
@@ -3534,7 +3777,6 @@ function PairingsTable({
                           <span className="min-w-0 truncate">
                             {playerName(tournament, racer.playerId)}
                           </span>
-                          {renderRacerBadges(pairing, racer)}
                         </div>
                       </TableCell>
                       <TableCell className={eventResultCellClass(racer)}>
@@ -3549,46 +3791,9 @@ function PairingsTable({
                       <TableCell className={cn('align-middle', eventResultCellClass(racer))}>
                         {renderEvent(pairing, racer)}
                       </TableCell>
-                      {showWarnings && index === 0 && (
-                        <TableCell rowSpan={rowSpan}>
-                          <div className="flex flex-wrap gap-1">
-                            {pairing.isManual && (
-                              <span className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950">
-                                <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
-                                {editable && onManualPairingRemove && (
-                                  <Button
-                                    aria-label={pairingRemoveLabel(pairing)}
-                                    className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
-                                    disabled={!canChangePairings}
-                                    size="icon"
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => onManualPairingRemove?.(pairing.id)}
-                                  >
-                                    <X className="size-3" />
-                                  </Button>
-                                )}
-                              </span>
-                            )}
-                            {visibleWarnings.length === 0 && !pairing.isManual ? (
-                              <Badge variant="outline">OK</Badge>
-                            ) : (
-                              visibleWarnings.map((entry) => {
-                                const badgeMeta = pairingWarningBadgeMeta(entry, t)
-
-                                return (
-                                  <Badge
-                                    key={entry.id}
-                                    className={cn('type-action', badgeMeta.className)}
-                                    title={badgeMeta.title}
-                                    variant="outline"
-                                  >
-                                    {badgeMeta.label}
-                                  </Badge>
-                                )
-                              })
-                            )}
-                          </div>
+                      {showWarnings && (
+                        <TableCell>
+                          {renderMarioKartRacerHints(pairing, racer, index, visibleWarnings)}
                         </TableCell>
                       )}
                     </TableRow>
@@ -3737,7 +3942,7 @@ function PairingsTable({
                 <TableCell>
                   <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
-                      <span className="type-caption inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950">
+                      <span className={fixedPairingHintClassName}>
                         <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
                         {editable && onManualPairingRemove && (
                           <Button
@@ -3755,7 +3960,9 @@ function PairingsTable({
                       </span>
                     )}
                     {visibleWarnings.length === 0 && !pairing.isManual ? (
-                      <Badge variant="outline">OK</Badge>
+                      <Badge className={pairingHintBadgeClassName} variant="outline">
+                        OK
+                      </Badge>
                     ) : (
                       visibleWarnings.map((entry) => {
                         const badgeMeta = pairingWarningBadgeMeta(entry, t)
@@ -3763,7 +3970,7 @@ function PairingsTable({
                         return (
                           <Badge
                             key={entry.id}
-                            className={cn('type-action', badgeMeta.className)}
+                            className={cn(pairingHintBadgeClassName, badgeMeta.className)}
                             title={badgeMeta.title}
                             variant="outline"
                           >
@@ -3824,7 +4031,9 @@ function StandingsTable({
       ? row.roundHistory.filter((cell) => cell.outcome !== 'open')
       : row.roundHistory
   const visibleEventHistory = (row: StandingTableRow) =>
-    row.roundHistory.filter((cell) => cell.outcome !== 'open')
+    row.roundHistory.filter(
+      (cell) => cell.event || (cell.outcome !== 'open' && cell.outcome !== 'bye'),
+    )
   const roundColumnCount = Math.max(
     0,
     ...standings.map((row) => visibleRoundHistory(row).length),
@@ -3871,18 +4080,16 @@ function StandingsTable({
   const eventCellClass = (cell: StandingHistoryCell) =>
     cn(
       'type-caption swiss-round-cell inline-flex h-7 min-w-11 items-center justify-center rounded px-2 tabular-nums',
-      cell.outcome === 'open'
-        ? 'border border-border bg-background text-muted-foreground'
-        : cell.event
-          ? 'border border-emerald-300 bg-emerald-100 text-emerald-950'
+      cell.event
+        ? 'border border-emerald-300 bg-emerald-100 text-emerald-950'
+        : cell.outcome === 'open'
+          ? 'border border-border bg-background text-muted-foreground'
           : 'border border-red-300 bg-red-100 text-red-950',
     )
   const eventCellLabel = (cell: StandingHistoryCell) =>
-    cell.outcome === 'open'
-      ? '-'
-      : cell.event
-        ? t('swiss.eventYes')
-        : t('swiss.eventNo')
+    cell.outcome === 'open' && !cell.event ? '-' : cell.label.split(' ')[0] || cell.label
+  const eventCellStatusLabel = (cell: StandingHistoryCell) =>
+    cell.event ? t('swiss.eventYes') : t('swiss.eventNo')
 
   return (
     <Card className="swiss-standings-card">
@@ -3949,7 +4156,13 @@ function StandingsTable({
                         }
                       }}
                     >
-                      <TableCell className="px-1.5 py-2 tabular-nums">{row.rank}</TableCell>
+                      <TableCell className="px-0.5 py-1.5 text-center tabular-nums">
+                        <RankPlacement
+                          className="justify-center"
+                          isMarioKart={isMarioKart}
+                          rank={row.rank}
+                        />
+                      </TableCell>
                       <TableCell className="type-label min-w-0 py-2 pl-4 pr-1.5">
                         <span className="block min-w-0 truncate">{row.playerName}</span>
                       </TableCell>
@@ -4064,7 +4277,9 @@ function StandingsTable({
                   key={row.playerId}
                   className={podiumClass(row.rank)}
                 >
-                  <TableCell className="tabular-nums">{row.rank}</TableCell>
+                  <TableCell className="tabular-nums">
+                    <RankPlacement isMarioKart={isMarioKart} rank={row.rank} />
+                  </TableCell>
                   <TableCell className="type-label">{row.playerName}</TableCell>
                   <TableCell className="tabular-nums">
                     <span className="type-action inline-flex min-w-12 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-primary">
@@ -4161,6 +4376,7 @@ function StandingsTable({
                               key={`${row.playerId}-event-${cell.roundNumber}`}
                               className={eventCellClass(cell)}
                               title={cell.title}
+                              aria-label={`${eventCellLabel(cell)}: ${eventCellStatusLabel(cell)}`}
                             >
                               {eventCellLabel(cell)}
                             </span>
@@ -4201,6 +4417,7 @@ function StandingsTable({
                             key={`${row.playerId}-event-${cell.roundNumber}`}
                             className={eventCellClass(cell)}
                             title={cell.title}
+                            aria-label={`${eventCellLabel(cell)}: ${eventCellStatusLabel(cell)}`}
                           >
                             {eventCellLabel(cell)}
                           </span>

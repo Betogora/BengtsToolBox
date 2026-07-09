@@ -11,6 +11,7 @@ import {
   getCurrentDraftRound,
   getNextAllowedRoundNumber,
   isPairingComplete,
+  normalizeMarioKartRacerRoles,
   recalculateStandings,
   removePlayerFromTournament,
   reopenPreviousRound,
@@ -42,7 +43,7 @@ const initialState: SwissTournamentsState = {
 }
 
 function sanitizeTournament(tournament: Tournament): Tournament {
-  return {
+  const sanitizedTournament = {
     ...tournament,
     format: tournament.format ?? 'swiss',
     players: [...(tournament.players ?? [])].sort(
@@ -65,6 +66,8 @@ function sanitizeTournament(tournament: Tournament): Tournament {
       roundByeScores: tournament.settings?.roundByeScores ?? {},
     },
   }
+
+  return normalizeMarioKartRacerRoles(sanitizedTournament)
 }
 
 function downloadText(filename: string, content: string, type: string) {
@@ -274,7 +277,7 @@ export function useSwissTournaments(sessionId = 'default') {
       return null
     }
 
-    const nextTournament = updater(activeTournament)
+    const nextTournament = sanitizeTournament(updater(activeTournament))
     await saveTournament(nextTournament)
 
     return nextTournament
