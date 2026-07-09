@@ -122,6 +122,19 @@ function highestCompletedRoundNumber(tournament: Tournament) {
   )
 }
 
+function highestCompletedMarioKartRaceCount(tournament: Tournament) {
+  return recalculateStandings(tournament).reduce(
+    (highestRaceCount, row) => Math.max(highestRaceCount, row.marioKartGames),
+    0,
+  )
+}
+
+function minimumPlannedUnitCount(tournament: Tournament) {
+  return tournament.format === 'marioKart'
+    ? highestCompletedMarioKartRaceCount(tournament)
+    : highestCompletedRoundNumber(tournament)
+}
+
 function pairingPlayerIds(pairing: Pairing) {
   return [
     pairing.whitePlayerId,
@@ -277,7 +290,7 @@ export function useSwissTournaments(sessionId = 'default') {
         numberOfRounds: partial.numberOfRounds
           ? Math.max(
               1,
-              highestCompletedRoundNumber(tournament),
+              minimumPlannedUnitCount(tournament),
               Math.floor(partial.numberOfRounds),
             )
           : tournament.numberOfRounds,

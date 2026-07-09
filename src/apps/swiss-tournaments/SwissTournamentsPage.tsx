@@ -192,11 +192,11 @@ function pairingCountLabelKey(format?: Tournament['format']): TranslationKey {
 }
 
 function plannedUnitLabelKey(format?: Tournament['format']): TranslationKey {
-  return format === 'marioKart' ? 'swiss.plannedLobbies' : 'swiss.rounds'
+  return format === 'marioKart' ? 'swiss.plannedMarioKartRaces' : 'swiss.rounds'
 }
 
 function completedUnitLabelKey(format?: Tournament['format']): TranslationKey {
-  return format === 'marioKart' ? 'swiss.playedLobbies' : 'swiss.rounds'
+  return format === 'marioKart' ? 'swiss.marioKartGames' : 'swiss.rounds'
 }
 
 function currentUnitLabelKey(format?: Tournament['format']): TranslationKey {
@@ -326,6 +326,13 @@ function isRoundCompleteForProgress(round: Round) {
 }
 
 function completedRoundCount(tournament: Tournament) {
+  if (tournament.format === 'marioKart') {
+    return recalculateStandings(tournament).reduce(
+      (highestRaceCount, row) => Math.max(highestRaceCount, row.marioKartGames),
+      0,
+    )
+  }
+
   const completedRegularRounds = new Set(
     tournament.rounds
       .filter((round) => round.roundNumber <= tournament.numberOfRounds)
@@ -336,6 +343,27 @@ function completedRoundCount(tournament: Tournament) {
   return Math.min(completedRegularRounds.size, tournament.numberOfRounds)
 }
 
+function currentMarioKartRaceCount(tournament: Tournament, completedRaces: number) {
+  const currentRound = tournament.rounds.find(
+    (round) => round.roundNumber === tournament.currentRound,
+  )
+  const currentLobbyRace = currentRound?.pairings.reduce(
+    (highestRaceCount, pairing) =>
+      pairing.kind === 'marioKart'
+        ? Math.max(highestRaceCount, pairing.marioKartCycleNumber ?? 0)
+        : highestRaceCount,
+    0,
+  ) ?? 0
+
+  return Math.max(completedRaces, currentLobbyRace)
+}
+
+function currentUnitCount(tournament: Tournament, completedUnits: number) {
+  return tournament.format === 'marioKart'
+    ? currentMarioKartRaceCount(tournament, completedUnits)
+    : tournament.currentRound
+}
+
 function highestCompletedRoundNumber(tournament: Tournament) {
   return tournament.rounds.reduce(
     (highestRound, round) =>
@@ -344,6 +372,30 @@ function highestCompletedRoundNumber(tournament: Tournament) {
         : highestRound,
     0,
   )
+}
+
+function minimumPlannedUnitCount(tournament: Tournament) {
+  return tournament.format === 'marioKart'
+    ? completedRoundCount(tournament)
+    : highestCompletedRoundNumber(tournament)
+}
+
+function completionBannerRoundNumber(
+  tournament: Tournament,
+  displayedRounds: Round[],
+  isTournamentComplete: boolean,
+) {
+  if (!isTournamentComplete) {
+    return null
+  }
+
+  if (tournament.format === 'marioKart') {
+    return displayedRounds[0]?.roundNumber ?? null
+  }
+
+  return displayedRounds.find(
+    (round) => round.roundNumber <= tournament.numberOfRounds,
+  )?.roundNumber ?? null
 }
 
 function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
@@ -448,10 +500,6 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeMeta> = {
     label: 'EXTRA',
     className: 'border-cyan-300 bg-cyan-100 text-cyan-950',
   },
-  'mario-kart-repeat-opponent': {
-    label: 'REPEAT',
-    className: 'border-amber-500 bg-amber-200 text-amber-950',
-  },
   'mario-kart-score-gap': {
     label: 'SCORE',
     className: 'border-orange-500 bg-orange-200 text-orange-950',
@@ -521,7 +569,7 @@ function RoundProgress({
 
   return (
     <div
-      aria-label={t(isMarioKart ? 'swiss.lobbyProgressAria' : 'swiss.roundProgressAria', {
+      aria-label={t(isMarioKart ? 'swiss.marioKartRaceProgressAria' : 'swiss.roundProgressAria', {
         current: visibleCurrentRound,
         total: totalRounds,
       })}
@@ -1568,15 +1616,20 @@ export function SwissTournamentsPage() {
     [tournament],
   )
   const completedRounds = tournament ? completedRoundCount(tournament) : 0
+  const currentUnitProgress = tournament
+    ? currentUnitCount(tournament, completedRounds)
+    : 0
   const isTournamentComplete =
     Boolean(tournament) &&
     tournament.numberOfRounds > 0 &&
     completedRounds >= tournament.numberOfRounds
   const completionBannerBeforeRoundNumber =
-    tournament && isTournamentComplete
-      ? displayedRounds.find(
-          (round) => round.roundNumber <= tournament.numberOfRounds,
-        )?.roundNumber ?? null
+    tournament
+      ? completionBannerRoundNumber(
+          tournament,
+          displayedRounds,
+          isTournamentComplete,
+        )
       : null
   const archivedTournamentSummaries = useMemo(
     () =>
@@ -1813,11 +1866,11 @@ export function SwissTournamentsPage() {
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
                   <CardDescription>{t(currentUnitLabelKey(tournament.format))}</CardDescription>
                   <CardTitle className="type-section-title">
-                    {tournament.currentRound}/{tournament.numberOfRounds}
+                    {currentUnitProgress}/{tournament.numberOfRounds}
                   </CardTitle>
                 </div>
                 <RoundProgress
-                  currentRound={tournament.currentRound}
+                  currentRound={currentUnitProgress}
                   isMarioKart={isMarioKartTournament}
                   numberOfRounds={tournament.numberOfRounds}
                 />
@@ -1900,7 +1953,7 @@ export function SwissTournamentsPage() {
                   {(tournament.format ?? 'swiss') !== 'roundRobin' && (
                     <IftaInput
                       label={t(plannedUnitLabelKey(tournament.format))}
-                      min={Math.max(1, highestCompletedRoundNumber(tournament))}
+                      min={Math.max(1, minimumPlannedUnitCount(tournament))}
                       type="number"
                       value={tournament.numberOfRounds}
                       onChange={(event) =>
@@ -2292,7 +2345,7 @@ export function SwissTournamentsPage() {
                     <Fragment key={round.id}>
                       {round.roundNumber === completionBannerBeforeRoundNumber && (
                         <TournamentCompleteBanner
-                          completedRounds={tournament.numberOfRounds}
+                          completedRounds={completedRounds}
                           label={t('swiss.tournamentComplete')}
                           numberOfRounds={tournament.numberOfRounds}
                           unitLabel={t(completedUnitLabelKey(tournament.format))}

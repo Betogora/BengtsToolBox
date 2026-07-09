@@ -927,15 +927,6 @@ function validatePairing(
       warnings.push(warning('mario-kart-score-gap', 'Die Score-Differenz dieser Lobby ist ungewöhnlich hoch.'))
     }
 
-    for (let leftIndex = 0; leftIndex < scoringIds.length; leftIndex += 1) {
-      for (let rightIndex = leftIndex + 1; rightIndex < scoringIds.length; rightIndex += 1) {
-        if (hasPlayedEachOtherBeforeRound(tournament, scoringIds[leftIndex], scoringIds[rightIndex], roundNumber)) {
-          warnings.push(warning('mario-kart-repeat-opponent', 'Mindestens zwei Fahrer waren bereits in derselben Lobby.'))
-          return warnings
-        }
-      }
-    }
-
     return warnings
   }
 
@@ -4003,7 +3994,7 @@ export function standingsToCsv(rows: StandingRow[], format: Tournament['format']
         'Siege',
         'Punkte',
         'Durchschnittsplatz',
-        'Grundpartien',
+        'Rennen',
         'Ereignisse',
         'Lobbys',
         'Status',
