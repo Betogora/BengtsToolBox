@@ -1882,7 +1882,12 @@ export function SwissTournamentsPage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="grid gap-3">
+                <div
+                  className={cn(
+                    'grid gap-3',
+                    isMarioKartTournament && 'md:col-span-2 md:grid-cols-2',
+                  )}
+                >
                   <IftaInput
                     label={t('swiss.tournamentName')}
                     value={tournament.name}
@@ -1906,56 +1911,54 @@ export function SwissTournamentsPage() {
                     />
                   )}
                 </div>
-                <div className="grid gap-3">
-                  {!isMarioKartTournament && (
-                  <Select
-                    value={String(tournament.settings.byeScore)}
-                    onValueChange={(value) =>
-                      void app.updateSettings({
-                        byeScore: Number(value) as ByeScore,
-                      })
-                    }
-                  >
-                    <IftaSelectTrigger
-                      className={singleLineSelectTriggerClass}
-                      label={t('swiss.pointsPerBye')}
+                {!isMarioKartTournament && (
+                  <div className="grid gap-3">
+                    <Select
+                      value={String(tournament.settings.byeScore)}
+                      onValueChange={(value) =>
+                        void app.updateSettings({
+                          byeScore: Number(value) as ByeScore,
+                        })
+                      }
                     >
-                      <SelectValue />
-                    </IftaSelectTrigger>
-                    <SelectContent>
-                      {byeScoreOptions.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                          {language === 'en' ? option.labelEn : option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  )}
-                  {!isMarioKartTournament && (
-                  <Select
-                    value={tournament.settings.byePolicy}
-                    onValueChange={(value) =>
-                      void app.updateSettings({
-                        byePolicy: value as ByePolicy,
-                      })
-                    }
-                  >
-                    <IftaSelectTrigger
-                      className={singleLineSelectTriggerClass}
-                      label={t('swiss.byePolicy')}
+                      <IftaSelectTrigger
+                        className={singleLineSelectTriggerClass}
+                        label={t('swiss.pointsPerBye')}
+                      >
+                        <SelectValue />
+                      </IftaSelectTrigger>
+                      <SelectContent>
+                        {byeScoreOptions.map((option) => (
+                          <SelectItem key={option.value} value={String(option.value)}>
+                            {language === 'en' ? option.labelEn : option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={tournament.settings.byePolicy}
+                      onValueChange={(value) =>
+                        void app.updateSettings({
+                          byePolicy: value as ByePolicy,
+                        })
+                      }
                     >
-                      <SelectValue />
-                    </IftaSelectTrigger>
-                    <SelectContent>
-                      {byePolicyOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {t(option.labelKey)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  )}
-                </div>
+                      <IftaSelectTrigger
+                        className={singleLineSelectTriggerClass}
+                        label={t('swiss.byePolicy')}
+                      >
+                        <SelectValue />
+                      </IftaSelectTrigger>
+                      <SelectContent>
+                        {byePolicyOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(option.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
@@ -3623,6 +3626,8 @@ function StandingsTable({
 }) {
   const { t } = useI18n()
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
+  type StandingHistoryCell = (typeof standings)[number]['roundHistory'][number]
+  type StandingTableRow = (typeof standings)[number]
   const podiumClass = (rank: number) =>
     rank === 1
       ? 'swiss-podium-first bg-[#f6e3a5]/65'
@@ -3631,7 +3636,7 @@ function StandingsTable({
         : rank === 3
           ? 'swiss-podium-third bg-[#e8c0a0]/55'
           : ''
-  const roundCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
+  const roundCellClass = (cell: StandingHistoryCell) =>
     cn(
       'type-caption swiss-round-cell inline-flex h-7 min-w-11 items-center justify-start rounded px-2 tabular-nums',
       cell.color === 'W' && 'border border-border bg-white text-foreground',
@@ -3644,14 +3649,23 @@ function StandingsTable({
       currentPlayerId === playerId ? null : playerId,
     )
   }
+  const isMarioKart = tournamentFormat === 'marioKart'
+  const visibleRoundHistory = (row: StandingTableRow) =>
+    isMarioKart
+      ? row.roundHistory.filter((cell) => cell.outcome !== 'open')
+      : row.roundHistory
+  const visibleEventHistory = (row: StandingTableRow) =>
+    row.roundHistory.filter((cell) => cell.outcome !== 'open')
   const roundColumnCount = Math.max(
     0,
-    ...standings.map((row) => row.roundHistory.length),
+    ...standings.map((row) => visibleRoundHistory(row).length),
   )
   const visibleRoundGridColumns = Math.min(Math.max(roundColumnCount, 1), 3)
   const roundCellLabelWidth = Math.max(
     4,
-    ...standings.flatMap((row) => row.roundHistory.map((cell) => cell.label.length)),
+    ...standings.flatMap((row) =>
+      visibleRoundHistory(row).map((cell) => cell.label.length),
+    ),
   )
   const roundCellWidthStyle = {
     '--swiss-round-cell-width': `${roundCellLabelWidth * 0.45 + 1.85}rem`,
@@ -3663,19 +3677,18 @@ function StandingsTable({
       : tournamentFormat === 'handAndBrain'
       ? t('swiss.hardship.handAndBrain')
       : t('swiss.hardship.byes')
-  const hardshipCount = (row: (typeof standings)[number]) =>
+  const hardshipCount = (row: StandingTableRow) =>
     tournamentFormat === 'marioKart'
       ? row.marioKartGames
       : tournamentFormat === 'handAndBrain'
       ? row.receivedByes + row.receivedSingleGames
       : row.receivedByes
-  const isMarioKart = tournamentFormat === 'marioKart'
   const primaryPointsLabel = isMarioKart
     ? t('swiss.marioKartTournamentPoints')
     : t('swiss.standings.points')
   const mobilePrimaryPointsLabel = isMarioKart ? 'TP' : primaryPointsLabel
   const winsLabel = isMarioKart ? t('swiss.marioKartWins') : t('swiss.table.wins')
-  const winsCount = (row: (typeof standings)[number]) =>
+  const winsCount = (row: StandingTableRow) =>
     isMarioKart ? row.marioKartWins : row.wins
   const eventStandings = isMarioKart
     ? [...standings]
@@ -3686,7 +3699,7 @@ function StandingsTable({
         )
         .map((row, index) => ({ ...row, eventRank: index + 1 }))
     : []
-  const eventCellClass = (cell: (typeof standings)[number]['roundHistory'][number]) =>
+  const eventCellClass = (cell: StandingHistoryCell) =>
     cn(
       'type-caption swiss-round-cell inline-flex h-7 min-w-11 items-center justify-center rounded px-2 tabular-nums',
       cell.outcome === 'open'
@@ -3695,7 +3708,7 @@ function StandingsTable({
           ? 'border border-emerald-300 bg-emerald-100 text-emerald-950'
           : 'border border-border bg-muted text-muted-foreground',
     )
-  const eventCellLabel = (cell: (typeof standings)[number]['roundHistory'][number]) =>
+  const eventCellLabel = (cell: StandingHistoryCell) =>
     cell.outcome === 'open'
       ? '-'
       : cell.event
@@ -3806,7 +3819,7 @@ function StandingsTable({
                         <TableCell className="px-2 pb-2 pt-0" colSpan={5}>
                           <div className="grid gap-2 py-2">
                             <div className="swiss-round-grid">
-                              {row.roundHistory.map((cell) => (
+                              {visibleRoundHistory(row).map((cell) => (
                                 <span
                                   key={`${row.playerId}-${cell.roundNumber}`}
                                   className={roundCellClass(cell)}
@@ -3910,7 +3923,7 @@ function StandingsTable({
                   )}
                   <TableCell className="swiss-round-table-cell">
                     <div className="swiss-round-grid">
-                      {row.roundHistory.map((cell) => (
+                      {visibleRoundHistory(row).map((cell) => (
                         <span
                           key={`${row.playerId}-${cell.roundNumber}`}
                           className={roundCellClass(cell)}
@@ -3935,10 +3948,10 @@ function StandingsTable({
         </Table>
         {isMarioKart && (
           <div className="mt-6 grid gap-3">
-            <div className="flex items-center gap-2">
+            <h3 className="type-card-title flex items-center gap-2">
               <Trophy className="size-5 text-primary" />
-              <h3 className="type-section-title">{t('swiss.marioKartEventRanking')}</h3>
-            </div>
+              {t('swiss.marioKartEventRanking')}
+            </h3>
             <Table
               className="table-fixed"
               containerClassName="swiss-standings-mobile md:hidden"
@@ -3974,7 +3987,7 @@ function StandingsTable({
                     <TableRow className={podiumClass(row.eventRank)}>
                       <TableCell className="px-2 pb-2 pt-0" colSpan={3}>
                         <div className="swiss-round-grid py-2">
-                          {row.roundHistory.map((cell) => (
+                          {visibleEventHistory(row).map((cell) => (
                             <span
                               key={`${row.playerId}-event-${cell.roundNumber}`}
                               className={eventCellClass(cell)}
@@ -4014,7 +4027,7 @@ function StandingsTable({
                     </TableCell>
                     <TableCell className="swiss-round-table-cell">
                       <div className="swiss-round-grid">
-                        {row.roundHistory.map((cell) => (
+                        {visibleEventHistory(row).map((cell) => (
                           <span
                             key={`${row.playerId}-event-${cell.roundNumber}`}
                             className={eventCellClass(cell)}
