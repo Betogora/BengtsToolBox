@@ -27,9 +27,9 @@ docs/                     Dauerhafte Architektur-, Entwicklungs- und Betriebsdok
 | Aufgabe | Zuerst lesen |
 | --- | --- |
 | kleine Änderung in einer App | betroffene Page, Hook und Typen |
-| neue reguläre App | `docs/APP_DEVELOPMENT_GUIDE.md`, `src/apps/registry.ts`, eine ähnliche App |
-| Routing, Shared Code oder Firebase-Infrastruktur | `docs/ARCHITECTURE.md` und betroffene zentrale Dateien |
-| Hosting, Actions oder Umgebungsvariablen | `docs/ONLINE_HOSTING_GUIDE.md`, Workflows und Firebase-Konfiguration |
+| neue reguläre App | `docs/specs.md` (Entwicklungsvertrag), `src/apps/registry.ts`, eine ähnliche App |
+| Routing, Shared Code oder Firebase-Infrastruktur | `docs/specs.md` (Persistenz und Architektur) und betroffene zentrale Dateien |
+| Hosting, Actions oder Umgebungsvariablen | `docs/specs.md` (Hosting und Betrieb), Workflows und Firebase-Konfiguration |
 | Projektüberblick oder öffentliche Beschreibung | `README.md` |
 
 Nicht vorsorglich alle Apps, Datensätze oder Guides laden. Der aktuelle Code ist für Implementierungsdetails maßgeblich; Markdown beschreibt stabile Grenzen und Arbeitsabläufe.
@@ -60,18 +60,19 @@ Mindestens für Codeänderungen:
 
 ```powershell
 npm run lint
+npm test
 npm run build
 ```
 
-Bei Firebase- oder Sync-Änderungen zusätzlich `/apps/diagnostics`, lokalen Modus ohne `.env.local`, Realtime-Sync in zwei Fenstern und Persistenz nach Reload prüfen.
+Bei Firebase- oder Sync-Änderungen zusätzlich lokalen Modus ohne `.env.local`, Realtime-Sync in zwei Fenstern, Persistenz nach Reload sowie Auth-, Rules- und Netzwerkfehler prüfen.
 
 Bei Dokumentationsänderungen lokale Links, genannte Pfade und Befehle gegen den aktuellen Repository-Stand prüfen. `dist/`, `node_modules/`, Logs und `.env.local` weder bearbeiten noch committen.
 
 ## Maßgebliche Dokumente
 
 - `README.md`: GitHub-Landingpage, App-Übersicht und Einstieg
-- `docs/ARCHITECTURE.md`: Schichten, Datenfluss und technische Entscheidungen
-- `docs/APP_DEVELOPMENT_GUIDE.md`: vollständige Integrationscheckliste
-- `docs/ONLINE_HOSTING_GUIDE.md`: Firebase-, GitHub-Actions- und Deployment-Betrieb
+- `docs/specs.md`: zentrale Produkt- und Systemspezifikation einschließlich Entwicklungs- und Betriebsvertrag
+- `docs/specs.html`: responsive Lesefassung derselben Spezifikation
+- `docs/todo.md`: priorisierte, noch nicht spezifizierte oder umgesetzte Verbesserungen
 
 Wenn diese Dateien dem Code widersprechen, zuerst den aktuellen Laufzeitpfad verifizieren und die Dokumentation im selben Änderungssatz korrigieren.

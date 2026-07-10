@@ -39,13 +39,11 @@ export type HandBrainSide = {
   brainPlayerId: string
 }
 
-export type MarioKartRacerRole = 'scoring' | 'extra'
-
 export type MarioKartRacer = {
   playerId: string
-  role: MarioKartRacerRole
+  /** Fachliche Wertungsrunde; null kennzeichnet ein derzeit ungewertetes Extra. */
+  scoringCycleNumber: number | null
   placement?: number
-  ingamePoints?: number
   event?: boolean
 }
 
@@ -57,6 +55,8 @@ export type Player = {
   status: PlayerStatus
   addedInRound: number
   statusOverrides?: Record<number, PlayerStatus>
+  marioKartEligibleFromCycle?: number
+  marioKartSkippedCycleNumbers?: number[]
 }
 
 export type TournamentSettings = {
@@ -128,10 +128,10 @@ export type StandingRow = {
   receivedByes: number
   receivedSingleGames: number
   marioKartWins: number
-  marioKartIngamePoints: number
   marioKartAveragePlacement: number | null
   marioKartExtraRides: number
-  marioKartGames: number
+  marioKartPhysicalRaces: number
+  marioKartScoringRaces: number
   marioKartEvents: number
   status: PlayerStatus
 }
@@ -176,10 +176,10 @@ export type PlayerScoreSummary = {
   roles: Array<'hand' | 'brain' | '-'>
   byes: number
   singleGames: number
-  marioKartIngamePoints: number
   marioKartPlacements: number[]
   marioKartExtraRides: number
-  marioKartGames: number
+  marioKartPhysicalRaces: number
+  marioKartScoringRaces: number
   marioKartEvents: number
   marioKartFillIns: number
   marioKartLastFillInRound: number | null

@@ -5,7 +5,10 @@ import {
   Eye,
   EyeOff,
   Globe2,
+  LoaderCircle,
+  RefreshCw,
   StepForward,
+  TriangleAlert,
 } from 'lucide-react'
 
 import { useNextQuestion } from '@/apps/next-question/hooks/useNextQuestion'
@@ -42,14 +45,17 @@ function isEditableElement(target: EventTarget | null) {
 export function NextQuestionPage() {
   const { t } = useI18n()
   const {
+    catalogError,
     currentPosition,
     currentQuestion,
     data,
     error,
+    isCatalogLoading,
     isLoading,
     jumpToQuestion,
     previousQuestion,
     questionCount,
+    retryCatalog,
     triggerPrimaryAction,
   } = useNextQuestion()
   const isAnswerVisible = data.isAnswerVisible
@@ -116,8 +122,45 @@ export function NextQuestionPage() {
         </Card>
       )}
 
-      <Card className="overflow-hidden">
-        <CardContent className="grid gap-7 p-5 sm:p-6">
+      <Card aria-busy={isCatalogLoading} className="overflow-hidden">
+        {isCatalogLoading ? (
+          <CardHeader
+            aria-live="polite"
+            className="min-h-[24rem] place-content-center justify-items-center gap-3 text-center"
+            role="status"
+          >
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-8 animate-spin text-primary"
+            />
+            <CardTitle>{t('nextQuestion.loadingTitle')}</CardTitle>
+            <CardDescription>
+              {t('nextQuestion.loadingDescription')}
+            </CardDescription>
+          </CardHeader>
+        ) : catalogError ? (
+          <CardHeader
+            className="min-h-[24rem] place-content-center justify-items-center gap-3 text-center"
+            role="alert"
+          >
+            <TriangleAlert
+              aria-hidden="true"
+              className="size-8 text-destructive"
+            />
+            <CardTitle>{t('nextQuestion.loadErrorTitle')}</CardTitle>
+            <CardDescription>
+              {t('nextQuestion.loadErrorDescription')}
+            </CardDescription>
+            <p className="type-caption max-w-xl text-muted-foreground">
+              {catalogError.message}
+            </p>
+            <Button className="mt-2" type="button" onClick={retryCatalog}>
+              <RefreshCw aria-hidden="true" className="size-4" />
+              {t('nextQuestion.retry')}
+            </Button>
+          </CardHeader>
+        ) : (
+          <CardContent className="grid gap-7 p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <span className="type-label inline-flex min-w-0 items-center gap-2 rounded-md bg-secondary px-3 py-2 text-primary">
               <Globe2 className="size-4 shrink-0" />
@@ -248,7 +291,8 @@ export function NextQuestionPage() {
               {t('common.syncing')}
             </p>
           )}
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
     </AppPage>
   )

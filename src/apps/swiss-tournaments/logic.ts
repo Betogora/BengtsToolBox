@@ -4,7 +4,6 @@ import type {
   CreateTournamentInput,
   GameResult,
   HandBrainSide,
-  MarioKartRacer,
   Pairing,
   PairingWarning,
   Player,
@@ -16,6 +15,20 @@ import type {
   StandingRow,
   Tournament,
 } from '@/apps/swiss-tournaments/types'
+import {
+  createMarioKartStandingRows,
+  getMarioKartExtraRacers as marioKartExtraRacers,
+  getMarioKartEntryCycle,
+  getMarioKartPlanningAvailability,
+  getMarioKartRacers as marioKartRacers,
+  getMarioKartScoringRacers as marioKartScoringRacers,
+  getMarioKartScoringPlacement,
+  getMarioKartTournamentPoints,
+  isMarioKartPairingComplete,
+  planNextMarioKartLobby,
+  setMarioKartPlayerStatus,
+  updateMarioKartRacer,
+} from '@/apps/swiss-tournaments/marioKart'
 import { createRandomId } from '@/apps/shared/utils'
 
 const defaultSettings = {
@@ -154,7 +167,14 @@ export function createTournament(
     format,
     numberOfRounds,
     currentRound: 0,
-    players: seededPlayers,
+    players:
+      format === 'marioKart'
+        ? seededPlayers.map((player) => ({
+            ...player,
+            marioKartEligibleFromCycle: 1,
+            marioKartSkippedCycleNumbers: [],
+          }))
+        : seededPlayers,
     rounds: [],
     settings: {
       ...defaultSettings,
@@ -187,86 +207,12 @@ function pairingKind(pairing: Pairing) {
   return pairing.kind ?? 'standard'
 }
 
-function marioKartRacers(pairing: Pairing) {
-  return pairing.kind === 'marioKart' ? pairing.marioKartRacers ?? [] : []
-}
-
-function marioKartScoringRacers(pairing: Pairing) {
-  return marioKartRacers(pairing).filter((racer) => racer.role === 'scoring')
-}
-
-function marioKartExtraRacers(pairing: Pairing) {
-  return marioKartRacers(pairing).filter((racer) => racer.role === 'extra')
-}
-
 function marioKartScoringPlayerIds(pairing: Pairing) {
   return marioKartScoringRacers(pairing).map((racer) => racer.playerId)
 }
 
-function marioKartPlacementPoints(scoringCount: number, placement: number | undefined) {
-  if (!placement) {
-    return 0
-  }
-
-  if (scoringCount === 1) {
-    return [1][placement - 1] ?? 0
-  }
-
-  if (scoringCount === 4) {
-    return [1, 0.7, 0.3, 0][placement - 1] ?? 0
-  }
-
-  if (scoringCount === 3) {
-    return [1, 0.5, 0][placement - 1] ?? 0
-  }
-
-  if (scoringCount === 2) {
-    return [1, 0][placement - 1] ?? 0
-  }
-
-  return 0
-}
-
-function marioKartScoringPlacement(
-  scoringRacers: MarioKartRacer[],
-  racer: MarioKartRacer | undefined,
-) {
-  if (typeof racer?.placement !== 'number') {
-    return undefined
-  }
-
-  const placement = racer.placement
-
-  return (
-    scoringRacers.filter(
-      (entry) =>
-        typeof entry.placement === 'number' &&
-        entry.placement < placement,
-    ).length + 1
-  )
-}
-
 function hasCompleteMarioKartResult(pairing: Pairing) {
-  const scoringRacers = marioKartScoringRacers(pairing)
-  const extraRacers = marioKartExtraRacers(pairing)
-  const allRacers = marioKartRacers(pairing)
-  const scoringPlacements = scoringRacers
-    .map((racer) => racer.placement)
-    .filter((placement): placement is number => typeof placement === 'number')
-  const allPlacements = allRacers
-    .map((racer) => racer.placement)
-    .filter((placement): placement is number => typeof placement === 'number')
-  const minimumScoringRacers = extraRacers.length > 0 ? 1 : 2
-  const placementLimit = Math.max(scoringRacers.length, allRacers.length)
-
-  return (
-    scoringRacers.length >= minimumScoringRacers &&
-    scoringPlacements.length === scoringRacers.length &&
-    new Set(allPlacements).size === allPlacements.length &&
-    allPlacements.every(
-      (placement) => placement >= 1 && placement <= placementLimit,
-    )
-  )
+  return isMarioKartPairingComplete(pairing)
 }
 
 export function isPairingComplete(pairing: Pairing) {
@@ -431,9 +377,8 @@ function resultPoints(
   if (pairingKind(pairing) === 'marioKart') {
     const scoringRacers = marioKartScoringRacers(pairing)
     const racer = scoringRacers.find((entry) => entry.playerId === playerId)
-    const scoringPlacement = marioKartScoringPlacement(scoringRacers, racer)
 
-    return marioKartPlacementPoints(scoringRacers.length, scoringPlacement)
+    return racer ? getMarioKartTournamentPoints(pairing, racer) : 0
   }
 
   if (!result) {
@@ -464,13 +409,6 @@ function isWin(pairing: Pairing, playerId: string) {
 
 function getPlayerStatusForRound(player: Player, roundNumber: number): PlayerStatus {
   return player.statusOverrides?.[roundNumber] ?? player.status
-}
-
-function getMarioKartEligiblePlayers(tournament: Tournament, roundNumber: number) {
-  return tournament.players
-    .filter((player) => player.addedInRound <= roundNumber)
-    .filter((player) => getPlayerStatusForRound(player, roundNumber) === 'active')
-    .sort(seedOrder)
 }
 
 function hasPlayedEachOtherBeforeRound(
@@ -551,10 +489,10 @@ function getSummaryBeforeRound(
       roles: [],
       byes: 0,
       singleGames: 0,
-      marioKartIngamePoints: 0,
       marioKartPlacements: [],
       marioKartExtraRides: 0,
-      marioKartGames: 0,
+      marioKartPhysicalRaces: 0,
+      marioKartScoringRaces: 0,
       marioKartEvents: 0,
       marioKartFillIns: 0,
       marioKartLastFillInRound: null,
@@ -584,7 +522,7 @@ function getSummaryBeforeRound(
         if (pairingKind(pairing) === 'marioKart') {
           const scoringRacers = marioKartScoringRacers(pairing)
           const previousGameCounts = scoringRacers.map(
-            (racer) => summaries[racer.playerId]?.marioKartGames ?? 0,
+            (racer) => summaries[racer.playerId]?.marioKartScoringRaces ?? 0,
           )
           const cycleNumber =
             pairing.marioKartCycleNumber ??
@@ -619,7 +557,9 @@ function getSummaryBeforeRound(
         if (pairingKind(pairing) === 'marioKart') {
           const scoringRacers = marioKartScoringRacers(pairing)
           const ownRacer = scoringRacers.find((racer) => racer.playerId === player.id)
-          const ownScoringPlacement = marioKartScoringPlacement(scoringRacers, ownRacer)
+          const ownScoringPlacement = ownRacer
+            ? getMarioKartScoringPlacement(pairing, ownRacer)
+            : undefined
           const opponentIds = opponentIdsForPlayer(pairing, player.id)
           const isCompleteMarioKartPairing = hasCompleteMarioKartResult(pairing)
           const cycleNumber = marioKartCycleByPairingId.get(pairing.id) ?? 1
@@ -632,22 +572,19 @@ function getSummaryBeforeRound(
           summaries[player.id].roles.push('-')
 
           if (isCompleteMarioKartPairing) {
-            const previousGameCount = summaries[player.id].marioKartGames
+            const previousGameCount = summaries[player.id].marioKartScoringRaces
 
             if (previousGameCount >= cycleNumber) {
               summaries[player.id].marioKartFillIns += 1
               summaries[player.id].marioKartLastFillInRound = round.roundNumber
             }
 
-            summaries[player.id].marioKartGames += 1
+            summaries[player.id].marioKartPhysicalRaces += 1
+            summaries[player.id].marioKartScoringRaces += 1
           }
 
           if (ownRacer?.placement) {
             summaries[player.id].marioKartPlacements.push(ownRacer.placement)
-          }
-
-          if (typeof ownRacer?.ingamePoints === 'number') {
-            summaries[player.id].marioKartIngamePoints += ownRacer.ingamePoints
           }
 
           if (ownScoringPlacement === 1) {
@@ -2527,558 +2464,32 @@ function createHandBrainPairings(
   return normalizeRoundPairings(pairings)
 }
 
-function averageNumber(values: number[]) {
-  if (values.length === 0) {
-    return 0
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length
-}
-
-function numberSpread(values: number[]) {
-  return values.length > 0 ? Math.max(...values) - Math.min(...values) : 0
-}
-
-function combinations<T>(items: T[], count: number) {
-  if (count <= 0) {
-    return [[]] as T[][]
-  }
-
-  if (items.length < count) {
-    return [] as T[][]
-  }
-
-  const result: T[][] = []
-
-  function search(startIndex: number, current: T[]) {
-    if (current.length === count) {
-      result.push(current)
-      return
-    }
-
-    for (
-      let index = startIndex;
-      index <= items.length - (count - current.length);
-      index += 1
-    ) {
-      search(index + 1, [...current, items[index]])
-    }
-  }
-
-  search(0, [])
-  return result
-}
-
-function bestCombination<T>(
-  candidates: T[],
-  count: number,
-  score: (group: T[]) => number[],
-) {
-  if (count <= 0) {
-    return [] as T[]
-  }
-
-  if (candidates.length <= count) {
-    return candidates
-  }
-
-  return combinations(candidates, count)
-    .map((group) => ({ group, score: score(group) }))
-    .sort((left, right) => compareNumberLists(left.score, right.score))[0].group
-}
-
-function marioKartPairwiseRepeatPenalty(
-  players: Player[],
-  tournament: Tournament,
-  roundNumber: number,
-) {
-  let penalty = 0
-
-  for (let leftIndex = 0; leftIndex < players.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < players.length; rightIndex += 1) {
-      penalty +=
-        countGamesBetweenBeforeRound(
-          tournament,
-          players[leftIndex].id,
-          players[rightIndex].id,
-          roundNumber,
-        ) * 1_000
-    }
-  }
-
-  return penalty
-}
-
-function marioKartPrimaryGroupScore(
-  players: Player[],
-  tournament: Tournament,
-  summaries: Record<string, PlayerScoreSummary>,
-  roundNumber: number,
-) {
-  return [
-    numberSpread(players.map((player) => summaries[player.id].points)) * 10_000,
-    marioKartPairwiseRepeatPenalty(players, tournament, roundNumber),
-    numberSpread(players.map((player) => player.initialSeed)) * 10,
-    players.reduce((sum, player) => sum + player.initialSeed, 0) / 10_000,
-  ]
-}
-
-function marioKartRecentFillInPenalty(
-  summary: PlayerScoreSummary,
-  roundNumber: number,
-) {
-  if (!summary.marioKartLastFillInRound) {
-    return 0
-  }
-
-  const distance = Math.max(1, roundNumber - summary.marioKartLastFillInRound)
-
-  if (distance <= 1) {
-    return 1_000
-  }
-
-  if (distance === 2) {
-    return 250
-  }
-
-  return Math.round(100 / distance)
-}
-
-function marioKartFillGroupScore(
-  fillPlayers: Player[],
-  primaryPlayers: Player[],
-  tournament: Tournament,
-  summaries: Record<string, PlayerScoreSummary>,
-  roundNumber: number,
-  fewestGames: number,
-) {
-  const referencePoints =
-    primaryPlayers.length > 0
-      ? averageNumber(primaryPlayers.map((player) => summaries[player.id].points))
-      : averageNumber(fillPlayers.map((player) => summaries[player.id].points))
-  const referenceSeed =
-    primaryPlayers.length > 0
-      ? averageNumber(primaryPlayers.map((player) => player.initialSeed))
-      : averageNumber(fillPlayers.map((player) => player.initialSeed))
-
-  return [
-    fillPlayers.reduce(
-      (sum, player) => sum + Math.max(0, summaries[player.id].marioKartGames - fewestGames),
-      0,
-    ) * 1_000_000,
-    fillPlayers.reduce(
-      (sum, player) => sum + summaries[player.id].marioKartFillIns,
-      0,
-    ) * 100_000,
-    fillPlayers.reduce(
-      (sum, player) => sum + marioKartRecentFillInPenalty(summaries[player.id], roundNumber),
-      0,
-    ) * 1_000,
-    marioKartPairwiseRepeatPenalty(
-      [...primaryPlayers, ...fillPlayers],
-      tournament,
-      roundNumber,
-    ),
-    fillPlayers.reduce(
-      (sum, player) => sum + Math.abs(summaries[player.id].points - referencePoints),
-      0,
-    ) * 100,
-    fillPlayers.reduce(
-      (sum, player) => sum + Math.abs(player.initialSeed - referenceSeed),
-      0,
-    ) / 10_000,
-  ]
-}
-
-function marioKartScoringLimit(tournament: Tournament, fewestGames: number) {
-  return Math.max(tournament.numberOfRounds, fewestGames + 1)
-}
-
-function marioKartScoringLimitForPairing(
-  tournament: Tournament,
-  pairing: Pairing,
-  summaries: Record<string, PlayerScoreSummary>,
-) {
-  const raceCounts = marioKartRacers(pairing).map(
-    (racer) => summaries[racer.playerId]?.marioKartGames ?? 0,
-  )
-  const cycleNumber =
-    pairing.marioKartCycleNumber ??
-    (raceCounts.length > 0 ? Math.min(...raceCounts) + 1 : 1)
-
-  return Math.max(tournament.numberOfRounds, cycleNumber)
-}
-
-function isMarioKartBonusMode(tournament: Tournament) {
-  return (
-    tournament.format === 'marioKart' &&
-    tournament.rounds.some((round) =>
-      round.pairings.some(
-        (pairing) =>
-          pairing.kind === 'marioKart' &&
-          !pairing.isBye &&
-          (pairing.marioKartCycleNumber ?? 0) > tournament.numberOfRounds,
-      ),
-    )
-  )
-}
-
-function chooseMarioKartLobbyPlayers(
-  activePlayers: Player[],
-  tournament: Tournament,
-  summaries: Record<string, PlayerScoreSummary>,
-  roundNumber: number,
-) {
-  const targetSize = activePlayers.length >= 4 ? 4 : activePlayers.length
-
-  if (targetSize < 2) {
-    return { scoringPlayers: [] as Player[], extraPlayers: [] as Player[] }
-  }
-
-  const fewestGames = Math.min(
-    ...activePlayers.map((player) => summaries[player.id].marioKartGames),
-  )
-  const scoringLimit = marioKartScoringLimit(tournament, fewestGames)
-
-  const leastPlayedPlayers = activePlayers
-    .filter((player) => summaries[player.id].marioKartGames === fewestGames)
-    .sort((left, right) => playerOrder(left, right, summaries))
-
-  if (leastPlayedPlayers.length >= targetSize) {
-    const primaryCandidates = leastPlayedPlayers.slice(
-      0,
-      Math.min(leastPlayedPlayers.length, 12),
-    )
-
-    const scoringPlayers = bestCombination(primaryCandidates, targetSize, (group) =>
-      marioKartPrimaryGroupScore(group, tournament, summaries, roundNumber),
-    ).sort((left, right) => playerOrder(left, right, summaries))
-
-    return { scoringPlayers, extraPlayers: [] as Player[] }
-  }
-
-  const primaryPlayers = leastPlayedPlayers
-  const fillCount = targetSize - primaryPlayers.length
-  const fillCandidates = activePlayers
-    .filter((player) => !primaryPlayers.some((entry) => entry.id === player.id))
-    .sort((left, right) =>
-      compareNumberLists(
-        [
-          summaries[left.id].marioKartGames - fewestGames,
-          summaries[left.id].marioKartFillIns,
-          marioKartRecentFillInPenalty(summaries[left.id], roundNumber),
-          Math.abs(
-            summaries[left.id].points -
-              averageNumber(primaryPlayers.map((player) => summaries[player.id].points)),
-          ),
-          Math.abs(
-            left.initialSeed -
-              averageNumber(primaryPlayers.map((player) => player.initialSeed)),
-          ) / 10_000,
-        ],
-        [
-          summaries[right.id].marioKartGames - fewestGames,
-          summaries[right.id].marioKartFillIns,
-          marioKartRecentFillInPenalty(summaries[right.id], roundNumber),
-          Math.abs(
-            summaries[right.id].points -
-              averageNumber(primaryPlayers.map((player) => summaries[player.id].points)),
-          ),
-          Math.abs(
-            right.initialSeed -
-              averageNumber(primaryPlayers.map((player) => player.initialSeed)),
-          ) / 10_000,
-        ],
-      ),
-    )
-    .slice(0, 12)
-  const fillPlayers = bestCombination(fillCandidates, fillCount, (group) =>
-    marioKartFillGroupScore(
-      group,
-      primaryPlayers,
-      tournament,
-      summaries,
-      roundNumber,
-      fewestGames,
-    ),
-  )
-  const sortedPrimaryPlayers = primaryPlayers.sort((left, right) =>
-    playerOrder(left, right, summaries),
-  )
-  const sortedFillPlayers = fillPlayers.sort((left, right) =>
-    playerOrder(left, right, summaries),
-  )
-
-  if (isMarioKartBonusMode(tournament)) {
-    return {
-      scoringPlayers: [...sortedPrimaryPlayers, ...sortedFillPlayers],
-      extraPlayers: [],
-    }
-  }
-
-  const scoringFillPlayers = sortedFillPlayers.filter(
-    (player) => summaries[player.id].marioKartGames < scoringLimit,
-  )
-  const extraPlayers = sortedFillPlayers.filter(
-    (player) => summaries[player.id].marioKartGames >= scoringLimit,
-  )
-
-  return {
-    scoringPlayers: [...sortedPrimaryPlayers, ...scoringFillPlayers],
-    extraPlayers,
-  }
-}
-
-function hasMarioKartLobbyCandidates(tournament: Tournament, roundNumber: number) {
-  const eligiblePlayers = getMarioKartEligiblePlayers(tournament, roundNumber)
-
-  return eligiblePlayers.length >= 2
-}
-
-function marioKartCycleNumberForPlayers(
-  scoringPlayers: Player[],
-  summaries: Record<string, PlayerScoreSummary>,
-) {
-  if (scoringPlayers.length === 0) {
-    return 1
-  }
-
-  return (
-    Math.min(...scoringPlayers.map((player) => summaries[player.id].marioKartGames)) + 1
-  )
-}
-
-export function getMarioKartFillInPlayerIds(tournament: Tournament, pairing: Pairing) {
+export function getMarioKartFillInPlayerIds(_tournament: Tournament, pairing: Pairing) {
   if (pairingKind(pairing) !== 'marioKart' || pairing.isBye) {
     return [] as string[]
   }
 
-  const summaries = getSummaryBeforeRound(tournament, pairing.roundNumber)
-  const scoringIds = marioKartScoringPlayerIds(pairing)
-  const racerIds = marioKartRacers(pairing).map((racer) => racer.playerId)
-  const cycleNumber =
-    pairing.marioKartCycleNumber ??
-    (scoringIds.length > 0
-      ? Math.min(
-          ...scoringIds.map(
-            (playerId) => summaries[playerId]?.marioKartGames ?? 0,
-          ),
-        ) + 1
-      : 1)
+  const cycleNumber = pairing.marioKartCycleNumber ?? 1
 
-  return racerIds.filter(
-    (playerId) => (summaries[playerId]?.marioKartGames ?? 0) >= cycleNumber,
-  )
-}
-
-function marioKartLobbyNumberForCycle(
-  tournament: Tournament,
-  roundNumber: number,
-  cycleNumber: number,
-) {
-  const previousLobbiesInCycle = tournament.rounds
-    .filter((round) => round.roundNumber < roundNumber)
-    .flatMap((round) => round.pairings)
-    .filter((pairing) => pairingKind(pairing) === 'marioKart')
-    .filter((pairing) => pairing.marioKartCycleNumber === cycleNumber).length
-
-  return previousLobbiesInCycle + 1
-}
-
-function createMarioKartPairing(
-  tournament: Tournament,
-  roundNumber: number,
-  boardNumber: number,
-  scoringPlayers: Player[],
-  extraPlayers: Player[],
-  summaries: Record<string, PlayerScoreSummary>,
-  cycleNumber: number,
-  cycleLobbyNumber: number,
-  isManual = false,
-) {
-  const scoringRacers: MarioKartRacer[] = scoringPlayers.map((player) => ({
-    playerId: player.id,
-    role: 'scoring',
-  }))
-  const extraRacers: MarioKartRacer[] = extraPlayers.map((player) => ({
-    playerId: player.id,
-    role: 'extra',
-  }))
-  const pairing: Pairing = {
-    id: makeId('pairing'),
-    roundNumber,
-    boardNumber,
-    kind: 'marioKart',
-    marioKartCycleNumber: cycleNumber,
-    marioKartCycleLobbyNumber: cycleLobbyNumber,
-    marioKartRacers: [...scoringRacers, ...extraRacers],
-    isManual,
-    isBye: false,
-  }
-
-  return {
-    ...pairing,
-    warnings: validatePairing(tournament, pairing, roundNumber, summaries),
-  }
-}
-
-function withMarioKartLobbyMetadata(
-  tournament: Tournament,
-  roundNumber: number,
-  pairing: Pairing,
-  summaries: Record<string, PlayerScoreSummary>,
-) {
-  const scoringPlayers = marioKartScoringRacers(pairing)
-    .map((racer) => tournament.players.find((player) => player.id === racer.playerId))
-    .filter((player): player is Player => Boolean(player))
-  const cycleNumber =
-    pairing.marioKartCycleNumber ??
-    marioKartCycleNumberForPlayers(scoringPlayers, summaries)
-  const cycleLobbyNumber =
-    pairing.marioKartCycleLobbyNumber ??
-    marioKartLobbyNumberForCycle(tournament, roundNumber, cycleNumber)
-  const nextPairing = {
-    ...pairing,
-    roundNumber,
-    boardNumber: 1,
-    kind: 'marioKart' as const,
-    marioKartCycleNumber: cycleNumber,
-    marioKartCycleLobbyNumber: cycleLobbyNumber,
-  }
-
-  return {
-    ...nextPairing,
-    warnings: validatePairing(tournament, nextPairing, roundNumber, summaries),
-  }
+  return marioKartRacers(pairing)
+    .filter(
+      (racer) =>
+        racer.scoringCycleNumber !== null &&
+        racer.scoringCycleNumber > cycleNumber,
+    )
+    .map((racer) => racer.playerId)
 }
 
 function createMarioKartPairings(
   tournament: Tournament,
-  roundNumber: number,
-  fixedPairings: Pairing[] = [],
 ): Pairing[] {
-  const summaries = getSummaryBeforeRound(tournament, roundNumber)
-  const fixedMarioKartPairing = fixedPairings.find(
-    (pairing) => pairingKind(pairing) === 'marioKart',
+  const planned = planNextMarioKartLobby(tournament)
+
+  return (
+    planned.tournament.rounds.find(
+      (round) => round.roundNumber === planned.createdRoundNumber,
+    )?.pairings ?? []
   )
-
-  if (fixedMarioKartPairing) {
-    return normalizeRoundPairings([
-      withMarioKartLobbyMetadata(
-        tournament,
-        roundNumber,
-        { ...fixedMarioKartPairing, isManual: true },
-        summaries,
-      ),
-    ])
-  }
-
-  const activePlayers = getMarioKartEligiblePlayers(tournament, roundNumber)
-  const { scoringPlayers, extraPlayers } = chooseMarioKartLobbyPlayers(
-    activePlayers,
-    tournament,
-    summaries,
-    roundNumber,
-  )
-
-  if (scoringPlayers.length < 1 || scoringPlayers.length + extraPlayers.length < 2) {
-    return []
-  }
-
-  const cycleNumber = marioKartCycleNumberForPlayers(scoringPlayers, summaries)
-  const cycleLobbyNumber = marioKartLobbyNumberForCycle(
-    tournament,
-    roundNumber,
-    cycleNumber,
-  )
-
-  return normalizeRoundPairings([
-    createMarioKartPairing(
-      tournament,
-      roundNumber,
-      1,
-      scoringPlayers,
-      extraPlayers,
-      summaries,
-      cycleNumber,
-      cycleLobbyNumber,
-    )
-  ])
-}
-
-export function normalizeMarioKartRacerRoles(tournament: Tournament): Tournament {
-  if (tournament.format !== 'marioKart') {
-    return tournament
-  }
-
-  let didChange = false
-  const bonusMode = isMarioKartBonusMode(tournament)
-  const sortedRounds = [...tournament.rounds].sort(
-    (left, right) => left.roundNumber - right.roundNumber,
-  )
-  const rounds: Round[] = []
-
-  sortedRounds.forEach((round) => {
-    if (!bonusMode && round.status !== 'draft') {
-      rounds.push(round)
-      return
-    }
-
-    const summaries = getSummaryBeforeRound(
-      { ...tournament, rounds },
-      round.roundNumber,
-    )
-    let didRoundChange = false
-    const pairings = round.pairings.map((pairing) => {
-      if (
-        pairingKind(pairing) !== 'marioKart' ||
-        pairing.isBye ||
-        marioKartRacers(pairing).length === 0
-      ) {
-        return pairing
-      }
-
-      const nextPairing = {
-        ...pairing,
-        marioKartRacers: marioKartRacers(pairing).map((racer) => ({
-          ...racer,
-          role:
-            bonusMode ||
-            (summaries[racer.playerId]?.marioKartGames ?? 0) <
-              marioKartScoringLimitForPairing(tournament, pairing, summaries)
-              ? ('scoring' as const)
-              : ('extra' as const),
-        })),
-      }
-      const didPairingChange = marioKartRacers(nextPairing).some(
-        (racer, index) => racer.role !== marioKartRacers(pairing)[index]?.role,
-      )
-
-      if (!didPairingChange) {
-        return pairing
-      }
-
-      didChange = true
-      didRoundChange = true
-
-      return {
-        ...nextPairing,
-        warnings: validatePairing(tournament, nextPairing, round.roundNumber, summaries),
-      }
-    })
-
-    rounds.push(didRoundChange ? { ...round, pairings } : round)
-  })
-
-  if (!didChange) {
-    return tournament
-  }
-
-  const nextTournament = { ...tournament, rounds }
-
-  return bonusMode
-    ? regenerateCurrentDraftRoundIfUnscored(nextTournament)
-    : nextTournament
 }
 
 function normalizeRoundPairings(pairings: Pairing[]) {
@@ -3127,7 +2538,7 @@ export function generatePairings(
   }
 
   if (tournament.format === 'marioKart') {
-    return createMarioKartPairings(tournament, roundNumber, fixedPairings)
+    return createMarioKartPairings(tournament)
   }
 
   const summaries = getSummaryBeforeRound(tournament, roundNumber)
@@ -3341,8 +2752,11 @@ function createRoundHistory(
       const ownRacer = marioKartRacers(pairing).find(
         (racer) => racer.playerId === row.playerId,
       )
-      const isScoringRacer = ownRacer?.role === 'scoring'
-      const scoringPlacement = marioKartScoringPlacement(scoringRacers, ownRacer)
+      const isScoringRacer =
+        ownRacer !== undefined && ownRacer.scoringCycleNumber !== null
+      const scoringPlacement = ownRacer
+        ? getMarioKartScoringPlacement(pairing, ownRacer)
+        : undefined
       const opponentNames = (
         isScoringRacer
           ? opponentIdsForPlayer(pairing, row.playerId)
@@ -3361,10 +2775,6 @@ function createRoundHistory(
           : isScoringRacer
             ? 'offen'
             : 'ohne Wertung'
-      const ingameLabel =
-        isScoringRacer && typeof ownRacer?.ingamePoints === 'number'
-          ? `, Punkte ${ownRacer.ingamePoints}`
-          : ''
       const lobbyLabel = getRoundDisplayLabel(tournament, roundNumber)
       const shortLobbyLabel =
         pairing.marioKartCycleNumber && pairing.marioKartCycleLobbyNumber
@@ -3375,7 +2785,7 @@ function createRoundHistory(
       return {
         roundNumber,
         label: `${shortLobbyLabel} ${placementLabel} ${isScoringRacer && ownRacer?.placement ? `+${formatPoints(points)}` : '-'}${ownRacer?.event ? ' B' : ''}`,
-        title: `${lobbyLabel}: gegen ${opponentNames.join(' / ') || 'unbekannt'}, ${resultLabel}${ingameLabel}${eventLabel}`,
+        title: `${lobbyLabel}: gegen ${opponentNames.join(' / ') || 'unbekannt'}, ${resultLabel}${eventLabel}`,
         color: '-' as const,
         outcome: !isScoringRacer || !scoringPlacement
           ? 'open'
@@ -3428,6 +2838,18 @@ function createRoundHistory(
 }
 
 export function recalculateStandings(tournament: Tournament): StandingRow[] {
+  if (tournament.format === 'marioKart') {
+    const rankedRows = createMarioKartStandingRows(tournament)
+    const rankByPlayerId = new Map(
+      rankedRows.map((row) => [row.playerId, row.rank] as const),
+    )
+
+    return rankedRows.map((row) => ({
+      ...row,
+      roundHistory: createRoundHistory(tournament, row, rankByPlayerId),
+    }))
+  }
+
   const summaries = getSummaryBeforeRound(tournament)
   const rows = tournament.players.map((player) => {
     const summary = summaries[player.id]
@@ -3461,14 +2883,14 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
       receivedByes: summary.byes,
       receivedSingleGames: summary.singleGames,
       marioKartWins: summary.wins,
-      marioKartIngamePoints: summary.marioKartIngamePoints,
       marioKartAveragePlacement:
         summary.marioKartPlacements.length > 0
           ? summary.marioKartPlacements.reduce((sum, placement) => sum + placement, 0) /
             summary.marioKartPlacements.length
           : null,
       marioKartExtraRides: summary.marioKartExtraRides,
-      marioKartGames: summary.marioKartGames,
+      marioKartPhysicalRaces: summary.marioKartPhysicalRaces,
+      marioKartScoringRaces: summary.marioKartScoringRaces,
       marioKartEvents: countMarioKartEvents(tournament, player.id),
       status: player.status,
     } satisfies StandingRow
@@ -3490,22 +2912,6 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
 
   const rankedRows = rowsWithDirect
     .sort((left, right) => {
-      if (tournament.format === 'marioKart') {
-        const leftAveragePlacement =
-          left.marioKartAveragePlacement ?? Number.POSITIVE_INFINITY
-        const rightAveragePlacement =
-          right.marioKartAveragePlacement ?? Number.POSITIVE_INFINITY
-
-        return (
-          right.points - left.points ||
-          right.marioKartWins - left.marioKartWins ||
-          right.marioKartIngamePoints - left.marioKartIngamePoints ||
-          leftAveragePlacement - rightAveragePlacement ||
-          (right.directEncounterScore ?? -1) - (left.directEncounterScore ?? -1) ||
-          left.initialSeed - right.initialSeed
-        )
-      }
-
       return (
         right.points - left.points ||
         right.buchholz - left.buchholz ||
@@ -3613,82 +3019,16 @@ export function correctResult(
 export function updateMarioKartResult(
   tournament: Tournament,
   roundNumber: number,
-  pairingId: string,
+  _pairingId: string,
   playerId: string,
-  partial: { placement?: number; ingamePoints?: number; event?: boolean },
+  partial: { placement?: number; event?: boolean },
 ): Tournament {
-  const latestRound = [...tournament.rounds].sort(
-    (left, right) => right.roundNumber - left.roundNumber,
-  )[0]
-  const isEventOnlyUpdate =
-    'event' in partial &&
-    !('placement' in partial) &&
-    !('ingamePoints' in partial)
-
-  if (
-    !isEventOnlyUpdate &&
-    (!latestRound ||
-      latestRound.roundNumber !== roundNumber ||
-      latestRound.status !== 'draft')
-  ) {
-    return tournament
-  }
-
-  return {
-    ...tournament,
-    rounds: tournament.rounds.map((round) =>
-      round.roundNumber === roundNumber
-        ? {
-            ...round,
-            pairings: round.pairings.map((pairing) => {
-              if (
-                pairing.id !== pairingId ||
-                pairing.kind !== 'marioKart'
-              ) {
-                return pairing
-              }
-
-              return {
-                ...pairing,
-                marioKartRacers: marioKartRacers(pairing).map((racer) => {
-                  if (racer.playerId !== playerId) {
-                    return racer
-                  }
-
-                  const nextRacer = { ...racer }
-
-                  if ('placement' in partial) {
-                    if (partial.placement === undefined) {
-                      delete nextRacer.placement
-                    } else {
-                      nextRacer.placement = partial.placement
-                    }
-                  }
-
-                  if ('ingamePoints' in partial) {
-                    if (partial.ingamePoints === undefined) {
-                      delete nextRacer.ingamePoints
-                    } else {
-                      nextRacer.ingamePoints = partial.ingamePoints
-                    }
-                  }
-
-                  if ('event' in partial) {
-                    if (partial.event) {
-                      nextRacer.event = true
-                    } else {
-                      delete nextRacer.event
-                    }
-                  }
-
-                  return nextRacer
-                }),
-              }
-            }),
-          }
-        : round,
-    ),
-  }
+  return updateMarioKartRacer(
+    tournament,
+    roundNumber,
+    playerId,
+    partial,
+  )
 }
 
 function getLatestRound(tournament: Tournament) {
@@ -3702,7 +3042,6 @@ function hasGameResult(pairing: Pairing) {
     return marioKartRacers(pairing).some(
       (racer) =>
         racer.placement ||
-        typeof racer.ingamePoints === 'number' ||
         racer.event,
     )
   }
@@ -3799,6 +3138,10 @@ export function setPlayerStatus(
   status: PlayerStatus,
   fromRound?: number,
 ): Tournament {
+  if (tournament.format === 'marioKart') {
+    return setMarioKartPlayerStatus(tournament, playerId, status)
+  }
+
   let didChange = false
   const nextTournament = {
     ...tournament,
@@ -3856,6 +3199,14 @@ export function addPlayerAfterStart(
     addedInRound: nextRound,
   }
 
+  if (tournament.format === 'marioKart') {
+    player.marioKartEligibleFromCycle = getMarioKartEntryCycle(tournament)
+    player.marioKartSkippedCycleNumbers = Array.from(
+      { length: player.marioKartEligibleFromCycle - 1 },
+      (_, index) => index + 1,
+    )
+  }
+
   if (typeof rating === 'number' && Number.isFinite(rating)) {
     player.rating = Math.round(rating)
   }
@@ -3865,7 +3216,9 @@ export function addPlayerAfterStart(
     players: [...tournament.players, player],
   }
 
-  return regenerateCurrentDraftRoundIfUnscored(nextTournament)
+  return tournament.format === 'marioKart'
+    ? nextTournament
+    : regenerateCurrentDraftRoundIfUnscored(nextTournament)
 }
 
 export function removePlayerFromTournament(
@@ -3893,6 +3246,12 @@ export function resetTournamentProgress(tournament: Tournament): Tournament {
       status: 'active',
       addedInRound: 1,
       statusOverrides: undefined,
+      marioKartEligibleFromCycle:
+        tournament.format === 'marioKart' ? 1 : player.marioKartEligibleFromCycle,
+      marioKartSkippedCycleNumbers:
+        tournament.format === 'marioKart'
+          ? []
+          : player.marioKartSkippedCycleNumbers,
     })),
     rounds: [],
   }
@@ -3949,14 +3308,16 @@ export function deleteLatestRound(tournament: Tournament): Tournament {
 }
 
 export function getNextAllowedRoundNumber(tournament: Tournament) {
-  if (tournament.rounds.length === 0) {
-    if (
-      tournament.format === 'marioKart' &&
-      !hasMarioKartLobbyCandidates(tournament, 1)
-    ) {
-      return null
-    }
+  if (tournament.format === 'marioKart') {
+    return getMarioKartPlanningAvailability(tournament).canCreate
+      ? tournament.rounds.reduce(
+          (highest, round) => Math.max(highest, round.roundNumber),
+          0,
+        ) + 1
+      : null
+  }
 
+  if (tournament.rounds.length === 0) {
     return tournament.numberOfRounds >= 1 ? 1 : null
   }
 
@@ -3965,13 +3326,6 @@ export function getNextAllowedRoundNumber(tournament: Tournament) {
   )[0]
 
   if (!latestRound || latestRound.status !== 'completed') {
-    return null
-  }
-
-  if (
-    tournament.format === 'marioKart' &&
-    !hasMarioKartLobbyCandidates(tournament, latestRound.roundNumber + 1)
-  ) {
     return null
   }
 
@@ -4046,7 +3400,7 @@ function preserveExistingResults(pairings: Pairing[], existingPairings: Pairing[
     (pairing) =>
       pairingKind(pairing) === 'marioKart' &&
       marioKartRacers(pairing).some(
-        (racer) => racer.placement || racer.event || typeof racer.ingamePoints === 'number',
+        (racer) => racer.placement || racer.event,
       ),
   )
   const existingGames = existingPairings.filter(
@@ -4094,7 +3448,6 @@ function preserveExistingResults(pairings: Pairing[], existingPairings: Pairing[
           return {
             ...racer,
             placement: existingRacer.placement,
-            ingamePoints: existingRacer.ingamePoints,
             event: existingRacer.event,
           }
         }),
@@ -4183,64 +3536,6 @@ export function createManualHandBrainPairing(
   }
 }
 
-export function createManualMarioKartPairing(
-  tournament: Tournament,
-  roundNumber: number,
-  scoringPlayerIds: string[],
-): Pairing {
-  const summaries = getSummaryBeforeRound(tournament, roundNumber)
-  const uniqueScoringIds = [...new Set(scoringPlayerIds.filter(Boolean))]
-  const selectedPlayers = uniqueScoringIds
-    .map((playerId) => tournament.players.find((player) => player.id === playerId))
-    .filter((player): player is Player => Boolean(player))
-  const fewestGames =
-    selectedPlayers.length > 0
-      ? Math.min(...selectedPlayers.map((player) => summaries[player.id].marioKartGames))
-      : 0
-  const scoringLimit = marioKartScoringLimit(tournament, fewestGames)
-  const scoringPlayers = selectedPlayers.filter(
-    (player) => summaries[player.id].marioKartGames < scoringLimit,
-  )
-  const scoringIds = new Set(scoringPlayers.map((player) => player.id))
-  const extraPlayers = selectedPlayers.filter((player) => !scoringIds.has(player.id))
-  const cycleNumber =
-    scoringPlayers.length > 0
-      ? marioKartCycleNumberForPlayers(scoringPlayers, summaries)
-      : fewestGames + 1
-  const cycleLobbyNumber = marioKartLobbyNumberForCycle(
-    tournament,
-    roundNumber,
-    cycleNumber,
-  )
-  const racers: MarioKartRacer[] = [
-    ...scoringPlayers.map((player) => ({
-      playerId: player.id,
-      role: 'scoring' as const,
-    })),
-    ...extraPlayers.map((player) => ({
-      playerId: player.id,
-      role: 'extra' as const,
-    })),
-  ]
-
-  const pairing: Pairing = {
-    id: makeId('pairing'),
-    roundNumber,
-    boardNumber: 1,
-    kind: 'marioKart',
-    marioKartCycleNumber: cycleNumber,
-    marioKartCycleLobbyNumber: cycleLobbyNumber,
-    marioKartRacers: racers,
-    isManual: true,
-    isBye: false,
-  }
-
-  return {
-    ...pairing,
-    warnings: validatePairing(tournament, pairing, roundNumber, summaries),
-  }
-}
-
 export function formatPoints(value: number) {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1).replace('.', ',')
 }
@@ -4259,9 +3554,9 @@ export function standingsToCsv(rows: StandingRow[], format: Tournament['format']
         'Name',
         'Turnierpunkte',
         'Siege',
-        'Punkte',
         'Durchschnittsplatz',
-        'Rennen',
+        'Physische Rennen',
+        'Wertende Rennen',
         'Biere',
         'Lobbys',
         'Status',
@@ -4289,11 +3584,11 @@ export function standingsToCsv(rows: StandingRow[], format: Tournament['format']
             row.playerName,
             formatPoints(row.points),
             row.marioKartWins,
-            row.marioKartIngamePoints,
             row.marioKartAveragePlacement === null
               ? ''
               : formatPoints(row.marioKartAveragePlacement),
-            row.marioKartGames,
+            row.marioKartPhysicalRaces,
+            row.marioKartScoringRaces,
             row.marioKartEvents,
             row.roundHistory.map((entry) => entry.label).join(' '),
             row.status,

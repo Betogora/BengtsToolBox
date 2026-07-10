@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test core logic
+        run: npm test
+
       - name: Build app
         run: npm run build
 

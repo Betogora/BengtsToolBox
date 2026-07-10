@@ -5,6 +5,7 @@ import type {
   DecisionWheelResult,
   DecisionWheelState,
 } from '@/apps/decision-wheel/types'
+import { pickWeightedWinner } from '@/apps/decision-wheel/selection'
 import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
@@ -61,17 +62,6 @@ function normalizeState(state: DecisionWheelState): DecisionWheelState {
     updatedAt: state.updatedAt,
     updatedBy: state.updatedBy,
   }
-}
-
-function pickWeightedWinner(entries: DecisionWheelEntry[]) {
-  const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0)
-  let cursor = Math.random() * totalWeight
-
-  return entries.find((entry) => {
-    cursor -= entry.weight
-
-    return cursor < 0
-  })
 }
 
 export function useDecisionWheel(stateId = 'default') {

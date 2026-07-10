@@ -49,7 +49,7 @@ flowchart LR
 - **Offline-tolerant:** Ohne Firebase-Konfiguration arbeiten die Sync-Hooks lokal; mit Konfiguration synchronisieren sie anonym authentifiziert in Echtzeit.
 - **SPA-fähig:** Firebase Hosting leitet unbekannte Pfade auf `index.html` um, damit direkte App-URLs funktionieren.
 
-Die verbindlichen Details stehen in der [Architekturdokumentation](docs/ARCHITECTURE.md).
+Die verbindlichen Details stehen in der zentralen [Produkt- und Systemspezifikation](docs/specs.md).
 
 ## Lokal entwickeln
 
@@ -67,11 +67,13 @@ Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Mit
 
 ```powershell
 npm run lint
+npm test
+npm run test:coverage
 npm run build
 npm run preview
 ```
 
-`npm run build` führt zuerst die TypeScript-Prüfung und anschließend den produktiven Vite-Build aus. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine synchronisierte App in zwei Browserfenstern geprüft werden.
+`npm test` führt die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run build` führt zuerst die TypeScript-Prüfung und anschließend den produktiven Vite-Build aus. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine synchronisierte App in zwei Browserfenstern geprüft werden.
 
 ## Eine App ergänzen
 
@@ -79,9 +81,9 @@ npm run preview
 2. UI, Zustand und Fachlogik entlang der bestehenden App-Muster trennen.
 3. Persistente Pfade ausschließlich in `src/lib/firebase/paths.ts` ergänzen.
 4. Eine reguläre Dashboard-App in `src/apps/registry.ts` registrieren; Sonderbereiche bewusst direkt im Router eintragen.
-5. `npm run lint` und `npm run build` ausführen.
+5. `npm run lint`, `npm test` und `npm run build` ausführen.
 
-Der [App Development Guide](docs/APP_DEVELOPMENT_GUIDE.md) enthält die vollständige Checkliste.
+Der Abschnitt [Entwicklungsvertrag](docs/specs.md#7-entwicklungsvertrag) enthält die vollständige Checkliste.
 
 ## Deployment
 
@@ -96,7 +98,7 @@ Hosting veröffentlicht `dist`. Firestore-Regeln und Indizes werden getrennt aus
 npx firebase-tools deploy --only firestore:rules,firestore:indexes
 ```
 
-Secrets, Variablen, Erstinstallation und Fehlerdiagnose beschreibt der [Online Hosting Guide](docs/ONLINE_HOSTING_GUIDE.md).
+Secrets, Variablen, Erstinstallation und Fehlerdiagnose beschreibt der Abschnitt [Hosting und Betrieb](docs/specs.md#9-hosting-und-betrieb).
 
 ## Projektlandkarte
 
@@ -116,9 +118,9 @@ src/
 
 ## Dokumentation
 
-- [Architektur](docs/ARCHITECTURE.md) – Grenzen, Datenfluss und technische Entscheidungen
-- [App Development Guide](docs/APP_DEVELOPMENT_GUIDE.md) – belastbarer Ablauf für neue Features
-- [Online Hosting Guide](docs/ONLINE_HOSTING_GUIDE.md) – Firebase- und GitHub-Actions-Betrieb
+- [Produkt- und Systemspezifikation](docs/specs.md) – Produktumfang, Fachregeln, Architektur, Entwicklung und Betrieb
+- [Visuelle Spezifikation](docs/specs.html) – responsive, menschenlesbare HTML-Fassung
+- [Nächste Schritte](docs/todo.md) – priorisierte, nachweisbare technische Arbeiten
 
 ## Lizenz
 

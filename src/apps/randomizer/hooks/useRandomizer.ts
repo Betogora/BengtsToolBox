@@ -1,5 +1,9 @@
 import { useMemo } from 'react'
 
+import {
+  normalizeRandomizerRange,
+  rollRandomInteger,
+} from '@/apps/randomizer/random'
 import type { RandomizerState, RollResult } from '@/apps/randomizer/types'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
@@ -21,22 +25,16 @@ export function useRandomizer(stateId = 'default') {
   )
 
   const updateRange = (min: number, max: number) => {
-    const normalizedMin = Number.isFinite(min) ? Math.floor(min) : 1
-    const normalizedMax = Number.isFinite(max) ? Math.floor(max) : 6
-    const safeMin = Math.min(normalizedMin, normalizedMax)
-    const safeMax = Math.max(normalizedMin, normalizedMax)
+    const range = normalizeRandomizerRange(min, max)
 
     return store.merge({
-      min: safeMin,
-      max: safeMax,
+      ...range,
       updatedBy: session.userId,
     })
   }
 
   const roll = () => {
-    const min = Math.min(store.data.min, store.data.max)
-    const max = Math.max(store.data.min, store.data.max)
-    const value = Math.floor(Math.random() * (max - min + 1)) + min
+    const value = rollRandomInteger(store.data.min, store.data.max)
     const result: RollResult = {
       id:
         typeof crypto !== 'undefined' && 'randomUUID' in crypto

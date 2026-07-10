@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
+  <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #06344f;
+      --ink-soft: #4d6870;
+      --primary: #0d8e90;
+      --primary-dark: #087174;
+      --mint: #a9dfda;
+      --mint-soft: #e7f5f3;
+      --coral: #fd7261;
+      --apricot: #fac889;
+      --fog: #d7ddde;
+      --surface: #ffffff;
+      --background: #f4faf9;
+      --border: #d2e5e2;
+      --shadow: 0 22px 60px -42px rgba(6, 52, 79, 0.55);
+      --radius: 14px;
+      --content: 78rem;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      scroll-behavior: smooth;
+      scroll-padding-top: 1rem;
+      background: var(--background);
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 8%, rgba(169, 223, 218, 0.42), transparent 26rem),
+        linear-gradient(180deg, #ffffff 0, var(--background) 32rem);
+      font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: var(--primary-dark); text-underline-offset: 0.18em; }
+    a:hover { color: var(--ink); }
+    :focus-visible { outline: 3px solid var(--coral); outline-offset: 3px; }
+
+    .skip-link {
+      position: fixed;
+      top: 0.75rem;
+      left: 0.75rem;
+      z-index: 50;
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      color: #ffffff;
+      background: var(--ink);
+      transform: translateY(-150%);
+      transition: transform 150ms ease;
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.84);
+    }
+    .hero::after {
+      position: absolute;
+      inset: auto -5rem -9rem auto;
+      width: 23rem;
+      height: 23rem;
+      border: 4rem solid rgba(13, 142, 144, 0.08);
+      border-radius: 50%;
+      content: "";
+      pointer-events: none;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: min(calc(100% - 2rem), var(--content));
+      margin: 0 auto;
+      padding: clamp(3rem, 8vw, 6.5rem) 0 clamp(2.5rem, 6vw, 4.5rem);
+    }
+    .eyebrow {
+      margin: 0 0 0.8rem;
+      color: var(--primary-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.18; text-wrap: balance; }
+    h1 {
+      max-width: 14ch;
+      overflow-wrap: anywhere;
+      font-size: clamp(2.45rem, 7vw, 5.4rem);
+      letter-spacing: -0.055em;
+    }
+    h2 { margin-bottom: 1.2rem; font-size: clamp(1.8rem, 4vw, 2.7rem); letter-spacing: -0.035em; }
+    h3 { font-size: 1.22rem; }
+    h4 { font-size: 1rem; }
+    .lede {
+      max-width: 50rem;
+      margin: 1.4rem 0 0;
+      color: var(--ink-soft);
+      font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+    }
+    .hero-meta, .hero-actions, .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 1.5rem;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2rem;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--ink);
+      background: var(--surface);
+      font-size: 0.78rem;
+      font-weight: 750;
+      box-shadow: 0 8px 24px -20px rgba(6, 52, 79, 0.7);
+    }
+    .chip.live { border-color: rgba(13, 142, 144, 0.35); background: var(--mint-soft); }
+    .button-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--primary);
+      border-radius: 9px;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .button-link.primary { color: #ffffff; background: var(--primary); }
+    .button-link:hover { border-color: var(--ink); }
+
+    .page {
+      display: grid;
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: clamp(2rem, 5vw, 5rem);
+      width: min(calc(100% - 2rem), var(--content));
+      margin: 0 auto;
+      padding: 2rem 0 6rem;
+    }
+    .rail { min-width: 0; }
+    .rail nav {
+      position: sticky;
+      top: 1rem;
+      display: grid;
+      gap: 0.25rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+    .rail-title {
+      margin: 0 0 0.55rem;
+      color: var(--ink-soft);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .rail a {
+      padding: 0.46rem 0.55rem;
+      border-radius: 7px;
+      color: var(--ink-soft);
+      font-size: 0.84rem;
+      font-weight: 680;
+      line-height: 1.25;
+      text-decoration: none;
+    }
+    .rail a:hover { color: var(--ink); background: var(--mint-soft); }
+    .mobile-toc { display: none; }
+
+    main { min-width: 0; }
+    .section {
+      padding: clamp(2.7rem, 6vw, 5rem) 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:first-of-type { padding-top: 1rem; }
+    .section:last-child { border-bottom: 0; }
+    .section-intro { max-width: 52rem; margin: -0.45rem 0 1.6rem; color: var(--ink-soft); }
+
+    .stats, .grid-2, .grid-3 {
+      display: grid;
+      gap: 1rem;
+    }
+    .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card, .stat {
+      min-width: 0;
+      padding: 1.2rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+    .stat strong { display: block; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+    .stat span { display: block; margin-top: 0.45rem; color: var(--ink-soft); font-size: 0.78rem; font-weight: 700; }
+    .card h3, .card h4 { margin-bottom: 0.65rem; }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    .accent { border-left: 5px solid var(--primary); }
+    .warning { border-left: 5px solid var(--coral); background: #fff8f6; }
+    .note { border-left: 5px solid var(--apricot); background: #fffaf2; }
+
+    p, ul, ol { margin-top: 0; }
+    ul, ol { padding-left: 1.25rem; }
+    li + li { margin-top: 0.3rem; }
+    code {
+      padding: 0.12rem 0.35rem;
+      border: 1px solid #d9e8e6;
+      border-radius: 5px;
+      color: #074e61;
+      background: #eff7f6;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.86em;
+    }
+    pre {
+      overflow-x: auto;
+      padding: 1rem;
+      border-radius: 10px;
+      color: #eaf7f6;
+      background: var(--ink);
+      line-height: 1.5;
+    }
+    pre code { padding: 0; border: 0; color: inherit; background: transparent; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 44rem; }
+    th, td { padding: 0.78rem 0.9rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--ink); background: var(--mint-soft); font-size: 0.78rem; letter-spacing: 0.02em; }
+    td { color: var(--ink-soft); font-size: 0.9rem; }
+    tr:last-child td { border-bottom: 0; }
+
+    .app-tools { display: flex; justify-content: flex-end; gap: 0.5rem; margin: 0 0 0.8rem; }
+    .small-button {
+      min-height: 2.25rem;
+      padding: 0.4rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--surface);
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .small-button:hover { border-color: var(--primary); background: var(--mint-soft); }
+    details.app {
+      margin-bottom: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+    }
+    details.app[open] { border-color: rgba(13, 142, 144, 0.42); }
+    details.app summary {
+      display: grid;
+      grid-template-columns: 2.3rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 1rem 1.15rem;
+      cursor: pointer;
+      list-style: none;
+    }
+    details.app summary::-webkit-details-marker { display: none; }
+    details.app summary::after { content: "+"; color: var(--primary); font-size: 1.3rem; font-weight: 800; }
+    details.app[open] summary::after { content: "–"; }
+    .app-number {
+      display: grid;
+      width: 2.3rem;
+      height: 2.3rem;
+      place-items: center;
+      border-radius: 9px;
+      color: #ffffff;
+      background: var(--primary);
+      font-weight: 800;
+    }
+    .app-summary-title { display: block; font-weight: 800; }
+    .app-summary-route { display: block; color: var(--ink-soft); font-family: Consolas, monospace; font-size: 0.78rem; }
+    .app-body { padding: 0 1.2rem 1.2rem 4.25rem; }
+    .app-body h4 { margin: 1.15rem 0 0.5rem; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.6rem;
+      align-items: stretch;
+    }
+    .flow div {
+      position: relative;
+      display: grid;
+      min-height: 5.4rem;
+      place-items: center;
+      padding: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-align: center;
+      background: var(--surface);
+      font-size: 0.8rem;
+      font-weight: 750;
+    }
+    .flow div:not(:last-child)::after {
+      position: absolute;
+      right: -0.62rem;
+      z-index: 1;
+      content: "→";
+      color: var(--primary);
+      font-size: 1rem;
+    }
+
+    footer {
+      padding: 2rem 1rem 3rem;
+      border-top: 1px solid var(--border);
+      color: var(--ink-soft);
+      text-align: center;
+      background: #ffffff;
+      font-size: 0.86rem;
+    }
+
+    @media (max-width: 1000px) {
+      .page { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .mobile-toc {
+        display: block;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      .mobile-toc summary { padding: 0.85rem 1rem; font-weight: 800; cursor: pointer; }
+      .mobile-toc nav { display: grid; gap: 0.25rem; padding: 0 1rem 1rem; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      .hero-inner, .page { width: min(calc(100% - 1.25rem), var(--content)); }
+      .grid-2, .stats { grid-template-columns: 1fr; }
+      .hero-actions { display: grid; }
+      .button-link { justify-content: center; }
+      details.app summary { grid-template-columns: 2.3rem minmax(0, 1fr) auto; padding: 0.9rem; }
+      .app-body { padding: 0 0.9rem 1rem; }
+      .app-tools { justify-content: stretch; }
+      .small-button { flex: 1; }
+      .flow { grid-template-columns: 1fr; }
+      .flow div:not(:last-child)::after { right: auto; bottom: -0.8rem; content: "↓"; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }
+
+    @media print {
+      body { background: #ffffff; font-size: 10pt; }
+      .hero-inner, .page { width: 100%; }
+      .hero-inner { padding: 1cm 0 0.6cm; }
+      .page { display: block; padding: 0; }
+      .rail, .mobile-toc, .hero-actions, .app-tools { display: none !important; }
+      .section { break-inside: auto; padding: 0.6cm 0; }
+      .card, .stat, details.app, .table-wrap { box-shadow: none; break-inside: avoid; }
+      details.app:not([open]) > :not(summary) { display: block !important; }
+      details.app summary::after { display: none; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">BengtsToolBox · verbindliche Lesefassung</p>
+      <h1>Produkt- und Systemspezifikation</h1>
+      <p class="lede">Ein verifizierter Überblick über Produktumfang, Fachregeln, Datenhaltung, Architektur, Entwicklung und Betrieb der React-/Firebase-Toolbox.</p>
+      <div class="hero-meta" aria-label="Dokumentstatus">
+        <span class="chip live">Ist-Spezifikation</span>
+        <span class="chip">Stand 10. Juli 2026</span>
+        <span class="chip">aus Laufzeitcode rekonstruiert</span>
+      </div>
+      <div class="hero-actions">
+        <a class="button-link primary" href="specs.md">Markdown-Quelle</a>
+        <a class="button-link" href="todo.md">Nächste Schritte</a>
+        <a class="button-link" href="../README.md">Repository-Einstieg</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+    <aside class="rail" aria-label="Inhaltsverzeichnis">
+      <nav>
+        <p class="rail-title">Inhalt</p>
+        <a href="#ueberblick">Überblick</a>
+        <a href="#produktlandkarte">Produktlandkarte</a>
+        <a href="#globale-vertraege">Globale Verträge</a>
+        <a href="#persistenz">Persistenz & Sync</a>
+        <a href="#apps">App-Spezifikationen</a>
+        <a href="#architektur">Architektur</a>
+        <a href="#entwicklung">Entwicklung</a>
+        <a href="#betrieb">Betrieb</a>
+        <a href="#sicherheit">Sicherheitsgrenze</a>
+      </nav>
+    </aside>
+
+    <main id="inhalt">
+      <details class="mobile-toc">
+        <summary>Inhaltsverzeichnis</summary>
+        <nav>
+          <a href="#ueberblick">Überblick</a>
+          <a href="#produktlandkarte">Produktlandkarte</a>
+          <a href="#globale-vertraege">Globale Verträge</a>
+          <a href="#persistenz">Persistenz & Sync</a>
+          <a href="#apps">App-Spezifikationen</a>
+          <a href="#architektur">Architektur</a>
+          <a href="#entwicklung">Entwicklung</a>
+          <a href="#betrieb">Betrieb</a>
+          <a href="#sicherheit">Sicherheitsgrenze</a>
+        </nav>
+      </details>
+
+      <section class="section" id="ueberblick">
+        <p class="eyebrow">01 · Auftrag</p>
+        <h2>Werkzeuge zuerst, Einrichtung zuletzt</h2>
+        <p class="section-intro">BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spieleabende, Gruppen, Quizrunden und kleine Turniere. Die Werkzeuge starten direkt, synchronisieren bei vorhandener Firebase-Konfiguration und bleiben sonst lokal nutzbar.</p>
+        <div class="stats" aria-label="Projektkennzahlen">
+          <div class="stat"><strong>9</strong><span>registrierte Dashboard-Apps</span></div>
+          <div class="stat"><strong>1</strong><span>bewusster Sonderbereich</span></div>
+          <div class="stat"><strong>5.044</strong><span>statische Quizfragen</span></div>
+          <div class="stat"><strong>4</strong><span>Turnierformate</span></div>
+        </div>
+        <div class="grid-2" style="margin-top:1rem">
+          <article class="card accent">
+            <h3>Produktziele</h3>
+            <ul>
+              <li>Direkte Nutzung ohne Kontooberfläche.</li>
+              <li>Realtime-Sync über mehrere Geräte.</li>
+              <li>Lokaler Fallback ohne Firebase.</li>
+              <li>Mobile, Desktop- und Presenter-Ansichten.</li>
+              <li>Registry-getriebene App-Integration.</li>
+            </ul>
+          </article>
+          <article class="card note">
+            <h3>Bewusste Grenzen</h3>
+            <ul>
+              <li>Kein eigener Application Server.</li>
+              <li>Keine Konten, Rollen oder Mandanten.</li>
+              <li>Keine Offline-Konfliktauflösung.</li>
+              <li>Anonymous Auth ist keine fachliche Autorisierung.</li>
+              <li>Client-PIN ist keine Sicherheitsgrenze.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="produktlandkarte">
+        <p class="eyebrow">02 · Oberfläche</p>
+        <h2>Produktlandkarte</h2>
+        <p class="section-intro">Die Registry ist die einzige Quelle für Metadaten, Routen und Lazy Loader regulärer Apps. <code>Schlag den Raab</code> ist bewusst explizit geroutet.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Bereich</th><th>Route</th><th>Integration</th><th>Kernzweck</th></tr></thead>
+            <tbody>
+              <tr><td>Dashboard</td><td><code>/</code></td><td>Router</td><td>Einstieg, QR-Code und App-Kacheln</td></tr>
+              <tr><td>Glücksrad</td><td><code>/apps/decision-wheel</code></td><td>Registry</td><td>Gewichtete Zufallsauswahl</td></tr>
+              <tr><td>Coinflip</td><td><code>/apps/coinflip</code></td><td>Registry</td><td>Münzwurf mit Verlauf</td></tr>
+              <tr><td>Fortschritts-Dashboard</td><td><code>/apps/progress-dashboard</code></td><td>Registry</td><td>Punktestände und Zeitverlauf</td></tr>
+              <tr><td>Scoreboard</td><td><code>/apps/scoreboard</code></td><td>Registry</td><td>Personen-, Team- und Änderungswertung</td></tr>
+              <tr><td>Live-Buzzer</td><td><code>/apps/live-buzzer</code></td><td>Registry</td><td>Quiz-Buzzer und Rundensteuerung</td></tr>
+              <tr><td>Sushi Map</td><td><code>/apps/sushi</code></td><td>Registry</td><td>Länder- und Bundesländerbesuche</td></tr>
+              <tr><td>Randomizer</td><td><code>/apps/randomizer</code></td><td>Registry</td><td>Ganzzahl in einem Bereich</td></tr>
+              <tr><td>Turnier-App</td><td><code>/apps/swiss-tournaments</code></td><td>Registry</td><td>Vier Turnierformate</td></tr>
+              <tr><td>Nächste Frage</td><td><code>/apps/next-question</code></td><td>Registry</td><td>Quizkarten mit verdeckter Antwort</td></tr>
+              <tr><td>Schlag den Raab</td><td><code>/schlag-den-raab</code></td><td>Sonderroute</td><td>Zwei-Personen-Abendwertung</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="globale-vertraege">
+        <p class="eyebrow">03 · Produktweit</p>
+        <h2>Globale Verträge</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Shell & Routing</h3>
+            <ul>
+              <li>Branding, Dashboard, Sonderbereich und Sprachauswahl.</li>
+              <li>Desktopnavigation direkt, mobile Navigation im Menü.</li>
+              <li>Lazy Loading; Prefetch bei Fokus, Hover oder Touch.</li>
+              <li>Hosting-Rewrite auf <code>/index.html</code> für Direktlinks.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sprache</h3>
+            <ul>
+              <li>Deutsch <code>de-DE</code> als Standard, Englisch <code>en-GB</code>.</li>
+              <li>Auswahl in <code>bengtstoolbox.language</code>.</li>
+              <li>Gleiche flache Keys in beiden Katalogen.</li>
+              <li>Formatierung über <code>Intl</code>.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Presenter</h3>
+            <ul>
+              <li>Read-only Fullscreen-Overlay, normale Page bleibt Steuerfläche.</li>
+              <li>View-Auswahl nur bei mehreren Ausgaben.</li>
+              <li>Fallback als Overlay, wenn Fullscreen blockiert ist.</li>
+              <li>Escape/Beenden stellt Fokus wieder her.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>UX & Accessibility</h3>
+            <ul>
+              <li>Werkzeug auf dem ersten Screen.</li>
+              <li>Ab 320 px; breite Tabellen in eigenem Scrollcontainer.</li>
+              <li>Labels, ARIA-Namen, sichtbare Fokuszustände.</li>
+              <li>Bestätigung destruktiver Aktionen; Farbe nie allein.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="persistenz">
+        <p class="eyebrow">04 · Daten</p>
+        <h2>Persistenz und Synchronisation</h2>
+        <p class="section-intro">Dieselben Feature-Hooks bedienen Realtime- und lokalen Modus. Die Firebase-Initialisierung benötigt mindestens API-Key, Auth-Domain, Projekt-ID und App-ID.</p>
+        <div class="flow" aria-label="Datenfluss">
+          <div>Semantische Aktion in der Page</div>
+          <div>Feature-Hook normalisiert</div>
+          <div>Optimistischer React-/LocalStorage-Stand</div>
+          <div>Firestore + Serverzeit</div>
+          <div>Snapshot wird kanonisch</div>
+        </div>
+        <div class="grid-2" style="margin-top:1rem">
+          <article class="card accent">
+            <h3>Realtime-Modus</h3>
+            <p>Anonymous Auth, Snapshot-Abos und serverseitiges <code>updatedAt</code>. Der Live-Buzzer verwendet für den Gewinner-Buzz eine Firestore-Transaktion.</p>
+          </article>
+          <article class="card">
+            <h3>Lokaler Modus</h3>
+            <p>Fehlt Firebase, bleiben Dokumente und Collections über LocalStorage nutzbar. Es gibt weder Geräte-Sync noch eine Konflikt- oder Offline-Queue.</p>
+          </article>
+        </div>
+        <h3 style="margin:2rem 0 0.8rem">Kanonische Datenräume</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>App</th><th>State-Dokument</th><th>Collections</th></tr></thead>
+            <tbody>
+              <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage</td><td><code>apps/{app}/state/{stateId}</code></td><td>–</td></tr>
+              <tr><td>Schlag den Raab</td><td><code>apps/schlag-den-raab/sessions/{id}/state/default</code></td><td>–</td></tr>
+              <tr><td>Live-Buzzer</td><td><code>.../state/default</code></td><td><code>players</code></td></tr>
+              <tr><td>Scoreboard</td><td><code>.../state/default</code></td><td><code>players</code></td></tr>
+              <tr><td>Fortschritts-Dashboard</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
+              <tr><td>Sushi Map</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
+              <tr><td>Turnier-App</td><td><code>.../state/default</code></td><td><code>tournaments</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="apps">
+        <p class="eyebrow">05 · Fachlichkeit</p>
+        <h2>App-Spezifikationen</h2>
+        <p class="section-intro">Die Abschnitte beschreiben das implementierte Verhalten. Details lassen sich einzeln oder gesammelt öffnen.</p>
+        <div class="app-tools" aria-label="App-Abschnitte steuern">
+          <button class="small-button" type="button" data-details-action="open">Alle öffnen</button>
+          <button class="small-button" type="button" data-details-action="close">Alle schließen</button>
+        </div>
+
+        <details class="app" open>
+          <summary><span class="app-number">1</span><span><span class="app-summary-title">Glücksrad</span><span class="app-summary-route">/apps/decision-wheel</span></span></summary>
+          <div class="app-body">
+            <p>Gewichtete Zufallsauswahl mit editierbaren Optionen, Farben und ganzzahligen Gewichten ab <code>1</code>.</p>
+            <ul>
+              <li>Drei gleich gewichtete Beispiele als Initialzustand; leere Texte fallen auf <code>Option {n}</code> zurück.</li>
+              <li>Gewinnchance proportional zum Gewicht; Ergebnis entsteht vor der 4,4-s-Animation.</li>
+              <li>Letztes Ergebnis und fünf Verlaufseinträge; Verlauf löschen oder Beispiele zurücksetzen.</li>
+              <li>Presenter zeigt Rad, Ergebnis und Verlaufsumfang.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">2</span><span><span class="app-summary-title">Coinflip</span><span class="app-summary-route">/apps/coinflip</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Kopf/Zahl; <code>crypto.getRandomValues</code> mit <code>Math.random</code>-Fallback.</li>
+              <li>Sechs volle Rotationen, 1,7 s Animation plus Settle-Zeit.</li>
+              <li>Letztes Ergebnis und fünf Verlaufseinträge; vollständiger Reset.</li>
+              <li>Read-only Presenter für Ergebnis und Historie.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">3</span><span><span class="app-summary-title">Random Number Generator</span><span class="app-summary-route">/apps/randomizer</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Standardbereich 1–6; Ganzzahlen, vertauschte Grenzen werden normalisiert.</li>
+              <li>Inklusive Ziehung über <code>Math.random</code>.</li>
+              <li>Letztes Ergebnis und fünf Verlaufseinträge; Verlauf löschen erhält den Bereich.</li>
+              <li>Presenter zeigt Bereich, Ergebnis und Verlauf.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">4</span><span><span class="app-summary-title">Nächste Frage</span><span class="app-summary-route">/apps/next-question</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>5.044 Fragen in zehn Kategorien; jede braucht ID, Kategorie, Frage und Antwort.</li>
+              <li>Der Katalog wird beim Öffnen als gehashtes NDJSON-Asset geladen und langfristig per HTTP sowie für die laufende Sitzung im Speicher gecacht. Offline bleibt nach erfolgreichem Abruf best-effort; Ladefehler können sichtbar wiederholt werden.</li>
+              <li>Zyklische Vor-/Zurücknavigation und direkter 1-basierter Sprung.</li>
+              <li>Jeder Kartenwechsel verbirgt die Antwort.</li>
+              <li>Primäraktion: Antwort zeigen, danach zur nächsten Frage.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">5</span><span><span class="app-summary-title">Scoreboard</span><span class="app-summary-route">/apps/scoreboard</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Zwei Initialpersonen in Blau/Gelb; weitere starten ohne Team.</li>
+              <li>Nichtnegative Ganzzahlscores; Änderungen speichern Delta, Vorher/Nachher und Snapshotdaten.</li>
+              <li>Zehn Ereignisse; letzte Änderung rückgängig, solange die Person existiert.</li>
+              <li>Rangliste, Führung, Gesamtscore, Teams und unzugeordnete Scores.</li>
+              <li>Reset erhält Personen/Teams und setzt Scores sowie Verlauf zurück.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">6</span><span><span class="app-summary-title">Live-Buzzer</span><span class="app-summary-route">/apps/live-buzzer</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Lokale Browseridentität erzeugt automatisch eine Spielerkarte.</li>
+              <li>Offene/gesperrte Runden, Teams Blau/Gelb, optionaler Sound.</li>
+              <li>Pro Spieler ein Buzz; Firestore-Transaktion setzt genau den ersten Gewinner.</li>
+              <li>Spätere Buzzes bleiben in der Reihenfolge sichtbar; fünf Rundengewinner im Verlauf.</li>
+              <li>Rundenreset löscht Buzzes und öffnet eine neue Rundennummer.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">7</span><span><span class="app-summary-title">Fortschritts-Dashboard</span><span class="app-summary-route">/apps/progress-dashboard</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Fünf Initialpersonen mit Farbe und Standard-Getränkeicon.</li>
+              <li>Plus, Minus, Wein, Bier, Schnaps und Trichter; Schnaps zählt 0,5, andere Getränke 1.</li>
+              <li>Chronologische Scoreberechnung mit Untergrenze 0; Eventkorrektur und -löschung.</li>
+              <li>Editierbare Metadaten, Desktop-Zeitdiagramm und mobile Rang-/Timeline-Ansicht.</li>
+              <li>Archivieren startet einen leeren aktiven Datensatz; Archive sind umbenennbar/löschbar.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">8</span><span><span class="app-summary-title">Sushi Map</span><span class="app-summary-route">/apps/sushi</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>241 Weltterritorien und 16 Bundesländer; drei Initialtouristen.</li>
+              <li>Claims stammen aus dem jüngsten lokalen Kalendertag; mehrere Owner am selben Tag sind möglich.</li>
+              <li>„Unbesucht“ löscht nur die Events des jüngsten Claim-Tages.</li>
+              <li>Rangliste über aktuelle Welt-/Deutschland-Claims; zehn historische Achievements.</li>
+              <li>Tastatur, Drag, Pinch und Zoomstufen 1/2/4; Karten-Presenter.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app" open>
+          <summary><span class="app-number">9</span><span><span class="app-summary-title">SK Anderten Turnier-App</span><span class="app-summary-route">/apps/swiss-tournaments</span></span></summary>
+          <div class="app-body">
+            <p>Turnierverwaltung mit Spielern, Draft-/Completed-Runden, Archiv, Presenter, CSV und Druck-PDF.</p>
+            <h4>Gemeinsam</h4>
+            <ul>
+              <li>Spielerstatus aktiv/inaktiv/zurückgezogen, Rating, Seed und Eintrittsrunde.</li>
+              <li>Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate bearbeiten nur die jüngste Draft-Runde.</li>
+              <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie.</li>
+              <li>Nicht-Mario-Rangfolge: Punkte, Buchholz, SB, Siege, direkter Vergleich, Seed.</li>
+              <li>Ergebniskorrektur kann eine ungewertete aktuelle Draft-Runde neu generieren.</li>
+            </ul>
+            <div class="grid-2">
+              <article class="card">
+                <h4>Swiss</h4>
+                <p>Obere gegen untere Seed-Hälfte in Runde 1; danach Scoregruppen, Floater, Wiederholungsvermeidung, faire Byes und Farbausgleich.</p>
+              </article>
+              <article class="card">
+                <h4>Round Robin</h4>
+                <p>Berger-System mit Durchgängen, Farbinvertierung, Dummy-Bye bei ungerader Zahl und Reparatur nach Spieleränderungen.</p>
+              </article>
+              <article class="card">
+                <h4>Hand and Brain</h4>
+                <p>Vier Personen pro Brett; Optimierung von Score, Teams, Rollen und Farbe. Restklassen erzeugen Bye oder Einzelpartie.</p>
+              </article>
+              <article class="card">
+                <h4>Mario Kart</h4>
+                <p>Eine Viererlobby pro technische Runde. Weitere Lobbys werden einzeln gestartet und dürfen parallel aktiv sein, solange kein Fahrer doppelt reserviert wird.</p>
+              </article>
+            </div>
+            <h4>Mario-Kart-Wertung</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Wertende Fahrer</th><th>Punkte nach relativer Platzierung</th></tr></thead>
+                <tbody>
+                  <tr><td>4</td><td>1 / 0,7 / 0,3 / 0</td></tr>
+                  <tr><td>3</td><td>1 / 0,5 / 0</td></tr>
+                  <tr><td>2</td><td>1 / 0</td></tr>
+                  <tr><td>1 neben Extras</td><td>1</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              <li>Labels wie <code>Lobby 2.1</code> trennen fachliche Wertungsrunde und laufende Lobby. Jede Lobby enthält exakt vier Fahrer.</li>
+              <li>Aktive Wertungszuweisungen beeinflussen die nächste Planung, sportliche Statistiken aber erst nach Abschluss.</li>
+              <li>Füller werten bereits für die nächste geplante Runde; echte Extras bleiben mit <code>scoringCycleNumber: null</code> zunächst ungewertet.</li>
+              <li>Bonusrunden lassen die konfigurierte Rundenzahl unverändert und können frühere Extras chronologisch rückwirkend werten.</li>
+              <li>Vier eindeutige Eingaben von 1 bis 15 schließen automatisch. Turnierpunkte und Siege folgen der relativen Reihenfolge der vier menschlichen Fahrer; der tatsächliche Platz bleibt für den Durchschnitt erhalten. Geschlossene Lobbys können atomar korrigiert werden, ohne spätere Aufstellungen zu verändern.</li>
+              <li>Inaktive Fahrer überspringen nicht zugewiesene Wertungsrunden und holen sie bei Reaktivierung nicht nach.</li>
+              <li>Mario-Kart-Rangfolge: Turnierpunkte, Siege, Durchschnittsplatzierung, direkter Vergleich. Seed und Name sortieren nur vollständige Gleichstände stabil.</li>
+              <li>Biermarkierungen bleiben auch nach Lobbyabschluss direkt änderbar und beeinflussen weder Platzierung noch Lobby-Lebenszyklus. Sportliche und Bier-Rangliste teilen gleiche Ränge nach <code>1, 1, 3</code>; physische und wertende Rennen werden getrennt ausgewiesen.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">10</span><span><span class="app-summary-title">Schlag den Raab</span><span class="app-summary-route">/schlag-den-raab</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Zwei Personen, 15 Spiele mit Punkten 1–15, optionales Stechen mit 16 Punkten.</li>
+              <li>Regulärer Sieg bei Führung über 60 Punkten; Gleichstand nach 15 Spielen erzwingt Stechen.</li>
+              <li>Spiel- und Spielernamen sind editierbar; Siegerklick ist umschaltbar.</li>
+              <li>Reset archiviert den Abend, erhält Namen und startet leere Ergebnisse.</li>
+              <li>Client-PIN gilt nur für die aktuelle Session und ist keine technische Autorisierung.</li>
+              <li>Zwei deaktivierte Dummy-Game-Kacheln sind sichtbare Platzhalter.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" id="architektur">
+        <p class="eyebrow">06 · System</p>
+        <h2>Architektur</h2>
+        <div class="flow" aria-label="Systemkontext">
+          <div>Browser / React-SPA</div>
+          <div>Feature-Page</div>
+          <div>Feature-Hook & pure Logik</div>
+          <div>gemeinsame Sync-Hooks</div>
+          <div>Firestore oder LocalStorage</div>
+        </div>
+        <h3 style="margin:2rem 0 0.8rem">Verantwortungen</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Bereich</th><th>Verantwortung</th><th>Nicht erlaubt</th></tr></thead>
+            <tbody>
+              <tr><td><code>src/app</code></td><td>Router, Lazy Routes, Provider</td><td>App-Fachlogik</td></tr>
+              <tr><td><code>src/components/layout</code></td><td>Shell und Dashboard</td><td>Persistenzlogik</td></tr>
+              <tr><td><code>src/apps/registry.ts</code></td><td>reguläre App-Metadaten</td><td>Feature-Zustand</td></tr>
+              <tr><td><code>src/apps/&lt;app-id&gt;</code></td><td>UI, Hook, Typen, Fachlogik</td><td>eigene Firebase-Initialisierung</td></tr>
+              <tr><td><code>src/apps/shared</code></td><td>echte appübergreifende Module</td><td>app-spezifische Sonderfälle</td></tr>
+              <tr><td><code>src/components/ui</code></td><td>generische Controls</td><td>Geschäftslogik</td></tr>
+              <tr><td><code>src/lib/firebase</code></td><td>Client, Auth, Pfade, Sync, Cache</td><td>UI und App-Regeln</td></tr>
+              <tr><td><code>src/lib/i18n</code></td><td>Sprache und Formatierung</td><td>fachliche Migration</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-2" style="margin-top:1rem">
+          <article class="card"><h3>Entscheidungen</h3><ul><li>Kein globaler State-Manager.</li><li>Keine app-eigenen Firebase-Clients.</li><li>Registry für reguläre Apps.</li><li>Explizite Sonderrouten.</li></ul></article>
+          <article class="card"><h3>Modulregeln</h3><ul><li>Feature-lokale Wiederverwendung zuerst.</li><li>Pure Fachlogik außerhalb React.</li><li>Page → Hook → Infrastruktur.</li><li>Code bleibt Detailquelle.</li></ul></article>
+        </div>
+      </section>
+
+      <section class="section" id="entwicklung">
+        <p class="eyebrow">07 · Änderungen</p>
+        <h2>Entwicklungsvertrag</h2>
+        <div class="grid-2">
+          <article class="card accent">
+            <h3>Neue App</h3>
+            <ol>
+              <li>Kernaktion, Datenmodell und Zustände klären.</li>
+              <li>Page, Hook, Typen und optionale pure Module lokal anlegen.</li>
+              <li>UI-Primitiven und echte Shared Modules wiederverwenden.</li>
+              <li>Firestore-Pfade zentral ergänzen.</li>
+              <li>Texte in Deutsch und Englisch anlegen.</li>
+              <li>Einmal in der Registry registrieren.</li>
+              <li>Mobil, Tastatur, Fehler und lokalen Modus prüfen.</li>
+            </ol>
+          </article>
+          <article class="card">
+            <h3>Definition of Done</h3>
+            <ul>
+              <li>Registry oder bewusste Sonderroute korrekt.</li>
+              <li>Persistenz ausschließlich zentral.</li>
+              <li>Kein vorsorglich abstrahierter Shared Code.</li>
+              <li>Lade-, Leer-, Fehler- und Destruktivzustände verständlich.</li>
+              <li><code>npm run lint</code>, <code>npm test</code> und <code>npm run build</code> grün.</li>
+              <li>Bei Sync: lokal, zwei Fenster, Reload und Fehler testen.</li>
+            </ul>
+          </article>
+        </div>
+        <h3 style="margin:2rem 0 0.8rem">Testsystem</h3>
+        <div class="grid-2">
+          <article class="card accent">
+            <h3>P0-Testoberfläche</h3>
+            <ul>
+              <li>Vitest in einer schnellen Node-Umgebung.</li>
+              <li>Feature-nahe <code>*.test.ts</code>-Dateien.</li>
+              <li>Öffentliche Fachinterfaces statt interner Details.</li>
+              <li>Golden Cases für alle vier Turnierformate.</li>
+              <li>Feste IDs und Ergebnisse statt zufälliger Golden Values.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Determinismus und Grenzen</h3>
+            <ul>
+              <li>Randomizer, Glücksrad und Münzwurf akzeptieren testbare Zufallsquellen.</li>
+              <li>Produktion verwendet weiterhin Math.random beziehungsweise Web Crypto.</li>
+              <li>Coverage erscheint als Text- und HTML-Bericht ohne Prozent-Gate.</li>
+              <li>Browser, Komponenten, Firebase Emulator und Rules folgen in späteren Schnitten.</li>
+            </ul>
+          </article>
+        </div>
+        <pre><code>npm test
+npm run test:watch
+npm run test:coverage</code></pre>
+        <p><code>npm test</code> läuft einmalig und in beiden Hosting-Workflows vor dem Build. Der nicht versionierte Coverage-Bericht entsteht unter <code>coverage/</code>.</p>
+        <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
+        <pre><code>npm ci
+Copy-Item .env.example .env.local
+npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
+        <p>Node.js 22 oder neuer ist erforderlich. Port <code>5180</code> ist für dieses Projekt reserviert.</p>
+      </section>
+
+      <section class="section" id="betrieb">
+        <p class="eyebrow">08 · Delivery</p>
+        <h2>Hosting und Betrieb</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Produktion</h3>
+            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1, <code>npm ci</code>, Tests, Build und Firebase Live-Hosting.</p>
+          </article>
+          <article class="card">
+            <h3>Preview</h3>
+            <p>Interne Pull Requests erhalten nach denselben Tests und demselben Build einen temporären Firebase Preview Channel.</p>
+          </article>
+        </div>
+        <h3 style="margin:2rem 0 0.8rem">Build-Konfiguration</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Wert</th><th>Quelle</th><th>Zweck</th></tr></thead>
+            <tbody>
+              <tr><td><code>VITE_FIREBASE_*</code> (6 Werte)</td><td><code>.env.local</code> / GitHub Secrets</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX</code></td><td>GitHub Secret</td><td>Hosting-Deploy</td></tr>
+              <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>GitHub Variable</td><td>Projektziel</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card note" style="margin-top:1rem">
+          <h3>Separater Infrastruktur-Deploy</h3>
+          <p>Hosting-Workflows deployen keine Firestore Rules oder Indizes. Diese werden bewusst separat ausgerollt:</p>
+          <pre><code>npx firebase-tools deploy --only firestore:rules,firestore:indexes</code></pre>
+        </div>
+      </section>
+
+      <section class="section" id="sicherheit">
+        <p class="eyebrow">09 · Grenze</p>
+        <h2>Sicherheitsmodell</h2>
+        <div class="card warning">
+          <h3>Vertrauensbasierter privater Hub</h3>
+          <p>Die Firestore Rules erlauben jedem authentifizierten – also auch jedem anonym authentifizierten – Client Lesen und Schreiben unter <code>apps/{appId}/...</code>. Es gibt keine feld-, session- oder rollenbasierte Einschränkung.</p>
+          <p>Der PIN-Gate von <code>Schlag den Raab</code> liegt vollständig im ausgelieferten Client und schützt weder Route noch Daten technisch. Vor öffentlicher Nutzung mit sensiblen Daten sind echte Identitäten, engere Rules und Emulator-/Rules-Tests erforderlich.</p>
+          <p><a href="todo.md">Priorisierte Sicherheits- und Qualitätsarbeiten ansehen →</a></p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    BengtsToolBox · Spezifikation aus dem aktuellen Repository-Stand · Detailquelle: <a href="specs.md">specs.md</a>
+  </footer>
+
+  <script>
+    const appDetails = [...document.querySelectorAll('details.app')]
+    document.querySelectorAll('[data-details-action]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const shouldOpen = button.dataset.detailsAction === 'open'
+        appDetails.forEach((details) => {
+          details.open = shouldOpen
+        })
+      })
+    })
+  </script>
+</body>
+</html>

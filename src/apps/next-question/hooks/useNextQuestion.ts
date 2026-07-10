@@ -1,7 +1,10 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { nextQuestions } from '@/apps/next-question/questions'
-import type { NextQuestionState } from '@/apps/next-question/types'
+import { loadQuestionCatalog } from '@/apps/next-question/questions'
+import type {
+  NextQuestion,
+  NextQuestionState,
+} from '@/apps/next-question/types'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -33,6 +36,10 @@ function clampQuestionPosition(position: number, questionCount: number) {
 
 export function useNextQuestion(stateId = 'default') {
   const session = useAnonymousSession()
+  const [questions, setQuestions] = useState<readonly NextQuestion[]>([])
+  const [isCatalogLoading, setIsCatalogLoading] = useState(true)
+  const [catalogError, setCatalogError] = useState<Error | null>(null)
+  const [catalogLoadAttempt, setCatalogLoadAttempt] = useState(0)
   const statePath = useMemo(
     () => firebasePaths.nextQuestionState(stateId),
     [stateId],
@@ -41,12 +48,49 @@ export function useNextQuestion(stateId = 'default') {
     statePath,
     initialNextQuestionState,
   )
-  const questionCount = nextQuestions.length
+  const questionCount = questions.length
   const currentIndex = normalizeQuestionIndex(
     store.data.currentIndex,
     questionCount,
   )
-  const currentQuestion = nextQuestions[currentIndex] ?? null
+  const currentQuestion = questions[currentIndex] ?? null
+
+  useEffect(() => {
+    let isActive = true
+
+    void loadQuestionCatalog().then(
+      (loadedQuestions) => {
+        if (!isActive) {
+          return
+        }
+
+        setQuestions(loadedQuestions)
+        setIsCatalogLoading(false)
+      },
+      (loadError: unknown) => {
+        if (!isActive) {
+          return
+        }
+
+        setCatalogError(
+          loadError instanceof Error
+            ? loadError
+            : new Error('Fragenkatalog konnte nicht geladen werden.'),
+        )
+        setIsCatalogLoading(false)
+      },
+    )
+
+    return () => {
+      isActive = false
+    }
+  }, [catalogLoadAttempt])
+
+  const retryCatalog = useCallback(() => {
+    setIsCatalogLoading(true)
+    setCatalogError(null)
+    setCatalogLoadAttempt((attempt) => attempt + 1)
+  }, [])
 
   const showAnswer = () =>
     store.merge({
@@ -95,14 +139,16 @@ export function useNextQuestion(stateId = 'default') {
 
   return {
     ...store,
+    catalogError,
     currentIndex,
     currentPosition: questionCount === 0 ? 0 : currentIndex + 1,
     currentQuestion,
+    isCatalogLoading,
     jumpToQuestion,
     nextQuestion,
     previousQuestion,
     questionCount,
-    questions: nextQuestions,
+    retryCatalog,
     showAnswer,
     triggerPrimaryAction,
   }

@@ -24,7 +24,12 @@ jobs:
         with:
           node-version: 22.23.1
           cache: npm
-      - run: npm ci && npm run build
+      - name: Install dependencies
+        run: npm ci
+      - name: Test core logic
+        run: npm test
+      - name: Build app
+        run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

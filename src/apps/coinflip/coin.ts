@@ -27,8 +27,10 @@ function getRandomUint32() {
   return Math.floor(Math.random() * 0x100000000)
 }
 
-export function getRandomCoinSide(): CoinflipSide {
-  return (getRandomUint32() & 1) === 0 ? 'heads' : 'tails'
+export function getRandomCoinSide(
+  randomUint32: () => number = getRandomUint32,
+): CoinflipSide {
+  return (randomUint32() & 1) === 0 ? 'heads' : 'tails'
 }
 
 export function getCoinFlipRotationDegrees() {
