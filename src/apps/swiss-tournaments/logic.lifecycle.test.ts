@@ -117,6 +117,18 @@ describe('tournament lifecycle', () => {
     )
   })
 
+  it('allows every current player status to be reversed', () => {
+    let tournament = makeTournament('swiss', 4)
+
+    tournament = setPlayerStatus(tournament, 'p1', 'withdrawn')
+    tournament = setPlayerStatus(tournament, 'p1', 'inactive')
+    tournament = setPlayerStatus(tournament, 'p1', 'active')
+
+    expect(tournament.players.find((player) => player.id === 'p1')?.status).toBe(
+      'active',
+    )
+  })
+
   it('adds players to the current draft and protects players from played rounds', () => {
     const tournament = tournamentWithUnscoredDraft()
     const withNewPlayer = addPlayerAfterStart(tournament, '  New Player  ', 1500.7)
@@ -137,6 +149,7 @@ describe('tournament lifecycle', () => {
     const tournament = tournamentWithUnscoredDraft()
     const changed = {
       ...tournament,
+      marioKartLobbyReservation: { playerIds: ['p1', 'p2'] },
       players: tournament.players.map((player, index) => ({
         ...player,
         status: index === 0 ? ('withdrawn' as const) : player.status,
@@ -148,6 +161,7 @@ describe('tournament lifecycle', () => {
 
     expect(reset.currentRound).toBe(0)
     expect(reset.rounds).toEqual([])
+    expect(reset.marioKartLobbyReservation).toBeUndefined()
     expect(
       reset.players.every(
         (player) =>

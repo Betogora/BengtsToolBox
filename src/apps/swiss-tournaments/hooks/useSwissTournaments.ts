@@ -26,7 +26,9 @@ import {
   getMarioKartPlanningAvailability,
   planNextMarioKartLobby,
   rerollLatestEmptyMarioKartLobby,
+  setMarioKartLobbyReservation,
 } from '@/apps/swiss-tournaments/marioKart'
+import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
 import type {
   ByeScore,
   CreateTournamentInput,
@@ -48,12 +50,17 @@ const initialState: SwissTournamentsState = {
 }
 
 function sanitizeTournament(tournament: Tournament): Tournament {
+  const players = [...(tournament.players ?? [])].sort(
+    (left, right) => left.initialSeed - right.initialSeed,
+  )
+  const playerIds = new Set(players.map((player) => player.id))
+  const reservationPlayerIds = [
+    ...new Set(tournament.marioKartLobbyReservation?.playerIds ?? []),
+  ].filter((playerId) => playerIds.has(playerId))
   const sanitizedTournament = {
     ...tournament,
     format: tournament.format ?? 'swiss',
-    players: [...(tournament.players ?? [])].sort(
-      (left, right) => left.initialSeed - right.initialSeed,
-    ),
+    players,
     rounds: [...(tournament.rounds ?? [])]
       .map((round) => ({
         ...round,
@@ -70,6 +77,18 @@ function sanitizeTournament(tournament: Tournament): Tournament {
       roundRobinCycles: tournament.settings?.roundRobinCycles ?? 1,
       roundByeScores: tournament.settings?.roundByeScores ?? {},
     },
+  }
+
+  if (
+    tournament.format === 'marioKart' &&
+    reservationPlayerIds.length >= 2 &&
+    reservationPlayerIds.length <= 4
+  ) {
+    sanitizedTournament.marioKartLobbyReservation = {
+      playerIds: reservationPlayerIds,
+    }
+  } else {
+    delete sanitizedTournament.marioKartLobbyReservation
   }
 
   return sanitizedTournament
@@ -130,17 +149,9 @@ function highestCompletedRoundNumber(tournament: Tournament) {
   )
 }
 
-function highestCompletedMarioKartRaceCount(tournament: Tournament) {
-  return recalculateStandings(tournament).reduce(
-    (highestRaceCount, row) =>
-      Math.max(highestRaceCount, row.marioKartScoringRaces),
-    0,
-  )
-}
-
 function minimumPlannedUnitCount(tournament: Tournament) {
   return tournament.format === 'marioKart'
-    ? highestCompletedMarioKartRaceCount(tournament)
+    ? getTournamentProgress(tournament).minimumSavableUnitCount
     : highestCompletedRoundNumber(tournament)
 }
 
@@ -648,6 +659,11 @@ export function useSwissTournaments(sessionId = 'default') {
       return deleteLatestRound(tournament)
     })
 
+  const updateMarioKartLobbyReservation = (playerIds: string[] | null) =>
+    updateActiveTournament((tournament) =>
+      setMarioKartLobbyReservation(tournament, playerIds),
+    )
+
   const setResult = (
     roundNumber: number,
     pairingId: string,
@@ -731,6 +747,7 @@ export function useSwissTournaments(sessionId = 'default') {
     selectTournament,
     session,
     setMarioKartResult,
+    setMarioKartLobbyReservation: updateMarioKartLobbyReservation,
     setResult,
     setRoundByeScore,
     standings,

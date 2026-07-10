@@ -43,8 +43,14 @@ export type MarioKartRacer = {
   playerId: string
   /** Fachliche Wertungsrunde; null kennzeichnet ein derzeit ungewertetes Extra. */
   scoringCycleNumber: number | null
+  /** Vorab ausgewählt und bis zu dieser Lobby reserviert. */
+  isFixed?: boolean
   placement?: number
   event?: boolean
+}
+
+export type MarioKartLobbyReservation = {
+  playerIds: string[]
 }
 
 export type Player = {
@@ -103,6 +109,7 @@ export type Tournament = {
   currentRound: number
   players: Player[]
   rounds: Round[]
+  marioKartLobbyReservation?: MarioKartLobbyReservation
   settings: TournamentSettings
   position: number
   createdAtClientIso: string

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Pencil,
+  Pin,
   Plus,
   Printer,
   RefreshCw,
@@ -47,6 +48,7 @@ import {
   isLatestEmptyMarioKartLobby,
   MARIO_KART_MAX_PLACEMENT,
 } from '@/apps/swiss-tournaments/marioKart'
+import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
@@ -115,6 +117,7 @@ const resultOptions: Array<{ value: GameResult; labelKey?: TranslationKey; label
   { value: 'forfeit-0-1', labelKey: 'swiss.result.forfeit', label: '0 - 1' },
 ]
 const openResultValue = 'open'
+const emptyPlayerSlotValue = '__empty-player-slot__'
 type ResultSelectValue = GameResult | typeof openResultValue
 
 const byeScoreOptions: Array<{ value: ByeScore; label: string; labelEn: string }> = [
@@ -455,100 +458,6 @@ function formatSwissDateTime(
   }
 
   return formatter(date)
-}
-
-function isRoundCompleteForProgress(round: Round) {
-  return (
-    round.status === 'completed' ||
-    (round.pairings.length > 0 && !round.pairings.some(hasMissingGameResult))
-  )
-}
-
-function completedRoundCount(tournament: Tournament) {
-  if (tournament.format === 'marioKart') {
-    const activeRows = recalculateStandings(tournament).filter(
-      (row) => row.status === 'active',
-    )
-
-    return activeRows.length > 0
-      ? Math.min(
-          tournament.numberOfRounds,
-          ...activeRows.map((row) => row.marioKartScoringRaces),
-        )
-      : 0
-  }
-
-  const completedRegularRounds = new Set(
-    tournament.rounds
-      .filter((round) => round.roundNumber <= tournament.numberOfRounds)
-      .filter(isRoundCompleteForProgress)
-      .map((round) => round.roundNumber),
-  )
-
-  return Math.min(completedRegularRounds.size, tournament.numberOfRounds)
-}
-
-function currentMarioKartRaceCount(tournament: Tournament, completedRaces: number) {
-  const currentRound = tournament.rounds.find(
-    (round) => round.roundNumber === tournament.currentRound,
-  )
-  const currentLobbyRace = currentRound?.pairings.reduce(
-    (highestRaceCount, pairing) =>
-      pairing.kind === 'marioKart'
-        ? Math.max(highestRaceCount, pairing.marioKartCycleNumber ?? 0)
-        : highestRaceCount,
-    0,
-  ) ?? 0
-
-  return currentLobbyRace > 0 ? currentLobbyRace : completedRaces
-}
-
-function currentUnitCount(tournament: Tournament, completedUnits: number) {
-  return tournament.format === 'marioKart'
-    ? currentMarioKartRaceCount(tournament, completedUnits)
-    : tournament.currentRound
-}
-
-function highestCompletedRoundNumber(tournament: Tournament) {
-  return tournament.rounds.reduce(
-    (highestRound, round) =>
-      isRoundCompleteForProgress(round)
-        ? Math.max(highestRound, round.roundNumber)
-        : highestRound,
-    0,
-  )
-}
-
-function minimumPlannedUnitCount(tournament: Tournament) {
-  return tournament.format === 'marioKart'
-    ? completedRoundCount(tournament)
-    : highestCompletedRoundNumber(tournament)
-}
-
-function completionBannerRoundNumber(
-  tournament: Tournament,
-  displayedRounds: Round[],
-  isTournamentComplete: boolean,
-) {
-  if (!isTournamentComplete) {
-    return null
-  }
-
-  if (tournament.format === 'marioKart') {
-    return (
-      displayedRounds.find((round) => {
-        const cycleNumber =
-          round.pairings.find((pairing) => pairing.kind === 'marioKart')
-            ?.marioKartCycleNumber ?? round.roundNumber
-
-        return cycleNumber <= tournament.numberOfRounds
-      })?.roundNumber ?? null
-    )
-  }
-
-  return displayedRounds.find(
-    (round) => round.roundNumber <= tournament.numberOfRounds,
-  )?.roundNumber ?? null
 }
 
 function roundRobinRoundsForPlayerCount(playerCount: number, cycles: number) {
@@ -1825,6 +1734,14 @@ export function SwissTournamentsPage() {
   const [manualWhiteHand, setManualWhiteHand] = useState('')
   const [manualBlackBrain, setManualBlackBrain] = useState('')
   const [manualBlackHand, setManualBlackHand] = useState('')
+  const [marioKartReservationDraft, setMarioKartReservationDraft] = useState([
+    '',
+    '',
+    '',
+    '',
+  ])
+  const [isEditingMarioKartReservation, setIsEditingMarioKartReservation] =
+    useState(false)
   const [printTournament, setPrintTournament] = useState<Tournament | null>(null)
   const [marioKartCorrection, setMarioKartCorrection] =
     useState<MarioKartCorrectionDraft | null>(null)
@@ -1874,27 +1791,18 @@ export function SwissTournamentsPage() {
         : [],
     [tournament],
   )
-  const completedRounds = tournament ? completedRoundCount(tournament) : 0
-  const currentUnitProgress = tournament
-    ? currentUnitCount(tournament, completedRounds)
-    : 0
-  const isTournamentComplete =
-    Boolean(tournament) &&
-    tournament.numberOfRounds > 0 &&
-    completedRounds >= tournament.numberOfRounds
+  const tournamentProgress = tournament
+    ? getTournamentProgress(tournament)
+    : null
+  const completedRounds = tournamentProgress?.completedUnitCount ?? 0
+  const currentUnitProgress = tournamentProgress?.currentUnitCount ?? 0
   const completionBannerBeforeRoundNumber =
-    tournament
-      ? completionBannerRoundNumber(
-          tournament,
-          displayedRounds,
-          isTournamentComplete,
-        )
-      : null
+    tournamentProgress?.completionRoundNumber ?? null
   const archivedTournamentSummaries = useMemo(
     () =>
       app.archivedTournaments.map((entry) => ({
         category: t(tournamentFormatLabelKey(entry.format)),
-        completedRounds: completedRoundCount(entry),
+        completedRounds: getTournamentProgress(entry).completedUnitCount,
         standings: recalculateStandings(entry),
         tournament: entry,
       })),
@@ -2045,6 +1953,18 @@ export function SwissTournamentsPage() {
     manualHandBrainIds.every(Boolean) &&
     new Set(manualHandBrainIds).size === 4 &&
     manualHandBrainIds.every((playerId) => !manuallyUsedPlayerIds.has(playerId))
+  const selectedMarioKartReservationIds = marioKartReservationDraft.filter(Boolean)
+  const canSaveMarioKartReservation =
+    selectedMarioKartReservationIds.length >= 2 &&
+    selectedMarioKartReservationIds.length <= 4 &&
+    new Set(selectedMarioKartReservationIds).size ===
+      selectedMarioKartReservationIds.length
+  const marioKartReservationOptionFor = (slotIndex: number) =>
+    tournament.players.filter(
+      (player) =>
+        player.id === marioKartReservationDraft[slotIndex] ||
+        !selectedMarioKartReservationIds.includes(player.id),
+    )
   return (
     <AppPage className="swiss-tournaments-page" width="wide">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -2195,7 +2115,10 @@ export function SwissTournamentsPage() {
                   {(tournament.format ?? 'swiss') !== 'roundRobin' && (
                     <IftaInput
                       label={t(plannedUnitLabelKey(tournament.format))}
-                      min={Math.max(1, minimumPlannedUnitCount(tournament))}
+                      min={Math.max(
+                        1,
+                        getTournamentProgress(tournament).minimumSavableUnitCount,
+                      )}
                       type="number"
                       value={tournament.numberOfRounds}
                       onChange={(event) =>
@@ -2568,6 +2491,158 @@ export function SwissTournamentsPage() {
               </div>
             </CardHeader>
             <CardContent className="grid gap-4">
+              {isMarioKartTournament && (
+                <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="grid gap-1">
+                      <div className="type-action flex items-center gap-2">
+                        <Pin className="size-4 text-primary" />
+                        {t('swiss.marioKartFixLobby')}
+                      </div>
+                      <p className="type-caption text-muted-foreground">
+                        {t('swiss.marioKartFixLobbyDescription')}
+                      </p>
+                    </div>
+                    {tournament.marioKartLobbyReservation &&
+                      !isEditingMarioKartReservation && (
+                        <Badge className="w-fit" variant="secondary">
+                          {t('swiss.marioKartFixLobbyWaiting')}
+                        </Badge>
+                      )}
+                  </div>
+
+                  {tournament.marioKartLobbyReservation &&
+                  !isEditingMarioKartReservation ? (
+                    <div className="grid gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {tournament.marioKartLobbyReservation.playerIds.map(
+                          (playerId) => {
+                            const player = tournament.players.find(
+                              (entry) => entry.id === playerId,
+                            )
+
+                            return (
+                              <span
+                                key={playerId}
+                                className={fixedPairingHintClassName}
+                              >
+                                <span className="px-2 py-0.5">
+                                  {player?.name ?? playerId} · {t('swiss.fixed')}
+                                </span>
+                              </span>
+                            )
+                          },
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <Button
+                          className="w-full sm:w-auto"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setMarioKartReservationDraft([
+                              ...tournament.marioKartLobbyReservation!.playerIds,
+                              '',
+                              '',
+                              '',
+                              '',
+                            ].slice(0, 4))
+                            setIsEditingMarioKartReservation(true)
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                          {t('common.edit')}
+                        </Button>
+                        <Button
+                          className="w-full sm:w-auto"
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            await app.setMarioKartLobbyReservation(null)
+                            setMarioKartReservationDraft(['', '', '', ''])
+                          }}
+                        >
+                          <X className="size-4" />
+                          {t('swiss.marioKartFixLobbyRemove')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_9rem]">
+                      {marioKartReservationDraft.map((playerId, slotIndex) => (
+                        <Select
+                          key={slotIndex}
+                          value={playerId || emptyPlayerSlotValue}
+                          onValueChange={(value) =>
+                            setMarioKartReservationDraft((current) =>
+                              current.map((entry, index) =>
+                                index === slotIndex
+                                  ? value === emptyPlayerSlotValue
+                                    ? ''
+                                    : value
+                                  : entry,
+                              ),
+                            )
+                          }
+                        >
+                          <IftaSelectTrigger
+                            aria-label={t('swiss.marioKartFixedPlayerAria', {
+                              number: slotIndex + 1,
+                            })}
+                            className={singleLineSelectTriggerClass}
+                            label={t('swiss.marioKartFixedPlayer', {
+                              number: slotIndex + 1,
+                            })}
+                          >
+                            <SelectValue placeholder={t('swiss.result.open')} />
+                          </IftaSelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={emptyPlayerSlotValue}>
+                              {t('swiss.result.open')}
+                            </SelectItem>
+                            {marioKartReservationOptionFor(slotIndex).map((player) => (
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name} · {t(statusLabelKeys[player.status])}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ))}
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                        <Button
+                          className="h-9 w-full lg:h-11"
+                          disabled={!canSaveMarioKartReservation}
+                          size="ifta"
+                          onClick={async () => {
+                            await app.setMarioKartLobbyReservation(
+                              selectedMarioKartReservationIds,
+                            )
+                            setMarioKartReservationDraft(['', '', '', ''])
+                            setIsEditingMarioKartReservation(false)
+                            toast.success(t('swiss.marioKartFixLobbySaved'))
+                          }}
+                        >
+                          <Pin className="size-4" />
+                          {t('swiss.marioKartFixLobbyAction')}
+                        </Button>
+                        {isEditingMarioKartReservation && (
+                          <Button
+                            className="w-full"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setMarioKartReservationDraft(['', '', '', ''])
+                              setIsEditingMarioKartReservation(false)
+                            }}
+                          >
+                            {t('common.cancel')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {displayedRounds.length > 0 ? (
                 displayedRounds.map((round, index) => {
                   const isCurrentRound = index === 0
@@ -2585,7 +2660,12 @@ export function SwissTournamentsPage() {
                           !round.pairings.some(hasMissingGameResult)))
                   const marioKartPlanningBlockMessage =
                     isMarioKartLobby && !canCreateNextRound
-                      ? t('swiss.marioKartPlanningBlocked')
+                      ? t(
+                          app.marioKartPlanningAvailability?.blockedReason ===
+                            'fixed-lobby-waiting'
+                            ? 'swiss.marioKartFixLobbyBlocked'
+                            : 'swiss.marioKartPlanningBlocked',
+                        )
                       : null
                   const marioKartPairing = isMarioKartLobby
                     ? round.pairings.find((pairing) => pairing.kind === 'marioKart')
@@ -2753,7 +2833,7 @@ export function SwissTournamentsPage() {
                                       onClick={() => void app.regenerateRound()}
                                     >
                                       <RefreshCw className="size-4" />
-                                      {t('swiss.marioKartReroll')}
+                                      {t('swiss.regenerate')}
                                     </Button>
                                     <Button
                                       aria-label={t('swiss.deleteRound')}
@@ -3062,7 +3142,14 @@ export function SwissTournamentsPage() {
               ) : (
                 <>
                   {tournament.format === 'marioKart' && !canGenerateRound && (
-                    <MarioKartPlanningBanner label={t('swiss.marioKartPlanningBlocked')} />
+                    <MarioKartPlanningBanner
+                      label={t(
+                        app.marioKartPlanningAvailability?.blockedReason ===
+                          'fixed-lobby-waiting'
+                          ? 'swiss.marioKartFixLobbyBlocked'
+                          : 'swiss.marioKartPlanningBlocked',
+                      )}
+                    />
                   )}
                   <div className="type-ui flex flex-col gap-3 rounded-md border border-dashed p-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                     <span>{t(firstUnitHintLabelKey(tournament.format))}</span>
@@ -3071,7 +3158,12 @@ export function SwissTournamentsPage() {
                       disabled={!canGenerateRound}
                       title={
                         tournament.format === 'marioKart' && !canGenerateRound
-                          ? t('swiss.marioKartPlanningBlocked')
+                          ? t(
+                              app.marioKartPlanningAvailability?.blockedReason ===
+                                'fixed-lobby-waiting'
+                                ? 'swiss.marioKartFixLobbyBlocked'
+                                : 'swiss.marioKartPlanningBlocked',
+                            )
                           : undefined
                       }
                       onClick={() => void app.generateRound()}
@@ -3557,10 +3649,24 @@ function PairingsTable({
       index: number,
     ) => {
       const warnings = index === 0 ? visibleWarningsForPairing(pairing) : []
-      const hasRacerHint = isFillIn(pairing, racer) || racer.scoringCycleNumber === null
+      const hasRacerHint =
+        racer.isFixed ||
+        isFillIn(pairing, racer) ||
+        racer.scoringCycleNumber === null
 
       return (
         <div className="flex flex-wrap gap-1">
+          {racer.isFixed && (
+            <Badge
+              className={cn(
+                pairingHintBadgeClassName,
+                'border-yellow-300 bg-yellow-100 text-yellow-950',
+              )}
+              variant="outline"
+            >
+              {t('swiss.fixed')}
+            </Badge>
+          )}
           {isFillIn(pairing, racer) && (
             <Badge
               className={cn(

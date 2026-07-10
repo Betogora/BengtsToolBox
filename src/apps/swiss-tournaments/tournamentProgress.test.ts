@@ -7,6 +7,7 @@ import {
   makeStandardPairing,
   makeTournament,
 } from '@/apps/swiss-tournaments/__tests__/fixtures'
+import type { MarioKartRacer } from '@/apps/swiss-tournaments/types'
 
 describe('getTournamentProgress', () => {
   it('distinguishes scored drafts from officially completed regular rounds', () => {
@@ -25,6 +26,7 @@ describe('getTournamentProgress', () => {
 
     expect(getTournamentProgress(tournament)).toEqual({
       completedUnitCount: 2,
+      completionRoundNumber: null,
       currentUnitCount: 2,
       isComplete: false,
       minimumEditableUnitCount: 2,
@@ -71,9 +73,31 @@ describe('getTournamentProgress', () => {
 
     expect(getTournamentProgress(tournament)).toEqual({
       completedUnitCount: 1,
+      completionRoundNumber: null,
       currentUnitCount: 2,
       isComplete: false,
       minimumEditableUnitCount: 1,
+      minimumSavableUnitCount: 1,
+    })
+  })
+
+  it('normalizes legacy racers without an explicit scoring cycle', () => {
+    const legacyRacers = [1, 2, 3, 4].map((placement, index) => ({
+      playerId: `p${index + 1}`,
+      placement,
+    })) as MarioKartRacer[]
+    const tournament = makeTournament('marioKart', 4, {
+      numberOfRounds: 1,
+      currentRound: 1,
+      rounds: [
+        makeRound(1, [makeMarioKartPairing('legacy', 1, legacyRacers, 1)]),
+      ],
+    })
+
+    expect(getTournamentProgress(tournament)).toMatchObject({
+      completedUnitCount: 1,
+      completionRoundNumber: 1,
+      isComplete: true,
       minimumSavableUnitCount: 1,
     })
   })

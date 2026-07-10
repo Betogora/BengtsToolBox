@@ -9,10 +9,15 @@ import {
   isLatestEmptyMarioKartLobby,
   planNextMarioKartLobby,
   rerollLatestEmptyMarioKartLobby,
+  setMarioKartLobbyReservation,
   setMarioKartPlayerStatus,
   updateMarioKartRacer,
 } from '@/apps/swiss-tournaments/marioKart'
-import { recalculateStandings } from '@/apps/swiss-tournaments/logic'
+import {
+  addPlayerAfterStart,
+  recalculateStandings,
+} from '@/apps/swiss-tournaments/logic'
+import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
 import { makeTournament } from '@/apps/swiss-tournaments/__tests__/fixtures'
 import type { Tournament } from '@/apps/swiss-tournaments/types'
 
@@ -141,6 +146,117 @@ describe('Mario-Kart-Lobbyplanung', () => {
       true,
     )
   })
+
+  it('nimmt einen Neuzugang beim Neu-Erzeugen vor einem Füller in die laufende Wertungsrunde', () => {
+    let tournament = makeTournament('marioKart', 6, { numberOfRounds: 2 })
+    tournament = completeLatest(createLobby(tournament))
+    tournament = createLobby(tournament)
+    tournament = addPlayerAfterStart(tournament, 'Späteinsteiger')
+    const newcomer = tournament.players.at(-1)!
+
+    expect(newcomer.marioKartEligibleFromCycle).toBe(1)
+
+    tournament = rerollLatestEmptyMarioKartLobby(
+      tournament,
+      latestRound(tournament).roundNumber,
+    )
+    const newcomerRacer = getMarioKartRacers(latestRound(tournament).pairings[0]).find(
+      (racer) => racer.playerId === newcomer.id,
+    )
+
+    expect(newcomerRacer?.scoringCycleNumber).toBe(1)
+    expect(
+      getMarioKartRacers(latestRound(tournament).pairings[0]).filter(
+        (racer) => racer.scoringCycleNumber === 2,
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('startet einen Neuzugang nach einem begonnenen Ergebnis erst in der nächsten Runde', () => {
+    let tournament = makeTournament('marioKart', 6, { numberOfRounds: 2 })
+    tournament = completeLatest(createLobby(tournament))
+    tournament = createLobby(tournament)
+    const activeRound = latestRound(tournament)
+    const firstRacer = getMarioKartRacers(activeRound.pairings[0])[0]
+    tournament = updateMarioKartRacer(
+      tournament,
+      activeRound.roundNumber,
+      firstRacer.playerId,
+      { placement: 1 },
+    )
+    tournament = addPlayerAfterStart(tournament, 'Später Neuzugang')
+
+    expect(tournament.players.at(-1)?.marioKartEligibleFromCycle).toBe(2)
+    expect(isLatestEmptyMarioKartLobby(tournament, activeRound.roundNumber)).toBe(false)
+  })
+
+  it('erzwingt eine Fixierung mit zwei Fahrern und füllt sie regulär auf', () => {
+    let tournament = makeTournament('marioKart', 8, { numberOfRounds: 2 })
+    const fixedIds = tournament.players.slice(0, 2).map((player) => player.id)
+    tournament = setMarioKartLobbyReservation(tournament, fixedIds)
+    tournament = createLobby(tournament)
+    const racers = getMarioKartRacers(latestRound(tournament).pairings[0])
+
+    expect(racers).toHaveLength(4)
+    expect(
+      racers.filter((racer) => racer.isFixed).map((racer) => racer.playerId),
+    ).toEqual(fixedIds)
+    expect(racers.every((racer) => racer.scoringCycleNumber !== null)).toBe(true)
+    expect(tournament.marioKartLobbyReservation).toBeUndefined()
+
+    tournament = deleteLatestEmptyMarioKartLobby(
+      tournament,
+      latestRound(tournament).roundNumber,
+    )
+    expect(tournament.marioKartLobbyReservation?.playerIds).toEqual(fixedIds)
+  })
+
+  it('kennzeichnet einen vorgezogenen fixierten Fahrer zusätzlich als echten Füller', () => {
+    let tournament = makeTournament('marioKart', 6, { numberOfRounds: 2 })
+    tournament = completeLatest(createLobby(tournament))
+    const completedIds = racerIds(tournament, 1)
+    const waitingId = tournament.players.find(
+      (player) => !completedIds.includes(player.id),
+    )!.id
+    const fixedIds = [completedIds[0], waitingId]
+    tournament = setMarioKartLobbyReservation(tournament, fixedIds)
+    tournament = createLobby(tournament)
+    const pairing = latestRound(tournament).pairings[0]
+    const fixedFillIn = getMarioKartRacers(pairing).find(
+      (racer) => racer.playerId === completedIds[0],
+    )
+
+    expect(pairing.marioKartCycleNumber).toBe(1)
+    expect(fixedFillIn).toMatchObject({
+      isFixed: true,
+      scoringCycleNumber: 2,
+    })
+  })
+
+  it('lässt eine Fixierung auf inaktive Fahrer warten und plant andere Fahrer weiter', () => {
+    let tournament = makeTournament('marioKart', 8, { numberOfRounds: 2 })
+    const fixedIds = tournament.players.slice(0, 2).map((player) => player.id)
+    tournament = setMarioKartLobbyReservation(tournament, fixedIds)
+    tournament = setMarioKartPlayerStatus(tournament, fixedIds[0], 'inactive')
+    tournament = createLobby(tournament)
+    const plannedIds = racerIds(tournament, latestRound(tournament).roundNumber)
+
+    expect(plannedIds.some((playerId) => fixedIds.includes(playerId))).toBe(false)
+    expect(tournament.marioKartLobbyReservation?.playerIds).toEqual(fixedIds)
+  })
+
+  it('blockiert fair, wenn eine vollständige Fixierung dem restlichen Feld voraus ist', () => {
+    let tournament = makeTournament('marioKart', 7, { numberOfRounds: 2 })
+    tournament = completeLatest(createLobby(tournament))
+    const fixedIds = racerIds(tournament, 1)
+    tournament = setMarioKartLobbyReservation(tournament, fixedIds)
+
+    expect(getMarioKartPlanningAvailability(tournament)).toMatchObject({
+      canCreate: false,
+      blockedReason: 'fixed-lobby-waiting',
+    })
+    expect(planNextMarioKartLobby(tournament).tournament).toBe(tournament)
+  })
 })
 
 describe('Mario-Kart-Wertung und Extras', () => {
@@ -226,10 +342,40 @@ describe('Mario-Kart-Wertung und Extras', () => {
       )?.marioKartScoringRaces,
     ).toBe(2)
   })
+
+  it('wertet einen Einstieg ab Runde 3 genau einmal je verbleibender Runde', () => {
+    let tournament = makeTournament('marioKart', 4, { numberOfRounds: 4 })
+    tournament = completeLatest(createLobby(tournament))
+    tournament = completeLatest(createLobby(tournament))
+    tournament = addPlayerAfterStart(tournament, 'Einstieg Runde 3')
+    const newcomer = tournament.players.at(-1)!
+
+    expect(newcomer.marioKartEligibleFromCycle).toBe(3)
+
+    for (let lobby = 0; lobby < 5 && !getTournamentProgress(tournament).isComplete; lobby += 1) {
+      tournament = completeLatest(createLobby(tournament))
+    }
+
+    const newcomerCycles = tournament.rounds
+      .flatMap((round) => getMarioKartRacers(round.pairings[0]))
+      .filter((racer) => racer.playerId === newcomer.id)
+      .flatMap((racer) =>
+        racer.scoringCycleNumber === null ? [] : [racer.scoringCycleNumber],
+      )
+
+    expect(newcomerCycles.sort((left, right) => left - right)).toEqual([3, 4])
+    expect(new Set(newcomerCycles).size).toBe(newcomerCycles.length)
+    expect(getTournamentProgress(tournament).isComplete).toBe(true)
+    expect(
+      tournament.rounds.flatMap((round) => getMarioKartRacers(round.pairings[0])).some(
+        (racer) => (racer.scoringCycleNumber ?? 0) > 4,
+      ),
+    ).toBe(false)
+  })
 })
 
 describe('Mario-Kart-Lebenszyklus', () => {
-  it('schließt bei vier eindeutigen Plätzen bis 15 und wertet sie relativ', () => {
+  it('schließt bei vier eindeutigen Plätzen bis 24 und wertet sie relativ', () => {
     let tournament = createLobby(makeTournament('marioKart', 4))
     const ids = racerIds(tournament, 1)
 
@@ -240,7 +386,7 @@ describe('Mario-Kart-Lebenszyklus', () => {
       placement: 1,
     })
     tournament = updateMarioKartRacer(tournament, 1, ids[2], {
-      placement: 16,
+      placement: 25,
     })
     tournament = updateMarioKartRacer(tournament, 1, ids[3], {
       placement: 10,
@@ -355,6 +501,50 @@ describe('Mario-Kart-Lebenszyklus', () => {
 
     tournament = updateMarioKartRacer(tournament, 1, playerId, { event: false })
     expect(getMarioKartRacers(tournament.rounds[0].pairings[0])[0].event).toBeUndefined()
+  })
+
+  it('akzeptiert Platz 24, lehnt 25 ab und schließt mit der letzten gültigen Eingabe ab', () => {
+    let tournament = createLobby(
+      makeTournament('marioKart', 4, { numberOfRounds: 1 }),
+    )
+    const ids = racerIds(tournament, 1)
+    const placements = [1, 7, 13, 24]
+
+    tournament = updateMarioKartRacer(tournament, 1, ids[3], { placement: 25 })
+    expect(tournament.rounds[0].status).toBe('draft')
+
+    tournament = placements.reduce(
+      (current, placement, index) =>
+        updateMarioKartRacer(current, 1, ids[index], { placement }),
+      tournament,
+    )
+
+    expect(tournament.rounds[0].status).toBe('completed')
+    expect(getTournamentProgress(tournament)).toMatchObject({
+      completedUnitCount: 1,
+      completionRoundNumber: 1,
+      isComplete: true,
+    })
+    expect(
+      recalculateStandings(tournament).every(
+        (row) => row.marioKartScoringRaces === 1,
+      ),
+    ).toBe(true)
+  })
+
+  it.each([
+    ['inactive', 'withdrawn'],
+    ['withdrawn', 'inactive'],
+    ['inactive', 'active'],
+    ['withdrawn', 'active'],
+  ] as const)('erlaubt den Statuswechsel %s → %s', (from, to) => {
+    let tournament = makeTournament('marioKart', 4)
+    const playerId = tournament.players[0].id
+
+    tournament = setMarioKartPlayerStatus(tournament, playerId, from)
+    tournament = setMarioKartPlayerStatus(tournament, playerId, to)
+
+    expect(tournament.players[0].status).toBe(to)
   })
 })
 

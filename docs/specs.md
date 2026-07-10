@@ -282,7 +282,7 @@ Alle Hooks verwenden aktuell standardmäßig die State- oder Session-ID `default
 
 - Formate sind `Swiss`, `Round Robin`, `Hand and Brain` und `Mario Kart`.
 - Spieler besitzen Namen, optionales Rating, initialen Seed, Status und Eintrittsrunde.
-- Statuswerte sind aktiv, inaktiv und zurückgezogen; Overrides können ab einer bestimmten Runde gelten.
+- Statuswerte sind aktiv, inaktiv und zurückgezogen. Zwischen allen drei Werten kann frei gewechselt werden; nur aktive Spieler werden neu ausgelost. Overrides können ab einer bestimmten Runde gelten.
 - Seeding nach Rating sortiert absteigend. Der Modus „zufällig“ verwendet aktuell eine stabile Hash-Reihenfolge aus Name und Rating.
 - Eine Runde ist `draft` oder `completed`. Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate verändern nur die jüngste Draft-Runde.
 - Eine Runde kann erst abgeschlossen werden, wenn alle Pairings vollständig gewertet sind.
@@ -298,7 +298,7 @@ Alle Hooks verwenden aktuell standardmäßig die State- oder Session-ID `default
 - Nicht-Mario-Kart-Rangfolge: Punkte, Buchholz, Sonneborn-Berger, Siege, direkter Vergleich, initialer Seed.
 - Mario-Kart-Rangfolge: Turnierpunkte, Siege, bessere Durchschnittsplatzierung und direkter Vergleich. Vollständig gleiche sportliche Werte teilen sich den Rang nach `1, 1, 3`; Seed und Name stabilisieren nur die Anzeige.
 - Ergebniskorrekturen dürfen eine noch ungewertete aktuelle Draft-Runde neu generieren; die UI muss davor warnen.
-- Manuell fixierte Pairings bleiben bei einer Regenerierung erhalten, solange sie gültig sind.
+- Manuell fixierte Pairings bleiben bei einer Regenerierung erhalten, solange sie gültig sind. Mario-Kart-Fixierungen beziehen sich stattdessen auf eine noch nicht erzeugte zukünftige Lobby.
 
 #### Swiss
 
@@ -332,12 +332,14 @@ Alle Hooks verwenden aktuell standardmäßig die State- oder Session-ID `default
 - Aktive Wertungszuweisungen werden bereits für weitere Auslosungen berücksichtigt, beeinflussen Turnierpunkte, Siege und Durchschnittsplatz aber erst nach dem Abschluss.
 - Die Auswahl priorisiert die älteste offene Wertungsrunde, ähnliche Turnierpunkte, wenige Gegnerwiederholungen, faire Füllereinsätze und ähnliche Durchschnittsplätze. Der Seed entscheidet nur die letzte deterministische Sortierung.
 - Fehlen Fahrer für eine volle Lobby, werden Fahrer mit ihrer Wertung für die nächste geplante Wertungsrunde vorgezogen. Diese Füller werden dort nicht erneut eingeplant.
+- Genau eine zukünftige Lobby kann mit zwei bis vier eindeutigen Fahrern fixiert werden. Die ausgewählten Fahrer warten aufeinander, bis sie aktiv und nicht anderweitig reserviert sind; andere Lobbys können währenddessen weiterlaufen. Freie Plätze werden regulär ergänzt. Fixierte Fahrer erhalten keine zusätzliche Wertung und tragen den Füller-Hinweis nur dann zusätzlich, wenn ihre nächste Wertungsrunde tatsächlich vorgezogen wird.
 - Erst wenn keine weitere geplante Wertungsrunde existiert, ergänzen echte Extras mit `scoringCycleNumber: null` die Lobby. Extras bleiben bis zu einer möglichen späteren Bonus-Wertungsrunde ohne Turnierwertung.
 - Beim Start einer Bonus-Wertungsrunde bleibt die konfigurierte Rundenzahl unverändert. Geeignete frühere Extras werden chronologisch rückwirkend dieser Bonusrunde zugeordnet und alle Wertungsstatistiken neu abgeleitet.
-- Platzierungen werden als Zahlen `1` bis `15` erfasst und müssen innerhalb einer Lobby vollständig und eindeutig sein. Für Turnierpunkte und Siege zählt ihre relative Reihenfolge unter den vier menschlichen Fahrern; der tatsächliche Platz bleibt für den Durchschnitt erhalten. Mit der vierten gültigen Platzierung schließt die Lobby automatisch.
+- Platzierungen werden als Zahlen `1` bis `24` erfasst und müssen innerhalb einer Lobby vollständig und eindeutig sein. Für Turnierpunkte und Siege zählt ihre relative Reihenfolge unter den vier menschlichen Fahrern; der tatsächliche Platz bleibt für den Durchschnitt erhalten. Mit der vierten gültigen Platzierung schließt die Lobby automatisch, Ranglisten und Turnierfortschritt werden unmittelbar aktualisiert.
 - Geschlossene Lobbys können lokal bearbeitet und nur mit vier gültigen Plätzen atomar gespeichert werden; spätere Aufstellungen bleiben unverändert.
-- Nur die jüngste vollständig ergebnislose aktive Lobby darf neu ausgelost oder gelöscht werden.
-- Inaktive Fahrer bleiben ausgeschlossen, bis sie reaktiviert werden. Währenddessen verpasste Wertungsrunden werden bewusst übersprungen und nicht nachgeholt; eine bereits aktive Lobby bleibt unverändert.
+- Nur die jüngste vollständig ergebnislose aktive Lobby darf neu erzeugt oder gelöscht werden. Neu erzeugen übernimmt zwischenzeitliche Neuzugänge und Statusänderungen; eine enthaltene Fixierung bleibt erhalten.
+- Inaktive und zurückgezogene Fahrer bleiben ausgeschlossen, bis sie reaktiviert werden. Währenddessen verpasste Wertungsrunden werden bewusst übersprungen und nicht nachgeholt; eine bereits aktive Lobby bleibt bis zum Neu-Erzeugen unverändert.
+- Späteinsteiger erhalten ab ihrer Eintrittsrunde höchstens eine Wertung pro verbleibender konfigurierter Wertungsrunde. Der Turnierabschluss wird pro Wertungsrunde aus abgeschlossenen, übersprungenen und vor Eintritt liegenden Zuweisungen abgeleitet und benötigt keine Bonus-Lobby.
 - Turnierpunkte nach relativer Platzierung der wertenden Fahrer: 4er `1 / 0,7 / 0,3 / 0`, 3er `1 / 0,5 / 0`, 2er `1 / 0`; ein einzelner wertender Fahrer neben Extras erhält `1`.
 - Pro Fahrer kann optional ein Bier markiert werden. Die Markierung bleibt auch nach Lobbyabschluss direkt änderbar und beeinflusst weder Platzierung noch Lobby-Lebenszyklus. Gleiche Bieranzahlen teilen sich ebenfalls den Rang nach `1, 1, 3`.
 - Rangliste, Presenter, Druckansicht und CSV verwenden dieselbe sportliche Reihenfolge und weisen physische sowie wertende Rennen getrennt aus.

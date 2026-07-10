@@ -696,7 +696,7 @@
             <p>Turnierverwaltung mit Spielern, Draft-/Completed-Runden, Archiv, Presenter, CSV und Druck-PDF.</p>
             <h4>Gemeinsam</h4>
             <ul>
-              <li>Spielerstatus aktiv/inaktiv/zurückgezogen, Rating, Seed und Eintrittsrunde.</li>
+              <li>Spielerstatus aktiv/inaktiv/zurückgezogen, frei in alle Richtungen wechselbar; nur aktive Spieler werden neu ausgelost.</li>
               <li>Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate bearbeiten nur die jüngste Draft-Runde.</li>
               <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie.</li>
               <li>Nicht-Mario-Rangfolge: Punkte, Buchholz, SB, Siege, direkter Vergleich, Seed.</li>
@@ -736,9 +736,11 @@
               <li>Labels wie <code>Lobby 2.1</code> trennen fachliche Wertungsrunde und laufende Lobby. Jede Lobby enthält exakt vier Fahrer.</li>
               <li>Aktive Wertungszuweisungen beeinflussen die nächste Planung, sportliche Statistiken aber erst nach Abschluss.</li>
               <li>Füller werten bereits für die nächste geplante Runde; echte Extras bleiben mit <code>scoringCycleNumber: null</code> zunächst ungewertet.</li>
+              <li>Eine zukünftige Lobby kann mit zwei bis vier Fahrern fixiert werden. Sie warten aufeinander, werden vor optionalen Füllern berücksichtigt und erhalten dadurch weder Extra-Rennen noch doppelte Wertungen.</li>
               <li>Bonusrunden lassen die konfigurierte Rundenzahl unverändert und können frühere Extras chronologisch rückwirkend werten.</li>
-              <li>Vier eindeutige Eingaben von 1 bis 15 schließen automatisch. Turnierpunkte und Siege folgen der relativen Reihenfolge der vier menschlichen Fahrer; der tatsächliche Platz bleibt für den Durchschnitt erhalten. Geschlossene Lobbys können atomar korrigiert werden, ohne spätere Aufstellungen zu verändern.</li>
-              <li>Inaktive Fahrer überspringen nicht zugewiesene Wertungsrunden und holen sie bei Reaktivierung nicht nach.</li>
+              <li>Vier eindeutige Eingaben von 1 bis 24 schließen automatisch und aktualisieren Ranglisten sowie Abschlussstatus. Turnierpunkte und Siege folgen der relativen Reihenfolge der vier menschlichen Fahrer; der tatsächliche Platz bleibt für den Durchschnitt erhalten. Geschlossene Lobbys können atomar korrigiert werden, ohne spätere Aufstellungen zu verändern.</li>
+              <li>„Neu erzeugen“ übernimmt Neuzugänge und Statusänderungen in die jüngste vollständig ergebnislose Lobby; enthaltene Fixierungen bleiben erhalten.</li>
+              <li>Inaktive und zurückgezogene Fahrer überspringen nicht zugewiesene Wertungsrunden und holen sie bei Reaktivierung nicht nach. Späteinsteiger erhalten höchstens eine Wertung je verbleibender konfigurierter Runde; der Abschluss benötigt keine Bonus-Lobby.</li>
               <li>Mario-Kart-Rangfolge: Turnierpunkte, Siege, Durchschnittsplatzierung, direkter Vergleich. Seed und Name sortieren nur vollständige Gleichstände stabil.</li>
               <li>Biermarkierungen bleiben auch nach Lobbyabschluss direkt änderbar und beeinflussen weder Platzierung noch Lobby-Lebenszyklus. Sportliche und Bier-Rangliste teilen gleiche Ränge nach <code>1, 1, 3</code>; physische und wertende Rennen werden getrennt ausgewiesen.</li>
             </ul>

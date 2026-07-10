@@ -1,7 +1,7 @@
 import {
   isPairingComplete,
-  recalculateStandings,
 } from '@/apps/swiss-tournaments/logic'
+import { getMarioKartCycleProgress } from '@/apps/swiss-tournaments/marioKart'
 import type {
   Round,
   Tournament,
@@ -9,6 +9,7 @@ import type {
 
 type TournamentProgress = {
   completedUnitCount: number
+  completionRoundNumber: number | null
   currentUnitCount: number
   isComplete: boolean
   minimumEditableUnitCount: number
@@ -26,16 +27,7 @@ function getCompletedUnitCount(
   tournament: Tournament,
 ) {
   if (tournament.format === 'marioKart') {
-    const activeRows = recalculateStandings(tournament).filter(
-      (row) => row.status === 'active',
-    )
-
-    return activeRows.length > 0
-      ? Math.min(
-          tournament.numberOfRounds,
-          ...activeRows.map((row) => row.marioKartScoringRaces),
-        )
-      : 0
+    return getMarioKartCycleProgress(tournament).completedCycleCount
   }
 
   const completedRegularRounds = new Set(
@@ -87,20 +79,20 @@ function getHighestCompletedRoundNumber(
 export function getTournamentProgress(
   tournament: Tournament,
 ): TournamentProgress {
-  const standings =
-    tournament.format === 'marioKart'
-      ? recalculateStandings(tournament)
-      : []
   const completedUnitCount = getCompletedUnitCount(tournament)
   const currentUnitCount = getCurrentUnitCount(tournament, completedUnitCount)
-  const highestPlayedMarioKartRaceCount = standings.reduce(
-    (highestRaceCount, row) =>
-      Math.max(highestRaceCount, row.marioKartScoringRaces),
-    0,
-  )
+  const marioKartProgress =
+    tournament.format === 'marioKart'
+      ? getMarioKartCycleProgress(tournament)
+      : null
 
   return {
     completedUnitCount,
+    completionRoundNumber:
+      marioKartProgress?.completionRoundNumber ??
+      (completedUnitCount >= tournament.numberOfRounds
+        ? getHighestCompletedRoundNumber(tournament, isRoundCompleteForProgress)
+        : null),
     currentUnitCount,
     isComplete:
       tournament.numberOfRounds > 0 &&
@@ -116,7 +108,7 @@ export function getTournamentProgress(
     // Saving must not truncate any officially completed round or played race.
     minimumSavableUnitCount:
       tournament.format === 'marioKart'
-        ? highestPlayedMarioKartRaceCount
+        ? (marioKartProgress?.highestCompletedCycle ?? 0)
         : getHighestCompletedRoundNumber(
             tournament,
             (round) => round.status === 'completed',

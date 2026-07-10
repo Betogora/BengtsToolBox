@@ -3229,16 +3229,28 @@ export function removePlayerFromTournament(
     return tournament
   }
 
+  const remainingReservationPlayerIds =
+    tournament.marioKartLobbyReservation?.playerIds.filter(
+      (entry) => entry !== playerId,
+    ) ?? []
   const nextTournament = {
     ...tournament,
     players: tournament.players.filter((player) => player.id !== playerId),
+  }
+
+  if (remainingReservationPlayerIds.length >= 2) {
+    nextTournament.marioKartLobbyReservation = {
+      playerIds: remainingReservationPlayerIds,
+    }
+  } else {
+    delete nextTournament.marioKartLobbyReservation
   }
 
   return regenerateCurrentDraftRoundIfUnscored(nextTournament)
 }
 
 export function resetTournamentProgress(tournament: Tournament): Tournament {
-  return {
+  const resetTournament: Tournament = {
     ...tournament,
     currentRound: 0,
     players: tournament.players.map((player) => ({
@@ -3255,6 +3267,10 @@ export function resetTournamentProgress(tournament: Tournament): Tournament {
     })),
     rounds: [],
   }
+
+
+  delete resetTournament.marioKartLobbyReservation
+  return resetTournament
 }
 
 export function reopenPreviousRound(tournament: Tournament): Tournament {

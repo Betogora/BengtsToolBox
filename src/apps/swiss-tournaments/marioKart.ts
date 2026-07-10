@@ -9,7 +9,7 @@ import type {
 } from '@/apps/swiss-tournaments/types'
 
 const MARIO_KART_LOBBY_SIZE = 4
-export const MARIO_KART_MAX_PLACEMENT = 15
+export const MARIO_KART_MAX_PLACEMENT = 24
 
 const pointsByScoringCount: Record<number, number[]> = {
   1: [1],
@@ -24,6 +24,7 @@ type MarioKartPlanningBlockedReason =
   | 'not-mario-kart'
   | 'not-enough-eligible-players'
   | 'not-enough-unreserved-players'
+  | 'fixed-lobby-waiting'
 
 type MarioKartPlanningResult = {
   tournament: Tournament
@@ -34,6 +35,7 @@ type MarioKartPlanningResult = {
 type MarioKartLedgerEntry = {
   player: Player
   assignedCycles: Set<number>
+  completedCycles: Set<number>
   physicalRaces: number
   completedScoringRaces: number
   points: number
@@ -69,7 +71,19 @@ function sortedRounds(tournament: Tournament) {
 }
 
 export function getMarioKartRacers(pairing: Pairing) {
-  return pairing.kind === 'marioKart' ? pairing.marioKartRacers ?? [] : []
+  if (pairing.kind !== 'marioKart') {
+    return []
+  }
+
+  return (pairing.marioKartRacers ?? []).map((racer) =>
+    racer.scoringCycleNumber === undefined
+      ? {
+          ...racer,
+          scoringCycleNumber:
+            pairing.marioKartCycleNumber ?? pairing.roundNumber,
+        }
+      : racer,
+  )
 }
 
 export function getMarioKartScoringRacers(pairing: Pairing) {
@@ -164,6 +178,7 @@ function makeLedgerEntry(player: Player): MarioKartLedgerEntry {
   return {
     player,
     assignedCycles: new Set<number>(),
+    completedCycles: new Set<number>(),
     physicalRaces: 0,
     completedScoringRaces: 0,
     points: 0,
@@ -263,6 +278,7 @@ function deriveMarioKartLedger(tournament: Tournament): MarioKartLedger {
         }
 
         entry.completedScoringRaces += 1
+        entry.completedCycles.add(racer.scoringCycleNumber!)
         entry.points += getMarioKartTournamentPoints(pairing, racer)
         entry.placements.push(racer.placement)
 
@@ -278,6 +294,79 @@ function deriveMarioKartLedger(tournament: Tournament): MarioKartLedger {
     reservedPlayerIds,
     physicalRaceNumberByRoundAndPlayer,
     highestStartedCycle,
+  }
+}
+
+export function getMarioKartCycleProgress(tournament: Tournament) {
+  const ledger = deriveMarioKartLedger(tournament)
+  const startedCycles = new Set<number>()
+  let highestCompletedCycle = 0
+
+  ledger.byPlayerId.forEach((entry) => {
+    entry.assignedCycles.forEach((cycle) => startedCycles.add(cycle))
+    entry.completedCycles.forEach((cycle) => {
+      if (Number.isInteger(cycle)) {
+        highestCompletedCycle = Math.max(highestCompletedCycle, cycle)
+      }
+    })
+  })
+
+  const isCycleComplete = (cycle: number) => {
+    if (!startedCycles.has(cycle)) {
+      return false
+    }
+
+    return tournament.players.every((player) => {
+      const entry = ledger.byPlayerId.get(player.id)
+
+      if (
+        playerEligibleFromCycle(player) > cycle ||
+        skippedCycles(player).has(cycle) ||
+        entry?.completedCycles.has(cycle)
+      ) {
+        return true
+      }
+
+      return player.status !== 'active' && !entry?.assignedCycles.has(cycle)
+    })
+  }
+  let completedCycleCount = 0
+
+  for (let cycle = 1; cycle <= tournament.numberOfRounds; cycle += 1) {
+    if (!isCycleComplete(cycle)) {
+      break
+    }
+
+    completedCycleCount = cycle
+  }
+
+  const completionRoundNumber =
+    completedCycleCount >= tournament.numberOfRounds
+      ? sortedRounds(tournament).reduce((latestRoundNumber, round) => {
+          if (round.status !== 'completed') {
+            return latestRoundNumber
+          }
+
+          const contributesToConfiguredCycles = round.pairings.some(
+            (pairing) =>
+              pairing.kind === 'marioKart' &&
+              getMarioKartScoringRacers(pairing).some(
+                (racer) =>
+                  racer.scoringCycleNumber !== null &&
+                  racer.scoringCycleNumber <= tournament.numberOfRounds,
+              ),
+          )
+
+          return contributesToConfiguredCycles
+            ? Math.max(latestRoundNumber, round.roundNumber)
+            : latestRoundNumber
+        }, 0) || null
+      : null
+
+  return {
+    completedCycleCount,
+    completionRoundNumber,
+    highestCompletedCycle,
   }
 }
 
@@ -482,6 +571,35 @@ function updatePlayer(
     players: tournament.players.map((player) =>
       player.id === playerId ? { ...player, ...changes } : player,
     ),
+  }
+}
+
+export function setMarioKartLobbyReservation(
+  tournament: Tournament,
+  playerIds: string[] | null,
+) {
+  if (tournament.format !== 'marioKart') {
+    return tournament
+  }
+
+  if (playerIds === null) {
+    const nextTournament = { ...tournament }
+    delete nextTournament.marioKartLobbyReservation
+    return nextTournament
+  }
+
+  const knownPlayerIds = new Set(tournament.players.map((player) => player.id))
+  const uniquePlayerIds = [...new Set(playerIds)].filter((playerId) =>
+    knownPlayerIds.has(playerId),
+  )
+
+  if (uniquePlayerIds.length < 2 || uniquePlayerIds.length > 4) {
+    return tournament
+  }
+
+  return {
+    ...tournament,
+    marioKartLobbyReservation: { playerIds: uniquePlayerIds },
   }
 }
 
@@ -714,13 +832,13 @@ function promoteHistoricalExtras(
   }
 }
 
-function markInactiveCyclesSkipped(tournament: Tournament, throughCycle: number) {
+function markUnavailableCyclesSkipped(tournament: Tournament, throughCycle: number) {
   const ledger = deriveMarioKartLedger(tournament)
 
   return {
     ...tournament,
     players: tournament.players.map((player) => {
-      if (player.status !== 'inactive') {
+      if (player.status === 'active') {
         return player
       }
 
@@ -756,12 +874,69 @@ export function getMarioKartPlanningAvailability(tournament: Tournament) {
     (player) => player.status === 'active',
   )
   const availablePlayers = activeAvailablePlayers(tournament, ledger)
+  const fixedPlayerIds = new Set(
+    tournament.marioKartLobbyReservation?.playerIds ?? [],
+  )
+  const freelyAvailablePlayers = availablePlayers.filter(
+    (player) => !fixedPlayerIds.has(player.id),
+  )
+  let planningCandidates = availablePlayers.flatMap((player) => {
+    const cycle = nextOpenCycle(
+      player,
+      ledger.byPlayerId.get(player.id)!,
+      tournament.numberOfRounds,
+    )
+
+    return cycle === null ? [] : [{ player, scoringCycleNumber: cycle }]
+  })
+
+  if (planningCandidates.length === 0 && availablePlayers.length > 0) {
+    const bonusCycle = nextBonusCycle(tournament, ledger).cycle
+    planningCandidates = availablePlayers
+      .filter(
+        (player) =>
+          !skippedCycles(player).has(bonusCycle) &&
+          !ledger.byPlayerId.get(player.id)?.assignedCycles.has(bonusCycle),
+      )
+      .map((player) => ({ player, scoringCycleNumber: bonusCycle }))
+  }
+
+  const targetCycle = Math.min(
+    ...planningCandidates.map((candidate) => candidate.scoringCycleNumber),
+  )
+  const fixedCandidates = planningCandidates.filter((candidate) =>
+    fixedPlayerIds.has(candidate.player.id),
+  )
+  const fixedPlayersReady =
+    fixedPlayerIds.size >= 2 &&
+    fixedCandidates.length === fixedPlayerIds.size &&
+    (fixedCandidates.some(
+      (candidate) => candidate.scoringCycleNumber === targetCycle,
+    ) ||
+      (fixedCandidates.length < MARIO_KART_LOBBY_SIZE &&
+        planningCandidates.some(
+          (candidate) =>
+            candidate.scoringCycleNumber === targetCycle &&
+            !fixedPlayerIds.has(candidate.player.id),
+        )))
 
   if (activePlayers.length < MARIO_KART_LOBBY_SIZE) {
     return {
       canCreate: false,
       availablePlayerCount: availablePlayers.length,
       blockedReason: 'not-enough-eligible-players' as const,
+    }
+  }
+
+  if (
+    fixedPlayerIds.size >= 2 &&
+    !fixedPlayersReady &&
+    freelyAvailablePlayers.length < MARIO_KART_LOBBY_SIZE
+  ) {
+    return {
+      canCreate: false,
+      availablePlayerCount: freelyAvailablePlayers.length,
+      blockedReason: 'fixed-lobby-waiting' as const,
     }
   }
 
@@ -867,41 +1042,102 @@ export function planNextMarioKartLobby(
       }))
   }
 
+  const reservationPlayerIds =
+    workingTournament.marioKartLobbyReservation?.playerIds ?? []
+  const reservationPlayerIdSet = new Set(reservationPlayerIds)
+  const initialTargetCycle = Math.min(
+    ...candidates.map((candidate) => candidate.scoringCycleNumber),
+  )
+  const fixedCandidates = reservationPlayerIds.flatMap((playerId) => {
+    const candidate = candidates.find((entry) => entry.player.id === playerId)
+    return candidate ? [candidate] : []
+  })
+  const fixedLobbyCanContainTargetCycle =
+    fixedCandidates.some(
+      (candidate) => candidate.scoringCycleNumber === initialTargetCycle,
+    ) ||
+    (fixedCandidates.length < MARIO_KART_LOBBY_SIZE &&
+      candidates.some(
+        (candidate) =>
+          candidate.scoringCycleNumber === initialTargetCycle &&
+          !reservationPlayerIdSet.has(candidate.player.id),
+      ))
+  const fixedLobbyReady =
+    reservationPlayerIds.length >= 2 &&
+    fixedCandidates.length === reservationPlayerIds.length &&
+    fixedLobbyCanContainTargetCycle
+
+  if (reservationPlayerIds.length >= 2 && !fixedLobbyReady) {
+    availablePlayers = availablePlayers.filter(
+      (player) => !reservationPlayerIdSet.has(player.id),
+    )
+    candidates = candidates.filter(
+      (candidate) => !reservationPlayerIdSet.has(candidate.player.id),
+    )
+  }
+
+  if (
+    availablePlayers.length < MARIO_KART_LOBBY_SIZE ||
+    candidates.length === 0
+  ) {
+    return {
+      tournament,
+      blockedReason:
+        reservationPlayerIds.length >= 2
+          ? 'fixed-lobby-waiting'
+          : 'not-enough-unreserved-players',
+    }
+  }
+
   const targetCycle = Math.min(
     ...candidates.map((candidate) => candidate.scoringCycleNumber),
   )
-  const primaryCandidates = candidates.filter(
-    (candidate) => candidate.scoringCycleNumber === targetCycle,
+  const selectedFixed = fixedLobbyReady ? fixedCandidates : []
+  const selectedFixedIds = new Set(
+    selectedFixed.map((candidate) => candidate.player.id),
   )
+  const primaryCandidates = candidates.filter(
+    (candidate) =>
+      candidate.scoringCycleNumber === targetCycle &&
+      !selectedFixedIds.has(candidate.player.id),
+  )
+  const primarySlots = MARIO_KART_LOBBY_SIZE - selectedFixed.length
   const selectedPrimary =
-    primaryCandidates.length > MARIO_KART_LOBBY_SIZE
+    primaryCandidates.length > primarySlots
       ? chooseBestCandidates(
-          [],
+          selectedFixed,
           primaryCandidates,
-          MARIO_KART_LOBBY_SIZE,
+          primarySlots,
           ledger,
           targetCycle,
           avoidedPlayerIds,
         )
       : primaryCandidates
   const selectedIds = new Set(
-    selectedPrimary.map((candidate) => candidate.player.id),
+    [...selectedFixed, ...selectedPrimary].map(
+      (candidate) => candidate.player.id,
+    ),
   )
-  const neededScoringFillers = MARIO_KART_LOBBY_SIZE - selectedPrimary.length
+  const neededScoringFillers =
+    MARIO_KART_LOBBY_SIZE - selectedFixed.length - selectedPrimary.length
   const laterCandidates = candidates.filter(
     (candidate) =>
       candidate.scoringCycleNumber > targetCycle &&
       !selectedIds.has(candidate.player.id),
   )
   const selectedFillers = chooseBestCandidates(
-    selectedPrimary,
+    [...selectedFixed, ...selectedPrimary],
     laterCandidates,
     Math.min(neededScoringFillers, laterCandidates.length),
     ledger,
     targetCycle,
     avoidedPlayerIds,
   )
-  const scoringCandidates = [...selectedPrimary, ...selectedFillers]
+  const scoringCandidates = [
+    ...selectedFixed,
+    ...selectedPrimary,
+    ...selectedFillers,
+  ]
   const scoringIds = new Set(
     scoringCandidates.map((candidate) => candidate.player.id),
   )
@@ -945,6 +1181,7 @@ export function planNextMarioKartLobby(
     ...scoringCandidates.map((candidate) => ({
       playerId: candidate.player.id,
       scoringCycleNumber: candidate.scoringCycleNumber,
+      ...(selectedFixedIds.has(candidate.player.id) ? { isFixed: true } : {}),
     })),
     ...extras.map((player) => ({
       playerId: player.id,
@@ -968,13 +1205,22 @@ export function planNextMarioKartLobby(
     pairings: [pairing],
     status: 'draft',
   }
-  const nextTournament = markInactiveCyclesSkipped(
+  const plannedTournament = {
+    ...workingTournament,
+    currentRound: roundNumber,
+    rounds: [...workingTournament.rounds, round].sort(
+      (left, right) => left.roundNumber - right.roundNumber,
+    ),
+  }
+
+  if (fixedLobbyReady) {
+    delete plannedTournament.marioKartLobbyReservation
+  }
+
+  const nextTournament = markUnavailableCyclesSkipped(
     {
-      ...workingTournament,
+      ...plannedTournament,
       currentRound: roundNumber,
-      rounds: [...workingTournament.rounds, round].sort(
-        (left, right) => left.roundNumber - right.roundNumber,
-      ),
     },
     Math.max(targetCycle, ...racers.flatMap((racer) =>
       racer.scoringCycleNumber === null ? [] : [racer.scoringCycleNumber],
@@ -1013,11 +1259,19 @@ export function deleteLatestEmptyMarioKartLobby(
     return tournament
   }
 
+  const fixedPlayerIds = tournament.rounds
+    .find((round) => round.roundNumber === roundNumber)
+    ?.pairings.flatMap((pairing) =>
+      getMarioKartRacers(pairing)
+        .filter((racer) => racer.isFixed)
+        .map((racer) => racer.playerId),
+    ) ?? []
+
   const rounds = tournament.rounds.filter(
     (round) => round.roundNumber !== roundNumber,
   )
 
-  return {
+  const nextTournament: Tournament = {
     ...tournament,
     currentRound: rounds.reduce(
       (highest, round) => Math.max(highest, round.roundNumber),
@@ -1025,6 +1279,14 @@ export function deleteLatestEmptyMarioKartLobby(
     ),
     rounds,
   }
+
+  if (fixedPlayerIds.length >= 2) {
+    nextTournament.marioKartLobbyReservation = {
+      playerIds: [...new Set(fixedPlayerIds)],
+    }
+  }
+
+  return nextTournament
 }
 
 export function rerollLatestEmptyMarioKartLobby(
@@ -1176,7 +1438,17 @@ export function correctClosedMarioKartLobby(
 }
 
 function currentEntryCycle(tournament: Tournament, playerId?: string) {
-  const ledger = deriveMarioKartLedger(tournament)
+  const latestRound = sortedRounds(tournament).at(-1)
+  const committedTournament =
+    latestRound && isLatestEmptyMarioKartLobby(tournament, latestRound.roundNumber)
+      ? {
+          ...tournament,
+          rounds: tournament.rounds.filter(
+            (round) => round.roundNumber !== latestRound.roundNumber,
+          ),
+        }
+      : tournament
+  const ledger = deriveMarioKartLedger(committedTournament)
   const startedCycles = Array.from(
     new Set(
       [...ledger.byPlayerId.values()].flatMap((entry) => [
@@ -1184,7 +1456,7 @@ function currentEntryCycle(tournament: Tournament, playerId?: string) {
       ]),
     ),
   ).sort((left, right) => left - right)
-  const currentPlayers = tournament.players.filter(
+  const currentPlayers = committedTournament.players.filter(
     (player) => player.status === 'active' && player.id !== playerId,
   )
   const unfinishedCycles = startedCycles.filter((cycle) =>
@@ -1216,7 +1488,7 @@ export function setMarioKartPlayerStatus(
 ) {
   const player = tournament.players.find((entry) => entry.id === playerId)
 
-  if (!player || player.status === 'withdrawn' || player.status === status) {
+  if (!player || player.status === status) {
     return tournament
   }
 
