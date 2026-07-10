@@ -1,6 +1,7 @@
 import {
   Archive,
   ArrowRight,
+  Beer,
   Brain,
   ChevronDown,
   ChessKing,
@@ -132,6 +133,7 @@ const byePolicyOptions: Array<{ value: ByePolicy; labelKey: TranslationKey }> = 
 ]
 
 const appTitle = 'SK Anderten Turnier-App'
+const marioKartAppTitle = "Don't drink and drive"
 const tournamentWebsiteUrl = 'https://bengtstoolbox.web.app/apps/swiss-tournaments'
 const tournamentWebsiteQrUrl = '/qrcode.svg'
 const singleLineSelectTriggerClass =
@@ -936,8 +938,13 @@ function isDefaultTournamentName(
   )
 }
 
-function AppTitleHeader() {
-  return <AppPageTitle Icon={ChessKing} title={appTitle} />
+function AppTitleHeader({ isMarioKart = false }: { isMarioKart?: boolean }) {
+  return (
+    <AppPageTitle
+      Icon={isMarioKart ? Beer : ChessKing}
+      title={isMarioKart ? marioKartAppTitle : appTitle}
+    />
+  )
 }
 
 function TournamentCreator({
@@ -1966,11 +1973,17 @@ export function SwissTournamentsPage() {
         !selectedMarioKartReservationIds.includes(player.id),
     )
   return (
-    <AppPage className="swiss-tournaments-page" width="wide">
+    <AppPage
+      className={cn(
+        'swiss-tournaments-page',
+        isMarioKartTournament && 'swiss-tournaments-page--mario-kart',
+      )}
+      width="wide"
+    >
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppTitleHeader />
+        <AppTitleHeader isMarioKart={isMarioKartTournament} />
         <PresenterLauncher
-          appTitle={appTitle}
+          appTitle={isMarioKartTournament ? marioKartAppTitle : appTitle}
           views={[
             {
               id: 'standings',

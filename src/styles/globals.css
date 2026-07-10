@@ -180,6 +180,15 @@ select {
   opacity: 0.35;
 }
 
+.swiss-tournaments-page--mario-kart::before {
+  top: 3.5rem;
+  width: clamp(8rem, 17vw, 14rem);
+  height: clamp(8rem, 17vw, 14rem);
+  background-image: url("/mario-kart-blue-shell.png");
+  mix-blend-mode: multiply;
+  opacity: 0.28;
+}
+
 .swiss-tournaments-page > * {
   position: relative;
   z-index: 1;
