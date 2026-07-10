@@ -233,6 +233,48 @@ describe('Mario-Kart-Lobbyplanung', () => {
     })
   })
 
+  it('verteilt vorgezogene Wertungsrennen statt fixierte Fahrer ungewertet zu wiederholen', () => {
+    let tournament = makeTournament('marioKart', 10, { numberOfRounds: 3 })
+
+    tournament = completeLatest(createLobby(tournament))
+    tournament = completeLatest(createLobby(tournament))
+    tournament = completeLatest(createLobby(tournament))
+    tournament = completeLatest(createLobby(tournament))
+
+    const fixedIds = tournament.rounds
+      .flatMap((round) => getMarioKartRacers(round.pairings[0]))
+      .filter((racer) => racer.scoringCycleNumber === 2)
+      .map((racer) => racer.playerId)
+      .slice(0, 2)
+
+    tournament = setMarioKartLobbyReservation(tournament, fixedIds)
+    tournament = completeLatest(createLobby(tournament))
+
+    const fixedLobby = latestRound(tournament).pairings[0]
+    const fixedFillers = getMarioKartRacers(fixedLobby).filter(
+      (racer) => racer.isFixed,
+    )
+
+    expect(fixedLobby.marioKartCycleNumber).toBe(2)
+    expect(fixedFillers.map((racer) => racer.playerId)).toEqual(fixedIds)
+    expect(
+      fixedFillers.every((racer) => racer.scoringCycleNumber === 3),
+    ).toBe(true)
+
+    tournament = createLobby(tournament)
+
+    const finalCycleTwoLobby = latestRound(tournament).pairings[0]
+    const nextFillers = getMarioKartRacers(finalCycleTwoLobby).filter(
+      (racer) => racer.scoringCycleNumber === 3,
+    )
+
+    expect(finalCycleTwoLobby.marioKartCycleNumber).toBe(2)
+    expect(nextFillers).toHaveLength(2)
+    expect(
+      nextFillers.every((racer) => !fixedIds.includes(racer.playerId)),
+    ).toBe(true)
+  })
+
   it('lässt eine Fixierung auf inaktive Fahrer warten und plant andere Fahrer weiter', () => {
     let tournament = makeTournament('marioKart', 8, { numberOfRounds: 2 })
     const fixedIds = tournament.players.slice(0, 2).map((player) => player.id)

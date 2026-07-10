@@ -2493,153 +2493,165 @@ export function SwissTournamentsPage() {
             <CardContent className="grid gap-4">
               {isMarioKartTournament && (
                 <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="grid gap-1">
-                      <div className="type-action flex items-center gap-2">
-                        <Pin className="size-4 text-primary" />
-                        {t('swiss.marioKartFixLobby')}
+                  {tournament.marioKartLobbyReservation &&
+                  !isEditingMarioKartReservation ? (
+                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+                      <div className="grid gap-3">
+                        <div className="grid gap-1">
+                          <div className="type-action flex items-center gap-2">
+                            <Pin className="size-4 text-primary" />
+                            {t('swiss.marioKartFixLobby')}
+                          </div>
+                          <p className="type-caption text-muted-foreground">
+                            {t('swiss.marioKartFixLobbyDescription')}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {tournament.marioKartLobbyReservation.playerIds.map(
+                            (playerId) => {
+                              const player = tournament.players.find(
+                                (entry) => entry.id === playerId,
+                              )
+
+                              return (
+                                <span
+                                  key={playerId}
+                                  className={fixedPairingHintClassName}
+                                >
+                                  <span className="px-2 py-0.5">
+                                    {player?.name ?? playerId} · {t('swiss.fixed')}
+                                  </span>
+                                </span>
+                              )
+                            },
+                          )}
+                        </div>
                       </div>
-                      <p className="type-caption text-muted-foreground">
-                        {t('swiss.marioKartFixLobbyDescription')}
-                      </p>
-                    </div>
-                    {tournament.marioKartLobbyReservation &&
-                      !isEditingMarioKartReservation && (
+                      <div className="flex flex-col gap-2 md:items-end">
                         <Badge className="w-fit" variant="secondary">
                           {t('swiss.marioKartFixLobbyWaiting')}
                         </Badge>
-                      )}
-                  </div>
-
-                  {tournament.marioKartLobbyReservation &&
-                  !isEditingMarioKartReservation ? (
-                    <div className="grid gap-3">
-                      <div className="flex flex-wrap gap-2">
-                        {tournament.marioKartLobbyReservation.playerIds.map(
-                          (playerId) => {
-                            const player = tournament.players.find(
-                              (entry) => entry.id === playerId,
-                            )
-
-                            return (
-                              <span
-                                key={playerId}
-                                className={fixedPairingHintClassName}
-                              >
-                                <span className="px-2 py-0.5">
-                                  {player?.name ?? playerId} · {t('swiss.fixed')}
-                                </span>
-                              </span>
-                            )
-                          },
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                        <Button
-                          className="w-full sm:w-auto"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setMarioKartReservationDraft([
-                              ...tournament.marioKartLobbyReservation!.playerIds,
-                              '',
-                              '',
-                              '',
-                              '',
-                            ].slice(0, 4))
-                            setIsEditingMarioKartReservation(true)
-                          }}
-                        >
-                          <Pencil className="size-4" />
-                          {t('common.edit')}
-                        </Button>
-                        <Button
-                          className="w-full sm:w-auto"
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            await app.setMarioKartLobbyReservation(null)
-                            setMarioKartReservationDraft(['', '', '', ''])
-                          }}
-                        >
-                          <X className="size-4" />
-                          {t('swiss.marioKartFixLobbyRemove')}
-                        </Button>
+                        <div className="flex flex-col gap-2 md:flex-row">
+                          <Button
+                            className="w-full md:w-auto"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setMarioKartReservationDraft([
+                                ...tournament.marioKartLobbyReservation!.playerIds,
+                                '',
+                                '',
+                                '',
+                                '',
+                              ].slice(0, 4))
+                              setIsEditingMarioKartReservation(true)
+                            }}
+                          >
+                            <Pencil className="size-4" />
+                            {t('common.edit')}
+                          </Button>
+                          <Button
+                            className="w-full md:w-auto"
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await app.setMarioKartLobbyReservation(null)
+                              setMarioKartReservationDraft(['', '', '', ''])
+                            }}
+                          >
+                            <X className="size-4" />
+                            {t('swiss.marioKartFixLobbyRemove')}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_9rem]">
-                      {marioKartReservationDraft.map((playerId, slotIndex) => (
-                        <Select
-                          key={slotIndex}
-                          value={playerId || emptyPlayerSlotValue}
-                          onValueChange={(value) =>
-                            setMarioKartReservationDraft((current) =>
-                              current.map((entry, index) =>
-                                index === slotIndex
-                                  ? value === emptyPlayerSlotValue
-                                    ? ''
-                                    : value
-                                  : entry,
-                              ),
-                            )
-                          }
-                        >
-                          <IftaSelectTrigger
-                            aria-label={t('swiss.marioKartFixedPlayerAria', {
-                              number: slotIndex + 1,
-                            })}
-                            className={singleLineSelectTriggerClass}
-                            label={t('swiss.marioKartFixedPlayer', {
-                              number: slotIndex + 1,
-                            })}
+                    <>
+                      <div className="grid gap-1">
+                        <div className="type-action flex items-center gap-2">
+                          <Pin className="size-4 text-primary" />
+                          {t('swiss.marioKartFixLobby')}
+                        </div>
+                        <p className="type-caption text-muted-foreground">
+                          {t('swiss.marioKartFixLobbyDescription')}
+                        </p>
+                      </div>
+                      <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_9rem]">
+                        {marioKartReservationDraft.map((playerId, slotIndex) => (
+                          <Select
+                            key={slotIndex}
+                            value={playerId || emptyPlayerSlotValue}
+                            onValueChange={(value) =>
+                              setMarioKartReservationDraft((current) =>
+                                current.map((entry, index) =>
+                                  index === slotIndex
+                                    ? value === emptyPlayerSlotValue
+                                      ? ''
+                                      : value
+                                    : entry,
+                                ),
+                              )
+                            }
                           >
-                            <SelectValue placeholder={t('swiss.result.open')} />
-                          </IftaSelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={emptyPlayerSlotValue}>
-                              {t('swiss.result.open')}
-                            </SelectItem>
-                            {marioKartReservationOptionFor(slotIndex).map((player) => (
-                              <SelectItem key={player.id} value={player.id}>
-                                {player.name} · {t(statusLabelKeys[player.status])}
+                            <IftaSelectTrigger
+                              aria-label={t('swiss.marioKartFixedPlayerAria', {
+                                number: slotIndex + 1,
+                              })}
+                              className={singleLineSelectTriggerClass}
+                              label={roleLabel(
+                                <Gamepad2 className="size-3 shrink-0 text-primary" />,
+                                t('swiss.marioKartFixedPlayer', {
+                                  number: slotIndex + 1,
+                                }),
+                              )}
+                            >
+                              <SelectValue placeholder={t('swiss.result.open')} />
+                            </IftaSelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={emptyPlayerSlotValue}>
+                                {t('swiss.result.open')}
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ))}
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                        <Button
-                          className="h-9 w-full lg:h-11"
-                          disabled={!canSaveMarioKartReservation}
-                          size="ifta"
-                          onClick={async () => {
-                            await app.setMarioKartLobbyReservation(
-                              selectedMarioKartReservationIds,
-                            )
-                            setMarioKartReservationDraft(['', '', '', ''])
-                            setIsEditingMarioKartReservation(false)
-                            toast.success(t('swiss.marioKartFixLobbySaved'))
-                          }}
-                        >
-                          <Pin className="size-4" />
-                          {t('swiss.marioKartFixLobbyAction')}
-                        </Button>
-                        {isEditingMarioKartReservation && (
+                              {marioKartReservationOptionFor(slotIndex).map((player) => (
+                                <SelectItem key={player.id} value={player.id}>
+                                  {player.name} · {t(statusLabelKeys[player.status])}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ))}
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                           <Button
-                            className="w-full"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
+                            className="h-9 w-full lg:h-11"
+                            disabled={!canSaveMarioKartReservation}
+                            size="ifta"
+                            onClick={async () => {
+                              await app.setMarioKartLobbyReservation(
+                                selectedMarioKartReservationIds,
+                              )
                               setMarioKartReservationDraft(['', '', '', ''])
                               setIsEditingMarioKartReservation(false)
+                              toast.success(t('swiss.marioKartFixLobbySaved'))
                             }}
                           >
-                            {t('common.cancel')}
+                            <Pin className="size-4" />
+                            {t('swiss.marioKartFixLobbyAction')}
                           </Button>
-                        )}
+                          {isEditingMarioKartReservation && (
+                            <Button
+                              className="w-full"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setMarioKartReservationDraft(['', '', '', ''])
+                                setIsEditingMarioKartReservation(false)
+                              }}
+                            >
+                              {t('common.cancel')}
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -3062,6 +3074,7 @@ export function SwissTournamentsPage() {
                                       toast.success(t('swiss.handAndBrainFixed'))
                                     }}
                                   >
+                                    <Pin className="size-4" />
                                     {t('swiss.handAndBrainFix')}
                                   </Button>
                                 </div>
@@ -3127,6 +3140,7 @@ export function SwissTournamentsPage() {
                                   toast.success(t('swiss.manualPairingFixed'))
                                 }}
                               >
+                                <Pin className="size-4" />
                                 {tournament.format === 'handAndBrain'
                                   ? t('swiss.singleGameFix')
                                   : t('swiss.fix')}
