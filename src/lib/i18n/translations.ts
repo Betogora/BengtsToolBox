@@ -438,8 +438,6 @@ export const de = {
   'swiss.marioKartFixLobbyAction': 'Lobby fixieren',
   'swiss.marioKartFixLobbyBlocked':
     'Die fixierte Lobby wartet noch auf mindestens einen Fahrer.',
-  'swiss.marioKartFixLobbyDescription':
-    'Wähle zwei bis vier Fahrer. Sie warten aufeinander und werden sobald fair möglich gemeinsam eingeplant.',
   'swiss.marioKartFixLobbyRemove': 'Fixierung lösen',
   'swiss.marioKartFixLobbySaved': 'Zukünftige Lobby wurde fixiert.',
   'swiss.marioKartFixLobbyWaiting': 'Wartet auf Verfügbarkeit',
@@ -1013,8 +1011,6 @@ export const en: Record<TranslationKey, string> = {
   'swiss.marioKartFixLobbyAction': 'Fix lobby',
   'swiss.marioKartFixLobbyBlocked':
     'The fixed lobby is still waiting for at least one driver.',
-  'swiss.marioKartFixLobbyDescription':
-    'Choose two to four drivers. They wait for each other and are grouped as soon as fairness permits.',
   'swiss.marioKartFixLobbyRemove': 'Remove fixation',
   'swiss.marioKartFixLobbySaved': 'The future lobby was fixed.',
   'swiss.marioKartFixLobbyWaiting': 'Waiting for availability',

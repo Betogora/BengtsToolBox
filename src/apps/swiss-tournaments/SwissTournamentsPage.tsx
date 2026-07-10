@@ -2497,14 +2497,9 @@ export function SwissTournamentsPage() {
                   !isEditingMarioKartReservation ? (
                     <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
                       <div className="grid gap-3">
-                        <div className="grid gap-1">
-                          <div className="type-action flex items-center gap-2">
-                            <Pin className="size-4 text-primary" />
-                            {t('swiss.marioKartFixLobby')}
-                          </div>
-                          <p className="type-caption text-muted-foreground">
-                            {t('swiss.marioKartFixLobbyDescription')}
-                          </p>
+                        <div className="type-action flex items-center gap-2">
+                          <Pin className="size-4 text-primary" />
+                          {t('swiss.marioKartFixLobby')}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {tournament.marioKartLobbyReservation.playerIds.map(
@@ -2567,14 +2562,9 @@ export function SwissTournamentsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="grid gap-1">
-                        <div className="type-action flex items-center gap-2">
-                          <Pin className="size-4 text-primary" />
-                          {t('swiss.marioKartFixLobby')}
-                        </div>
-                        <p className="type-caption text-muted-foreground">
-                          {t('swiss.marioKartFixLobbyDescription')}
-                        </p>
+                      <div className="type-action flex items-center gap-2">
+                        <Pin className="size-4 text-primary" />
+                        {t('swiss.marioKartFixLobby')}
                       </div>
                       <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_9rem]">
                         {marioKartReservationDraft.map((playerId, slotIndex) => (
