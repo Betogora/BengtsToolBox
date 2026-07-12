@@ -27,6 +27,7 @@ import {
   getLobbyAdminOverview,
   getLobbyDevices,
   isLobbyAdminPin,
+  isLobbyAdminPermissionError,
 } from '@/lobbies/adminClient'
 import type { Lobby, LobbyDevice } from '@/lobbies/types'
 
@@ -69,9 +70,15 @@ export function LobbyAdminPage() {
     try {
       await loadOverview()
       setIsUnlocked(true)
-    } catch {
+    } catch (loadError) {
       setIsUnlocked(false)
-      toast.error(t('lobbyAdmin.loadError'))
+      toast.error(
+        t(
+          isLobbyAdminPermissionError(loadError)
+            ? 'lobbyAdmin.permissionError'
+            : 'lobbyAdmin.loadError',
+        ),
+      )
     } finally {
       setIsLoading(false)
     }
@@ -84,8 +91,14 @@ export function LobbyAdminPage() {
       setSelectedLobbyId(lobbyId)
       setDevices((current) => (cursor ? [...current, ...result.devices] : result.devices))
       setNextDeviceCursor(result.nextCursor)
-    } catch {
-      toast.error(t('lobbyAdmin.loadError'))
+    } catch (loadError) {
+      toast.error(
+        t(
+          isLobbyAdminPermissionError(loadError)
+            ? 'lobbyAdmin.permissionError'
+            : 'lobbyAdmin.loadError',
+        ),
+      )
     } finally {
       setIsLoading(false)
     }

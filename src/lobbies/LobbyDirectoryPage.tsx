@@ -1,4 +1,11 @@
-import { ArrowRight, Globe2, Plus, RadioTower, UsersRound } from 'lucide-react'
+import {
+  ArrowRight,
+  Globe2,
+  Plus,
+  RadioTower,
+  ShieldCheck,
+  UsersRound,
+} from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -60,14 +67,23 @@ export function LobbyDirectoryPage() {
 
   return (
     <AppPage width="wide">
-      <section className="grid gap-2">
-        <div className="flex items-center gap-3">
-          <UsersRound className="size-9 text-primary" />
-          <h1 className="type-page-title">{t('lobby.title')}</h1>
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="grid gap-2">
+          <div className="flex items-center gap-3">
+            <UsersRound className="size-9 text-primary" />
+            <h1 className="type-page-title">{t('lobby.title')}</h1>
+          </div>
+          <p className="type-ui max-w-3xl text-muted-foreground">
+            {t('lobby.description')}
+          </p>
         </div>
-        <p className="type-ui max-w-3xl text-muted-foreground">
-          {t('lobby.description')}
-        </p>
+
+        <Button asChild className="self-start" variant="outline">
+          <Link to="/lobby-admin">
+            <ShieldCheck />
+            {t('nav.lobbyAdmin')}
+          </Link>
+        </Button>
       </section>
 
       {!directory.isFirebaseConfigured && (

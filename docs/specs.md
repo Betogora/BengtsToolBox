@@ -59,7 +59,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 
 ### 3.1 Shell und Navigation
 
-- Die Shell zeigt Branding, Dashboard, `Schlag den Raab`, Lobbys, Lobby-Verwaltung und Sprachauswahl.
+- Die Shell zeigt Branding, Dashboard, `Schlag den Raab`, Lobbys und Sprachauswahl. Die Lobby-Verwaltung ist als sekundäre Aktion im Kopf der Lobby-Seite erreichbar.
 - Auf mittleren und großen Breiten ist die Navigation direkt sichtbar; mobil liegt sie in einem Menü.
 - Jede reguläre App erhält Titel, Beschreibung, Status, Icon, URL und Lazy Loader ausschließlich über die Registry.
 - Sonderrouten dürfen nur verwendet werden, wenn ein Bereich bewusst nicht als normale Dashboard-App erscheint.

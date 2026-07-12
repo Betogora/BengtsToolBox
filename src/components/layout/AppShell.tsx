@@ -2,7 +2,6 @@ import {
   BriefcaseBusiness,
   Home,
   Menu,
-  ShieldCheck,
   Target,
   UsersRound,
   type LucideIcon,
@@ -43,11 +42,6 @@ const navigationItems: readonly NavigationItem[] = [
     href: '/lobbies',
     labelKey: 'nav.lobbies',
     Icon: UsersRound,
-  },
-  {
-    href: '/lobby-admin',
-    labelKey: 'nav.lobbyAdmin',
-    Icon: ShieldCheck,
   },
 ]
 

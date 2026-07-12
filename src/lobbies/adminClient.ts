@@ -33,6 +33,15 @@ export function isLobbyAdminPin(pin: string) {
   return pin === LOBBY_ADMIN_PIN
 }
 
+export function isLobbyAdminPermissionError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'permission-denied'
+  )
+}
+
 function requireAdminPin(pin: string) {
   if (!isLobbyAdminPin(pin)) {
     throw new Error('Der Admin-PIN ist nicht korrekt.')

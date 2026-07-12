@@ -204,6 +204,8 @@ export const de = {
   'lobbyAdmin.lastSeen': 'Letzter Zugriff',
   'lobbyAdmin.loadMore': 'Weitere laden',
   'lobbyAdmin.loadError': 'Die Verwaltungsdaten konnten nicht geladen werden.',
+  'lobbyAdmin.permissionError':
+    'Der PIN ist korrekt, aber Firebase blockiert den Zugriff. Bitte die Firestore-Regeln bereitstellen.',
   'lobbyAdmin.deleted': 'Lobby wurde entfernt und ist nicht mehr zugänglich.',
   'lobbyAdmin.deleteTitle': 'Lobby entfernen?',
   'lobbyAdmin.deleteDescription':
@@ -827,6 +829,8 @@ export const en: Record<TranslationKey, string> = {
   'lobbyAdmin.lastSeen': 'Last access',
   'lobbyAdmin.loadMore': 'Load more',
   'lobbyAdmin.loadError': 'The admin data could not be loaded.',
+  'lobbyAdmin.permissionError':
+    'The PIN is correct, but Firebase is blocking access. Deploy the Firestore rules.',
   'lobbyAdmin.deleted': 'The lobby was removed and is no longer accessible.',
   'lobbyAdmin.deleteTitle': 'Remove lobby?',
   'lobbyAdmin.deleteDescription':
