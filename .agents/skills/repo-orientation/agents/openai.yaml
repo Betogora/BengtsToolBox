@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Orientation"
+  short_description: "Aufgabenbezogenen Repository-Kontext laden"
+  default_prompt: "Use $repo-orientation to load only the repository context needed for this task."

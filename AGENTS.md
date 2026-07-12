@@ -21,18 +21,25 @@ docs/                     Dauerhafte Architektur-, Entwicklungs- und Betriebsdok
 ## Lokaler Dev-Server
 
 - BengtsToolBox immer auf Port `5180` öffnen und starten, zum Beispiel mit `npm run dev -- --host 127.0.0.1 --port 5180 --strictPort`. Nicht auf den Vite-Standardport `5173` ausweichen, damit die App nicht mit anderen lokalen Projekten konkurriert.
+- Falls ein Hintergrundstart Standardausgabe oder Fehlerausgabe in Dateien umleitet, diese ausschließlich unter `logs/` ablegen und das Verzeichnis bei Bedarf anlegen. Keine Laufzeit-Logs im Repository-Root erzeugen.
 
 ## Kontext gezielt laden
 
-| Aufgabe | Zuerst lesen |
+Diese kompakte Repository-Anleitung immer zuerst lesen. Danach nur die Quellen und Abschnitte laden, die für die konkrete Aufgabe nötig sind; die kanonischen Dokumente nicht standardmäßig vollständig lesen. Überschriften zunächst mit `rg -n '^#{1,6} ' <datei>` ermitteln und die Lektüre auf die betroffenen Abschnitte begrenzen.
+
+| Aufgabe | Danach gezielt lesen |
 | --- | --- |
-| kleine Änderung in einer App | betroffene Page, Hook und Typen |
-| neue reguläre App | `docs/specs.md` (Entwicklungsvertrag), `src/apps/registry.ts`, eine ähnliche App |
-| Routing, Shared Code oder Firebase-Infrastruktur | `docs/specs.md` (Persistenz und Architektur) und betroffene zentrale Dateien |
-| Hosting, Actions oder Umgebungsvariablen | `docs/specs.md` (Hosting und Betrieb), Workflows und Firebase-Konfiguration |
+| kleine Änderung in einer App | betroffene Page, Hook, Typen und bei Bedarf genau die zugehörige App-Spezifikation in `docs/specs.md` |
+| neue reguläre App | relevante Produktanforderungen sowie Abschnitt 7.2 in `docs/specs.md`, `src/apps/registry.ts` und eine ähnliche App |
+| Persistenz, Lobby oder Firebase-Sync | betroffene Teile von Abschnitt 4 in `docs/specs.md` und die direkten Infrastrukturdateien |
+| Modulplatzierung, Schnittstellen, Importregeln oder Architekturänderung | betroffene Teile der Abschnitte 6 und 7 in `docs/specs.md` |
+| Hosting, Actions, Umgebungsvariablen oder Sicherheit | betroffene Teile der Abschnitte 9 und 10 in `docs/specs.md`, Workflows und Firebase-Konfiguration |
+| Scope, Priorität, Status oder Planung | `docs/todo.md`; den Abschnitt „Nicht als offene Spezifikation weiterführen“ nur für frühere Arbeit oder Evidenz |
+| bestehende oder schwer reversible Architekturentscheidung | Abschnitt 6.4 in `docs/specs.md` sowie vorhandene einschlägige Entscheidungsdokumente; derzeit gibt es kein separates ADR-Verzeichnis |
+| neue oder umzubenennende Datei | `docs/file-naming-conventions.md` |
 | Projektüberblick oder öffentliche Beschreibung | `README.md` |
 
-Nicht vorsorglich alle Apps, Datensätze oder Guides laden. Der aktuelle Code ist für Implementierungsdetails maßgeblich; Markdown beschreibt stabile Grenzen und Arbeitsabläufe.
+Bei breiten, projektübergreifenden Änderungen die Lektüre auf alle betroffenen Abschnitte und nur nötigenfalls auf vollständige Dokumente erweitern. Nicht vorsorglich alle Apps, Datensätze oder Guides laden. Der aktuelle Code ist für Implementierungsdetails maßgeblich; Markdown beschreibt stabile Grenzen und Arbeitsabläufe.
 
 ## Architekturregeln
 
@@ -73,6 +80,7 @@ Bei Dokumentationsänderungen lokale Links, genannte Pfade und Befehle gegen den
 - `README.md`: GitHub-Landingpage, App-Übersicht und Einstieg
 - `docs/specs.md`: zentrale Produkt- und Systemspezifikation einschließlich Entwicklungs- und Betriebsvertrag
 - `docs/specs.html`: responsive Lesefassung derselben Spezifikation
+- `docs/file-naming-conventions.md`: verbindliche Konvention für neue und umbenannte Dateien
 - `docs/todo.md`: priorisierte, noch nicht spezifizierte oder umgesetzte Verbesserungen
 
 Wenn diese Dateien dem Code widersprechen, zuerst den aktuellen Laufzeitpfad verifizieren und die Dokumentation im selben Änderungssatz korrigieren.

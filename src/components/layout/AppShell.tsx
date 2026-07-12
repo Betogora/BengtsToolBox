@@ -2,10 +2,12 @@ import {
   BriefcaseBusiness,
   Home,
   Menu,
+  ShieldCheck,
   Target,
+  UsersRound,
   type LucideIcon,
 } from 'lucide-react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { LanguageSelector } from '@/components/layout/LanguageSelector'
@@ -18,6 +20,7 @@ import {
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { useTrackLobbyDevice } from '@/lobbies/useTrackLobbyDevice'
 
 type NavigationItem = {
   href: string
@@ -36,10 +39,25 @@ const navigationItems: readonly NavigationItem[] = [
     labelKey: 'nav.schlagDenRaab',
     Icon: Target,
   },
+  {
+    href: '/lobbies',
+    labelKey: 'nav.lobbies',
+    Icon: UsersRound,
+  },
+  {
+    href: '/lobby-admin',
+    labelKey: 'nav.lobbyAdmin',
+    Icon: ShieldCheck,
+  },
 ]
 
 export function AppShell() {
   const { t } = useI18n()
+  const location = useLocation()
+  const usesDefaultLobby =
+    location.pathname.startsWith('/apps/') || location.pathname === '/schlag-den-raab'
+
+  useTrackLobbyDevice(usesDefaultLobby ? 'default' : undefined)
 
   return (
     <div className="min-h-svh">

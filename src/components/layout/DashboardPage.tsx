@@ -3,14 +3,17 @@ import { Link } from 'react-router-dom'
 
 import { dashboardApps, type HubApp } from '@/apps/registry'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { useI18n } from '@/lib/i18n'
+import type { Lobby } from '@/lobbies/types'
 
 type AppTileProps = {
   app: HubApp
+  href: string
 }
 
-function AppTile({ app }: AppTileProps) {
+function AppTile({ app, href }: AppTileProps) {
   const { t } = useI18n()
   const appTitle = t(app.titleKey)
   const prefetchApp = () => {
@@ -19,7 +22,7 @@ function AppTile({ app }: AppTileProps) {
 
   return (
     <Link
-      to={app.href}
+      to={href}
       aria-label={t('common.openApp', { app: appTitle })}
       className="group block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       onFocus={prefetchApp}
@@ -50,7 +53,7 @@ function AppTile({ app }: AppTileProps) {
   )
 }
 
-export function DashboardPage() {
+export function DashboardPage({ lobby }: { lobby?: Lobby }) {
   const { t } = useI18n()
 
   return (
@@ -58,8 +61,14 @@ export function DashboardPage() {
       <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
         <div className="min-w-0">
           <h1 className="type-dashboard-title text-foreground">
-            {t('dashboard.title')}
+            {lobby?.name ?? t('dashboard.title')}
           </h1>
+          {lobby && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Badge>{lobby.code}</Badge>
+              <span className="type-ui text-muted-foreground">{t('lobby.sharedState')}</span>
+            </div>
+          )}
           <div className="mt-5 h-2 w-16 rounded-full bg-primary sm:w-20" />
         </div>
 
@@ -87,7 +96,11 @@ export function DashboardPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {dashboardApps.map((app) => (
-          <AppTile key={app.id} app={app} />
+          <AppTile
+            key={app.id}
+            app={app}
+            href={lobby ? `/lobbies/${lobby.id}${app.href}` : app.href}
+          />
         ))}
       </section>
 

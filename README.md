@@ -48,6 +48,8 @@ flowchart LR
 - **Gemeinsam statt doppelt:** UI-Primitiven liegen in `src/components/ui`, appübergreifende Bausteine in `src/apps/shared`.
 - **Offline-tolerant:** Ohne Firebase-Konfiguration arbeiten die Sync-Hooks lokal; mit Konfiguration synchronisieren sie anonym authentifiziert in Echtzeit.
 - **SPA-fähig:** Firebase Hosting leitet unbekannte Pfade auf `index.html` um, damit direkte App-URLs funktionieren.
+- **Öffentliche Lobbys:** Anonyme Geräte können toolbox-weite Räume erstellen und denselben isolierten App-Zustand in Echtzeit teilen.
+- **Spark-kompatible Verwaltung:** Eine einfache clientseitige PIN-Barriere schützt Lobby- und Geräteübersicht vor versehentlicher Nutzung; entfernte Lobbys werden dauerhaft deaktiviert.
 
 Die verbindlichen Details stehen in der zentralen [Produkt- und Systemspezifikation](docs/specs.md).
 
@@ -69,11 +71,12 @@ Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Mit
 npm run lint
 npm test
 npm run test:coverage
+npm run test:firebase
 npm run build
 npm run preview
 ```
 
-`npm test` führt die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run build` führt zuerst die TypeScript-Prüfung und anschließend den produktiven Vite-Build aus. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine synchronisierte App in zwei Browserfenstern geprüft werden.
+`npm test` führt die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run test:firebase` startet den Rules-Emulator und benötigt Java 21 oder neuer. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine Lobby in zwei Browserfenstern geprüft werden.
 
 ## Eine App ergänzen
 
@@ -91,11 +94,12 @@ Der Abschnitt [Entwicklungsvertrag](docs/specs.md#7-entwicklungsvertrag) enthäl
 | --- | --- | --- |
 | Push auf `main` oder manueller Start | `firebase-hosting.yml` | Produktions-Deployment auf Firebase Hosting |
 | Pull Request aus demselben Repository | `firebase-hosting-pull-request.yml` | temporärer Firebase Preview Channel |
+| Backend-Änderung auf `main` | `firebase-backend.yml` | Firestore Rules und Indizes |
 
-Hosting veröffentlicht `dist`. Firestore-Regeln und Indizes werden getrennt ausgerollt:
+Hosting veröffentlicht `dist`. Die Spark-kompatible Firestore-Konfiguration wird separat ausgerollt:
 
 ```powershell
-npx firebase-tools deploy --only firestore:rules,firestore:indexes
+npx firebase-tools deploy --only firestore:rules,firestore:indexes --project bengtstoolbox
 ```
 
 Secrets, Variablen, Erstinstallation und Fehlerdiagnose beschreibt der Abschnitt [Hosting und Betrieb](docs/specs.md#9-hosting-und-betrieb).

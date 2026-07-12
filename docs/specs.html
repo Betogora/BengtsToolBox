@@ -397,7 +397,7 @@
       <p class="lede">Ein verifizierter Überblick über Produktumfang, Fachregeln, Datenhaltung, Architektur, Entwicklung und Betrieb der React-/Firebase-Toolbox.</p>
       <div class="hero-meta" aria-label="Dokumentstatus">
         <span class="chip live">Ist-Spezifikation</span>
-        <span class="chip">Stand 10. Juli 2026</span>
+        <span class="chip">Stand 11. Juli 2026</span>
         <span class="chip">aus Laufzeitcode rekonstruiert</span>
       </div>
       <div class="hero-actions">
@@ -464,11 +464,12 @@
           <article class="card note">
             <h3>Bewusste Grenzen</h3>
             <ul>
-              <li>Kein eigener Application Server.</li>
+              <li>Kein Application Server und keine Cloud Functions; die Online-Funktionen bleiben Spark-kompatibel.</li>
               <li>Keine Konten, Rollen oder Mandanten.</li>
               <li>Keine Offline-Konfliktauflösung.</li>
               <li>Anonymous Auth ist keine fachliche Autorisierung.</li>
               <li>Client-PIN ist keine Sicherheitsgrenze.</li>
+              <li>Öffentliche Lobbys besitzen keine Besitzer- oder Teilnehmerrollen.</li>
             </ul>
           </article>
         </div>
@@ -493,6 +494,10 @@
               <tr><td>Turnier-App</td><td><code>/apps/swiss-tournaments</code></td><td>Registry</td><td>Vier Turnierformate</td></tr>
               <tr><td>Nächste Frage</td><td><code>/apps/next-question</code></td><td>Registry</td><td>Quizkarten mit verdeckter Antwort</td></tr>
               <tr><td>Schlag den Raab</td><td><code>/schlag-den-raab</code></td><td>Sonderroute</td><td>Zwei-Personen-Abendwertung</td></tr>
+              <tr><td>Lobbys</td><td><code>/lobbies</code></td><td>Sonderroute</td><td>Öffentliche Räume erstellen und betreten</td></tr>
+              <tr><td>Lobby-Dashboard</td><td><code>/lobbies/:lobbyId</code></td><td>Lobby-Kontext</td><td>Alle Apps in einem isolierten Raum</td></tr>
+              <tr><td>Lobby-App</td><td><code>/lobbies/:lobbyId/apps/:appId</code></td><td>Registry + Lobby-Kontext</td><td>Gemeinsamer App-Zustand einer Lobby</td></tr>
+              <tr><td>Lobby-Verwaltung</td><td><code>/lobby-admin</code></td><td>Sonderroute</td><td>Client-PIN, Gerätehistorie und dauerhaftes Deaktivieren</td></tr>
             </tbody>
           </table>
         </div>
@@ -505,7 +510,7 @@
           <article class="card">
             <h3>Shell & Routing</h3>
             <ul>
-              <li>Branding, Dashboard, Sonderbereich und Sprachauswahl.</li>
+              <li>Branding, Dashboard, Sonderbereiche, Lobbys und Sprachauswahl.</li>
               <li>Desktopnavigation direkt, mobile Navigation im Menü.</li>
               <li>Lazy Loading; Prefetch bei Fokus, Hover oder Touch.</li>
               <li>Hosting-Rewrite auf <code>/index.html</code> für Direktlinks.</li>
@@ -538,6 +543,11 @@
               <li>Bestätigung destruktiver Aktionen; Farbe nie allein.</li>
             </ul>
           </article>
+        </div>
+        <div class="card accent" style="margin-top:1rem">
+          <h3>Toolbox-weite Lobbys</h3>
+          <p>Die globale Lobby behält alle bestehenden <code>apps/...</code>-Pfade. Benutzerdefinierte Räume speichern Metadaten unter <code>lobbies/{lobbyId}</code>, Geräte unter <code>devices/{uid}</code> und App-Zustände unter <code>lobbies/{lobbyId}/apps/{appId}/...</code>.</p>
+          <p>Anonymous Auth dient als Geräteidentität. Alle Teilnehmer bearbeiten denselben State; Clients dürfen nur den eigenen Gerätedatensatz schreiben und keine Lobby löschen. Ohne Firebase bleiben ausschließlich die globalen Apps lokal nutzbar.</p>
         </div>
       </section>
 
@@ -720,6 +730,21 @@
                 <p>Eine Viererlobby pro technische Runde. Weitere Lobbys werden einzeln gestartet und dürfen parallel aktiv sein, solange kein Fahrer doppelt reserviert wird.</p>
               </article>
             </div>
+            <h4>Mario-Kart-Fachbegriffe</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Begriff</th><th>Bedeutung</th></tr></thead>
+                <tbody>
+                  <tr><td>Wertungsrunde</td><td>Fachlicher Durchlauf, in dem jeder teilnahmeberechtigte Fahrer höchstens eine Wertung erhält. Eine Wertungsrunde kann sich über mehrere Lobbys erstrecken.</td></tr>
+                  <tr><td>Lobby</td><td>Ein einzelnes Mario-Kart-Rennen mit genau vier Fahrern. Die Bezeichnung <code>2.1</code> meint die erste Lobby mit offenen Wertungen für Wertungsrunde 2.</td></tr>
+                  <tr><td>Wertung</td><td>Zuordnung einer Lobbyteilnahme zu genau einer Wertungsrunde. Nur abgeschlossene Wertungen beeinflussen Turnierpunkte, Siege und Durchschnittsplatz.</td></tr>
+                  <tr><td>Füller</td><td>Fahrer, der eine nicht volle Lobby ergänzt und dessen Ergebnis bereits einer späteren Wertungsrunde zugerechnet wird.</td></tr>
+                  <tr><td>Extra</td><td>Fahrer, dessen Teilnahme derzeit keiner Wertungsrunde zugeordnet ist. Das Ergebnis bleibt ungewertet, bis eine spätere Bonus-Wertungsrunde es gegebenenfalls übernimmt.</td></tr>
+                  <tr><td>Aktive Lobby</td><td>Ausgeloste, noch nicht vollständig gewertete Lobby. Ihre Fahrer sind für weitere aktive Lobbys reserviert.</td></tr>
+                  <tr><td>Geschlossene Lobby</td><td>Lobby mit vier gültigen, eindeutigen Platzierungen. Sie reserviert keine Fahrer mehr und kann kontrolliert korrigiert werden.</td></tr>
+                </tbody>
+              </table>
+            </div>
             <h4>Mario-Kart-Wertung</h4>
             <div class="table-wrap">
               <table>
@@ -846,8 +871,9 @@
         </div>
         <pre><code>npm test
 npm run test:watch
-npm run test:coverage</code></pre>
-        <p><code>npm test</code> läuft einmalig und in beiden Hosting-Workflows vor dem Build. Der nicht versionierte Coverage-Bericht entsteht unter <code>coverage/</code>.</p>
+npm run test:coverage
+npm run test:firebase</code></pre>
+        <p><code>npm test</code> läuft einmalig und in beiden Hosting-Workflows vor dem Build. Rules-Tests laufen mit Firebase Emulator und Java 21. Der nicht versionierte Coverage-Bericht entsteht unter <code>coverage/</code>.</p>
         <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
         <pre><code>npm ci
 Copy-Item .env.example .env.local
@@ -880,9 +906,9 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
           </table>
         </div>
         <div class="card note" style="margin-top:1rem">
-          <h3>Separater Infrastruktur-Deploy</h3>
-          <p>Hosting-Workflows deployen keine Firestore Rules oder Indizes. Diese werden bewusst separat ausgerollt:</p>
-          <pre><code>npx firebase-tools deploy --only firestore:rules,firestore:indexes</code></pre>
+          <h3>Spark-kompatibler Backend-Deploy</h3>
+          <p>Das Projekt bleibt im Spark-Tarif. <code>firebase-backend.yml</code> deployt ausschließlich Firestore Rules und Indizes; der einfache PIN <code>5340</code> ist bewusst nur eine clientseitige Bedienbarriere.</p>
+          <pre><code>npx firebase-tools deploy --only firestore:rules,firestore:indexes --project bengtstoolbox</code></pre>
         </div>
       </section>
 
@@ -891,8 +917,8 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
         <h2>Sicherheitsmodell</h2>
         <div class="card warning">
           <h3>Vertrauensbasierter privater Hub</h3>
-          <p>Die Firestore Rules erlauben jedem authentifizierten – also auch jedem anonym authentifizierten – Client Lesen und Schreiben unter <code>apps/{appId}/...</code>. Es gibt keine feld-, session- oder rollenbasierte Einschränkung.</p>
-          <p>Der PIN-Gate von <code>Schlag den Raab</code> liegt vollständig im ausgelieferten Client und schützt weder Route noch Daten technisch. Vor öffentlicher Nutzung mit sensiblen Daten sind echte Identitäten, engere Rules und Emulator-/Rules-Tests erforderlich.</p>
+          <p>Die globalen Legacy-Pfade unter <code>apps/{appId}/...</code> bleiben für alle authentifizierten Clients offen. Lobby-Metadaten sind lesbar, aktive Lobby-App-Zustände gemeinsam bearbeitbar und Geräte-Dokumente beim Schreiben auf die eigene UID begrenzt.</p>
+          <p>Gerätehistorie und Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich. Der PIN <code>5340</code> verhindert versehentliche Nutzung, ist im Web-Bundle aber auslesbar und keine Sicherheitsgrenze. Entfernte Lobbys werden dauerhaft deaktiviert und können nicht mehr geöffnet oder verändert werden.</p>
           <p><a href="todo.md">Priorisierte Sicherheits- und Qualitätsarbeiten ansehen →</a></p>
         </div>
       </section>

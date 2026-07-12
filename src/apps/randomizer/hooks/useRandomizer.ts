@@ -8,6 +8,7 @@ import type { RandomizerState, RollResult } from '@/apps/randomizer/types'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const initialRandomizerState: RandomizerState = {
   min: 1,
@@ -16,9 +17,13 @@ const initialRandomizerState: RandomizerState = {
   history: [],
 }
 
-export function useRandomizer(stateId = 'default') {
+export function useRandomizer(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
-  const statePath = useMemo(() => firebasePaths.randomizerState(stateId), [stateId])
+  const statePath = useMemo(
+    () => firebasePaths.randomizerState(activeLobbyId),
+    [activeLobbyId],
+  )
   const store = useFirestoreDoc<RandomizerState>(
     statePath,
     initialRandomizerState,

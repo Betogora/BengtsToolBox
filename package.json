@@ -18,6 +18,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:firebase": "npx firebase-tools@15.22.1 emulators:exec --only firestore \"npm run test:firebase:rules\"",
+    "test:firebase:rules": "vitest --config firebase/vitest.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
@@ -43,6 +45,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

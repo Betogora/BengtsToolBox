@@ -8,6 +8,7 @@ import type {
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const initialNextQuestionState: NextQuestionState = {
   currentIndex: 0,
@@ -34,15 +35,16 @@ function clampQuestionPosition(position: number, questionCount: number) {
   return Math.min(Math.max(safePosition, 1), questionCount)
 }
 
-export function useNextQuestion(stateId = 'default') {
+export function useNextQuestion(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const [questions, setQuestions] = useState<readonly NextQuestion[]>([])
   const [isCatalogLoading, setIsCatalogLoading] = useState(true)
   const [catalogError, setCatalogError] = useState<Error | null>(null)
   const [catalogLoadAttempt, setCatalogLoadAttempt] = useState(0)
   const statePath = useMemo(
-    () => firebasePaths.nextQuestionState(stateId),
-    [stateId],
+    () => firebasePaths.nextQuestionState(activeLobbyId),
+    [activeLobbyId],
   )
   const store = useFirestoreDoc<NextQuestionState>(
     statePath,

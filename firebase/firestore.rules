@@ -1,0 +1,137 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function lobbyIsActive(lobbyId) {
+      return exists(/databases/$(database)/documents/lobbies/$(lobbyId)) &&
+        !get(/databases/$(database)/documents/lobbies/$(lobbyId)).data.keys().hasAny([
+          'deletedAtClientIso'
+        ]);
+    }
+
+    function validLobbyArchive(lobbyId) {
+      let data = request.resource.data;
+      return lobbyId != 'default' &&
+        !resource.data.keys().hasAny(['deletedAtClientIso']) &&
+        data.diff(resource.data).affectedKeys().hasOnly([
+          'deletedAt',
+          'deletedAtClientIso',
+          'deletedByDeviceId'
+        ]) &&
+        data.deletedAt == request.time &&
+        data.deletedAtClientIso is string &&
+        data.deletedAtClientIso.size() > 0 &&
+        data.deletedByDeviceId == request.auth.uid;
+    }
+
+    function validLobbyCreate(lobbyId) {
+      let data = request.resource.data;
+      let commonFields = data.keys().hasOnly([
+        'id',
+        'code',
+        'name',
+        'kind',
+        'createdAt',
+        'createdAtClientIso',
+        'createdByDeviceId'
+      ]);
+      let commonValues =
+        data.id == lobbyId &&
+        data.name is string &&
+        data.name.size() > 0 &&
+        data.name.size() <= 60 &&
+        data.createdAt == request.time &&
+        data.createdAtClientIso is string;
+      let validDefault =
+        lobbyId == 'default' &&
+        data.code == 'DEFAULT' &&
+        data.name == 'Globale Lobby' &&
+        data.kind == 'default' &&
+        data.createdByDeviceId == null;
+      let validCustom =
+        lobbyId.matches('^[A-HJ-NP-Z2-9]{6}$') &&
+        data.code == lobbyId &&
+        data.kind == 'custom' &&
+        data.createdByDeviceId == request.auth.uid;
+
+      return commonFields && commonValues && (validDefault || validCustom);
+    }
+
+    function validDeviceCreate(deviceId) {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'deviceId',
+          'deviceName',
+          'firstSeenAt',
+          'firstSeenAtClientIso',
+          'lastSeenAt',
+          'lastSeenAtClientIso'
+        ]) &&
+        data.deviceId == deviceId &&
+        data.deviceName is string &&
+        data.deviceName.size() > 0 &&
+        data.deviceName.size() <= 40 &&
+        data.firstSeenAt == request.time &&
+        data.lastSeenAt == request.time &&
+        data.firstSeenAtClientIso is string &&
+        data.lastSeenAtClientIso is string;
+    }
+
+    function validDeviceUpdate(deviceId) {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+          'deviceId',
+          'deviceName',
+          'firstSeenAt',
+          'firstSeenAtClientIso',
+          'lastSeenAt',
+          'lastSeenAtClientIso'
+        ]) &&
+        data.deviceId == deviceId &&
+        data.deviceId == resource.data.deviceId &&
+        data.firstSeenAt == resource.data.firstSeenAt &&
+        data.firstSeenAtClientIso == resource.data.firstSeenAtClientIso &&
+        data.deviceName is string &&
+        data.deviceName.size() > 0 &&
+        data.deviceName.size() <= 40 &&
+        data.lastSeenAt == request.time &&
+        data.lastSeenAtClientIso is string;
+    }
+
+    // Existing global default states remain backwards compatible.
+    match /apps/{appId}/{document=**} {
+      allow read, write: if signedIn();
+    }
+
+    match /lobbies/{lobbyId} {
+      allow get, list: if signedIn();
+      allow create: if signedIn() && validLobbyCreate(lobbyId);
+      // The Spark-only admin gate is intentionally client-side. Archiving is a
+      // convenience operation, not a secure administrator role.
+      allow update: if signedIn() && validLobbyArchive(lobbyId);
+      allow delete: if false;
+
+      match /devices/{deviceId} {
+        allow get: if signedIn() && request.auth.uid == deviceId;
+        allow list: if signedIn() && lobbyIsActive(lobbyId);
+        allow create: if signedIn() &&
+          request.auth.uid == deviceId &&
+          lobbyIsActive(lobbyId) &&
+          validDeviceCreate(deviceId);
+        allow update: if signedIn() &&
+          request.auth.uid == deviceId &&
+          lobbyIsActive(lobbyId) &&
+          validDeviceUpdate(deviceId);
+        allow delete: if false;
+      }
+
+      match /apps/{appId}/{document=**} {
+        allow read, write: if signedIn() && lobbyIsActive(lobbyId);
+      }
+    }
+  }
+}

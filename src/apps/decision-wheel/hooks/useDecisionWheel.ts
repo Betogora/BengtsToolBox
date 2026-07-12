@@ -15,6 +15,7 @@ import {
 } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 function createEntry(id: string, index: number): DecisionWheelEntry {
   return {
@@ -64,11 +65,12 @@ function normalizeState(state: DecisionWheelState): DecisionWheelState {
   }
 }
 
-export function useDecisionWheel(stateId = 'default') {
+export function useDecisionWheel(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
-    () => firebasePaths.decisionWheelState(stateId),
-    [stateId],
+    () => firebasePaths.decisionWheelState(activeLobbyId),
+    [activeLobbyId],
   )
   const store = useFirestoreDoc<DecisionWheelState>(
     statePath,

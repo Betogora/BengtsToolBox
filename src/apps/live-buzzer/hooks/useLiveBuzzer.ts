@@ -20,6 +20,7 @@ import { readLocalValue, writeLocalValue } from '@/lib/firebase/localStore'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const playerIdKey = 'app-hub:live-buzzer:player-id'
 
@@ -119,19 +120,20 @@ function normalizePlayer(player: BuzzerPlayer, index: number): BuzzerPlayer {
   }
 }
 
-export function useLiveBuzzer(sessionId = 'default') {
+export function useLiveBuzzer(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const [selectedPlayerId, setSelectedPlayerId] = useState(getOrCreatePlayerId)
   const statePath = useMemo(
-    () => firebasePaths.liveBuzzerState(sessionId),
-    [sessionId],
+    () => firebasePaths.liveBuzzerState(activeLobbyId),
+    [activeLobbyId],
   )
   const playersPath = useMemo(
-    () => firebasePaths.liveBuzzerPlayers(sessionId),
-    [sessionId],
+    () => firebasePaths.liveBuzzerPlayers(activeLobbyId),
+    [activeLobbyId],
   )
   const playerDocPath = (playerId: string) =>
-    firebasePaths.liveBuzzerPlayer(sessionId, playerId)
+    firebasePaths.liveBuzzerPlayer(activeLobbyId, playerId)
 
   const stateStore = useFirestoreDoc<BuzzerSessionState>(
     statePath,

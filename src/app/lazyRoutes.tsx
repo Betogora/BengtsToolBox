@@ -23,6 +23,30 @@ const LazySchlagDenRaabPage = lazy(() =>
   })),
 )
 
+const LazyLobbyDirectoryPage = lazy(() =>
+  import('@/lobbies/LobbyDirectoryPage').then(({ LobbyDirectoryPage }) => ({
+    default: LobbyDirectoryPage,
+  })),
+)
+
+const LazyLobbyAdminPage = lazy(() =>
+  import('@/lobbies/LobbyAdminPage').then(({ LobbyAdminPage }) => ({
+    default: LobbyAdminPage,
+  })),
+)
+
+const LazyLobbyRoute = lazy(() =>
+  import('@/lobbies/LobbyRoute').then(({ LobbyRoute }) => ({
+    default: LobbyRoute,
+  })),
+)
+
+const LazyLobbyDashboardPage = lazy(() =>
+  import('@/lobbies/LobbyDashboardPage').then(({ LobbyDashboardPage }) => ({
+    default: LobbyDashboardPage,
+  })),
+)
+
 function RouteFallback({ label }: { label: string }) {
   const { t } = useI18n()
 
@@ -57,6 +81,38 @@ export function LazySchlagDenRaabRoute() {
       <LazySchlagDenRaabGate>
         <LazySchlagDenRaabPage />
       </LazySchlagDenRaabGate>
+    </Suspense>
+  )
+}
+
+export function LazyLobbyDirectoryRoute() {
+  return (
+    <Suspense fallback={<RouteFallback label="Lobbys" />}>
+      <LazyLobbyDirectoryPage />
+    </Suspense>
+  )
+}
+
+export function LazyLobbyAdminRoute() {
+  return (
+    <Suspense fallback={<RouteFallback label="Lobby-Verwaltung" />}>
+      <LazyLobbyAdminPage />
+    </Suspense>
+  )
+}
+
+export function LazyLobbyLayoutRoute() {
+  return (
+    <Suspense fallback={<RouteFallback label="Lobby" />}>
+      <LazyLobbyRoute />
+    </Suspense>
+  )
+}
+
+export function LazyLobbyDashboardRoute() {
+  return (
+    <Suspense fallback={<RouteFallback label="Lobby" />}>
+      <LazyLobbyDashboardPage />
     </Suspense>
   )
 }

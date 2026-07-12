@@ -21,6 +21,7 @@ import {
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 export const progressColorPresets = [...participantColorPresets]
 
@@ -267,19 +268,20 @@ function getPlayerScores(
   }))
 }
 
-export function useProgressDashboard(sessionId = 'default') {
+export function useProgressDashboard(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
-    () => firebasePaths.progressDashboardState(sessionId),
-    [sessionId],
+    () => firebasePaths.progressDashboardState(activeLobbyId),
+    [activeLobbyId],
   )
   const playersPath = useMemo(
-    () => firebasePaths.progressDashboardPlayers(sessionId),
-    [sessionId],
+    () => firebasePaths.progressDashboardPlayers(activeLobbyId),
+    [activeLobbyId],
   )
   const datasetsPath = useMemo(
-    () => firebasePaths.progressDashboardDatasets(sessionId),
-    [sessionId],
+    () => firebasePaths.progressDashboardDatasets(activeLobbyId),
+    [activeLobbyId],
   )
   const stateStore = useFirestoreDoc<ProgressDashboardState>(
     statePath,

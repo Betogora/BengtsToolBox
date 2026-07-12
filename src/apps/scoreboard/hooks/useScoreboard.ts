@@ -12,6 +12,7 @@ import { teamThemeColors } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const eventLimit = 10
 
@@ -104,15 +105,16 @@ function normalizeState(state: ScoreboardState): ScoreboardState {
   }
 }
 
-export function useScoreboard(sessionId = 'default') {
+export function useScoreboard(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
-    () => firebasePaths.scoreboardState(sessionId),
-    [sessionId],
+    () => firebasePaths.scoreboardState(activeLobbyId),
+    [activeLobbyId],
   )
   const playersPath = useMemo(
-    () => firebasePaths.scoreboardPlayers(sessionId),
-    [sessionId],
+    () => firebasePaths.scoreboardPlayers(activeLobbyId),
+    [activeLobbyId],
   )
   const stateStore = useFirestoreDoc<ScoreboardState>(statePath, initialState)
   const playersStore = useFirestoreCollection<ScoreboardPlayer>(

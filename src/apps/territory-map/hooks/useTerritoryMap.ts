@@ -21,6 +21,7 @@ import {
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 export const territoryColorPresets = [...participantColorPresets]
 
@@ -295,19 +296,20 @@ function getLatestEventIdsForTerritoryDay(
     : []
 }
 
-export function useTerritoryMap(sessionId = 'default') {
+export function useTerritoryMap(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
-    () => firebasePaths.territoryMapState(sessionId),
-    [sessionId],
+    () => firebasePaths.territoryMapState(activeLobbyId),
+    [activeLobbyId],
   )
   const playersPath = useMemo(
-    () => firebasePaths.territoryMapPlayers(sessionId),
-    [sessionId],
+    () => firebasePaths.territoryMapPlayers(activeLobbyId),
+    [activeLobbyId],
   )
   const datasetsPath = useMemo(
-    () => firebasePaths.territoryMapDatasets(sessionId),
-    [sessionId],
+    () => firebasePaths.territoryMapDatasets(activeLobbyId),
+    [activeLobbyId],
   )
   const stateStore = useFirestoreDoc<TerritoryMapState>(
     statePath,

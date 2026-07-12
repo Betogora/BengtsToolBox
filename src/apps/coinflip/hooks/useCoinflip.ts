@@ -10,6 +10,7 @@ import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const initialCoinflipState: CoinflipState = {
   lastFlip: null,
@@ -20,9 +21,13 @@ export function getCoinflipLabelKey(side: CoinflipSide) {
   return side === 'heads' ? 'coinflip.face.heads' : 'coinflip.face.tails'
 }
 
-export function useCoinflip(stateId = 'default') {
+export function useCoinflip(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
-  const statePath = useMemo(() => firebasePaths.coinflipState(stateId), [stateId])
+  const statePath = useMemo(
+    () => firebasePaths.coinflipState(activeLobbyId),
+    [activeLobbyId],
+  )
   const store = useFirestoreDoc<CoinflipState>(statePath, initialCoinflipState)
 
   const prepareFlipResult = (): CoinflipResult => ({

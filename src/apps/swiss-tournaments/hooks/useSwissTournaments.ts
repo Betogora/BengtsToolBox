@@ -44,6 +44,7 @@ import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const initialState: SwissTournamentsState = {
   activeTournamentId: null,
@@ -184,15 +185,16 @@ function pairingScoringPlayerIds(pairing: Pairing) {
   return pairingPlayerIds(pairing)
 }
 
-export function useSwissTournaments(sessionId = 'default') {
+export function useSwissTournaments(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
-    () => firebasePaths.swissTournamentsState(sessionId),
-    [sessionId],
+    () => firebasePaths.swissTournamentsState(activeLobbyId),
+    [activeLobbyId],
   )
   const tournamentsPath = useMemo(
-    () => firebasePaths.swissTournamentsTournaments(sessionId),
-    [sessionId],
+    () => firebasePaths.swissTournamentsTournaments(activeLobbyId),
+    [activeLobbyId],
   )
   const stateStore = useFirestoreDoc<SwissTournamentsState>(
     statePath,

@@ -10,6 +10,7 @@ import type {
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const regularGameCount = 15
 const winningScore = 60
@@ -252,11 +253,12 @@ export function getSchlagDenRaabSummary({
   }
 }
 
-export function useSchlagDenRaabScoreboard(sessionId = 'default') {
+export function useSchlagDenRaabScoreboard(lobbyId?: string) {
+  const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
-    () => firebasePaths.schlagDenRaabState(sessionId),
-    [sessionId],
+    () => firebasePaths.schlagDenRaabState(activeLobbyId),
+    [activeLobbyId],
   )
   const store = useFirestoreDoc<SchlagDenRaabState>(
     statePath,

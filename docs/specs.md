@@ -1,6 +1,6 @@
 # BengtsToolBox – Produkt- und Systemspezifikation
 
-> **Stand:** 10. Juli 2026  
+> **Stand:** 11. Juli 2026
 > **Status:** aus dem aktuellen Laufzeitcode rekonstruiert  
 > **Geltungsbereich:** gesamtes Repository
 
@@ -23,12 +23,13 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 
 ### 1.2 Bewusste Grenzen
 
-- Es gibt keinen eigenen Application Server und keine serverseitige Fachlogik.
+- Es gibt keinen Application Server und keine Cloud Functions; Hosting, Anonymous Auth und Firestore bleiben im Spark-Tarif nutzbar.
 - Es gibt keine persönlichen Konten, Rollen oder Mandanten.
 - Anonymous Auth identifiziert eine Browsersitzung, autorisiert aber keine fachlichen Rollen.
 - LocalStorage ist Fallback und Cache, keine vollständige Offline-Synchronisation oder Konfliktauflösung.
 - Die Anwendung ist in der aktuellen Sicherheitskonfiguration für einen privaten Hub gedacht, nicht für sensible oder mandantengetrennte Daten.
 - `Schlag den Raab` besitzt nur eine clientseitige Zugangsschranke; sie ist keine Sicherheitsgrenze.
+- Öffentliche Lobbys besitzen keine Rollen: alle anonym authentifizierten Geräte dürfen ihren gemeinsamen App-Zustand bearbeiten.
 
 ## 2. Produktlandkarte und Routen
 
@@ -47,6 +48,10 @@ Das Dashboard unter `/` zeigt alle neun regulär registrierten Apps. Die Registr
 | SK Anderten Turnier-App | `/apps/swiss-tournaments` | Registry | Swiss-, Rundenturnier-, Hand-and-Brain- und Mario-Kart-Turniere |
 | Nächste Frage | `/apps/next-question` | Registry | Quizkarten mit verdeckter Antwort |
 | Schlag den Raab | `/schlag-den-raab` | explizite Sonderroute | Zwei-Personen-Abendwertung |
+| Lobbys | `/lobbies` | explizite Sonderroute | Öffentliche Räume erstellen und betreten |
+| Lobby-Dashboard | `/lobbies/:lobbyId` | explizite Sonderroute | Alle regulären Apps innerhalb eines isolierten Raums |
+| Lobby-App | `/lobbies/:lobbyId/apps/:appId` | Registry plus Lobby-Kontext | App-Zustand einer Lobby |
+| Lobby-Verwaltung | `/lobby-admin` | explizite Sonderroute | PIN-geschützte Übersicht, Gerätehistorie und Löschung |
 
 Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer App bei Fokus, Hover oder Touch an. Firebase Hosting muss unbekannte Pfade auf `/index.html` umschreiben, damit direkte App-URLs funktionieren.
 
@@ -54,7 +59,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 
 ### 3.1 Shell und Navigation
 
-- Die Shell zeigt Branding, Dashboard-Link, Link zu `Schlag den Raab` und Sprachauswahl.
+- Die Shell zeigt Branding, Dashboard, `Schlag den Raab`, Lobbys, Lobby-Verwaltung und Sprachauswahl.
 - Auf mittleren und großen Breiten ist die Navigation direkt sichtbar; mobil liegt sie in einem Menü.
 - Jede reguläre App erhält Titel, Beschreibung, Status, Icon, URL und Lazy Loader ausschließlich über die Registry.
 - Sonderrouten dürfen nur verwendet werden, wenn ein Bereich bewusst nicht als normale Dashboard-App erscheint.
@@ -117,6 +122,8 @@ Die Firebase-Initialisierung gilt als vollständig, wenn mindestens API-Key, Aut
 | einzelner Dokumentzustand | `useFirestoreDoc<T>` | `data`, `save`, `merge`, Loading, Fehler, Realtime-Flag |
 | geordnete Elemente | `useFirestoreCollection<T>` | Setzen, Mergen, Löschen, Sammelspeichern und Leeren; Standardreihenfolge `position` |
 | Nutzerkennung | `useAnonymousSession` | Firebase UID oder lokale Fallback-ID |
+| Lobby-Verzeichnis | `useLobbyDirectory` | Öffentliche Liste, Default-Lobby und transaktionssichere Erstellung |
+| Aktive Lobby | `useActiveLobby` | Lobby aus dem Route-Kontext; außerhalb immer `default` |
 
 LocalStorage-Schlüssel beginnen mit `app-hub:doc:` beziehungsweise `app-hub:collection:` und enthalten den vollständigen kanonischen Pfad.
 
@@ -137,9 +144,19 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 | Sushi Map | `apps/territory-map/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
 | Turnier-App | `apps/swiss-tournaments/sessions/{sessionId}/state/default` | `.../tournaments` |
 
-Alle Hooks verwenden aktuell standardmäßig die State- oder Session-ID `default`.
+Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In einer Lobby kapseln sie ihre Daten unter `lobbies/{lobbyId}/apps/{appId}/...`; Metadaten liegen in `lobbies/{lobbyId}`, Gerätezugriffe in `lobbies/{lobbyId}/devices/{uid}`. Die globale Lobby behält bewusst alle bestehenden `apps/...`-Pfade und benötigt keine Datenmigration.
 
-### 4.4 Konsistenz und Fehler
+### 4.4 Öffentliche Lobbys
+
+- Firebase Anonymous Auth ist die Geräteidentität; es gibt keine Konten, Passwörter, Besitzer- oder Teilnehmerrollen.
+- Lobbycodes bestehen aus sechs Großbuchstaben/Ziffern ohne `0`, `O`, `1` und `I`. Eine Firestore-Transaktion verhindert Kollisionen.
+- Lobby- und Gerätenamen sind auf 60 beziehungsweise 40 Zeichen begrenzt.
+- Jedes Gerät darf ausschließlich `devices/{request.auth.uid}` schreiben. Erster und letzter Zugriff werden gespeichert; `lastSeenAt` wird clientseitig höchstens alle fünf Minuten aktualisiert.
+- Alle authentifizierten Geräte dürfen eine aktive Lobby sowie ihre App-Zustände lesen und bearbeiten. Die Gerätehistorie ist technisch ebenfalls für authentifizierte Clients lesbar, wird aber nur hinter der clientseitigen Verwaltungs-PIN angezeigt.
+- `default` ist sichtbar und nicht löschbar. Benutzerdefinierte Lobbys werden beim Entfernen mit einem Löschmarker dauerhaft deaktiviert; ihre Unterdaten bleiben gespeichert, sind durch Rules aber nicht mehr les- oder beschreibbar und ihr Code wird nicht wiederverwendet.
+- Ohne Firebase bleiben die globalen Apps lokal nutzbar; Lobby-Liste, Erstellung und Verwaltung melden die fehlende Konfiguration.
+
+### 4.5 Konsistenz und Fehler
 
 - Schreibvorgänge sind lokal optimistisch.
 - Der gemeinsame Cache löst keine konkurrierenden Änderungen auf; in Realtime ist der letzte kanonische Snapshot maßgeblich.
@@ -327,6 +344,18 @@ Alle Hooks verwenden aktuell standardmäßig die State- oder Session-ID `default
 
 #### Mario Kart
 
+##### Fachbegriffe
+
+| Begriff | Bedeutung |
+| --- | --- |
+| Wertungsrunde | Fachlicher Durchlauf, in dem jeder teilnahmeberechtigte Fahrer höchstens eine Wertung erhält. Eine Wertungsrunde kann sich über mehrere Lobbys erstrecken. |
+| Lobby | Ein einzelnes Mario-Kart-Rennen mit genau vier Fahrern. Die Bezeichnung `2.1` meint die erste Lobby mit offenen Wertungen für Wertungsrunde 2. |
+| Wertung | Zuordnung einer Lobbyteilnahme zu genau einer Wertungsrunde. Nur abgeschlossene Wertungen beeinflussen Turnierpunkte, Siege und Durchschnittsplatz. |
+| Füller | Fahrer, der eine nicht volle Lobby ergänzt und dessen Ergebnis bereits einer späteren Wertungsrunde zugerechnet wird. |
+| Extra | Fahrer, dessen Teilnahme derzeit keiner Wertungsrunde zugeordnet ist. Das Ergebnis bleibt ungewertet, bis eine spätere Bonus-Wertungsrunde es gegebenenfalls übernimmt. |
+| Aktive Lobby | Ausgeloste, noch nicht vollständig gewertete Lobby. Ihre Fahrer sind für weitere aktive Lobbys reserviert. |
+| Geschlossene Lobby | Lobby mit vier gültigen, eindeutigen Platzierungen. Sie reserviert keine Fahrer mehr und kann kontrolliert korrigiert werden. |
+
 - Eine technische Runde entspricht genau einer Lobby mit exakt vier Fahrern. Die fachliche Wertungsrunde und die laufende Lobby werden als `Lobby 2.1` dargestellt.
 - „Neue Lobby“ erzeugt pro Klick genau eine Aufstellung. Mehrere Lobbys dürfen aktiv sein, aber kein Fahrer darf gleichzeitig in zwei aktiven Lobbys sitzen.
 - Aktive Wertungszuweisungen werden bereits für weitere Auslosungen berücksichtigt, beeinflussen Turnierpunkte, Siege und Durchschnittsplatz aber erst nach dem Abschluss.
@@ -376,7 +405,7 @@ flowchart TB
   GH["GitHub Actions"] -->|"Build und Hosting-Deploy"| SPA
 ```
 
-Vite baut statische Dateien, Firebase Hosting liefert sie aus. Es gibt keinen eigenen Serverprozess zur Laufzeit.
+Vite baut statische Dateien, Firebase Hosting liefert sie aus. Die gesamte Online-Persistenz einschließlich der bewusst einfachen Lobby-Verwaltung läuft direkt über Firestore-Clientzugriffe und bleibt Spark-kompatibel.
 
 ### 6.2 Schichten und Verantwortungen
 
@@ -390,6 +419,7 @@ Vite baut statische Dateien, Firebase Hosting liefert sie aus. Es gibt keinen ei
 | `src/components/ui` | generische UI-Primitiven | Geschäftslogik |
 | `src/lib/firebase` | Client, Auth, Pfade, Sync und lokaler Cache | UI oder App-Regeln |
 | `src/lib/i18n` | Sprache, Interpolation und Formatierung | fachliche Zustandsmigration |
+| `src/lobbies` | Lobby-Domain, Context, Verzeichnis, Geräte-Tracking und clientseitige Verwaltungs-UI | app-spezifische Fachlogik |
 | `src/styles` | globale Tokens, Typografie, Druckregeln | Feature-Zustand |
 
 Abhängigkeiten zeigen von Page über Feature-Hook und pure Fachlogik zur gemeinsamen Infrastruktur. Gemeinsame Infrastruktur importiert keine App.
@@ -530,6 +560,8 @@ npm run preview
 
 `npm run test:coverage` schreibt den lokalen HTML-Bericht nach `coverage/`. `npm run build` führt `tsc -b` und danach den produktiven Vite-Build aus.
 
+Lobby-Infrastruktur ergänzt `npm run test:firebase`. Die Emulator-Suite benötigt lokal Java 21 oder neuer.
+
 ## 9. Hosting und Betrieb
 
 ### 9.1 Laufzeitkonfiguration
@@ -550,19 +582,22 @@ Zusätzlich benötigt GitHub:
 - Secret `FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX` für Hosting,
 - Repository Variable `FIREBASE_PROJECT_ID=bengtstoolbox`.
 
+Das Projekt kann vollständig im Spark-Tarif bleiben. Der Verwaltungs-PIN `5340` ist bewusst im Web-Bundle enthalten und stellt nur eine Bedienbarriere, keine Sicherheitsgrenze dar.
+
 ### 9.2 Deploy-Pfade
 
 | Ereignis | Workflow | Ergebnis |
 | --- | --- | --- |
 | Push auf `main` oder manueller Start | `.github/workflows/firebase-hosting.yml` | Live-Hosting |
 | interner Pull Request | `.github/workflows/firebase-hosting-pull-request.yml` | temporärer Preview Channel |
+| Backend-Änderung auf `main` | `.github/workflows/firebase-backend.yml` | Rules und Indizes |
 
-Beide Workflows verwenden Node 22.23.1 und führen nach `npm ci` zuerst `npm test`, anschließend den Produktions-Build und nur bei Erfolg das Firebase-Hosting-Deployment aus. Hosting veröffentlicht `dist`; `firebase.json` enthält das SPA-Rewrite.
+Die Workflows verwenden Node 22.23.1. Pull Requests prüfen zusätzlich Firestore Rules mit Java 21. Hosting veröffentlicht `dist`; das Backend-Workflow deployt Rules und Indizes getrennt.
 
-Firestore Rules und Indizes werden aktuell separat ausgerollt:
+Das Backend kann manuell gemeinsam ausgerollt werden:
 
 ```powershell
-npx firebase-tools deploy --only firestore:rules,firestore:indexes
+npx firebase-tools deploy --only firestore:rules,firestore:indexes --project bengtstoolbox
 ```
 
 Hosting kann manuell mit folgendem Befehl ausgerollt werden:
@@ -590,6 +625,7 @@ Erwartete Werte: Repository `Betogora/BengtsToolBox`, Build `npm ci && npm run b
 3. Eine synchronisierte App in zwei Fenstern ändern.
 4. Reload und Persistenz prüfen.
 5. Browser-Konsole auf Auth-, Rules- und Netzwerkfehler prüfen.
+6. Eine Testlobby in zwei Fenstern öffnen, Isolation zum Default prüfen und über `/lobby-admin` wieder löschen.
 
 ### 9.5 Fehlerdiagnose
 
@@ -603,9 +639,13 @@ Erwartete Werte: Repository `Betogora/BengtsToolBox`, Build `npm ci && npm run b
 | `Missing or insufficient permissions` | Anonymous Auth aus oder Rules nicht deployed | Auth-Anbieter und Rules-Deploy |
 | direkte Unterseite liefert 404 | SPA-Rewrite fehlt | `firebase.json` und aktives Hosting-Ziel |
 | App synchronisiert nicht | Firebase-Konfiguration beim Build unvollständig | Workflow-Environment und Browserkonsole |
+| Lobby-Verwaltung lädt nicht | Firebase fehlt, Anonymous Auth ist aus oder Rules sind veraltet | Web-Konfiguration, Auth-Anbieter und Rules-Deploy |
+| Rules-Emulator startet nicht | Java-Laufzeit älter als 21 | `java -version` und JDK aktualisieren |
 
 ## 10. Sicherheitsgrenze
 
-Die Firestore Rules erlauben jedem authentifizierten, also auch jedem anonym authentifizierten Client Lesen und Schreiben unter `apps/{appId}/...`. Es gibt keine feld-, session- oder rollenbasierte Einschränkung. Der PIN-Gate von `Schlag den Raab` liegt vollständig im ausgelieferten Client und schützt weder Route noch Firestore-Daten technisch.
+Die globalen Legacy-Pfade unter `apps/{appId}/...` bleiben für jeden authentifizierten Client offen. Lobby-Pfade sind enger: Metadaten sind lesbar, App-Zustände einer aktiven Lobby gemeinsam bearbeitbar, und Geräte dürfen nur den eigenen UID-Datensatz schreiben. Gerätehistorien und der Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich.
+
+Der vierstellige Lobby-Admin-PIN `5340` schützt vor normaler und versehentlicher Nutzung, kann im ausgelieferten JavaScript aber ausgelesen und umgangen werden. Er ist kein Hochsicherheits- oder Mehrbenutzermodell. Der PIN-Gate von `Schlag den Raab` hat dieselbe bewusste Grenze.
 
 Vor öffentlicher Nutzung mit sensiblen Daten müssen Datenräume, Identitäten, Claims und Rules enger modelliert und mit Emulator-/Rules-Tests abgesichert werden. Die priorisierten Arbeiten dazu stehen in [`todo.md`](todo.md).
