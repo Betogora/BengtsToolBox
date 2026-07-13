@@ -14,10 +14,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/checkBundleBudgets.mjs",
     "docs:acknowledge": "node scripts/syncSpecsFingerprint.mjs --write",
     "docs:check": "remark README.md AGENTS.md docs --frail --use remark-validate-links && node scripts/syncSpecsFingerprint.mjs --check",
     "lint": "eslint .",
+    "perf:baseline:update": "node scripts/updatePerformanceBaseline.mjs",
+    "perf:tournament": "node scripts/runTournamentBenchmark.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:firebase": "npx firebase-tools@15.22.1 emulators:exec --only firestore \"npm run test:firebase:rules\"",
@@ -48,6 +50,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.1",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

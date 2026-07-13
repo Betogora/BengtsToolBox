@@ -520,6 +520,10 @@ npm run test:coverage
 
 `npm test` läuft einmalig und ist der Befehl für CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. Browser-, Komponenten-, Firebase-Emulator- und Rules-Tests gehören nicht zu diesem P0-Schnitt.
 
+Der Produktions-Build erzeugt zusätzlich einen nicht versionierten Bundle-Bericht unter `dist/performance/`. Die versionierte Referenz liegt in `benchmarks/bundle-baseline.json` und umfasst Einstieg-JavaScript, globale Styles, Firebase-Chunks, alle App-Chunks sowie die großen Fragen- und Gebietsdaten. `npm run build` vergleicht Roh- und gzip-Größen mit dieser Referenz. Pro Messwert gilt ein Regressionsbudget von 20 Prozent, mindestens aber 16 KiB roh beziehungsweise 4 KiB gzip. Neue oder verschwundene Kategorien gelten ebenfalls als bewusste Baseline-Änderung.
+
+`npm run perf:tournament` startet ausschließlich für die Messung Vite auf Port `5180` und führt in einem gepinnten Playwright-Chromium deterministische Paarungs- und Ranglistenszenarien aus. Drei Warmups und zehn Messläufe liefern Median, p95, Maximum und Long Tasks ab 50 Millisekunden. Die Referenz in `benchmarks/tournament-baseline.json` ist ein Diagnosewert mit dokumentierter Umgebung und kein CI-Zeitbudget. `npm run perf:baseline:update` erneuert beide Referenzen ausdrücklich; normale Builds schreiben sie nie um.
+
 ### 7.5 Verifikation und Definition of Done
 
 Mindestens für Codeänderungen:
@@ -539,6 +543,8 @@ Bei Firebase- oder Sync-Änderungen zusätzlich:
 4. Auth-, Rules-, Netzwerk- und sichtbare Fehlerzustände prüfen.
 
 Eine Änderung ist fertig, wenn Registry oder Sonderroute korrekt, Persistenz zentral, gemeinsamer Code nicht dupliziert, UI-Zustände verständlich und Lint, Dokumentationscheck, Tests sowie Build erfolgreich sind. Dokumentation wird nur angepasst, wenn sich dauerhafter Kontext oder ein spezifiziertes Verhalten ändert.
+
+`npm run build` umfasst den Bundle-Budgetcheck und lässt unbeabsichtigte Größenregressionen deshalb auch in den bestehenden Hosting-Workflows fehlschlagen. Laufzeitmessungen bleiben lokal, bis stabile CI-Läufe einen sinnvollen verpflichtenden Grenzwert erlauben.
 
 `npm run docs:check` prüft lokale Dateien und Überschriftenziele aller kanonischen Markdown-Dokumente offline. Zusätzlich muss `docs/specs.html` genau einen SHA-256-Fingerprint der normalisierten `docs/specs.md` enthalten. Nach der manuellen Aktualisierung der bewusst kuratierten HTML-Lesefassung bestätigt `npm run docs:acknowledge` den neuen Markdown-Stand; der Fingerprint belegt diese Bestätigung, nicht automatisch semantische Gleichheit.
 
@@ -560,11 +566,13 @@ npm run docs:check
 npm test
 npm run test:watch
 npm run test:coverage
+npm run perf:tournament
+npm run perf:baseline:update
 npm run build
 npm run preview
 ```
 
-`npm run test:coverage` schreibt den lokalen HTML-Bericht nach `coverage/`. `npm run build` führt `tsc -b` und danach den produktiven Vite-Build aus.
+`npm run test:coverage` schreibt den lokalen HTML-Bericht nach `coverage/`. `npm run build` führt `tsc -b`, den produktiven Vite-Build und den Bundle-Budgetcheck aus. Vor der ersten lokalen Browsermessung wird das zur Paketversion passende Chromium einmalig mit `npx playwright install chromium` installiert.
 
 Lobby-Infrastruktur ergänzt `npm run test:firebase`. Die Emulator-Suite benötigt lokal Java 21 oder neuer.
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:4f53e1dbca3f8cfd4b7f7e2842401e37c1ec6e9eca11add783d610244f5c9353">
+  <meta name="specs-source-sha256" content="sha256:a06e6988d6eca8d25690daf9f3517f8cb7ae6517d9ab9a419754fc7ff223d10b">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -872,7 +872,7 @@
               <li>Randomizer, Glücksrad und Münzwurf akzeptieren testbare Zufallsquellen.</li>
               <li>Produktion verwendet weiterhin Math.random beziehungsweise Web Crypto.</li>
               <li>Coverage erscheint als Text- und HTML-Bericht ohne Prozent-Gate.</li>
-              <li>Browser, Komponenten, Firebase Emulator und Rules folgen in späteren Schnitten.</li>
+              <li>Browser-Smokes und Komponenten folgen in späteren Schnitten; die lokale Performance-Messung ist noch kein CI-Zeitgate.</li>
             </ul>
           </article>
         </div>
@@ -880,12 +880,20 @@
 npm run test:watch
 npm run test:coverage
 npm run test:firebase</code></pre>
+        <div class="card note" style="margin-top:1rem">
+          <h3>Performance-Baseline</h3>
+          <p>Der Produktions-Build misst Einstieg, Styles, Firebase, App-Chunks sowie große Fragen- und Gebietsdaten. <code>npm run build</code> vergleicht Roh- und gzip-Größen mit <code>benchmarks/bundle-baseline.json</code>; das Budget beträgt 20 Prozent, mindestens 16 KiB roh beziehungsweise 4 KiB gzip.</p>
+          <p><code>npm run perf:tournament</code> misst fünf deterministische Turnierszenarien in Playwright-Chromium mit drei Warmups und zehn Läufen. Median, p95, Maximum und Long Tasks ab 50 Millisekunden werden gegen keinen CI-Zeitwert gegatet. <code>npm run perf:baseline:update</code> erneuert beide Referenzen nur ausdrücklich.</p>
+          <pre><code>npx playwright install chromium
+npm run perf:tournament
+npm run perf:baseline:update</code></pre>
+        </div>
         <p><code>npm run docs:check</code> prüft lokale Markdown-Links und den bestätigten SHA-256-Stand der kuratierten HTML-Lesefassung; <code>npm test</code> sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der Lesefassung bestätigt <code>npm run docs:acknowledge</code> den aktuellen Markdown-Stand. Rules-Tests laufen mit Firebase Emulator und Java 21.</p>
         <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
         <pre><code>npm ci
 Copy-Item .env.example .env.local
 npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
-        <p>Node.js 22 oder neuer ist erforderlich. Port <code>5180</code> ist für dieses Projekt reserviert.</p>
+        <p>Node.js 22 oder neuer ist erforderlich. Port <code>5180</code> ist für Entwicklung und lokale Performance-Messungen reserviert. Der Build umfasst den Bundle-Budgetcheck und überträgt dieses Gate ohne zusätzlichen Workflow in Pull Requests und Deployments.</p>
       </section>
 
       <section class="section" id="betrieb">

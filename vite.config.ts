@@ -5,9 +5,11 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import { defineConfig } from 'vite'
 
+import { bundleMetricsPlugin } from './scripts/bundleMetrics.mjs'
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), bundleMetricsPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -15,7 +17,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
+    include: [
+      'src/**/*.test.ts',
+      'benchmarks/**/*.test.ts',
+      'scripts/**/*.test.mjs',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

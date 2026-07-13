@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-13T12:51:36.407Z",
+  "environment": {
+    "node": "v24.15.0",
+    "vite": "8.1.4",
+    "playwright": "1.61.1",
+    "browser": "chromium 149.0.7827.55",
+    "platform": "win32 10.0.26200 x64",
+    "cpu": "Intel(R) Core(TM) Ultra 5 226V",
+    "logicalCpuCount": 8,
+    "browserHardwareConcurrency": 8,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.7827.55 Safari/537.36"
+  },
+  "warmupIterations": 3,
+  "sampleIterations": 10,
+  "longTaskThresholdMilliseconds": 50,
+  "longTaskApiSupported": true,
+  "measurements": [
+    {
+      "id": "swiss-pairing-32-round-9",
+      "signature": "16:4c91657b",
+      "medianMilliseconds": 7,
+      "p95Milliseconds": 7.9,
+      "maximumMilliseconds": 7.9,
+      "longTaskCount": 0,
+      "longTaskDurationMilliseconds": 0
+    },
+    {
+      "id": "round-robin-repair-16-state-limit",
+      "signature": "8:92b03b32",
+      "medianMilliseconds": 3.9,
+      "p95Milliseconds": 4.5,
+      "maximumMilliseconds": 4.5,
+      "longTaskCount": 0,
+      "longTaskDurationMilliseconds": 0
+    },
+    {
+      "id": "mario-kart-planning-30-combination-limit",
+      "signature": "created:1:51ab9c87",
+      "medianMilliseconds": 100,
+      "p95Milliseconds": 121.6,
+      "maximumMilliseconds": 121.6,
+      "longTaskCount": 10,
+      "longTaskDurationMilliseconds": 1033
+    },
+    {
+      "id": "swiss-standings-32-rounds-9",
+      "signature": "32:d89a0f8a",
+      "medianMilliseconds": 0.8,
+      "p95Milliseconds": 1.3,
+      "maximumMilliseconds": 1.3,
+      "longTaskCount": 0,
+      "longTaskDurationMilliseconds": 0
+    },
+    {
+      "id": "mario-kart-standings-32-cycles-8",
+      "signature": "32:476a049c",
+      "medianMilliseconds": 2.9,
+      "p95Milliseconds": 3.4,
+      "maximumMilliseconds": 3.4,
+      "longTaskCount": 0,
+      "longTaskDurationMilliseconds": 0
+    }
+  ]
+}

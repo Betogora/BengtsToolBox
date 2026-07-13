@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-13T12:51:32.651Z",
+  "toolchain": {
+    "node": "v24.15.0",
+    "vite": "8.1.4",
+    "rolldown": "1.1.5"
+  },
+  "metrics": {
+    "app:coinflip": {
+      "rawBytes": 8553,
+      "gzipBytes": 3091
+    },
+    "app:decision-wheel": {
+      "rawBytes": 22921,
+      "gzipBytes": 7430
+    },
+    "app:live-buzzer": {
+      "rawBytes": 19930,
+      "gzipBytes": 5724
+    },
+    "app:next-question": {
+      "rawBytes": 9602,
+      "gzipBytes": 3524
+    },
+    "app:progress-dashboard": {
+      "rawBytes": 38514,
+      "gzipBytes": 10201
+    },
+    "app:randomizer": {
+      "rawBytes": 5744,
+      "gzipBytes": 2026
+    },
+    "app:schlag-den-raab": {
+      "rawBytes": 16283,
+      "gzipBytes": 4881
+    },
+    "app:scoreboard": {
+      "rawBytes": 29848,
+      "gzipBytes": 7506
+    },
+    "app:swiss-tournaments": {
+      "rawBytes": 146476,
+      "gzipBytes": 35593
+    },
+    "app:territory-map": {
+      "rawBytes": 49685,
+      "gzipBytes": 14454
+    },
+    "dataset:next-question/questions.ndjson": {
+      "rawBytes": 2139834,
+      "gzipBytes": 304238
+    },
+    "dataset:territory-map/germanyTerritories": {
+      "rawBytes": 30731,
+      "gzipBytes": 11693
+    },
+    "dataset:territory-map/worldTerritories": {
+      "rawBytes": 115258,
+      "gzipBytes": 38727
+    },
+    "entry:css": {
+      "rawBytes": 81498,
+      "gzipBytes": 15025
+    },
+    "entry:js": {
+      "rawBytes": 449350,
+      "gzipBytes": 136924
+    },
+    "firebase": {
+      "rawBytes": 361197,
+      "gzipBytes": 108648
+    }
+  }
+}
