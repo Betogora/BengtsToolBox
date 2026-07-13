@@ -691,7 +691,7 @@ export function TerritoryMapPage() {
   } = useTerritoryMap()
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(true)
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
-  const [isScoreOpen, setIsScoreOpen] = useState(true)
+  const [isScoreOpen, setIsScoreOpen] = useState(false)
   const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
   const [territoriesByMap, setTerritoriesByMap] = useState<

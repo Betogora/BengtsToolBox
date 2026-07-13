@@ -269,19 +269,23 @@ function ScoreOverview() {
             containerClassName="raab-score-table-wrap"
           >
             <colgroup>
-              <col className="w-14" />
+              <col className="hidden w-0 sm:table-column sm:w-14" />
               <col />
-              <col className="w-32" />
-              <col className="w-32" />
+              <col className="w-16 sm:w-32" />
+              <col className="w-16 sm:w-32" />
             </colgroup>
             <TableHeader>
-              <TableHead className="text-center">#</TableHead>
+              <TableHead className="hidden text-center sm:table-cell">#</TableHead>
               <TableHead>{t('raab.game')}</TableHead>
               {players.map((player) => (
-                <TableHead key={player.id} className="text-center">
-                  <div className="flex justify-center">
+                <TableHead
+                  key={player.id}
+                  className="raab-player-score-head text-center"
+                >
+                  <div className="raab-player-name-editor flex min-w-0 justify-center">
                     <InlineTextEdit
                       ariaLabel={`${player.name} Name`}
+                      className="max-w-full truncate"
                       fallback={t('raab.playerFallback', {
                         number: player.position,
                       })}
@@ -299,22 +303,29 @@ function ScoreOverview() {
                   key={row.game.id}
                   className={cn(row.game.position === 16 && 'raab-tiebreak-row')}
                 >
-                  <TableCell className="type-action text-center tabular-nums">
+                  <TableCell className="type-action hidden text-center tabular-nums sm:table-cell">
                     {row.game.position}
                   </TableCell>
                   <TableCell className="min-w-0">
-                    <InlineTextEdit
-                      ariaLabel={t('raab.gameNameAria', {
-                        number: row.game.position,
-                      })}
-                      className="type-label max-w-[18rem]"
-                      fallback={t('raab.gameFallback', {
-                        number: row.game.position,
-                      })}
-                      inputClassName="h-8"
-                      value={row.game.title}
-                      onSave={(title) => updateGameTitle(row.game.id, title)}
-                    />
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="type-action shrink-0 tabular-nums sm:hidden">
+                        {row.game.position}.
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <InlineTextEdit
+                          ariaLabel={t('raab.gameNameAria', {
+                            number: row.game.position,
+                          })}
+                          className="raab-game-title type-ui max-w-[18rem]"
+                          fallback={t('raab.gameFallback', {
+                            number: row.game.position,
+                          })}
+                          inputClassName="raab-game-title-input h-8"
+                          value={row.game.title}
+                          onSave={(title) => updateGameTitle(row.game.id, title)}
+                        />
+                      </div>
+                    </div>
                   </TableCell>
                   {players.map((player) => (
                     <TableCell key={player.id} className="text-center">
@@ -495,16 +506,19 @@ function ReadOnlyArchiveTable({
       containerClassName="raab-score-table-wrap"
     >
       <colgroup>
-        <col className="w-14" />
+        <col className="hidden w-0 sm:table-column sm:w-14" />
         <col />
-        <col className="w-32" />
-        <col className="w-32" />
+        <col className="w-16 sm:w-32" />
+        <col className="w-16 sm:w-32" />
       </colgroup>
       <TableHeader>
-        <TableHead className="text-center">#</TableHead>
+        <TableHead className="hidden text-center sm:table-cell">#</TableHead>
         <TableHead>{t('raab.game')}</TableHead>
         {players.map((player) => (
-          <TableHead key={player.id} className="text-center">
+          <TableHead
+            key={player.id}
+            className="raab-player-score-head text-center"
+          >
             {player.name}
           </TableHead>
         ))}
@@ -515,13 +529,18 @@ function ReadOnlyArchiveTable({
             key={row.game.id}
             className={cn(row.game.position === 16 && 'raab-tiebreak-row')}
           >
-            <TableCell className="type-action text-center tabular-nums">
+            <TableCell className="type-action hidden text-center tabular-nums sm:table-cell">
               {row.game.position}
             </TableCell>
-            <TableCell className="type-label min-w-0">
-              <span className="block max-w-[18rem] truncate">
-                {row.game.title}
-              </span>
+            <TableCell className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="type-action shrink-0 tabular-nums sm:hidden">
+                  {row.game.position}.
+                </span>
+                <span className="raab-game-title block min-w-0 max-w-[18rem] break-words sm:truncate">
+                  {row.game.title}
+                </span>
+              </div>
             </TableCell>
             {players.map((player) => (
               <TableCell key={player.id} className="text-center">
