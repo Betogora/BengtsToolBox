@@ -9,18 +9,6 @@ Die Größenangaben sind relativ: **klein** ist ein enger Änderungssatz, **mitt
 
 ## Aktive Abarbeitungsreihenfolge
 
-### 6. Browser- und Accessibility-Regressionen automatisieren — mittel bis groß
-
-**Warum:** Viele Oberflächen sind mobil, tabellarisch, fullscreen- oder pointerintensiv; derzeit werden diese Risiken überwiegend manuell geprüft.
-
-- [ ] Eine kleine Browser-Smoke-Suite für App-Start, verschachtelte Route, Dialog und zentrale Nutzeraktion einführen.
-- [ ] Kritische Flows bei 320/390 Pixel, Tablet und Desktop abdecken.
-- [ ] Tastatur, Fokusführung, Dialoge, Presenter, Tabellen und Karteninteraktion prüfen.
-- [ ] Axe oder eine vergleichbare Accessibility-Prüfung in dieselbe Suite aufnehmen.
-- [ ] Die Suite erst nach stabilen lokalen Läufen als verpflichtenden CI-Check aktivieren.
-
-**Fertig, wenn:** die wichtigsten mobilen und tastaturbasierten Flows reproduzierbar geprüft werden und offensichtliche Accessibility-Verstöße den Check fehlschlagen lassen.
-
 ### 7. Sync- und LocalStorage-Fehler robust behandeln — groß
 
 **Warum:** LocalStorage-Lesen ist abgesichert, gemeinsame Schreib- und ID-Pfade können bei gesperrtem oder vollem Storage jedoch weiterhin werfen. Optimistische Firestore-Schreibvorgänge besitzen noch kein einheitliches Fehler- und Wiederherstellungsverhalten.

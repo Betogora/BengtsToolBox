@@ -22,6 +22,7 @@
     "perf:tournament": "node scripts/runTournamentBenchmark.mjs",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:browser": "playwright test",
     "test:firebase": "npx firebase-tools@15.22.1 emulators:exec --only firestore \"npm run test:firebase:rules\"",
     "test:firebase:rules": "vitest --config firebase/vitest.config.ts",
     "test:watch": "vitest",
@@ -48,6 +49,7 @@
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.1",
     "@playwright/test": "^1.61.1",

@@ -68,7 +68,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -1101,26 +1100,32 @@ export function TerritoryMapPage() {
         <Card className="overflow-hidden bg-secondary">
           <CardHeader className="p-3 sm:p-4">
             <div className="flex min-w-0 items-center justify-between gap-2">
-              <Tabs
-                value={state.activeMap}
-                className="min-w-0 flex-1"
-                onValueChange={handleMapChange}
+              <div
+                aria-label={t('territory.map')}
+                className="flex h-14 min-w-0 flex-1 items-center gap-1 rounded-md border bg-muted/65 p-1 shadow-sm backdrop-blur"
+                role="group"
               >
-                <TabsList className="h-10 max-w-full border bg-muted/65 shadow-sm backdrop-blur">
-                  <TabsTrigger
-                    value="world"
-                    className="data-[state=active]:bg-background/75"
-                  >
-                    {t('territory.world')}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="germany"
-                    className="data-[state=active]:bg-background/75"
-                  >
-                    {t('territory.map.germany')}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                <Button
+                  aria-pressed={state.activeMap === 'world'}
+                  className="h-12 min-w-0 flex-1 px-3"
+                  size="sm"
+                  type="button"
+                  variant={state.activeMap === 'world' ? 'secondary' : 'ghost'}
+                  onClick={() => handleMapChange('world')}
+                >
+                  {t('territory.world')}
+                </Button>
+                <Button
+                  aria-pressed={state.activeMap === 'germany'}
+                  className="h-12 min-w-0 flex-1 px-3"
+                  size="sm"
+                  type="button"
+                  variant={state.activeMap === 'germany' ? 'secondary' : 'ghost'}
+                  onClick={() => handleMapChange('germany')}
+                >
+                  {t('territory.map.germany')}
+                </Button>
+              </div>
 
               <Button
                 variant="outline"
@@ -1504,7 +1509,7 @@ export function TerritoryMapPage() {
                         'overflow-hidden rounded-md border bg-background transition-colors',
                         isUnlocked
                           ? 'text-foreground'
-                          : 'text-muted-foreground opacity-55 grayscale',
+                          : 'text-muted-foreground grayscale',
                       ].join(' ')}
                     >
                       <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">

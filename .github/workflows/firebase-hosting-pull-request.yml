@@ -63,6 +63,35 @@ jobs:
       - name: Test Firebase rules
         run: npm run test:firebase
 
+  browser-tests:
+    name: Browser tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test browser flows
+        run: npm run test:browser
+      - name: Upload browser failure artifacts
+        if: ${{ !success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-results
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   build:
     name: Build
     needs: lint
@@ -95,7 +124,7 @@ jobs:
 
   preview:
     name: Preview deploy
-    needs: [lint, core-tests, firebase-rules-tests, build]
+    needs: [lint, core-tests, firebase-rules-tests, browser-tests, build]
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:

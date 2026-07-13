@@ -203,7 +203,7 @@ function PresenterStage({
     exitButtonRef.current?.focus({ preventScroll: true })
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.fullscreenElement) {
+      if (event.key === 'Escape') {
         event.preventDefault()
         onExit()
       }

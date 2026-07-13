@@ -57,7 +57,11 @@ export function AppShell() {
     <div className="min-h-svh">
       <header className="app-shell-header sticky top-0 z-40 px-3 py-2 sm:px-4">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 rounded-lg border bg-card/95 px-3 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:px-6">
-          <Link to="/" className="flex min-w-0 items-center gap-3">
+          <Link
+            to="/"
+            aria-label="BengtsToolBox"
+            className="flex min-w-0 items-center gap-3"
+          >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_rgba(13,142,144,0.9)]">
               <BriefcaseBusiness className="size-5" />
             </span>

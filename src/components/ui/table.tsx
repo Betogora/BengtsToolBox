@@ -10,6 +10,7 @@ function Table({
   return (
     <div
       data-slot="table-container"
+      tabIndex={0}
       className={cn(
         'w-full min-w-0 overflow-x-auto rounded-md border bg-card',
         containerClassName,

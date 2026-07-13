@@ -45,6 +45,12 @@ jobs:
       - name: Test core logic
         run: npm test
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test browser flows
+        run: npm run test:browser
+
       - name: Build app
         run: npm run build
 

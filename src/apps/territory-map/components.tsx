@@ -312,6 +312,7 @@ export function TerritoryEventTable({
   const renderDateInput = (event: TerritoryVisitEvent) => (
     <Input
       type="date"
+      aria-label={t('territory.date')}
       className="h-9"
       value={toDateInputValue(event.createdAtClientIso)}
       onChange={(inputEvent) =>
@@ -333,7 +334,7 @@ export function TerritoryEventTable({
         })
       }
     >
-      <SelectTrigger className="w-48">
+      <SelectTrigger aria-label={t('territory.tourist')} className="w-48">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -360,7 +361,7 @@ export function TerritoryEventTable({
         })
       }
     >
-      <SelectTrigger className="w-64">
+      <SelectTrigger aria-label={t('territory.territory')} className="w-64">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -454,84 +455,11 @@ export function TerritoryEventTable({
         <TableBody>
           {events.map((event) => (
             <TableRow key={event.id}>
-              <TableCell>
-                <Input
-                  type="date"
-                  className="h-9"
-                  value={toDateInputValue(event.createdAtClientIso)}
-                  onChange={(inputEvent) =>
-                    onUpdateEvent(event.id, {
-                      createdAtClientIso: fromDateInputValue(
-                        inputEvent.currentTarget.value,
-                        event.createdAtClientIso,
-                      ),
-                    })
-                  }
-                />
-              </TableCell>
-              <TableCell>
-                <Select
-                  value={event.playerId}
-                  onValueChange={(value) =>
-                    onUpdateEvent(event.id, {
-                      playerId: value,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {players.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="size-3 rounded-full"
-                            style={{ backgroundColor: player.color }}
-                          />
-                          {player.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <Select
-                  value={event.territoryId}
-                  onValueChange={(value) =>
-                    onUpdateEvent(event.id, {
-                      territoryId: value,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-64">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {territoryOptionsByMap[event.mapId].map((territory) => (
-                      <SelectItem key={territory.id} value={territory.id}>
-                        {territory.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
+              <TableCell>{renderDateInput(event)}</TableCell>
+              <TableCell>{renderPlayerSelect(event)}</TableCell>
+              <TableCell>{renderTerritorySelect(event)}</TableCell>
               <TableCell className="text-right">
-                <ConfirmButton
-                  title={t('territory.claimDeleteTitle')}
-                  description={t('common.event.deleteDescription')}
-                  onConfirm={() => onDeleteEvent(event.id)}
-                  trigger={
-                    <Button
-                      variant="delete"
-                      size="icon"
-                      aria-label={t('territory.claimDeleteTitle')}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  }
-                />
+                {renderDeleteButton(event)}
               </TableCell>
             </TableRow>
           ))}

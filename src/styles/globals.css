@@ -79,7 +79,7 @@
   --btb-text-metric-xl: 4.5rem;
   --btb-leading-metric-xl: 1;
   --btb-text-metric-xl-wide: 6rem;
-  --brand-primary: #0d8e90;
+  --brand-primary: #067276;
   --brand-secondary: #a9dfda;
   --brand-accent: #fd7261;
   --brand-surface: #fac889;
@@ -99,7 +99,7 @@
   --muted-foreground: #4d6870;
   --accent: var(--brand-accent);
   --accent-foreground: #ffffff;
-  --destructive: #d94d43;
+  --destructive: #c83e35;
   --border: #d6e7e5;
   --input: #cbdedc;
   --ring: var(--brand-primary);

@@ -72,12 +72,13 @@ npm run lint
 npm run docs:check
 npm test
 npm run test:coverage
+npm run test:browser
 npm run test:firebase
 npm run build
 npm run preview
 ```
 
-`npm run docs:check` prüft lokale Markdown-Links und den bestätigten Gleichstand der beiden Spezifikationsfassungen; `npm test` sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach einer manuellen Aktualisierung von `docs/specs.html` bestätigt `npm run docs:acknowledge` den aktuellen Stand von `docs/specs.md`. `npm test` führt außerdem die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run test:firebase` startet den Rules-Emulator und benötigt Java 21 oder neuer. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine Lobby in zwei Browserfenstern geprüft werden.
+`npm run docs:check` prüft lokale Markdown-Links und den bestätigten Gleichstand der beiden Spezifikationsfassungen; `npm test` sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach einer manuellen Aktualisierung von `docs/specs.html` bestätigt `npm run docs:acknowledge` den aktuellen Stand von `docs/specs.md`. `npm test` führt außerdem die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run test:browser` prüft vier zentrale UI-Flows mit Chromium, Axe und vier Viewports; zuvor wird Chromium einmalig mit `npx playwright install chromium` installiert. `npm run test:firebase` startet den Rules-Emulator und benötigt Java 21 oder neuer. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine Lobby in zwei Browserfenstern geprüft werden.
 
 ## Eine App ergänzen
 

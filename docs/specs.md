@@ -516,9 +516,12 @@ Zufällige IDs und Zeitstempel sind keine Golden Values. Fixtures verwenden fest
 npm test
 npm run test:watch
 npm run test:coverage
+npm run test:browser
 ```
 
-`npm test` läuft einmalig und ist der Befehl für CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. Browser-, Komponenten-, Firebase-Emulator- und Rules-Tests gehören nicht zu diesem P0-Schnitt.
+`npm test` läuft einmalig und ist der Befehl für die schnellen Kern-Tests in CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. Komponenten-, Firebase-Emulator- und Rules-Tests gehören nicht zu diesem P0-Schnitt.
+
+`npm run test:browser` startet Vite ohne Firebase-Konfiguration auf `127.0.0.1:5180` und führt eine kleine Playwright-Chromium-Suite bei 320, 390, 768 und 1440 Pixel Breite aus. Sie prüft Dashboard und responsive Navigation, eine verschachtelte Scoreboard-Route mit Tastatur und Bestätigungsdialog, Presenter und Fokuswiederherstellung sowie Karten- und Tabelleninteraktion der Sushi Map. Ein gemeinsamer Checkpoint lässt Browser- und Konsolenfehler, äußeren Horizontal-Overflow sowie Axe-Verstöße gegen WCAG 2.0 bis 2.2 A/AA fehlschlagen. Playwright-Bericht, Screenshots und Traces liegen ausschließlich in den nicht versionierten Verzeichnissen `playwright-report/` und `test-results/`.
 
 Der Produktions-Build erzeugt zusätzlich einen nicht versionierten Bundle-Bericht unter `dist/performance/`. Die versionierte Referenz liegt in `benchmarks/bundle-baseline.json` und umfasst Einstieg-JavaScript, globale Styles, Firebase-Chunks, alle App-Chunks sowie die großen Fragen- und Gebietsdaten. `npm run build` vergleicht Roh- und gzip-Größen mit dieser Referenz. Pro Messwert gilt ein Regressionsbudget von 20 Prozent, mindestens aber 16 KiB roh beziehungsweise 4 KiB gzip. Neue oder verschwundene Kategorien gelten ebenfalls als bewusste Baseline-Änderung.
 
@@ -532,6 +535,7 @@ Mindestens für Codeänderungen:
 npm run lint
 npm run docs:check
 npm test
+npm run test:browser
 npm run build
 ```
 
@@ -566,13 +570,14 @@ npm run docs:check
 npm test
 npm run test:watch
 npm run test:coverage
+npm run test:browser
 npm run perf:tournament
 npm run perf:baseline:update
 npm run build
 npm run preview
 ```
 
-`npm run test:coverage` schreibt den lokalen HTML-Bericht nach `coverage/`. `npm run build` führt `tsc -b`, den produktiven Vite-Build und den Bundle-Budgetcheck aus. Vor der ersten lokalen Browsermessung wird das zur Paketversion passende Chromium einmalig mit `npx playwright install chromium` installiert.
+`npm run test:coverage` schreibt den lokalen HTML-Bericht nach `coverage/`. `npm run build` führt `tsc -b`, den produktiven Vite-Build und den Bundle-Budgetcheck aus. Vor der ersten Browser-Suite oder lokalen Browsermessung wird das zur Paketversion passende Chromium einmalig mit `npx playwright install chromium` installiert.
 
 Lobby-Infrastruktur ergänzt `npm run test:firebase`. Die Emulator-Suite benötigt lokal Java 21 oder neuer.
 
@@ -606,9 +611,9 @@ Das Projekt kann vollständig im Spark-Tarif bleiben. Der Verwaltungs-PIN `5340`
 | interner Pull Request | `.github/workflows/firebase-hosting-pull-request.yml` | temporärer Preview Channel |
 | Backend-Änderung auf `main` | `.github/workflows/firebase-backend.yml` | Rules und Indizes |
 
-Die Workflows verwenden Node 22.23.1. Der Live-Workflow führt nach `npm ci` Lint, Dokumentationscheck, Kern-Tests und Build vor dem Firebase-Deployment aus. Pull Requests müssen die vier stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests` und `Build` bestehen; der bestehende Check `Lint` umfasst dabei auch den Dokumentationscheck. Die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben vier Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
+Die Workflows verwenden Node 22.23.1. Der Live-Workflow führt nach `npm ci` Lint, Dokumentationscheck, Kern- und Browser-Tests sowie Build vor dem Firebase-Deployment aus. Pull Requests müssen die fünf stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests`, `Browser tests` und `Build` bestehen; der bestehende Check `Lint` umfasst dabei auch den Dokumentationscheck. Die Browser-Suite installiert ausschließlich Chromium, läuft ohne Firebase-Secrets und lädt Bericht, Screenshots und Traces nur bei einem Fehlschlag als kurzlebiges Artefakt hoch. Die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben fünf Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
 
-Das aktive Repository-Ruleset `main quality gate` verlangt für `main` einen zum Zielbranch aktuellen Pull Request und alle vier GitHub-Actions-Checks. Es sind keine Reviews erforderlich; Merge, Squash und Rebase bleiben erlaubt. Der Benutzer `Betogora` besitzt einen expliziten Admin-Bypass für bewusste Ausnahmen.
+Das aktive Repository-Ruleset `main quality gate` verlangt für `main` einen zum Zielbranch aktuellen Pull Request und alle fünf GitHub-Actions-Checks einschließlich `Browser tests`. Es sind keine Reviews erforderlich; Merge, Squash und Rebase bleiben erlaubt. Der Benutzer `Betogora` besitzt einen expliziten Admin-Bypass für bewusste Ausnahmen.
 
 Das Backend kann manuell gemeinsam ausgerollt werden:
 
