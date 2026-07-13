@@ -152,17 +152,13 @@ export function LobbyAdminPage() {
     <AppPage width="wide">
       <section className="flex items-center gap-3">
         <ShieldCheck className="size-9 text-primary" />
-        <div>
-          <h1 className="type-page-title">{t('lobbyAdmin.title')}</h1>
-          <p className="type-ui text-muted-foreground">{t('lobbyAdmin.description')}</p>
-        </div>
+        <h1 className="type-page-title">{t('lobbyAdmin.title')}</h1>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
         <Card>
           <CardHeader>
             <CardTitle>{t('lobbyAdmin.allLobbies')}</CardTitle>
-            <CardDescription>{t('lobbyAdmin.lobbyCount', { count: lobbies.length })}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             {lobbies.map((lobby) => (
@@ -229,7 +225,6 @@ export function LobbyAdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>{selectedLobby?.name ?? t('lobbyAdmin.deviceHistory')}</CardTitle>
-            <CardDescription>{t('lobbyAdmin.deviceHistoryDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             {!selectedLobby && (

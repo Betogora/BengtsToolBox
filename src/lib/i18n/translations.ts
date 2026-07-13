@@ -166,13 +166,9 @@ export const de = {
   'nav.menu': 'Navigation',
   'nav.schlagDenRaab': 'Schlag den Raab',
   'lobby.title': 'Lobbys',
-  'lobby.description':
-    'Erstelle einen gemeinsamen Raum für alle Toolbox-Apps oder öffne eine bestehende öffentliche Lobby.',
   'lobby.firebaseRequired':
     'Zentrale Lobbys sind ohne Firebase-Konfiguration nicht verfügbar. Die globale App-Nutzung arbeitet weiterhin lokal.',
   'lobby.createTitle': 'Neue Lobby erstellen',
-  'lobby.createDescription':
-    'Alle Personen mit Zugriff auf die Lobby können den gemeinsamen Zustand bearbeiten.',
   'lobby.name': 'Lobbyname',
   'lobby.deviceName': 'Gerätename',
   'lobby.create': 'Lobby erstellen',
@@ -181,7 +177,6 @@ export const de = {
   'lobby.createError': 'Die Lobby konnte nicht erstellt werden.',
   'lobby.validationError': 'Bitte gültige Lobby- und Gerätenamen eingeben.',
   'lobby.publicTitle': 'Öffentliche Lobbys',
-  'lobby.publicDescription': 'Alle hier gelisteten Räume können direkt betreten werden.',
   'lobby.defaultDescription': 'Gemeinsamer globaler Standardzustand',
   'lobby.open': 'Lobby öffnen',
   'lobby.sharedState': 'Gemeinsamer Lobby-Zustand',
@@ -191,13 +186,9 @@ export const de = {
   'lobbyAdmin.pin': 'Admin-PIN',
   'lobbyAdmin.unlock': 'Freischalten',
   'lobbyAdmin.pinError': 'Der PIN ist nicht korrekt.',
-  'lobbyAdmin.description': 'Öffentliche Lobbys und ihre Gerätehistorie verwalten.',
   'lobbyAdmin.allLobbies': 'Alle Lobbys',
-  'lobbyAdmin.lobbyCount': '{count} geladene Lobbys',
   'lobbyAdmin.devices': 'Geräte',
   'lobbyAdmin.deviceHistory': 'Gerätehistorie',
-  'lobbyAdmin.deviceHistoryDescription':
-    'Historische Zugriffe; dies ist keine Live-Anwesenheitsanzeige.',
   'lobbyAdmin.selectLobby': 'Wähle eine Lobby aus, um ihre Geräte zu sehen.',
   'lobbyAdmin.noDevices': 'Für diese Lobby wurden noch keine Geräte erfasst.',
   'lobbyAdmin.firstSeen': 'Erster Zugriff',
@@ -791,13 +782,9 @@ export const en: Record<TranslationKey, string> = {
   'nav.menu': 'Navigation',
   'nav.schlagDenRaab': 'Schlag den Raab',
   'lobby.title': 'Lobbies',
-  'lobby.description':
-    'Create a shared room for every Toolbox app or open an existing public lobby.',
   'lobby.firebaseRequired':
     'Central lobbies are unavailable without Firebase configuration. The global apps continue to work locally.',
   'lobby.createTitle': 'Create a new lobby',
-  'lobby.createDescription':
-    'Everyone with access to the lobby can edit its shared state.',
   'lobby.name': 'Lobby name',
   'lobby.deviceName': 'Device name',
   'lobby.create': 'Create lobby',
@@ -806,7 +793,6 @@ export const en: Record<TranslationKey, string> = {
   'lobby.createError': 'The lobby could not be created.',
   'lobby.validationError': 'Enter valid lobby and device names.',
   'lobby.publicTitle': 'Public lobbies',
-  'lobby.publicDescription': 'Every room listed here can be entered directly.',
   'lobby.defaultDescription': 'Shared global default state',
   'lobby.open': 'Open lobby',
   'lobby.sharedState': 'Shared lobby state',
@@ -816,13 +802,9 @@ export const en: Record<TranslationKey, string> = {
   'lobbyAdmin.pin': 'Admin PIN',
   'lobbyAdmin.unlock': 'Unlock',
   'lobbyAdmin.pinError': 'The PIN is incorrect.',
-  'lobbyAdmin.description': 'Manage public lobbies and their device history.',
   'lobbyAdmin.allLobbies': 'All lobbies',
-  'lobbyAdmin.lobbyCount': '{count} loaded lobbies',
   'lobbyAdmin.devices': 'Devices',
   'lobbyAdmin.deviceHistory': 'Device history',
-  'lobbyAdmin.deviceHistoryDescription':
-    'Historical access records; this is not a live presence indicator.',
   'lobbyAdmin.selectLobby': 'Select a lobby to view its devices.',
   'lobbyAdmin.noDevices': 'No devices have been recorded for this lobby yet.',
   'lobbyAdmin.firstSeen': 'First access',

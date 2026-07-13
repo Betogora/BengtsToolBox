@@ -68,14 +68,9 @@ export function LobbyDirectoryPage() {
   return (
     <AppPage width="wide">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="grid gap-2">
-          <div className="flex items-center gap-3">
-            <UsersRound className="size-9 text-primary" />
-            <h1 className="type-page-title">{t('lobby.title')}</h1>
-          </div>
-          <p className="type-ui max-w-3xl text-muted-foreground">
-            {t('lobby.description')}
-          </p>
+        <div className="flex items-center gap-3">
+          <UsersRound className="size-9 text-primary" />
+          <h1 className="type-page-title">{t('lobby.title')}</h1>
         </div>
 
         <Button asChild className="self-start" variant="outline">
@@ -101,7 +96,6 @@ export function LobbyDirectoryPage() {
             <Plus className="size-5 text-primary" />
             {t('lobby.createTitle')}
           </CardTitle>
-          <CardDescription>{t('lobby.createDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]" onSubmit={handleCreate}>
@@ -130,10 +124,7 @@ export function LobbyDirectoryPage() {
       </Card>
 
       <section className="grid gap-4">
-        <div>
-          <h2 className="type-section-title">{t('lobby.publicTitle')}</h2>
-          <p className="type-ui mt-1 text-muted-foreground">{t('lobby.publicDescription')}</p>
-        </div>
+        <h2 className="type-section-title">{t('lobby.publicTitle')}</h2>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {directory.lobbies.map((lobby) => (

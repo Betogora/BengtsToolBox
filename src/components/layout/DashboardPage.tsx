@@ -1,12 +1,11 @@
-import { Layers3 } from 'lucide-react'
+import { Layers3, UsersRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { dashboardApps, type HubApp } from '@/apps/registry'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { useI18n } from '@/lib/i18n'
-import type { Lobby } from '@/lobbies/types'
+import { defaultLobby, type Lobby } from '@/lobbies/types'
 
 type AppTileProps = {
   app: HubApp
@@ -55,30 +54,36 @@ function AppTile({ app, href }: AppTileProps) {
 
 export function DashboardPage({ lobby }: { lobby?: Lobby }) {
   const { t } = useI18n()
+  const activeLobby = lobby ?? defaultLobby
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 pb-6 pt-8 sm:px-6 lg:gap-8 lg:pb-8 lg:pt-12">
       <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
         <div className="min-w-0">
           <h1 className="type-dashboard-title text-foreground">
-            {lobby?.name ?? t('dashboard.title')}
+            {t('dashboard.title')}
           </h1>
-          {lobby && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Badge>{lobby.code}</Badge>
-              <span className="type-ui text-muted-foreground">{t('lobby.sharedState')}</span>
-            </div>
-          )}
           <div className="mt-5 h-2 w-16 rounded-full bg-primary sm:w-20" />
         </div>
 
-        <div className="flex shrink-0 items-center gap-3 justify-self-end max-[28rem]:justify-self-start">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 justify-self-end max-[28rem]:justify-start max-[28rem]:justify-self-start">
+          <Card className="h-[72px] w-fit max-w-60 border-primary/20 shadow-[0_18px_46px_-30px_rgba(6,52,79,0.55)]">
+            <CardHeader className="flex h-full flex-row items-center gap-4 p-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+                <UsersRound className="size-5" />
+              </div>
+              <CardTitle className="truncate whitespace-nowrap" title={activeLobby.name}>
+                {activeLobby.name}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
           <Card className="grid h-[72px] w-[72px] place-items-center overflow-hidden bg-white p-2 shadow-[0_18px_46px_-30px_rgba(6,52,79,0.55)]">
-              <img
-                src="/qrcode.svg"
+            <img
+              src="/qrcode.svg"
               alt={t('dashboard.qrAlt')}
-                className="size-full rounded-md"
-              />
+              className="size-full rounded-md"
+            />
           </Card>
 
           <Card className="h-[72px] w-fit border-primary/20 bg-primary text-primary-foreground shadow-[0_18px_46px_-30px_rgba(13,142,144,0.9)]">

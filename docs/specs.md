@@ -94,6 +94,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 - Farbe darf nie der einzige Informationsträger sein.
 - Fokuszustände und Tastaturbedienung müssen sichtbar und funktionsfähig bleiben.
 - Globale Typografie verwendet Manrope Variable und semantische `type-*`-Rollen aus `src/styles/globals.css`.
+- Oberflächen bleiben standardmäßig kompakt und verzichten auf erklärende Untertitel. Untertitel werden nur auf ausdrücklichen Produktwunsch oder für notwendige Status- und Fehlermeldungen ergänzt.
 
 ## 4. Persistenz- und Synchronisationsvertrag
 

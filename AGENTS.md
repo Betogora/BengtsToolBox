@@ -51,6 +51,7 @@ Bei breiten, projektübergreifenden Änderungen die Lektüre auf alle betroffene
 - UI in der Page, Zustand und Aktionen im Feature-Hook, komplexe pure Fachlogik außerhalb von React halten.
 - Wiederverwendung beginnt feature-lokal. Erst tatsächlich von mehreren Apps genutzten Code nach `src/apps/shared` oder `src/components/ui` verschieben.
 - Bestehende Design-Tokens, Lucide Icons und gemeinsame UI-Komponenten bevorzugen. Mobile Nutzung, Lade-, Leer- und Fehlerzustände mitdenken.
+- Oberflächen standardmäßig kompakt und ohne erklärende Untertitel gestalten. Untertitel nur ergänzen, wenn sie ausdrücklich gewünscht oder für einen notwendigen Status beziehungsweise Fehler unverzichtbar sind.
 
 ## Typischer Änderungsweg
 
