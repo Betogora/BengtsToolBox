@@ -53,7 +53,7 @@ export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) 
             key={`${standing.target.type}-${standing.target.id}`}
             className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
           >
-            <span className="type-caption text-muted-foreground tabular-nums">
+            <span className="type-card-title text-muted-foreground tabular-nums">
               {standing.rank}
             </span>
             <div className="min-w-0">
@@ -62,7 +62,7 @@ export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) 
                   className="size-2.5 shrink-0 rounded-full"
                   style={{ backgroundColor: standing.target.color }}
                 />
-                <span className="type-label truncate">{standing.target.name}</span>
+                <span className="type-card-title truncate">{standing.target.name}</span>
               </div>
               <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-muted">
                 <span
@@ -239,21 +239,28 @@ export function ScoreTargetCard({
 export function RosterPlayerCard({
   onNameChange,
   onRemove,
+  onScore,
   onTeamChange,
   player,
+  score,
   teams,
 }: {
   onNameChange: (name: string) => void | Promise<void>
   onRemove: () => void | Promise<void>
+  onScore: (delta: number) => void | Promise<void>
   onTeamChange: (teamId: string | null) => void | Promise<void>
   player: ScoreboardPlayer
+  score: number
   teams: ScoreboardTeam[]
 }) {
-  const { t } = useI18n()
+  const { formatNumber, t } = useI18n()
   const teamColor = teams.find((team) => team.id === player.teamId)?.color
 
   return (
-    <Card style={{ backgroundColor: getColorWithAlpha(teamColor ?? player.color, '80') }}>
+    <Card
+      className="self-start"
+      style={teamColor ? { backgroundColor: getColorWithAlpha(teamColor, '80') } : undefined}
+    >
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
@@ -283,7 +290,7 @@ export function RosterPlayerCard({
           />
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
+      <CardContent className="grid gap-3 p-4 pt-0">
         <Select
           value={player.teamId ?? 'unassigned'}
           onValueChange={(value) => void onTeamChange(value === 'unassigned' ? null : value)}
@@ -300,6 +307,33 @@ export function RosterPlayerCard({
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <div className="type-metric-sm tabular-nums">{formatNumber(score)}</div>
+            <div className="type-caption text-muted-foreground">
+              {t('scoreboard.points')}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="size-11 px-0 sm:size-9"
+              aria-label={t('scoreboard.decrementAria', { name: player.name })}
+              onClick={() => void onScore(-1)}
+            >
+              <Minus className="size-4" />
+              <span className="sr-only">-1</span>
+            </Button>
+            <Button
+              className="size-11 px-0 sm:size-9"
+              aria-label={t('scoreboard.incrementAria', { name: player.name })}
+              onClick={() => void onScore(1)}
+            >
+              <Plus className="size-4" />
+              <span className="sr-only">+1</span>
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

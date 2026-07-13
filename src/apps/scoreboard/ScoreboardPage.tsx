@@ -22,7 +22,7 @@ import {
   ScoreTargetCard,
 } from '@/apps/scoreboard/components'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
-import type { ScoreboardStanding } from '@/apps/scoreboard/types'
+import type { ScoreboardStanding, ScoreTargetType } from '@/apps/scoreboard/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
@@ -91,6 +91,13 @@ export function ScoreboardPage() {
     () => new Map(scoreboard.standings.map((standing) => [standing.target.id, standing.score])),
     [scoreboard.standings],
   )
+  const playerScoresById = useMemo(
+    () =>
+      new Map(
+        scoreboard.playerStandings.map((standing) => [standing.target.id, standing.score]),
+      ),
+    [scoreboard.playerStandings],
+  )
 
   const handleRemovePlayer = async (playerId: string) => {
     const result = await scoreboard.removePlayer(playerId)
@@ -116,8 +123,12 @@ export function ScoreboardPage() {
     }
   }
 
-  const handleScore = async (targetId: string, delta: number) => {
-    const didSave = await scoreboard.addScore(targetId, delta)
+  const handleScore = async (
+    targetType: ScoreTargetType,
+    targetId: string,
+    delta: number,
+  ) => {
+    const didSave = await scoreboard.addScore(targetType, targetId, delta)
 
     if (didSave) {
       toast.success(
@@ -199,6 +210,39 @@ export function ScoreboardPage() {
         </Card>
       )}
 
+      {scoreboard.activeScoring.mode === 'teams' && (
+        <section className="grid gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="type-section-title flex items-center gap-2">
+              <UsersRound className="size-5 text-primary" />
+              {t('scoreboard.players')}
+            </h2>
+            <Badge variant="outline">{scoreboard.players.length}</Badge>
+          </div>
+          <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {scoreboard.rosterPlayers.map((player) => (
+              <RosterPlayerCard
+                key={player.id}
+                player={player}
+                teams={scoreboard.teams}
+                score={playerScoresById.get(player.id) ?? 0}
+                onScore={(delta) => handleScore('player', player.id, delta)}
+                onNameChange={(name) => scoreboard.updatePlayer(player.id, { name })}
+                onTeamChange={(teamId) => scoreboard.updatePlayer(player.id, { teamId })}
+                onRemove={() => handleRemovePlayer(player.id)}
+              />
+            ))}
+            <AddCard
+              label={t('scoreboard.addPlayer')}
+              onClick={async () => {
+                await scoreboard.addPlayer()
+                toast.success(t('scoreboard.playerAdded'))
+              }}
+            />
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="type-section-title flex items-center gap-2">
@@ -209,7 +253,7 @@ export function ScoreboardPage() {
           </h2>
           <Badge variant="outline">{scoreboard.targets.length}</Badge>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {scoreboard.targets.map((target) => {
             const memberNames = target.memberIds
               .map((memberId) => scoreboard.players.find((player) => player.id === memberId)?.name)
@@ -221,7 +265,7 @@ export function ScoreboardPage() {
                 target={target}
                 score={scoresByTargetId.get(target.id) ?? 0}
                 memberNames={memberNames}
-                onScore={(delta) => handleScore(target.id, delta)}
+                onScore={(delta) => handleScore(target.type, target.id, delta)}
                 onNameChange={(name) =>
                   target.type === 'team'
                     ? scoreboard.updateTeam(target.id, { name })
@@ -258,37 +302,6 @@ export function ScoreboardPage() {
           />
         </div>
       </section>
-
-      {scoreboard.activeScoring.mode === 'teams' && (
-        <section className="grid gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="type-section-title flex items-center gap-2">
-              <UsersRound className="size-5 text-primary" />
-              {t('scoreboard.players')}
-            </h2>
-            <Badge variant="outline">{scoreboard.players.length}</Badge>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {scoreboard.players.map((player) => (
-              <RosterPlayerCard
-                key={player.id}
-                player={player}
-                teams={scoreboard.teams}
-                onNameChange={(name) => scoreboard.updatePlayer(player.id, { name })}
-                onTeamChange={(teamId) => scoreboard.updatePlayer(player.id, { teamId })}
-                onRemove={() => handleRemovePlayer(player.id)}
-              />
-            ))}
-            <AddCard
-              label={t('scoreboard.addPlayer')}
-              onClick={async () => {
-                await scoreboard.addPlayer()
-                toast.success(t('scoreboard.playerAdded'))
-              }}
-            />
-          </div>
-        </section>
-      )}
 
       <Card>
         <CardHeader>

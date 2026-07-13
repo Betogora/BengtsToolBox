@@ -41,6 +41,7 @@ export type ScoreboardScoreEvent = {
   targetId: string
   targetName: string
   targetColor: string
+  creditedTeamId?: string | null
   delta: number
   createdAtClientIso: string
   createdAtClientMs: number

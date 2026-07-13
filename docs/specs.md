@@ -227,10 +227,10 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 - Der erste Start erzeugt ein direkt nutzbares Einzel-Scoring mit zwei Spielern sowie zwei vorbereiteten Teams. Spieler-, Team-, Scoring- und Ereignis-IDs sind stabil und nicht aus Namen oder Positionen abgeleitet.
 - Ein Scoring wertet entweder Spieler oder Teams. Die Wertungsart bleibt bis zur ersten Buchung umschaltbar und ist danach für dieses Scoring gesperrt.
-- Im Teammodus werden Punkte direkt auf Teams gebucht; Spielerzuordnungen bilden nur die Aufstellung und verändern bestehende Teamscores nicht rückwirkend.
+- Im Teammodus können Punkte direkt auf Teams oder auf einzelne Spieler gebucht werden. Spielerbuchungen erhöhen zugleich den persönlichen Score und den Score des zum Buchungszeitpunkt zugeordneten Teams; spätere Teamwechsel verschieben frühere Punkte nicht. Direkte Teambuchungen bleiben als nicht personengebundene Korrekturen möglich.
 - Scores sind ganze Zahlen und dürfen negativ werden. Änderungen um `0` sowie Dezimalwerte werden blockiert.
-- Jede erfolgreiche Buchung ist ein eigenes Collection-Dokument mit Scoring, Ziel-ID, Zieltyp, Name/Farbe als Snapshot, Delta und Clientzeit. Scores und Verlauf werden ausschließlich daraus abgeleitet.
-- Die Eingabereihenfolge bleibt stabil. Ranglisten sortieren nach Score und vergeben geteilte Ränge nach `1, 1, 3`; ab drei Zielen zeigt die UI zusätzlich relative Rangbalken mit Nullachse.
+- Jede erfolgreiche Buchung ist ein eigenes Collection-Dokument mit Scoring, Ziel-ID, Zieltyp, Name/Farbe als Snapshot, optional gutgeschriebener Team-ID, Delta und Clientzeit. Scores und Verlauf werden ausschließlich daraus abgeleitet.
+- Die Eingabereihenfolge bleibt stabil. Die Spielerliste gruppiert nach fester Teamreihenfolge, sortiert innerhalb der Teams nach persönlichem Score und führt nicht zugeordnete Spieler zuletzt. Ranglisten sortieren nach Score und vergeben geteilte Ränge nach `1, 1, 3`; ab drei Zielen zeigt die UI zusätzlich relative Rangbalken mit Nullachse.
 - Namen, Farben und Teamzuordnungen bleiben editierbar. Bewertete Score-Ziele können im aktiven Scoring nicht gelöscht werden; Einzel- und Teamwertung behalten jeweils mindestens zwei Ziele.
 - Der vollständige Verlauf ist vollbreit und eingeklappt. Die jüngste Buchung kann rückgängig gemacht werden.
 - „Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei `0`. Archive sind umbenennbar, lesbar und samt Ereignissen löschbar.
