@@ -39,7 +39,7 @@ export function useCoinflip(lobbyId?: string) {
   const commitFlipResult = (result: CoinflipResult) =>
     store.merge({
       lastFlip: result,
-      history: [result, ...store.data.history].slice(0, 5),
+      history: [result, ...store.data.history].slice(0, 10),
       updatedBy: session.userId,
     })
 

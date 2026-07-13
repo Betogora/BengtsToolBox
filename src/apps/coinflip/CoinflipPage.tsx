@@ -91,7 +91,7 @@ function CoinflipPresenter({
 }
 
 export function CoinflipPage() {
-  const { formatDateTime, t } = useI18n()
+  const { t } = useI18n()
   const {
     clearHistory,
     commitFlipResult,
@@ -108,7 +108,8 @@ export function CoinflipPage() {
   const isFlipLockedRef = useRef(false)
   const appTitle = t('app.coinflip.title')
   const lastLabel = data.lastFlip ? t(getCoinflipLabelKey(data.lastFlip.side)) : '-'
-  const visibleHistory = data.history.slice(0, 5)
+  const presenterHistory = data.history.slice(0, 5)
+  const visibleHistory = data.history.slice(0, 10)
   const settledRotation = getCoinFaceRotation(data.lastFlip?.side ?? 'heads')
   const displayRotation = isFlipping ? coinRotation : settledRotation
 
@@ -162,7 +163,7 @@ export function CoinflipPage() {
               Icon: Coins,
               render: () => (
                 <CoinflipPresenter
-                  history={visibleHistory}
+                  history={presenterHistory}
                   lastFlip={data.lastFlip}
                 />
               ),
@@ -190,21 +191,26 @@ export function CoinflipPage() {
             {isLoading && <CardDescription>{t('common.syncing')}</CardDescription>}
           </CardHeader>
           <CardContent className="grid gap-5">
-            <div className="grid gap-4 rounded-lg bg-secondary p-5 text-center">
+            <button
+              type="button"
+              aria-label={
+                isFlipping
+                  ? t('coinflip.action.flipping')
+                  : t('coinflip.action.flip')
+              }
+              className="grid w-full gap-4 rounded-lg bg-secondary p-5 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none"
+              disabled={isFlipping}
+              onClick={handleFlip}
+            >
               <CoinGraphic
                 side={data.lastFlip?.side ?? null}
                 rotation={displayRotation}
                 isFlipping={isFlipping}
               />
-              <div>
-                <div className="type-ui text-muted-foreground">
-                  {t('coinflip.lastFlip')}
-                </div>
-                <div className="type-metric-lg mt-1">
-                  {isFlipping ? '...' : lastLabel}
-                </div>
+              <div className="type-metric-lg">
+                {isFlipping ? '...' : lastLabel}
               </div>
-            </div>
+            </button>
 
             <Button
               size="lg"
@@ -239,23 +245,19 @@ export function CoinflipPage() {
                 {t('coinflip.empty')}
               </EmptyState>
             ) : (
-              <div className="grid gap-3">
-                {data.history.map((flipResult, index) => (
-                  <div key={flipResult.id}>
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <div className="type-label">
-                          {t('coinflip.resultNumber', {
-                            number: data.history.length - index,
-                          })}
-                        </div>
-                        <div className="type-caption text-muted-foreground">
-                          {formatDateTime(flipResult.createdAt)}
-                        </div>
-                      </div>
-                      <div className="type-metric-sm">
-                        {t(getCoinflipLabelKey(flipResult.side))}
-                      </div>
+              <div className="divide-y">
+                {visibleHistory.map((flipResult, index) => (
+                  <div
+                    key={flipResult.id}
+                    className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="type-metric-sm font-medium">
+                      {t('coinflip.resultNumber', {
+                        number: visibleHistory.length - index,
+                      })}
+                    </div>
+                    <div className="type-metric-sm">
+                      {t(getCoinflipLabelKey(flipResult.side))}
                     </div>
                   </div>
                 ))}

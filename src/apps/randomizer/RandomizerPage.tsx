@@ -1,4 +1,6 @@
+import { useRef, useState } from 'react'
 import { Dice5, History } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
 import type { RollResult } from '@/apps/randomizer/types'
@@ -7,6 +9,7 @@ import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -82,8 +85,27 @@ function RandomizerPresenter({
 export function RandomizerPage() {
   const { t } = useI18n()
   const { data, updateRange, roll, clearHistory, error } = useRandomizer()
+  const [isRolling, setIsRolling] = useState(false)
+  const isRollLockedRef = useRef(false)
   const appTitle = t('app.randomizer.title')
   const visibleHistory = data.history.slice(0, 5)
+
+  const handleRoll = () => {
+    if (isRollLockedRef.current) {
+      return
+    }
+
+    isRollLockedRef.current = true
+    setIsRolling(true)
+    roll()
+      .catch(() => {
+        toast.error(t('randomizer.error.save'))
+      })
+      .finally(() => {
+        isRollLockedRef.current = false
+        setIsRolling(false)
+      })
+  }
 
   return (
     <AppPage>
@@ -154,18 +176,31 @@ export function RandomizerPage() {
 
             <button
               type="button"
-              aria-label={t('randomizer.action.roll')}
-              className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg bg-secondary p-6 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-              onClick={roll}
+              aria-label={
+                isRolling
+                  ? t('randomizer.action.rolling')
+                  : t('randomizer.action.roll')
+              }
+              className="flex min-h-40 w-full items-center justify-center rounded-lg bg-secondary p-6 text-center transition-colors hover:bg-secondary/80 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none"
+              disabled={isRolling}
+              onClick={handleRoll}
             >
               <div className="type-metric-xl">
                 {data.lastRoll ?? '-'}
               </div>
-            <div className="type-action flex items-center justify-center gap-2">
-              <Dice5 className="size-5 text-primary" />
-              <span>{t('randomizer.action.roll')}</span>
-            </div>
-          </button>
+            </button>
+
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={isRolling}
+              onClick={handleRoll}
+            >
+              <Dice5 />
+              {isRolling
+                ? t('randomizer.action.rolling')
+                : t('randomizer.action.roll')}
+            </Button>
           </CardContent>
         </Card>
 
@@ -177,6 +212,7 @@ export function RandomizerPage() {
                 {t('common.history')}
               </CardTitle>
               <AppResetButton
+                disabled={isRolling}
                 title={t('randomizer.resetTitle')}
                 description={t('randomizer.resetDescription')}
                 onConfirm={clearHistory}
@@ -195,7 +231,7 @@ export function RandomizerPage() {
                     key={rollResult.id}
                     className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
                   >
-                    <div className="type-label">
+                    <div className="type-metric-sm font-medium">
                       {t('randomizer.resultNumber', {
                         number: visibleHistory.length - index,
                       })}

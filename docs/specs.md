@@ -190,9 +190,9 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Seiten sind `Kopf` und `Zahl`.
 - Wenn verfügbar, wird `crypto.getRandomValues` verwendet; andernfalls `Math.random`.
 - Die Münze absolviert sechs volle Rotationen; die Animation dauert 1,7 Sekunden plus 120 Millisekunden Settle-Zeit.
-- Ergebnis, Zeitstempel, letztes Ergebnis und maximal fünf Verlaufseinträge werden gespeichert.
+- Ergebnis, Zeitstempel, letztes Ergebnis und maximal zehn Verlaufseinträge werden gespeichert.
 - Der Verlauf kann vollständig zurückgesetzt werden.
-- Der Presenter zeigt letztes Ergebnis und Verlauf.
+- Der Presenter zeigt das letzte Ergebnis und die fünf neuesten Verlaufseinträge.
 
 ### 5.3 Random Number Generator
 
