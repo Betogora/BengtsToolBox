@@ -1,155 +1,29 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import type {
   SchlagDenRaabArchivedDataset,
-  SchlagDenRaabGame,
-  SchlagDenRaabPlayer,
   SchlagDenRaabPlayerId,
   SchlagDenRaabState,
 } from '@/apps/schlag-den-raab/types'
+import {
+  defaultSchlagDenRaabTiebreak,
+  initialSchlagDenRaabState,
+  normalizeSchlagDenRaabState,
+} from '@/apps/schlag-den-raab/scoreboardState'
+import {
+  formatHistoricalDatasetName,
+  getGeneratedDatasetBaseName,
+  sequenceHistoricalRecordNames,
+} from '@/apps/shared/historicalRecordNames'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
-const regularGameCount = 15
 const winningScore = 60
-
-const defaultPlayers: SchlagDenRaabPlayer[] = [
-  {
-    id: 'player-1',
-    name: 'Paul',
-    position: 1,
-  },
-  {
-    id: 'player-2',
-    name: 'Sven',
-    position: 2,
-  },
-]
-
-const defaultGames: SchlagDenRaabGame[] = Array.from(
-  { length: regularGameCount },
-  (_, index) => {
-    const position = index + 1
-
-    return {
-      id: `game-${position}`,
-      position,
-      title:
-        position === 1
-          ? 'Dummy Game 1'
-          : position === 2
-            ? 'Dummy Game 2'
-            : `Spiel ${position}`,
-      points: position,
-      winnerId: null,
-    }
-  },
-)
-
-const defaultTiebreakGame: SchlagDenRaabGame = {
-  id: 'game-16',
-  position: 16,
-  title: 'Spiel 16 - Stechen',
-  points: 16,
-  winnerId: null,
-}
-
-const initialScoreboardState: SchlagDenRaabState = {
-  players: defaultPlayers,
-  games: defaultGames,
-  tiebreak: null,
-  archivedDatasets: [],
-}
-
-function isPlayerId(value: unknown): value is SchlagDenRaabPlayerId {
-  return value === 'player-1' || value === 'player-2'
-}
 
 function sanitizeName(name: string, fallback: string) {
   return name.trim() || fallback
-}
-
-function normalizePlayer(
-  player: Partial<SchlagDenRaabPlayer> | undefined,
-  fallback: SchlagDenRaabPlayer,
-): SchlagDenRaabPlayer {
-  return {
-    ...fallback,
-    name: sanitizeName(player?.name ?? '', fallback.name),
-  }
-}
-
-function normalizeGame(
-  game: Partial<SchlagDenRaabGame> | undefined,
-  fallback: SchlagDenRaabGame,
-): SchlagDenRaabGame {
-  return {
-    ...fallback,
-    title: sanitizeName(game?.title ?? '', fallback.title),
-    winnerId: isPlayerId(game?.winnerId) ? game.winnerId : null,
-  }
-}
-
-function normalizeState(state: SchlagDenRaabState): SchlagDenRaabState {
-  const players = defaultPlayers.map((player) =>
-    normalizePlayer(
-      state.players?.find((entry) => entry.id === player.id),
-      player,
-    ),
-  )
-  const games = defaultGames.map((game) =>
-    normalizeGame(
-      state.games?.find((entry) => entry.id === game.id),
-      game,
-    ),
-  )
-  const tiebreak = state.tiebreak
-    ? normalizeGame(state.tiebreak, defaultTiebreakGame)
-    : null
-
-  return {
-    ...initialScoreboardState,
-    ...state,
-    players,
-    games,
-    tiebreak,
-    archivedDatasets: (state.archivedDatasets ?? []).map((dataset, index) =>
-      normalizeArchivedDataset(dataset, index),
-    ),
-  }
-}
-
-function normalizeArchivedDataset(
-  dataset: Partial<SchlagDenRaabArchivedDataset>,
-  index: number,
-): SchlagDenRaabArchivedDataset {
-  const archivedPlayers = defaultPlayers.map((player) =>
-    normalizePlayer(
-      dataset.players?.find((entry) => entry.id === player.id),
-      player,
-    ),
-  )
-
-  return {
-    id: dataset.id?.trim() || `archive-${index + 1}`,
-    name: sanitizeName(dataset.name ?? '', 'Archivierter Datensatz'),
-    archivedAtClientIso: dataset.archivedAtClientIso || new Date(0).toISOString(),
-    position: Number.isFinite(Number(dataset.position))
-      ? Number(dataset.position)
-      : index + 1,
-    players: archivedPlayers,
-    games: defaultGames.map((game) =>
-      normalizeGame(
-        dataset.games?.find((entry) => entry.id === game.id),
-        game,
-      ),
-    ),
-    tiebreak: dataset.tiebreak
-      ? normalizeGame(dataset.tiebreak, defaultTiebreakGame)
-      : null,
-  }
 }
 
 function emptyPlayerNumberMap() {
@@ -172,13 +46,15 @@ function formatArchiveDatasetName(value: string) {
     return 'Datensatz'
   }
 
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return formatHistoricalDatasetName(date)
+}
 
-  return `Datensatz ${year}-${month}-${day} ${hours}:${minutes}`
+function sequenceArchiveNames(datasets: SchlagDenRaabArchivedDataset[]) {
+  return sequenceHistoricalRecordNames(datasets, {
+    getGeneratedBaseName: (dataset, date) =>
+      getGeneratedDatasetBaseName(dataset.name, date),
+    getTimestamp: (dataset) => dataset.archivedAtClientIso,
+  })
 }
 
 export function getSchlagDenRaabSummary({
@@ -262,11 +138,21 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
   )
   const store = useFirestoreDoc<SchlagDenRaabState>(
     statePath,
-    initialScoreboardState,
+    initialSchlagDenRaabState,
   )
-  const state = useMemo(() => normalizeState(store.data), [store.data])
+  const storedState = useMemo(
+    () => normalizeSchlagDenRaabState(store.data),
+    [store.data],
+  )
+  const state = useMemo(
+    () => ({
+      ...storedState,
+      archivedDatasets: sequenceArchiveNames(storedState.archivedDatasets ?? []),
+    }),
+    [storedState],
+  )
   const visibleTiebreak = summaryNeedsVisibleTiebreak(state)
-    ? state.tiebreak ?? defaultTiebreakGame
+    ? state.tiebreak ?? defaultSchlagDenRaabTiebreak
     : state.tiebreak
 
   const summary = useMemo(
@@ -278,6 +164,23 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
       }),
     [state.games, state.players, visibleTiebreak],
   )
+
+  useEffect(() => {
+    if (
+      store.isLoading ||
+      !state.archivedDatasets?.some(
+        (dataset, index) =>
+          dataset.name !== storedState.archivedDatasets?.[index]?.name,
+      )
+    ) {
+      return
+    }
+
+    void store.save({
+      ...state,
+      updatedBy: session.userId,
+    })
+  }, [session.userId, state, store, storedState.archivedDatasets])
 
   const saveState = (nextState: SchlagDenRaabState) =>
     store.save({
@@ -302,8 +205,8 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
       })
     }
 
-    if (gameId === defaultTiebreakGame.id) {
-      const tiebreak = state.tiebreak ?? defaultTiebreakGame
+    if (gameId === defaultSchlagDenRaabTiebreak.id) {
+      const tiebreak = state.tiebreak ?? defaultSchlagDenRaabTiebreak
 
       return saveState({
         ...state,
@@ -347,8 +250,8 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
       })
     }
 
-    if (gameId === defaultTiebreakGame.id) {
-      const tiebreak = state.tiebreak ?? defaultTiebreakGame
+    if (gameId === defaultSchlagDenRaabTiebreak.id) {
+      const tiebreak = state.tiebreak ?? defaultSchlagDenRaabTiebreak
 
       return saveState({
         ...state,
@@ -379,11 +282,15 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
       games: state.games,
       tiebreak: state.tiebreak,
     }
+    const nextArchivedDatasets = sequenceArchiveNames([
+      archive,
+      ...archivedDatasets,
+    ])
 
     return saveState({
-      ...initialScoreboardState,
+      ...initialSchlagDenRaabState,
       players: state.players,
-      archivedDatasets: [archive, ...archivedDatasets],
+      archivedDatasets: nextArchivedDatasets,
     })
   }
 
@@ -403,8 +310,10 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
   const deleteArchivedDataset = (datasetId: string) =>
     saveState({
       ...state,
-      archivedDatasets: (state.archivedDatasets ?? []).filter(
-        (dataset) => dataset.id !== datasetId,
+      archivedDatasets: sequenceArchiveNames(
+        (state.archivedDatasets ?? []).filter(
+          (dataset) => dataset.id !== datasetId,
+        ),
       ),
     })
 

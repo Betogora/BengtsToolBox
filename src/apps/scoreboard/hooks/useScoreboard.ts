@@ -25,6 +25,11 @@ import type {
   ScoreboardTeam,
   ScoreTargetType,
 } from '@/apps/scoreboard/types'
+import {
+  formatScoreboardHistoricalName,
+  getGeneratedScoreboardBaseName,
+  sequenceHistoricalRecordNames,
+} from '@/apps/shared/historicalRecordNames'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
@@ -42,10 +47,20 @@ const initialCreatedAt = new Date().toISOString()
 function formatScoringName(value: string) {
   const date = new Date(value)
 
-  return `Scoring ${new Intl.DateTimeFormat('de-DE', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)}`
+  if (Number.isNaN(date.getTime())) {
+    return 'Scoring'
+  }
+
+  return formatScoreboardHistoricalName(date)
+}
+
+function sequenceScoringNames(scorings: ScoreboardScoring[]) {
+  return sequenceHistoricalRecordNames(scorings, {
+    getGeneratedBaseName: (scoring, date) => {
+      return getGeneratedScoreboardBaseName(scoring.name, date)
+    },
+    getTimestamp: (scoring) => scoring.createdAtClientIso,
+  })
 }
 
 const initialPlayers: ScoreboardPlayer[] = [
@@ -275,9 +290,13 @@ export function useScoreboard(lobbyId?: string) {
     () => teamsStore.data.map(normalizeScoreboardTeam),
     [teamsStore.data],
   )
-  const scorings = useMemo(
+  const storedScorings = useMemo(
     () => scoringsStore.data.map(normalizeScoring),
     [scoringsStore.data],
+  )
+  const scorings = useMemo(
+    () => sequenceScoringNames(storedScorings),
+    [storedScorings],
   )
   const events = useMemo(
     () => eventsStore.data.map(normalizeScoreEvent),
@@ -344,6 +363,31 @@ export function useScoreboard(lobbyId?: string) {
       }),
     [archivedScorings, events],
   )
+
+  useEffect(() => {
+    if (
+      storesAreLoading ||
+      isInitializing ||
+      !scorings.some((scoring, index) => scoring.name !== storedScorings[index]?.name)
+    ) {
+      return
+    }
+
+    void scoringsStore.saveItems(
+      scorings.map((scoring, index) =>
+        scoring.name === storedScorings[index]?.name
+          ? scoring
+          : { ...scoring, lastUpdatedBy: session.userId },
+      ),
+    )
+  }, [
+    isInitializing,
+    scorings,
+    scoringsStore,
+    session.userId,
+    storedScorings,
+    storesAreLoading,
+  ])
 
   const addPlayer = () => {
     const player = createScoreboardPlayer(players)
@@ -490,7 +534,7 @@ export function useScoreboard(lobbyId?: string) {
     const nextPosition =
       scorings.reduce((max, scoring) => Math.max(max, scoring.position), 0) + 1
 
-    await scoringsStore.saveItems([
+    const nextScorings = sequenceScoringNames([
       ...scorings.map((scoring) =>
         scoring.id === activeScoring.id
           ? {
@@ -516,6 +560,8 @@ export function useScoreboard(lobbyId?: string) {
         lastUpdatedBy: session.userId,
       },
     ])
+
+    await scoringsStore.saveItems(nextScorings)
     await stateStore.save({
       schemaVersion: scoreboardSchemaVersion,
       activeScoringId: nextId,

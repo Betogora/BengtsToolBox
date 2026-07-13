@@ -14,6 +14,11 @@ import type {
   ProgressEventIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
+import {
+  formatHistoricalDatasetName,
+  getGeneratedDatasetBaseName,
+  sequenceHistoricalRecordNames,
+} from '@/apps/shared/historicalRecordNames'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import {
@@ -143,13 +148,15 @@ function formatArchiveDatasetName(value: string) {
     return 'Datensatz'
   }
 
-  const year = String(date.getFullYear())
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return formatHistoricalDatasetName(date)
+}
 
-  return `Datensatz ${year}-${month}-${day} ${hours}:${minutes}`
+function sequenceDatasetNames(datasets: ProgressDataset[]) {
+  return sequenceHistoricalRecordNames(datasets, {
+    getGeneratedBaseName: (dataset, date) =>
+      getGeneratedDatasetBaseName(dataset.name, date),
+    getTimestamp: (dataset) => dataset.archivedAtClientIso,
+  })
 }
 
 function normalizeEventIcon(icon: unknown, valueDelta: number): ProgressEventIcon {
@@ -276,9 +283,13 @@ export function useProgressDashboard(lobbyId?: string) {
     () => playersStore.data.map(normalizePlayer),
     [playersStore.data],
   )
-  const datasets = useMemo(
+  const storedDatasets = useMemo(
     () => datasetsStore.data.map((dataset) => normalizeDataset(dataset, players)),
     [datasetsStore.data, players],
+  )
+  const datasets = useMemo(
+    () => sequenceDatasetNames(storedDatasets),
+    [storedDatasets],
   )
   const activeDataset =
     datasets.find((dataset) => dataset.id === stateStore.data.activeDatasetId) ??
@@ -309,6 +320,23 @@ export function useProgressDashboard(lobbyId?: string) {
       },
     ])
   }, [datasetsStore, session.userId])
+
+  useEffect(() => {
+    if (
+      datasetsStore.isLoading ||
+      !datasets.some((dataset, index) => dataset.name !== storedDatasets[index]?.name)
+    ) {
+      return
+    }
+
+    void datasetsStore.saveItems(
+      datasets.map((dataset, index) =>
+        dataset.name === storedDatasets[index]?.name
+          ? dataset
+          : { ...dataset, lastUpdatedBy: session.userId },
+      ),
+    )
+  }, [datasets, datasetsStore, session.userId, storedDatasets])
 
   const saveActiveDataset = (partialValue: Partial<ProgressDataset>) =>
     datasetsStore.mergeItem(activeDataset.id, {
@@ -453,18 +481,25 @@ export function useProgressDashboard(lobbyId?: string) {
     const archiveValue = omitDatasetId(activeDataset)
     const newDatasetValue = omitDatasetId(createDataset(1))
 
-    await datasetsStore.setItem(archiveId, {
-      ...archiveValue,
-      name: formatArchiveDatasetName(now),
-      position: archivePosition,
-      status: 'archived',
-      archivedAtClientIso: now,
-      lastUpdatedBy: session.userId,
-    })
-    await datasetsStore.setItem(activeDatasetId, {
-      ...newDatasetValue,
-      lastUpdatedBy: session.userId,
-    })
+    const nextDatasets = sequenceDatasetNames([
+      ...datasets.filter((dataset) => dataset.id !== activeDataset.id),
+      {
+        id: archiveId,
+        ...archiveValue,
+        name: formatArchiveDatasetName(now),
+        position: archivePosition,
+        status: 'archived',
+        archivedAtClientIso: now,
+        lastUpdatedBy: session.userId,
+      },
+      {
+        id: activeDatasetId,
+        ...newDatasetValue,
+        lastUpdatedBy: session.userId,
+      },
+    ])
+
+    await datasetsStore.saveItems(nextDatasets)
     await stateStore.merge({
       activeDatasetId,
       updatedBy: session.userId,

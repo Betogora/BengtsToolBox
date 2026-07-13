@@ -1,93 +1,93 @@
 # BengtsToolBox – sinnvolle nächste Schritte
 
-> **Stand:** 10. Juli 2026  
+> **Stand:** 13. Juli 2026
 > **Grundlage:** aktueller Code, Build-Ausgabe und [`specs.md`](specs.md)
 
-Diese Liste enthält bewusst keine beliebige Feature-Wunschliste. Aufgenommen sind nur Schritte mit klarer technischer oder betrieblicher Begründung. Erledigte Punkte werden entfernt oder in die Spezifikation übernommen.
+Diese Liste enthält nur aktuell begründete Arbeiten. Sie ist von kleinen, risikoarmen Schritten zu größeren Umbauten sortiert, damit sie von oben nach unten abgearbeitet werden kann. Innerhalb derselben Größenklasse stehen Absicherung und Fehlervermeidung vor Komfort. Erledigte Punkte werden entfernt oder als dauerhafter Vertrag in die Spezifikation übernommen.
 
-## P0 – zuerst absichern
+Die Größenangaben sind relativ: **klein** ist ein enger Änderungssatz, **mittel** umfasst mehrere zusammenhängende Dateien oder eine neue Prüfschicht, **groß** benötigt mehrere sichere Refactoring-Schnitte.
 
-### 1. Sicherheitsmodell vor öffentlicher Nutzung härten
+## Aktive Abarbeitungsreihenfolge
 
-**Warum:** Anonymous Auth darf aktuell vollständig unter `apps/**` lesen und schreiben. Der Zugang zu `Schlag den Raab` basiert auf einer fest codierten Client-PIN und `sessionStorage`.
+### 4. Dokumentationsdrift automatisiert erkennen — mittel
 
-**Nächster Schnitt:**
+**Warum:** Registry, Routen, Firestore-Pfade, Workflows und Dokumentation können unabhängig voneinander geändert werden.
 
-- Entscheiden, ob der Hub dauerhaft privat/vertrauensbasiert bleibt oder echte Zugriffskontrolle benötigt.
-- Für echte Kontrolle Session-/Raum-IDs, Besitzer- oder Teilnehmer-Claims und engere Firestore Rules modellieren.
-- Client-PIN entfernen oder durch eine serverseitig prüfbare Autorisierung ersetzen.
-- Firestore Emulator und Rules-Tests für erlaubte sowie abgewiesene Zugriffe einführen.
-- Keine bestehenden Datenräume ohne Migrationsplan umstellen.
+- [ ] Lokale Markdown-Links in CI prüfen.
+- [ ] Per Test sicherstellen, dass Registry-IDs und Routen eindeutig sind und `href` zu `routePath` passt.
+- [ ] Einen reproduzierbaren Abgleich zwischen dokumentierten App-Routen und `src/apps/registry.ts` einführen.
+- [ ] Festlegen, wie `specs.html` aus `specs.md` aktualisiert oder zuverlässig auf Gleichstand geprüft wird.
 
-**Fertig, wenn:** der dokumentierte Schutz dem tatsächlichen technischen Schutz entspricht.
+**Fertig, wenn:** ein veralteter Pfad, eine doppelte Route oder eine nicht synchronisierte Spezifikationsfassung den Check fehlschlagen lässt.
 
-## P1 – Wartbarkeit und Laufzeit verbessern
+### 5. Performance- und Bundle-Baseline einführen — mittel
 
-### 4. Turnier-App intern weiter vertiefen
+**Warum:** Quellzeilen, Bundle-Größe und Laufzeitkosten sind unterschiedliche Größen. Ohne reproduzierbare Messung wäre ein Sprachwechsel, Web Worker oder WebAssembly nur eine Vermutung.
 
-**Warum:** `SwissTournamentsPage.tsx` und `logic.ts` liegen jeweils bei mehr als 4.000 Zeilen. Formatwissen und UI-Verantwortungen sind trotz vorhandener purer Logik schwer navigierbar.
+- [ ] Die Größen des Einstiegschunks, der Firebase-Abhängigkeiten, der größten App-Chunks und statischen Datensätze nach dem Produktions-Build erfassen.
+- [ ] Großzügige Regressionsbudgets definieren, die unbeabsichtigtes Wachstum melden, aber normale kleine Änderungen nicht blockieren.
+- [ ] Turnier-Paarung und -Neuberechnung mit repräsentativen Datenmengen im Browser messen, insbesondere an den vorhandenen Suchgrenzen von 25.000 beziehungsweise 50.000 Zuständen.
+- [ ] Erst bei nachgewiesenen Long Tasks Algorithmus und Datenstrukturen optimieren; danach gegebenenfalls die pure Berechnung in einen TypeScript-Web-Worker verschieben.
+- [ ] Rust/WebAssembly oder eine zweite Quellsprache nur prüfen, wenn ein isolierter Rechenkern trotz Algorithmusverbesserung und Worker messbar zu langsam bleibt.
 
-**Nächster Schnitt:**
+**Fertig, wenn:** aktuelle Baselines reproduzierbar sind und für jede weitere Performance-Maßnahme ein konkreter Messwert als Auslöser existiert.
 
-- Die vorhandenen Tests an den öffentlichen Interfaces als Refactoring-Schutz verwenden.
-- Formatimplementierungen intern in Swiss-, Round-Robin-, Hand-and-Brain- und Mario-Kart-Module gliedern.
-- Eine kleine gemeinsame Interface für Paarungsgenerierung, Vollständigkeit und Wertung erhalten.
-- Große Page-Bereiche entlang sichtbarer Tabs und Dialoge feature-lokal zerlegen.
-- Keine zusätzlichen externen Adapter oder parallele Zustandsmodelle einführen.
+### 6. Browser- und Accessibility-Regressionen automatisieren — mittel bis groß
 
-### 5. Sync- und LocalStorage-Fehler robuster behandeln
+**Warum:** Viele Oberflächen sind mobil, tabellarisch, fullscreen- oder pointerintensiv; derzeit werden diese Risiken überwiegend manuell geprüft.
 
-**Warum:** Lesen aus LocalStorage ist abgesichert, mehrere Schreibpfade können bei gesperrtem oder vollem Storage jedoch werfen. Optimistische Mehrfachschreibvorgänge besitzen kein Rollback oder gemeinsames Fehlerprotokoll.
+- [ ] Eine kleine Browser-Smoke-Suite für App-Start, verschachtelte Route, Dialog und zentrale Nutzeraktion einführen.
+- [ ] Kritische Flows bei 320/390 Pixel, Tablet und Desktop abdecken.
+- [ ] Tastatur, Fokusführung, Dialoge, Presenter, Tabellen und Karteninteraktion prüfen.
+- [ ] Axe oder eine vergleichbare Accessibility-Prüfung in dieselbe Suite aufnehmen.
+- [ ] Die Suite erst nach stabilen lokalen Läufen als verpflichtenden CI-Check aktivieren.
 
-**Nächster Schnitt:**
+**Fertig, wenn:** die wichtigsten mobilen und tastaturbasierten Flows reproduzierbar geprüft werden und offensichtliche Accessibility-Verstöße den Check fehlschlagen lassen.
 
-- LocalStorage-Schreibfehler in der gemeinsamen Infrastruktur abfangen und sichtbar melden.
-- Verhalten bei fehlgeschlagenem Firestore-Schreiben festlegen: Retry, erneuter Snapshot oder verständliche Warnung.
-- Mehrdokument-Aktionen mit hohem Konsistenzbedarf identifizieren und gezielt über Batch/Transaction absichern.
-- Reconnect-, Doppel-Tab- und Konfliktfälle dokumentiert testen.
+### 7. Sync- und LocalStorage-Fehler robust behandeln — groß
 
-### 6. Echte Diagnoseoberfläche bereitstellen
+**Warum:** LocalStorage-Lesen ist abgesichert, gemeinsame Schreib- und ID-Pfade können bei gesperrtem oder vollem Storage jedoch weiterhin werfen. Optimistische Firestore-Schreibvorgänge besitzen noch kein einheitliches Fehler- und Wiederherstellungsverhalten.
 
-**Warum:** Für Sync-Änderungen fehlt eine zentrale, laufzeitnahe Sicht auf Konfiguration, Auth, Firestore und Cache. Eine früher dokumentierte `/apps/diagnostics`-Route existiert im Router nicht.
+- [ ] LocalStorage-Schreib-, Lösch- und ID-Fehler in der gemeinsamen Infrastruktur abfangen und als verständliches Ergebnis bereitstellen.
+- [ ] Ein kleines gemeinsames Interface für Sync-Fehler festlegen, statt Fehlerbehandlung über Feature-Caller zu verteilen.
+- [ ] Verhalten nach fehlgeschlagenem Firestore-Schreiben definieren: erneuter Snapshot, gezielter Retry oder sichtbare Warnung.
+- [ ] Mehrdokument-Aktionen mit echtem Konsistenzbedarf identifizieren und nur dort Batch oder Transaction einsetzen.
+- [ ] Lokalen Modus, Reload, Doppel-Tab, Reconnect, volle Storage-Quota sowie Auth-, Rules- und Netzwerkfehler dokumentiert testen.
 
-**Nächster Schnitt:**
+**Fertig, wenn:** ein Schreibfehler weder unbemerkt bleibt noch einen dauerhaft falschen optimistischen Zustand erzeugt.
 
-- Entweder eine bewusst versteckte Diagnose-Route implementieren oder bei einer dokumentierten manuellen Checkliste bleiben.
-- Keine Secrets anzeigen; nur Konfigurationsvollständigkeit, Modus, UID, Connectivity und Testpfade darstellen.
-- Diagnose nicht als Ersatz für Emulator- und Integrationstests verwenden.
+### 8. Turnier-App in tiefe fachliche Module gliedern — groß
 
-### 7. Dokumentationsdrift automatisiert erkennen
+**Warum:** `SwissTournamentsPage.tsx` enthält mehr als 4.300 nichtleere Zeilen; `logic.ts` mehr als 3.100 und rund 26 exportierte Funktionen. Für Menschen und KI-Agenten ist dadurch bei lokalen Änderungen unnötig viel Kontext erforderlich.
 
-**Warum:** Registry, Firestore-Pfade, Workflows und Dokumentation können unabhängig voneinander geändert werden.
+- [ ] Die vorhandenen Golden-, Lifecycle- und Format-Tests als Refactoring-Schutz an den heutigen öffentlichen Interfaces festhalten.
+- [ ] Swiss, Round Robin, Hand and Brain, Rangfolge und Turnierlebenszyklus hinter jeweils kleinen fachlichen Interfaces kapseln.
+- [ ] Keine Sammlung flacher Einzelfunktionen erzeugen: Ein Modul soll mehrere zusammengehörige Regeln verbergen und für Caller weniger Wissen erfordern.
+- [ ] Das äußere Turnier-Interface für Paarungsgenerierung, Vollständigkeit, Wertung und Zustandsübergänge bewusst verkleinern.
+- [ ] Große Page-Bereiche entlang sichtbarer Arbeitsabläufe, Tabs und Dialoge feature-lokal aufteilen.
+- [ ] Nach jedem Schnitt Tests, Build und die betroffenen Browser-Flows ausführen; keine parallelen Zustandsmodelle oder vorsorglichen Adapter einführen.
 
-**Nächster Schnitt:**
+**Fertig, wenn:** eine Änderung an einem Turnierformat überwiegend dessen eigenes Modul berührt und Page, Hook sowie Tests nur das kleine gemeinsame Interface kennen müssen.
 
-- Markdown-Links in CI prüfen.
-- Sicherstellen, dass Registry-Routen eindeutig sind und `href`/`routePath` zusammenpassen.
-- Optional die App-/Routentabelle der Specs aus einem kleinen verifizierten Metadatenexport erzeugen.
-- `specs.md` und `specs.html` bei fachlichen Änderungen im selben PR aktualisieren.
+## Konditionale Gates – derzeit nicht abarbeiten
 
-## P2 – Produktqualität abrunden
+### Sicherheitsmodell für nicht vertrauensbasierte Nutzung
 
-### 8. Browser- und Accessibility-Regressionen automatisieren
+Der aktuelle Produktvertrag entscheidet sich ausdrücklich für einen privaten, vertrauensbasierten Hub ohne sensible oder mandantengetrennte Daten. Client-PINs sind dokumentierte Bedienbarrieren und keine Sicherheitsgrenzen. Rules-Tests und ein separates Rules-/Index-Deployment existieren bereits.
 
-**Warum:** Viele Oberflächen sind mobil, tabellarisch, fullscreen- oder pointerintensiv; derzeit gibt es nur manuelle Prüfung.
+Erst wenn öffentliche Nutzung mit sensiblen Daten, echte Besitzerrollen oder Mandantentrennung gewünscht werden, wird daraus wieder ein aktives P0-Thema:
 
-**Nächster Schnitt:**
+- Datenräume, Identitäten und Besitzer-/Teilnehmer-Claims modellieren;
+- globale Legacy-Pfade migrieren und Firestore Rules verengen;
+- Client-PINs durch serverseitig prüfbare Autorisierung ersetzen;
+- erlaubte, abgewiesene und migrationsbezogene Zugriffe im Emulator absichern.
 
-- Kritische Flows bei 320/390 Pixel, Tablet und Desktop als Browser-Smokes abdecken.
-- Tastatur, Fokus, Dialoge, Presenter, Tabellen und Karteninteraktion prüfen.
-- Axe oder eine vergleichbare Accessibility-Prüfung in die Browser-Suite aufnehmen.
+### Zweite Programmiersprache oder WebAssembly
 
-### 9. Platzhalter im Sonderbereich entscheiden
-
-**Warum:** `Schlag den Raab` zeigt zwei deaktivierte `Dummy Game`-Kacheln. Sie sind sichtbar, aber keine nutzbaren Spiele.
-
-**Nächster Schnitt:**
-
-- Entweder echte Spielmodule spezifizieren und implementieren oder die Platzhalter entfernen.
-- Keine leeren Kacheln dauerhaft als vermeintliche Funktion ausliefern.
+TypeScript bleibt die gemeinsame Sprache für UI, Hooks, Fachlogik und Infrastruktur. ReScript, F#/Fable, Kotlin/JS, Rust oder AssemblyScript werden nicht allein zur Reduktion von Quellzeilen eingeführt. Eine zusätzliche Toolchain und der Sprach-Seam sind erst gerechtfertigt, wenn die Performance-Baseline einen isolierten Hotspot nachweist und eine TypeScript-Lösung einschließlich Web Worker nicht genügt.
 
 ## Nicht als offene Spezifikation weiterführen
 
-Die entfernte Mario-Kart-Fragensammlung wird nicht in diese TODO-Liste kopiert. Der aktuelle Code hat die zentralen Fragen bereits entschieden: exakt vier Fahrer pro Lobby, explizite Wertungsrunden, vorgezogene Füller, zunächst ungewertete Extras, parallele aktive Lobbys ohne Doppelbelegung, eindeutige Platzierungen von 1 bis 15 mit relativer Menschenreihenfolge und eine gemeinsame Rangfolge für UI, Presenter, Druck und CSV. Neue Regeländerungen benötigen eine konkrete Produktentscheidung und anschließend eine Änderung von Code, Tests und Specs im selben Satz.
+- Eine eigene Diagnose-Route ist derzeit kein offenes Muss. `specs.md` enthält bereits lokale, Firebase-, Deploy- und Fehlerdiagnose-Checklisten. Eine Route wird nur bei einem konkreten wiederkehrenden Diagnoseproblem neu bewertet.
+- Das separate Rules-/Index-Deployment und Emulator-Rules-Tests sind umgesetzt und deshalb kein offenes Todo mehr.
+- Die entfernte Mario-Kart-Fragensammlung wird nicht in diese Liste kopiert. Der aktuelle Code hat die zentralen Regeln bereits entschieden. Neue Regeländerungen benötigen eine konkrete Produktentscheidung und anschließend eine Änderung von Code, Tests und Specs im selben Satz.

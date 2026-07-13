@@ -41,6 +41,7 @@ import {
   willResultCorrectionRegenerateCurrentDraftRound,
 } from '@/apps/swiss-tournaments/logic'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments'
+import { getNextDefaultTournamentName } from '@/apps/swiss-tournaments/historicalNames'
 import {
   createMarioKartBeerStandingRows,
   getMarioKartPhysicalRaceNumber,
@@ -914,27 +915,32 @@ function defaultTournamentName(
   format: TournamentFormat,
   t: ReturnType<typeof useI18n>['t'],
   formatDateTime: ReturnType<typeof useI18n>['formatDateTime'],
+  tournaments: Tournament[],
 ) {
-  return t('swiss.defaultTournamentName', {
-    date: formatDateTime(new Date(), {
+  const date = new Date()
+  const baseName = t('swiss.defaultTournamentName', {
+    date: formatDateTime(date, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     }),
     format: t(tournamentFormatLabelKey(format)),
   })
+
+  return getNextDefaultTournamentName(tournaments, format, baseName, date)
 }
 
 function isDefaultTournamentName(
   value: string,
   t: ReturnType<typeof useI18n>['t'],
   formatDateTime: ReturnType<typeof useI18n>['formatDateTime'],
+  tournaments: Tournament[],
 ) {
   return (
-    value === defaultTournamentName('swiss', t, formatDateTime) ||
-    value === defaultTournamentName('roundRobin', t, formatDateTime) ||
-    value === defaultTournamentName('handAndBrain', t, formatDateTime) ||
-    value === defaultTournamentName('marioKart', t, formatDateTime)
+    value === defaultTournamentName('swiss', t, formatDateTime, tournaments) ||
+    value === defaultTournamentName('roundRobin', t, formatDateTime, tournaments) ||
+    value === defaultTournamentName('handAndBrain', t, formatDateTime, tournaments) ||
+    value === defaultTournamentName('marioKart', t, formatDateTime, tournaments)
   )
 }
 
@@ -951,14 +957,16 @@ function TournamentCreator({
   initialTournament,
   onCreated,
   onCreate,
+  tournaments,
 }: {
   initialTournament?: Tournament | null
   onCreated?: () => void
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
+  tournaments: Tournament[]
 }) {
   const { language, t, formatDateTime } = useI18n()
   const [name, setName] = useState(() =>
-    defaultTournamentName('swiss', t, formatDateTime),
+    defaultTournamentName('swiss', t, formatDateTime, tournaments),
   )
   const [roundsInput, setRoundsInput] = useState(() =>
     String(
@@ -1001,8 +1009,8 @@ function TournamentCreator({
       : roundsInput
   const handleFormatChange = (nextFormat: TournamentFormat) => {
     setName((currentName) =>
-      isDefaultTournamentName(currentName, t, formatDateTime)
-        ? defaultTournamentName(nextFormat, t, formatDateTime)
+      isDefaultTournamentName(currentName, t, formatDateTime, tournaments)
+        ? defaultTournamentName(nextFormat, t, formatDateTime, tournaments)
         : currentName,
     )
     setByeScore(nextFormat === 'marioKart' ? 0.5 : 1)
@@ -1429,10 +1437,12 @@ function TournamentCreator({
 function NewTournamentDialog({
   initialTournament,
   onCreate,
+  tournaments,
   trigger,
 }: {
   initialTournament?: Tournament | null
   onCreate: ReturnType<typeof useSwissTournaments>['createNewTournament']
+  tournaments: Tournament[]
   trigger?: ReactNode
 }) {
   const { t } = useI18n()
@@ -1463,6 +1473,7 @@ function NewTournamentDialog({
             initialTournament={initialTournament}
             onCreate={onCreate}
             onCreated={() => setOpen(false)}
+            tournaments={tournaments}
           />
         )}
       </DialogContent>
@@ -1899,6 +1910,7 @@ export function SwissTournamentsPage() {
               <NewTournamentDialog
                 initialTournament={app.tournaments[0] ?? null}
                 onCreate={app.createNewTournament}
+                tournaments={app.tournaments}
               />
             </div>
           </CardHeader>
@@ -2055,6 +2067,7 @@ export function SwissTournamentsPage() {
             <NewTournamentDialog
               initialTournament={tournament}
               onCreate={app.createNewTournament}
+              tournaments={app.tournaments}
               trigger={
                 <Button className="h-full min-h-0 w-full rounded-lg px-4 text-base shadow-sm">
                   <Plus className="size-5" />

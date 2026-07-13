@@ -301,7 +301,6 @@ export const de = {
   'raab.registerWinnerAria': '{player} gewinnt {game} eintragen',
   'raab.removeWinnerAria': '{player} als Gewinner von {game} entfernen',
   'raab.unlock': 'Freischalten',
-  'scoreboard.activeScoring': 'Aktives Scoring',
   'scoreboard.addPlayer': 'Spieler hinzufügen',
   'scoreboard.addTeam': 'Team hinzufügen',
   'scoreboard.archiveDeleteDescription':
@@ -945,7 +944,6 @@ export const en: Record<TranslationKey, string> = {
   'raab.registerWinnerAria': 'Set {player} as winner of {game}',
   'raab.removeWinnerAria': 'Remove {player} as winner of {game}',
   'raab.unlock': 'Unlock',
-  'scoreboard.activeScoring': 'Active scoring',
   'scoreboard.addPlayer': 'Add player',
   'scoreboard.addTeam': 'Add team',
   'scoreboard.archiveDeleteDescription':

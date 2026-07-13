@@ -1,11 +1,8 @@
 import { useState } from 'react'
-import type { LucideIcon } from 'lucide-react'
 import {
   Archive,
   ChevronDown,
   ChevronRight,
-  Coins,
-  Layers3,
   RotateCcw,
   Trash2,
   Trophy,
@@ -24,7 +21,6 @@ import type {
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
-import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,53 +39,6 @@ import {
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-
-type GameApp = {
-  id: string
-  title: string
-  Icon: LucideIcon
-  illustrationId: string
-}
-
-const games: GameApp[] = [
-  {
-    id: 'dummy-1',
-    title: 'Dummy Game 1',
-    Icon: Coins,
-    illustrationId: 'coinflip',
-  },
-  {
-    id: 'dummy-2',
-    title: 'Dummy Game 2',
-    Icon: Coins,
-    illustrationId: 'coinflip',
-  },
-]
-
-function GameTile({ game }: { game: GameApp }) {
-  return (
-    <div aria-disabled="true" className="group block rounded-lg">
-      <Card className="relative h-48 overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/45 group-hover:shadow-[0_18px_46px_-34px_rgba(6,52,79,0.55)]">
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 w-[48%] overflow-hidden opacity-95 [mask-image:linear-gradient(to_left,black_0%,black_72%,transparent_100%)]"
-          aria-hidden="true"
-        >
-          <DashboardIllustration appId={game.illustrationId} />
-        </div>
-
-        <CardHeader className="relative z-10 flex h-full max-w-[58%] flex-col justify-start gap-3 p-5 sm:p-6">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_16px_34px_-18px_rgba(13,142,144,0.9)] transition-colors group-hover:bg-secondary group-hover:text-primary">
-            <game.Icon className="size-6" />
-          </div>
-
-          <CardTitle className="type-tile-title hyphens-auto break-words transition-colors group-hover:text-primary">
-            {game.title}
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    </div>
-  )
-}
 
 function outcomeVariant(status: 'open' | 'tiebreak' | 'winner') {
   if (status === 'winner') {
@@ -566,33 +515,12 @@ function ReadOnlyArchiveTable({
 }
 
 export function SchlagDenRaabPage() {
-  const { t } = useI18n()
-
   return (
     <AppPage className="gap-7 lg:py-12" width="wide">
-      <section className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
-        <div className="max-w-3xl">
-          <h1 className="type-dashboard-title text-foreground">
-            Schlag den Raab
-          </h1>
-        </div>
-
-        <Card className="h-[72px] w-fit justify-self-end border-primary/20 bg-primary text-primary-foreground shadow-[0_18px_46px_-30px_rgba(13,142,144,0.9)]">
-          <CardHeader className="flex h-full flex-row items-center gap-4 p-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-foreground/18">
-              <Layers3 className="size-5" />
-            </div>
-            <CardTitle className="whitespace-nowrap">
-              {t('dashboard.appCount', { count: games.length })}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        {games.map((game) => (
-          <GameTile key={game.id} game={game} />
-        ))}
+      <section className="max-w-3xl">
+        <h1 className="type-dashboard-title text-foreground">
+          Schlag den Raab
+        </h1>
       </section>
 
       <section className="grid gap-4">

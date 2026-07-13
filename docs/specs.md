@@ -234,6 +234,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Namen, Farben und Teamzuordnungen bleiben editierbar. Bewertete Score-Ziele können im aktiven Scoring nicht gelöscht werden; Einzel- und Teamwertung behalten jeweils mindestens zwei Ziele.
 - Der vollständige Verlauf ist vollbreit und eingeklappt. Die jüngste Buchung kann rückgängig gemacht werden.
 - „Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei `0`. Archive sind umbenennbar, lesbar und samt Ereignissen löschbar.
+- Automatische Scoringnamen verwenden den lokalen Starttag ohne Uhrzeit. Mehrere Scorings desselben Tages werden appweit chronologisch mit römischen Suffixen nummeriert; manuelle Namen bleiben unverändert.
 - Der Presenter ist read-only und zeigt bei zwei Zielen eine große Gegenüberstellung, ab drei Zielen die Rangansicht.
 - Schema-Version `2` ist ein bewusster destruktiver Schnitt: Beim ersten Öffnen pro globalem oder Lobby-Datenraum werden der alte State und die alte Spieler-Collection gelöscht und durch die neue Initialbelegung ersetzt.
 
@@ -268,7 +269,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Eventzeit, Icon und Wert können korrigiert; Events können gelöscht werden.
 - Ein Datensatz besitzt Name, Diagrammtitel, Einheit, Status und Events.
 - Änderungen der Einheit aktualisieren einen noch automatisch abgeleiteten Diagrammtitel mit.
-- „Archivieren und neu starten“ kopiert den aktiven Datensatz mit Zeitnamen ins Archiv und erzeugt einen leeren aktiven Datensatz.
+- „Archivieren und neu starten“ kopiert den aktiven Datensatz mit Datumsnamen ins Archiv und erzeugt einen leeren aktiven Datensatz. Mehrere Archive desselben lokalen Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
 - Archive können umbenannt und gelöscht werden.
 - Desktop zeigt ein interaktives Zeitdiagramm; mobil stehen Rang- und Timeline-Ansichten bereit.
 - Der Presenter zeigt Stand, Führung, Eventzahl und Gesamtscore.
@@ -305,6 +306,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Eine Runde kann erst abgeschlossen werden, wenn alle Pairings vollständig gewertet sind.
 - Neue aktive Turniere archivieren alle vorher aktiven Turniere.
 - Reset archiviert eine Kopie und setzt Runden, Fortschritt und Spielerstatus des aktiven Turniers zurück.
+- Automatische Turniernamen verwenden den lokalen Starttag ohne Uhrzeit. Mehrere Turniere desselben Tages werden formatübergreifend chronologisch mit römischen Suffixen nummeriert; manuelle Namen bleiben unverändert.
 - Turniere und Archive können als Ranglisten-CSV exportiert und über die Druckansicht als PDF ausgegeben werden.
 - Der Presenter zeigt die aktuelle Rangliste.
 
@@ -389,8 +391,8 @@ Pairings tragen harte oder weiche Warnungen. Abgedeckt werden unter anderem fehl
 - Ein regulärer Sieger steht fest, sobald eine führende Person mehr als 60 Punkte besitzt.
 - Sind nach allen 15 Spielen beide Scores gleich, erscheint Spiel 16 als Stechen mit 16 Punkten.
 - Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.
+- Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
 - Archive sind umbenennbar, lesbar und löschbar.
-- Zwei deaktivierte Dummy-Game-Kacheln sind aktuell sichtbare Platzhalter, keine implementierten Spiele.
 
 ## 6. Architektur
 

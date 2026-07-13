@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import {
   addPlayerAfterStart,
@@ -28,6 +28,7 @@ import {
   rerollLatestEmptyMarioKartLobby,
   setMarioKartLobbyReservation,
 } from '@/apps/swiss-tournaments/marioKart'
+import { sequenceTournamentNames } from '@/apps/swiss-tournaments/historicalNames'
 import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
 import type {
   ByeScore,
@@ -205,9 +206,13 @@ export function useSwissTournaments(lobbyId?: string) {
     [],
     'position',
   )
-  const tournaments = useMemo(
+  const storedTournaments = useMemo(
     () => tournamentsStore.data.map(sanitizeTournament),
     [tournamentsStore.data],
+  )
+  const tournaments = useMemo(
+    () => sequenceTournamentNames(storedTournaments),
+    [storedTournaments],
   )
   const activeTournaments = useMemo(
     () => tournaments.filter((tournament) => !tournament.isArchived),
@@ -235,6 +240,26 @@ export function useSwissTournaments(lobbyId?: string) {
     [activeTournament],
   )
 
+  useEffect(() => {
+    if (
+      tournamentsStore.isLoading ||
+      !tournaments.some(
+        (tournament, index) =>
+          tournament.name !== storedTournaments[index]?.name,
+      )
+    ) {
+      return
+    }
+
+    void tournamentsStore.saveItems(
+      tournaments.map((tournament, index) =>
+        tournament.name === storedTournaments[index]?.name
+          ? tournament
+          : { ...tournament, updatedBy: session.userId },
+      ),
+    )
+  }, [session.userId, storedTournaments, tournaments, tournamentsStore])
+
   const saveTournament = async (tournament: Tournament) => {
     await tournamentsStore.setItem(tournament.id, {
       ...tournament,
@@ -247,7 +272,7 @@ export function useSwissTournaments(lobbyId?: string) {
       tournaments.reduce((max, tournament) => Math.max(max, tournament.position), 0) + 1
     const tournament = createTournament(input, nextPosition)
     const archivePatch = createArchivePatch('newTournament')
-    const nextTournaments = [
+    const nextTournaments = sequenceTournamentNames([
       ...tournaments.map((entry) =>
         entry.isArchived ? entry : { ...entry, ...archivePatch, updatedBy: session.userId },
       ),
@@ -255,7 +280,7 @@ export function useSwissTournaments(lobbyId?: string) {
         ...tournament,
         updatedBy: session.userId,
       },
-    ]
+    ])
 
     await tournamentsStore.saveItems(nextTournaments)
     await stateStore.merge({
@@ -263,7 +288,7 @@ export function useSwissTournaments(lobbyId?: string) {
       updatedBy: session.userId,
     })
 
-    return tournament
+    return nextTournaments.find((entry) => entry.id === tournament.id) ?? tournament
   }
 
   const selectTournament = (tournamentId: string) =>
@@ -631,11 +656,11 @@ export function useSwissTournaments(lobbyId?: string) {
       updatedBy: session.userId,
     }
 
-    await tournamentsStore.saveItems([
+    await tournamentsStore.saveItems(sequenceTournamentNames([
       ...tournaments.filter((entry) => entry.id !== activeTournament.id),
       archivedCopy,
       resetTournament,
-    ])
+    ]))
 
     return resetTournament
   }

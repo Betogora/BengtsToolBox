@@ -658,6 +658,7 @@
               <li>Positive und negative Ganzzahlbuchungen werden mit optional gutgeschriebener Team-ID als einzelne Ereignisse gespeichert; persönliche Scores, Teamscores und Verlauf sind vollständig daraus abgeleitet.</li>
               <li>Die Spielerliste folgt der festen Teamreihenfolge, sortiert innerhalb der Teams nach persönlichem Score und führt Nichtzugeordnete zuletzt. Ranglisten vergeben geteilte Ränge und zeigen ab drei Zielen eine Rangansicht mit Nullachse.</li>
               <li>Vollbreiter Verlauf mit Undo sowie umbenennbare, lesbare und löschbare Scoring-Archive.</li>
+              <li>Automatische Scoringnamen enthalten nur den lokalen Starttag; mehrere Scorings desselben Tages erhalten chronologische römische Suffixe.</li>
               <li>Der einmalige V2-Start löscht den alten Scoreboard-State und die alte Spieler-Collection des aktuellen Datenraums.</li>
             </ul>
           </div>
@@ -685,6 +686,7 @@
               <li>Chronologische Scoreberechnung mit Untergrenze 0; Eventkorrektur und -löschung.</li>
               <li>Editierbare Metadaten, Desktop-Zeitdiagramm und mobile Rang-/Timeline-Ansicht.</li>
               <li>Archivieren startet einen leeren aktiven Datensatz; Archive sind umbenennbar/löschbar.</li>
+              <li>Automatische Archivnamen enthalten nur den lokalen Archivtag; mehrere Archive desselben Tages erhalten chronologische römische Suffixe.</li>
             </ul>
           </div>
         </details>
@@ -711,6 +713,7 @@
               <li>Spielerstatus aktiv/inaktiv/zurückgezogen, frei in alle Richtungen wechselbar; nur aktive Spieler werden neu ausgelost.</li>
               <li>Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate bearbeiten nur die jüngste Draft-Runde.</li>
               <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie.</li>
+              <li>Automatische Turniernamen enthalten nur den lokalen Starttag; mehrere Turniere desselben Tages werden formatübergreifend römisch nummeriert.</li>
               <li>Nicht-Mario-Rangfolge: Punkte, Buchholz, SB, Siege, direkter Vergleich, Seed.</li>
               <li>Ergebniskorrektur kann eine ungewertete aktuelle Draft-Runde neu generieren.</li>
             </ul>
@@ -782,8 +785,8 @@
               <li>Regulärer Sieg bei Führung über 60 Punkten; Gleichstand nach 15 Spielen erzwingt Stechen.</li>
               <li>Spiel- und Spielernamen sind editierbar; Siegerklick ist umschaltbar.</li>
               <li>Reset archiviert den Abend, erhält Namen und startet leere Ergebnisse.</li>
+              <li>Automatische Archivnamen enthalten nur den lokalen Archivtag; mehrere Archive desselben Tages erhalten chronologische römische Suffixe.</li>
               <li>Client-PIN gilt nur für die aktuelle Session und ist keine technische Autorisierung.</li>
-              <li>Zwei deaktivierte Dummy-Game-Kacheln sind sichtbare Platzhalter.</li>
             </ul>
           </div>
         </details>

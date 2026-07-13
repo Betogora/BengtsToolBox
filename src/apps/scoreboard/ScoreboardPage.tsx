@@ -170,9 +170,6 @@ export function ScoreboardPage() {
       <Card>
         <CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
           <div className="min-w-0">
-            <div className="type-caption text-muted-foreground">
-              {t('scoreboard.activeScoring')}
-            </div>
             <InlineTextEdit
               ariaLabel={t('scoreboard.scoringNameAria')}
               className="type-section-title py-1"
