@@ -889,12 +889,16 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
         <div class="grid-2">
           <article class="card">
             <h3>Produktion</h3>
-            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1, <code>npm ci</code>, Tests, Build und Firebase Live-Hosting.</p>
+            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1, <code>npm ci</code>, Lint, Kern-Tests, Build und Firebase Live-Hosting.</p>
           </article>
           <article class="card">
             <h3>Preview</h3>
-            <p>Interne Pull Requests erhalten nach denselben Tests und demselben Build einen temporären Firebase Preview Channel.</p>
+            <p>Pull Requests müssen <code>Lint</code>, <code>Core tests</code>, <code>Firebase rules tests</code> und <code>Build</code> bestehen. Interne Pull Requests erhalten danach einen temporären Firebase Preview Channel; bei Forks wird nur der Deploy übersprungen.</p>
           </article>
+        </div>
+        <div class="card note" style="margin-top:1rem">
+          <h3>Merge-Gate für main</h3>
+          <p>Das aktive Ruleset <code>main quality gate</code> verlangt einen zum Zielbranch aktuellen Pull Request und alle vier GitHub-Actions-Checks. Es sind keine Reviews erforderlich; Merge, Squash und Rebase bleiben erlaubt. <code>Betogora</code> besitzt einen expliziten Admin-Bypass für bewusste Ausnahmen.</p>
         </div>
         <h3 style="margin:2rem 0 0.8rem">Build-Konfiguration</h3>
         <div class="table-wrap">
