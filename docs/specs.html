@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
+  <meta name="specs-source-sha256" content="sha256:4f53e1dbca3f8cfd4b7f7e2842401e37c1ec6e9eca11add783d610244f5c9353">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -847,7 +848,7 @@
               <li>Persistenz ausschließlich zentral.</li>
               <li>Kein vorsorglich abstrahierter Shared Code.</li>
               <li>Lade-, Leer-, Fehler- und Destruktivzustände verständlich.</li>
-              <li><code>npm run lint</code>, <code>npm test</code> und <code>npm run build</code> grün.</li>
+              <li><code>npm run lint</code>, <code>npm run docs:check</code>, <code>npm test</code> und <code>npm run build</code> grün.</li>
               <li>Bei Sync: lokal, zwei Fenster, Reload und Fehler testen.</li>
             </ul>
           </article>
@@ -860,6 +861,7 @@
               <li>Vitest in einer schnellen Node-Umgebung.</li>
               <li>Feature-nahe <code>*.test.ts</code>-Dateien.</li>
               <li>Öffentliche Fachinterfaces statt interner Details.</li>
+              <li>Registry-Vertrag für eindeutige und dokumentierte App-Routen.</li>
               <li>Golden Cases für alle vier Turnierformate.</li>
               <li>Feste IDs und Ergebnisse statt zufälliger Golden Values.</li>
             </ul>
@@ -878,7 +880,7 @@
 npm run test:watch
 npm run test:coverage
 npm run test:firebase</code></pre>
-        <p><code>npm test</code> läuft einmalig und in beiden Hosting-Workflows vor dem Build. Rules-Tests laufen mit Firebase Emulator und Java 21. Der nicht versionierte Coverage-Bericht entsteht unter <code>coverage/</code>.</p>
+        <p><code>npm run docs:check</code> prüft lokale Markdown-Links und den bestätigten SHA-256-Stand der kuratierten HTML-Lesefassung; <code>npm test</code> sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der Lesefassung bestätigt <code>npm run docs:acknowledge</code> den aktuellen Markdown-Stand. Rules-Tests laufen mit Firebase Emulator und Java 21.</p>
         <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
         <pre><code>npm ci
 Copy-Item .env.example .env.local
@@ -892,11 +894,11 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
         <div class="grid-2">
           <article class="card">
             <h3>Produktion</h3>
-            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1, <code>npm ci</code>, Lint, Kern-Tests, Build und Firebase Live-Hosting.</p>
+            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1, <code>npm ci</code>, Lint, Dokumentationscheck, Kern-Tests, Build und Firebase Live-Hosting.</p>
           </article>
           <article class="card">
             <h3>Preview</h3>
-            <p>Pull Requests müssen <code>Lint</code>, <code>Core tests</code>, <code>Firebase rules tests</code> und <code>Build</code> bestehen. Interne Pull Requests erhalten danach einen temporären Firebase Preview Channel; bei Forks wird nur der Deploy übersprungen.</p>
+            <p>Pull Requests müssen <code>Lint</code>, <code>Core tests</code>, <code>Firebase rules tests</code> und <code>Build</code> bestehen. Der bestehende Check <code>Lint</code> umfasst auch den Dokumentationscheck. Interne Pull Requests erhalten danach einen temporären Firebase Preview Channel; bei Forks wird nur der Deploy übersprungen.</p>
           </article>
         </div>
         <div class="card note" style="margin-top:1rem">

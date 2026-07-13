@@ -68,13 +68,14 @@ Mindestens für Codeänderungen:
 
 ```powershell
 npm run lint
+npm run docs:check
 npm test
 npm run build
 ```
 
 Bei Firebase- oder Sync-Änderungen zusätzlich lokalen Modus ohne `.env.local`, Realtime-Sync in zwei Fenstern, Persistenz nach Reload sowie Auth-, Rules- und Netzwerkfehler prüfen.
 
-Bei Dokumentationsänderungen lokale Links, genannte Pfade und Befehle gegen den aktuellen Repository-Stand prüfen. `dist/`, `node_modules/`, Logs und `.env.local` weder bearbeiten noch committen.
+`npm run docs:check` prüft lokale Markdown-Links und den bestätigten Gleichstand von `docs/specs.md` und `docs/specs.html`; `npm test` sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der HTML-Lesefassung den neuen Stand mit `npm run docs:acknowledge` bestätigen. `dist/`, `node_modules/`, Logs und `.env.local` weder bearbeiten noch committen.
 
 ## Maßgebliche Dokumente
 

@@ -39,6 +39,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check documentation
+        run: npm run docs:check
+
       - name: Test core logic
         run: npm test
 

@@ -501,7 +501,7 @@ src/apps/<app-id>/
 
 ### 7.4 Testsystem
 
-Vitest läuft in einer Node-Umgebung und prüft pure Fachlogik ohne DOM, React-Renderer oder Firebase-Emulator. Tests liegen feature-nah als `*.test.ts`; ausschließlich gemeinsam genutzte feste Turnier-Fixtures liegen unter `src/apps/swiss-tournaments/__tests__`. Produktion und Tests verwenden dieselben öffentlichen Interfaces.
+Vitest läuft in einer Node-Umgebung und prüft pure Fachlogik ohne DOM, React-Renderer oder Firebase-Emulator. Tests liegen feature-nah als `*.test.ts`; ausschließlich gemeinsam genutzte feste Turnier-Fixtures liegen unter `src/apps/swiss-tournaments/__tests__`. Produktion und Tests verwenden dieselben öffentlichen Interfaces. Ein Registry-Vertragstest prüft zusätzlich eindeutige IDs und Routen, die Ableitung von `href` und `routePath` sowie den Gleichstand der dokumentierten App-Routen in beiden Spezifikationsfassungen.
 
 Der P0-Testschnitt umfasst:
 
@@ -526,6 +526,7 @@ Mindestens für Codeänderungen:
 
 ```powershell
 npm run lint
+npm run docs:check
 npm test
 npm run build
 ```
@@ -537,7 +538,9 @@ Bei Firebase- oder Sync-Änderungen zusätzlich:
 3. Reload und Persistenz prüfen;
 4. Auth-, Rules-, Netzwerk- und sichtbare Fehlerzustände prüfen.
 
-Eine Änderung ist fertig, wenn Registry oder Sonderroute korrekt, Persistenz zentral, gemeinsamer Code nicht dupliziert, UI-Zustände verständlich und Lint, Tests sowie Build erfolgreich sind. Dokumentation wird nur angepasst, wenn sich dauerhafter Kontext oder ein spezifiziertes Verhalten ändert.
+Eine Änderung ist fertig, wenn Registry oder Sonderroute korrekt, Persistenz zentral, gemeinsamer Code nicht dupliziert, UI-Zustände verständlich und Lint, Dokumentationscheck, Tests sowie Build erfolgreich sind. Dokumentation wird nur angepasst, wenn sich dauerhafter Kontext oder ein spezifiziertes Verhalten ändert.
+
+`npm run docs:check` prüft lokale Dateien und Überschriftenziele aller kanonischen Markdown-Dokumente offline. Zusätzlich muss `docs/specs.html` genau einen SHA-256-Fingerprint der normalisierten `docs/specs.md` enthalten. Nach der manuellen Aktualisierung der bewusst kuratierten HTML-Lesefassung bestätigt `npm run docs:acknowledge` den neuen Markdown-Stand; der Fingerprint belegt diese Bestätigung, nicht automatisch semantische Gleichheit.
 
 ## 8. Lokale Entwicklung
 
@@ -553,6 +556,7 @@ Ohne ausgefüllte `.env.local` startet die App absichtlich im lokalen Modus. Wei
 
 ```powershell
 npm run lint
+npm run docs:check
 npm test
 npm run test:watch
 npm run test:coverage
@@ -594,7 +598,7 @@ Das Projekt kann vollständig im Spark-Tarif bleiben. Der Verwaltungs-PIN `5340`
 | interner Pull Request | `.github/workflows/firebase-hosting-pull-request.yml` | temporärer Preview Channel |
 | Backend-Änderung auf `main` | `.github/workflows/firebase-backend.yml` | Rules und Indizes |
 
-Die Workflows verwenden Node 22.23.1. Der Live-Workflow führt nach `npm ci` Lint, Kern-Tests und Build vor dem Firebase-Deployment aus. Pull Requests müssen die vier stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests` und `Build` bestehen; die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben vier Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
+Die Workflows verwenden Node 22.23.1. Der Live-Workflow führt nach `npm ci` Lint, Dokumentationscheck, Kern-Tests und Build vor dem Firebase-Deployment aus. Pull Requests müssen die vier stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests` und `Build` bestehen; der bestehende Check `Lint` umfasst dabei auch den Dokumentationscheck. Die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben vier Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
 
 Das aktive Repository-Ruleset `main quality gate` verlangt für `main` einen zum Zielbranch aktuellen Pull Request und alle vier GitHub-Actions-Checks. Es sind keine Reviews erforderlich; Merge, Squash und Rebase bleiben erlaubt. Der Benutzer `Betogora` besitzt einen expliziten Admin-Bypass für bewusste Ausnahmen.
 

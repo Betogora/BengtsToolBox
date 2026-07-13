@@ -9,17 +9,6 @@ Die Größenangaben sind relativ: **klein** ist ein enger Änderungssatz, **mitt
 
 ## Aktive Abarbeitungsreihenfolge
 
-### 4. Dokumentationsdrift automatisiert erkennen — mittel
-
-**Warum:** Registry, Routen, Firestore-Pfade, Workflows und Dokumentation können unabhängig voneinander geändert werden.
-
-- [ ] Lokale Markdown-Links in CI prüfen.
-- [ ] Per Test sicherstellen, dass Registry-IDs und Routen eindeutig sind und `href` zu `routePath` passt.
-- [ ] Einen reproduzierbaren Abgleich zwischen dokumentierten App-Routen und `src/apps/registry.ts` einführen.
-- [ ] Festlegen, wie `specs.html` aus `specs.md` aktualisiert oder zuverlässig auf Gleichstand geprüft wird.
-
-**Fertig, wenn:** ein veralteter Pfad, eine doppelte Route oder eine nicht synchronisierte Spezifikationsfassung den Check fehlschlagen lässt.
-
 ### 5. Performance- und Bundle-Baseline einführen — mittel
 
 **Warum:** Quellzeilen, Bundle-Größe und Laufzeitkosten sind unterschiedliche Größen. Ohne reproduzierbare Messung wäre ein Sprachwechsel, Web Worker oder WebAssembly nur eine Vermutung.

@@ -69,6 +69,7 @@ Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Mit
 
 ```powershell
 npm run lint
+npm run docs:check
 npm test
 npm run test:coverage
 npm run test:firebase
@@ -76,7 +77,7 @@ npm run build
 npm run preview
 ```
 
-`npm test` führt die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run test:firebase` startet den Rules-Emulator und benötigt Java 21 oder neuer. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine Lobby in zwei Browserfenstern geprüft werden.
+`npm run docs:check` prüft lokale Markdown-Links und den bestätigten Gleichstand der beiden Spezifikationsfassungen; `npm test` sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach einer manuellen Aktualisierung von `docs/specs.html` bestätigt `npm run docs:acknowledge` den aktuellen Stand von `docs/specs.md`. `npm test` führt außerdem die deterministischen Golden Cases der Fachlogik einmalig aus. `npm run test:coverage` erzeugt zusätzlich einen lokalen HTML-Bericht unter `coverage/`; eine Mindestquote wird noch nicht erzwungen. `npm run test:firebase` startet den Rules-Emulator und benötigt Java 21 oder neuer. Für Änderungen an Sync oder Firebase sollte danach zusätzlich eine Lobby in zwei Browserfenstern geprüft werden.
 
 ## Eine App ergänzen
 
@@ -84,7 +85,7 @@ npm run preview
 2. UI, Zustand und Fachlogik entlang der bestehenden App-Muster trennen.
 3. Persistente Pfade ausschließlich in `src/lib/firebase/paths.ts` ergänzen.
 4. Eine reguläre Dashboard-App in `src/apps/registry.ts` registrieren; Sonderbereiche bewusst direkt im Router eintragen.
-5. `npm run lint`, `npm test` und `npm run build` ausführen.
+5. `npm run lint`, `npm run docs:check`, `npm test` und `npm run build` ausführen.
 
 Der Abschnitt [Entwicklungsvertrag](docs/specs.md#7-entwicklungsvertrag) enthält die vollständige Checkliste.
 
