@@ -21,16 +21,6 @@ Diese Liste enthält bewusst keine beliebige Feature-Wunschliste. Aufgenommen si
 
 **Fertig, wenn:** der dokumentierte Schutz dem tatsächlichen technischen Schutz entspricht.
 
-### 2. CI zu einem vollständigen Qualitätsgate machen
-
-**Warum:** Die Hosting-Workflows führen Tests und Build aus, aber noch nicht ESLint. Rules und Indizes werden außerhalb der Workflows deployt.
-
-**Nächster Schnitt:**
-
-- `npm run lint` in beiden Workflows vor Tests und Build ausführen.
-- Ein separates, least-privilege Rules-/Index-Deployment planen.
-- Build- und Testfehler als verpflichtende PR-Checks konfigurieren.
-
 ## P1 – Wartbarkeit und Laufzeit verbessern
 
 ### 4. Turnier-App intern weiter vertiefen

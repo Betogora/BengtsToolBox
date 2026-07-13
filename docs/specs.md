@@ -592,7 +592,9 @@ Das Projekt kann vollständig im Spark-Tarif bleiben. Der Verwaltungs-PIN `5340`
 | interner Pull Request | `.github/workflows/firebase-hosting-pull-request.yml` | temporärer Preview Channel |
 | Backend-Änderung auf `main` | `.github/workflows/firebase-backend.yml` | Rules und Indizes |
 
-Die Workflows verwenden Node 22.23.1. Pull Requests prüfen zusätzlich Firestore Rules mit Java 21. Hosting veröffentlicht `dist`; das Backend-Workflow deployt Rules und Indizes getrennt.
+Die Workflows verwenden Node 22.23.1. Der Live-Workflow führt nach `npm ci` Lint, Kern-Tests und Build vor dem Firebase-Deployment aus. Pull Requests müssen die vier stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests` und `Build` bestehen; die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben vier Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
+
+Das aktive Repository-Ruleset `main quality gate` verlangt für `main` einen zum Zielbranch aktuellen Pull Request und alle vier GitHub-Actions-Checks. Es sind keine Reviews erforderlich; Merge, Squash und Rebase bleiben erlaubt. Der Benutzer `Betogora` besitzt einen expliziten Admin-Bypass für bewusste Ausnahmen.
 
 Das Backend kann manuell gemeinsam ausgerollt werden:
 
