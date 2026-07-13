@@ -1498,30 +1498,30 @@ export function TerritoryMapPage() {
                 const isUnlocked = achievement.winnerNames.length > 0
 
                 return (
-                  <li
-                    key={achievement.id}
-                    aria-label={`${achievement.title}: ${achievement.rule}`}
-                    className={[
-                      'type-ui group grid grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 rounded-md border bg-background p-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      isUnlocked
-                        ? 'text-foreground'
-                        : 'text-muted-foreground opacity-55 grayscale',
-                    ].join(' ')}
-                    tabIndex={0}
-                    title={achievement.rule}
-                  >
-                    <span className="type-label min-w-0 truncate">
-                      {achievement.title}
-                    </span>
-                    <span className="flex size-8 items-center justify-center text-primary">
-                      <Icon className="size-5" />
-                    </span>
-                    <span className="type-action min-w-0 truncate text-right">
-                      {winnerLabel || '-'}
-                    </span>
-                    <span className="type-caption col-span-3 hidden rounded-md bg-secondary/70 px-2 py-1 text-secondary-foreground group-hover:block group-focus:block group-active:block">
-                      {achievement.rule}
-                    </span>
+                  <li key={achievement.id}>
+                    <details
+                      className={[
+                        'overflow-hidden rounded-md border bg-background transition-colors',
+                        isUnlocked
+                          ? 'text-foreground'
+                          : 'text-muted-foreground opacity-55 grayscale',
+                      ].join(' ')}
+                    >
+                      <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                        <span className="type-label min-w-0 truncate">
+                          {achievement.title}
+                        </span>
+                        <span className="flex size-8 items-center justify-center text-primary">
+                          <Icon className="size-5" />
+                        </span>
+                        <span className="type-action min-w-0 truncate text-right">
+                          {winnerLabel || '-'}
+                        </span>
+                      </summary>
+                      <p className="type-caption border-t bg-secondary/70 px-3 py-2 text-secondary-foreground">
+                        {achievement.rule}
+                      </p>
+                    </details>
                   </li>
                 )
               })}

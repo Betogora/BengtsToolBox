@@ -6,7 +6,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 
 import type { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
 import type {
@@ -110,6 +110,7 @@ export function ScoreTargetCard({
 }) {
   const { formatNumber, t } = useI18n()
   const [customDelta, setCustomDelta] = useState('')
+  const customDeltaInputRef = useRef<HTMLInputElement>(null)
 
   const handleCustomScore = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -118,6 +119,7 @@ export function ScoreTargetCard({
     if (!Number.isInteger(delta) || delta === 0) return
 
     await onScore(delta)
+    customDeltaInputRef.current?.focus({ preventScroll: true })
     setCustomDelta('')
   }
 
@@ -210,6 +212,7 @@ export function ScoreTargetCard({
 
         <form className="grid grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={handleCustomScore}>
           <Input
+            ref={customDeltaInputRef}
             type="number"
             inputMode="numeric"
             step="1"
@@ -234,14 +237,12 @@ export function ScoreTargetCard({
 }
 
 export function RosterPlayerCard({
-  onColorChange,
   onNameChange,
   onRemove,
   onTeamChange,
   player,
   teams,
 }: {
-  onColorChange: (color: string) => void | Promise<void>
   onNameChange: (name: string) => void | Promise<void>
   onRemove: () => void | Promise<void>
   onTeamChange: (teamId: string | null) => void | Promise<void>
@@ -249,9 +250,10 @@ export function RosterPlayerCard({
   teams: ScoreboardTeam[]
 }) {
   const { t } = useI18n()
+  const teamColor = teams.find((team) => team.id === player.teamId)?.color
 
   return (
-    <Card style={{ backgroundColor: getColorWithAlpha(player.color, '80') }}>
+    <Card style={{ backgroundColor: getColorWithAlpha(teamColor ?? player.color, '80') }}>
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
@@ -281,14 +283,7 @@ export function RosterPlayerCard({
           />
         </div>
       </CardHeader>
-      <CardContent className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 p-4 pt-0">
-        <Input
-          type="color"
-          aria-label={t('scoreboard.colorAria', { name: player.name })}
-          className="size-11 shrink-0 cursor-pointer rounded-md border p-1"
-          value={player.color}
-          onChange={(event) => void onColorChange(event.currentTarget.value)}
-        />
+      <CardContent className="p-4 pt-0">
         <Select
           value={player.teamId ?? 'unassigned'}
           onValueChange={(value) => void onTeamChange(value === 'unassigned' ? null : value)}

@@ -275,7 +275,6 @@ export function ScoreboardPage() {
                 player={player}
                 teams={scoreboard.teams}
                 onNameChange={(name) => scoreboard.updatePlayer(player.id, { name })}
-                onColorChange={(color) => scoreboard.updatePlayer(player.id, { color })}
                 onTeamChange={(teamId) => scoreboard.updatePlayer(player.id, { teamId })}
                 onRemove={() => handleRemovePlayer(player.id)}
               />
