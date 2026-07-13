@@ -1,7 +1,11 @@
 import { useEffect, useMemo } from 'react'
 
+import {
+  createProgressPlayer,
+  defaultProgressDrinkIcon,
+  getPlayerScores,
+} from '@/apps/progress-dashboard/logic'
 import type {
-  PlayerScore,
   ProgressDataset,
   ProgressDashboardState,
   ProgressDrinkIcon,
@@ -24,8 +28,6 @@ import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 export const progressColorPresets = [...participantColorPresets]
-
-const defaultProgressDrinkIcon: ProgressDrinkIcon = 'beer'
 
 const defaultUnit = 'Getränke'
 const legacyDefaultChartTitle = 'Fortschritt über Zeit'
@@ -242,32 +244,6 @@ function normalizeDataset(
   }
 }
 
-function getPlayerScores(
-  players: ProgressPlayer[],
-  events: ProgressEvent[],
-): PlayerScore[] {
-  const scores = new Map(players.map((player) => [player.id, 0]))
-  const sortedEvents = [...events].sort(
-    (left, right) =>
-      Date.parse(left.createdAtClientIso) - Date.parse(right.createdAtClientIso) ||
-      left.position - right.position,
-  )
-
-  sortedEvents.forEach((event) => {
-    if (!scores.has(event.playerId)) {
-      return
-    }
-
-    const currentScore = scores.get(event.playerId) ?? 0
-    scores.set(event.playerId, Math.max(0, currentScore + event.valueDelta))
-  })
-
-  return players.map((player) => ({
-    player,
-    score: scores.get(player.id) ?? 0,
-  }))
-}
-
 export function useProgressDashboard(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
@@ -365,15 +341,10 @@ export function useProgressDashboard(lobbyId?: string) {
   }
 
   const addPlayer = () => {
-    const nextPosition =
-      players.reduce((max, player) => Math.max(max, player.position), 0) + 1
-    const id = `person-${nextPosition}`
+    const { id, ...player } = createProgressPlayer(players)
 
     return playersStore.setItem(id, {
-      name: `Person ${nextPosition}`,
-      position: nextPosition,
-      color: getParticipantColorByPosition(nextPosition),
-      defaultEventIcon: defaultProgressDrinkIcon,
+      ...player,
       lastUpdatedBy: session.userId,
     })
   }
