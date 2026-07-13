@@ -1097,7 +1097,7 @@ export function TerritoryMapPage() {
         </Card>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <section className="grid gap-4">
         <Card className="overflow-hidden bg-secondary">
           <CardHeader className="p-3 sm:p-4">
             <div className="flex min-w-0 items-center justify-between gap-2">
@@ -1307,7 +1307,14 @@ export function TerritoryMapPage() {
           </CardContent>
         </Card>
 
-        <div className="grid min-w-0 content-start gap-4">
+        <div
+          className={[
+            'grid min-w-0 gap-4 lg:grid-cols-2',
+            isSushiTouristOpen && isScoreOpen
+              ? 'lg:items-stretch'
+              : 'lg:items-start',
+          ].join(' ')}
+        >
           <Card>
             <CollapsibleCardHeader
               icon={<Users className="size-5" />}
