@@ -192,10 +192,37 @@ export function useFirestoreCollection<T extends CollectionItem>(
     [data, localKey, path],
   )
 
+  const deleteItems = useCallback(
+    async (ids: string[]) => {
+      const idsToDelete = new Set(ids)
+
+      if (idsToDelete.size === 0) {
+        return
+      }
+
+      const nextData = data.filter((item) => !idsToDelete.has(item.id))
+      setData(nextData)
+      writeLocalValue(localKey, nextData)
+
+      const services = getFirebaseServices()
+
+      if (!services) {
+        return
+      }
+
+      await ensureAnonymousUser()
+      await Promise.all(
+        [...idsToDelete].map((id) => deleteDoc(doc(services.db, path, id))),
+      )
+    },
+    [data, localKey, path],
+  )
+
   return {
     data,
     clearItems,
     deleteItem,
+    deleteItems,
     error,
     isLoading,
     isRealtime: isFirebaseConfigured,

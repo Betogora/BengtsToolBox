@@ -109,7 +109,7 @@ export function CoinflipPage() {
   const appTitle = t('app.coinflip.title')
   const lastLabel = data.lastFlip ? t(getCoinflipLabelKey(data.lastFlip.side)) : '-'
   const presenterHistory = data.history.slice(0, 5)
-  const visibleHistory = data.history.slice(0, 10)
+  const visibleHistory = data.history.slice(0, 8)
   const settledRotation = getCoinFaceRotation(data.lastFlip?.side ?? 'heads')
   const displayRotation = isFlipping ? coinRotation : settledRotation
 
@@ -253,7 +253,7 @@ export function CoinflipPage() {
                   >
                     <div className="type-metric-sm font-medium">
                       {t('coinflip.resultNumber', {
-                        number: visibleHistory.length - index,
+                        number: data.history.length - index,
                       })}
                     </div>
                     <div className="type-metric-sm">

@@ -581,7 +581,7 @@
               <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage</td><td><code>apps/{app}/state/{stateId}</code></td><td>–</td></tr>
               <tr><td>Schlag den Raab</td><td><code>apps/schlag-den-raab/sessions/{id}/state/default</code></td><td>–</td></tr>
               <tr><td>Live-Buzzer</td><td><code>.../state/default</code></td><td><code>players</code></td></tr>
-              <tr><td>Scoreboard</td><td><code>.../state/default</code></td><td><code>players</code></td></tr>
+              <tr><td>Scoreboard</td><td><code>.../state/default</code></td><td><code>players</code>, <code>teams</code>, <code>scorings</code>, <code>events</code></td></tr>
               <tr><td>Fortschritts-Dashboard</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
               <tr><td>Sushi Map</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
               <tr><td>Turnier-App</td><td><code>.../state/default</code></td><td><code>tournaments</code></td></tr>
@@ -653,11 +653,12 @@
           <summary><span class="app-number">5</span><span><span class="app-summary-title">Scoreboard</span><span class="app-summary-route">/apps/scoreboard</span></span></summary>
           <div class="app-body">
             <ul>
-              <li>Zwei Initialpersonen in Blau/Gelb; weitere starten ohne Team.</li>
-              <li>Nichtnegative Ganzzahlscores; Änderungen speichern Delta, Vorher/Nachher und Snapshotdaten.</li>
-              <li>Zehn Ereignisse; letzte Änderung rückgängig, solange die Person existiert.</li>
-              <li>Rangliste, Führung, Gesamtscore, Teams und unzugeordnete Scores.</li>
-              <li>Reset erhält Personen/Teams und setzt Scores sowie Verlauf zurück.</li>
+              <li>Direkt nutzbarer Start mit zwei Spielern; ein Scoring wertet fest Spieler oder Teams.</li>
+              <li>Teams erhalten eigene Scores. Spielerzuordnungen bilden nur die Aufstellung und ändern keine früheren Punkte.</li>
+              <li>Positive und negative Ganzzahlbuchungen werden als einzelne Ereignisse gespeichert; Scores und Verlauf sind vollständig daraus abgeleitet.</li>
+              <li>Stabile Eingabekarten, geteilte Ränge und ab drei Zielen eine Rangansicht mit Nullachse.</li>
+              <li>Vollbreiter Verlauf mit Undo sowie umbenennbare, lesbare und löschbare Scoring-Archive.</li>
+              <li>Der einmalige V2-Start löscht den alten Scoreboard-State und die alte Spieler-Collection des aktuellen Datenraums.</li>
             </ul>
           </div>
         </details>

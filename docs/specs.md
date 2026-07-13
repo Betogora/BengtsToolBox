@@ -121,7 +121,7 @@ Die Firebase-Initialisierung gilt als vollständig, wenn mindestens API-Key, Aut
 | Bedarf | Interface | Verhalten |
 | --- | --- | --- |
 | einzelner Dokumentzustand | `useFirestoreDoc<T>` | `data`, `save`, `merge`, Loading, Fehler, Realtime-Flag |
-| geordnete Elemente | `useFirestoreCollection<T>` | Setzen, Mergen, Löschen, Sammelspeichern und Leeren; Standardreihenfolge `position` |
+| geordnete Elemente | `useFirestoreCollection<T>` | Setzen, Mergen, einzeln oder gesammelt Löschen, Sammelspeichern und Leeren; Standardreihenfolge `position` |
 | Nutzerkennung | `useAnonymousSession` | Firebase UID oder lokale Fallback-ID |
 | Lobby-Verzeichnis | `useLobbyDirectory` | Öffentliche Liste, Default-Lobby und transaktionssichere Erstellung |
 | Aktive Lobby | `useActiveLobby` | Lobby aus dem Route-Kontext; außerhalb immer `default` |
@@ -140,7 +140,7 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 | Nächste Frage | `apps/next-question/state/{stateId}` | – |
 | Schlag den Raab | `apps/schlag-den-raab/sessions/{sessionId}/state/default` | – |
 | Live-Buzzer | `apps/live-buzzer/sessions/{sessionId}/state/default` | `.../players` |
-| Scoreboard | `apps/scoreboard/sessions/{sessionId}/state/default` | `.../players` |
+| Scoreboard | `apps/scoreboard/sessions/{sessionId}/state/default` | `.../players`, `.../teams`, `.../scorings`, `.../events` |
 | Fortschritts-Dashboard | `apps/progress-dashboard/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
 | Sushi Map | `apps/territory-map/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
 | Turnier-App | `apps/swiss-tournaments/sessions/{sessionId}/state/default` | `.../tournaments` |
@@ -225,18 +225,17 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 **Zweck:** Personen und Teams während eines Spieleabends bewerten.
 
-- Initial existieren zwei Personen mit Score `0`, zugeordnet zu Team Blau und Team Gelb.
-- Weitere Personen starten ohne Team und mit Score `0`.
-- Namen werden getrimmt; leere Namen fallen auf `Person {position}` zurück.
-- Scores sind nichtnegative ganze Zahlen.
-- Änderungen um `0` und Änderungen unter `0` werden blockiert.
-- Jede erfolgreiche Änderung speichert vorherigen und neuen Score, Delta, Person, Team/Farbe und Zeitstempel.
-- Maximal zehn Score-Ereignisse bleiben im Verlauf.
-- Die letzte Scoreänderung kann rückgängig gemacht werden, solange die Person noch existiert.
-- Personen können umbenannt, Teams zugeordnet oder entfernt werden.
-- Abgeleitet werden Rangliste, führende Person, Gesamtscore, Teamscores, Mitgliederzahlen und nicht zugeordnete Scores.
-- Reset setzt alle Scores auf `0` und löscht den Änderungsverlauf, erhält aber Personen und Teams.
-- Der Presenter zeigt Rangliste, Führung und Teamzusammenfassung.
+- Der erste Start erzeugt ein direkt nutzbares Einzel-Scoring mit zwei Spielern sowie zwei vorbereiteten Teams. Spieler-, Team-, Scoring- und Ereignis-IDs sind stabil und nicht aus Namen oder Positionen abgeleitet.
+- Ein Scoring wertet entweder Spieler oder Teams. Die Wertungsart bleibt bis zur ersten Buchung umschaltbar und ist danach für dieses Scoring gesperrt.
+- Im Teammodus werden Punkte direkt auf Teams gebucht; Spielerzuordnungen bilden nur die Aufstellung und verändern bestehende Teamscores nicht rückwirkend.
+- Scores sind ganze Zahlen und dürfen negativ werden. Änderungen um `0` sowie Dezimalwerte werden blockiert.
+- Jede erfolgreiche Buchung ist ein eigenes Collection-Dokument mit Scoring, Ziel-ID, Zieltyp, Name/Farbe als Snapshot, Delta und Clientzeit. Scores und Verlauf werden ausschließlich daraus abgeleitet.
+- Die Eingabereihenfolge bleibt stabil. Ranglisten sortieren nach Score und vergeben geteilte Ränge nach `1, 1, 3`; ab drei Zielen zeigt die UI zusätzlich relative Rangbalken mit Nullachse.
+- Namen, Farben und Teamzuordnungen bleiben editierbar. Bewertete Score-Ziele können im aktiven Scoring nicht gelöscht werden; Einzel- und Teamwertung behalten jeweils mindestens zwei Ziele.
+- Der vollständige Verlauf ist vollbreit und eingeklappt. Die jüngste Buchung kann rückgängig gemacht werden.
+- „Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei `0`. Archive sind umbenennbar, lesbar und samt Ereignissen löschbar.
+- Der Presenter ist read-only und zeigt bei zwei Zielen eine große Gegenüberstellung, ab drei Zielen die Rangansicht.
+- Schema-Version `2` ist ein bewusster destruktiver Schnitt: Beim ersten Öffnen pro globalem oder Lobby-Datenraum werden der alte State und die alte Spieler-Collection gelöscht und durch die neue Initialbelegung ersetzt.
 
 ### 5.6 Live-Buzzer
 

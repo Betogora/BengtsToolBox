@@ -1,20 +1,32 @@
 import {
+  Archive,
+  ChevronDown,
+  ChevronRight,
   History,
   ListOrdered,
-  Plus,
+  RotateCcw,
   Trophy,
   Undo2,
   UsersRound,
 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import type { ScoreboardEvent, ScoreboardPlayer } from '@/apps/scoreboard/types'
+import {
+  AddCard,
+  ArchiveCard,
+  HistoryList,
+  ModeToggle,
+  RankingBars,
+  RosterPlayerCard,
+  ScoreTargetCard,
+} from '@/apps/scoreboard/components'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import type { ScoreboardStanding } from '@/apps/scoreboard/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppResetButton } from '@/apps/shared/components/AppResetButton'
-import { EmptyState } from '@/apps/shared/components/EmptyState'
-import { PlayerCard } from '@/apps/shared/components/PlayerCard'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,462 +37,361 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { useI18n, type TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
-function formatSignedNumber(value: number) {
-  const sign = value > 0 ? '+' : ''
+function ScoreboardPresenter({ standings }: { standings: ScoreboardStanding[] }) {
+  const { formatNumber, t } = useI18n()
 
-  return `${sign}${value}`
-}
-
-function formatEventTime(
-  value: string,
-  formatTime: ReturnType<typeof useI18n>['formatTime'],
-) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return '-'
-  }
-
-  return formatTime(date, {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function RecentEvents({ events }: { events: ScoreboardEvent[] }) {
-  const { formatTime, t } = useI18n()
-
-  if (events.length === 0) {
+  if (standings.length >= 3) {
     return (
-      <EmptyState className="p-4 text-left">
-        {t('scoreboard.emptyHistory')}
-      </EmptyState>
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <h2 className="type-section-title flex items-center gap-2">
+          <Trophy className="size-5 text-primary" />
+          {t('scoreboard.currentStand')}
+        </h2>
+        <div className="mt-5">
+          <RankingBars standings={standings} />
+        </div>
+      </section>
     )
   }
 
   return (
-    <div className="grid gap-2">
-      {events.map((event) => (
-        <div
-          key={event.id}
-          className="flex min-w-0 items-center justify-between gap-3 rounded-md border p-3"
+    <div className="grid flex-1 gap-5 md:grid-cols-2">
+      {standings.map((standing) => (
+        <section
+          key={standing.target.id}
+          className="flex min-h-64 flex-col justify-between rounded-lg border bg-card p-6 shadow-sm"
+          style={{ borderTopColor: standing.target.color, borderTopWidth: '0.35rem' }}
         >
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              className="size-3 shrink-0 rounded-full"
-              style={{ backgroundColor: event.playerColor }}
-            />
-            <span className="type-label min-w-0 truncate">
-              {event.playerName}
-            </span>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="type-page-title min-w-0 truncate">{standing.target.name}</h2>
+            <Badge variant="outline">#{standing.rank}</Badge>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Badge variant={event.delta > 0 ? 'default' : 'outline'}>
-              {formatSignedNumber(event.delta)}
-            </Badge>
-            <span className="type-caption w-12 text-right text-muted-foreground tabular-nums">
-              {formatEventTime(event.createdAtClientIso, formatTime)}
-            </span>
+          <div className="type-metric-xl text-center tabular-nums">
+            {formatNumber(standing.score)}
           </div>
-        </div>
+          <div className="type-label text-center text-muted-foreground">
+            {t('scoreboard.points')}
+          </div>
+        </section>
       ))}
     </div>
   )
 }
 
-function ScoreboardPresenter({
-  leader,
-  recentEvents,
-  sortedPlayers,
-  teamSummaries,
-  totalScore,
-  unassignedScore,
-}: {
-  leader: ScoreboardPlayer | null
-  recentEvents: ScoreboardEvent[]
-  sortedPlayers: ScoreboardPlayer[]
-  teamSummaries: Array<{
-    className: string
-    dotClassName: string
-    id: string
-    memberCount: number
-    name: string
-    nameKey: TranslationKey
-    score: number
-  }>
-  totalScore: number
-  unassignedScore: number
-}) {
-  const { t } = useI18n()
-  const lastEvent = recentEvents[0]
-  const scoreboardTitle = t('app.scoreboard.title')
-
-  return (
-    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="rounded-lg border bg-card p-5 shadow-sm">
-        <h2 className="type-section-title truncate">
-          {scoreboardTitle}
-        </h2>
-
-        <div className="mt-6 grid gap-3">
-          {sortedPlayers.length === 0 ? (
-            <EmptyState>{t('scoreboard.emptyPlayers')}</EmptyState>
-          ) : (
-            sortedPlayers.map((player, index) => (
-              <div
-                key={player.id}
-                className={cn(
-                  'grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-4 rounded-md border bg-background p-4',
-                  index === 0 && 'border-primary bg-secondary/65',
-                )}
-              >
-                <div className="type-metric-sm">
-                  {index + 1}
-                </div>
-                <div className="min-w-0">
-                  <div className="type-section-title truncate">
-                    {player.name}
-                  </div>
-                </div>
-                <div className="type-metric-lg">
-                  {player.score}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <aside className="grid content-start gap-4">
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <p className="type-label text-muted-foreground">
-            {t('progress.leader')}
-          </p>
-          <div className="type-section-title mt-2 truncate">
-            {leader?.name ?? '-'}
-          </div>
-          <div className="type-metric-xl mt-3">
-            {leader?.score ?? 0}
-          </div>
-        </div>
-
-        <div className="grid gap-3">
-          {teamSummaries.map((team) => (
-            <div
-              key={team.id}
-              className={cn('rounded-lg border p-4', team.className)}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="type-action flex min-w-0 items-center gap-2">
-                  <span className={cn('size-3 rounded-full', team.dotClassName)} />
-                  <span className="truncate">{t(team.nameKey)}</span>
-                </div>
-                <div className="type-metric-md">
-                  {team.score}
-                </div>
-              </div>
-              <div className="type-ui mt-1 tabular-nums">
-                {t('scoreboard.memberCount', { count: team.memberCount })}
-              </div>
-            </div>
-          ))}
-          {unassignedScore > 0 && (
-            <div className="rounded-lg border bg-card p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="type-action">{t('scoreboard.noTeam')}</div>
-                <div className="type-metric-md">
-                  {unassignedScore}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-lg border bg-card p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="type-label text-muted-foreground">
-                {t('scoreboard.total')}
-              </p>
-              <div className="type-metric-md">
-                {totalScore}
-              </div>
-            </div>
-            {lastEvent && (
-              <div className="min-w-0 text-right">
-                <p className="type-label text-muted-foreground">
-                  {t('scoreboard.lastChange')}
-                </p>
-                <div className="type-action truncate">
-                  {lastEvent.playerName} {formatSignedNumber(lastEvent.delta)}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </aside>
-    </div>
-  )
-}
-
 export function ScoreboardPage() {
-  const { t } = useI18n()
-  const {
-    addPlayer,
-    changeScore,
-    error,
-    isLoading,
-    leader,
-    players,
-    recentEvents,
-    removePlayer,
-    resetScores,
-    sortedPlayers,
-    teamSummaries,
-    totalScore,
-    unassignedPlayers,
-    unassignedScore,
-    undoLastScoreChange,
-    updatePlayerName,
-    updatePlayerTeam,
-  } = useScoreboard()
-  const scoreboardTitle = t('app.scoreboard.title')
+  const { formatNumber, t } = useI18n()
+  const scoreboard = useScoreboard()
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const appTitle = t('app.scoreboard.title')
+  const scoresByTargetId = useMemo(
+    () => new Map(scoreboard.standings.map((standing) => [standing.target.id, standing.score])),
+    [scoreboard.standings],
+  )
 
-  const handleChangeScore = async (playerId: string, delta: number) => {
-    const result = await changeScore(playerId, delta)
+  const handleRemovePlayer = async (playerId: string) => {
+    const result = await scoreboard.removePlayer(playerId)
 
-    if (result === 'saved') {
-      toast.success(t('scoreboard.saved', { delta: formatSignedNumber(delta) }))
-      return
+    if (result === 'minimum') {
+      toast.error(t('scoreboard.error.minimumPlayers'))
+    } else if (result === 'scored') {
+      toast.error(t('scoreboard.error.targetHasBookings'))
+    } else {
+      toast.success(t('scoreboard.playerRemoved'))
     }
-
-    if (result === 'blocked') {
-      toast.error(t('scoreboard.error.scoreBelowZero'))
-      return
-    }
-
-    toast.error(t('scoreboard.error.notFound'))
   }
 
-  const handleUndo = async () => {
-    const result = await undoLastScoreChange()
+  const handleRemoveTeam = async (teamId: string) => {
+    const result = await scoreboard.removeTeam(teamId)
 
-    if (result === 'undone') {
-      toast.success(t('scoreboard.undoSuccess'))
-      return
+    if (result === 'minimum') {
+      toast.error(t('scoreboard.error.minimumTeams'))
+    } else if (result === 'scored') {
+      toast.error(t('scoreboard.error.targetHasBookings'))
+    } else {
+      toast.success(t('scoreboard.teamRemoved'))
     }
+  }
 
-    if (result === 'empty') {
-      toast.error(t('scoreboard.error.noHistory'))
-      return
+  const handleScore = async (targetId: string, delta: number) => {
+    const didSave = await scoreboard.addScore(targetId, delta)
+
+    if (didSave) {
+      toast.success(
+        t('scoreboard.scoreSaved', {
+          delta: `${delta > 0 ? '+' : ''}${formatNumber(delta)}`,
+        }),
+      )
+    } else {
+      toast.error(t('scoreboard.error.invalidDelta'))
     }
-
-    toast.error(t('scoreboard.error.lastPlayerMissing'))
   }
 
   return (
     <AppPage width="wide">
-      <section className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <AppPageTitle Icon={ListOrdered} title={scoreboardTitle} />
-        </div>
+      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <AppPageTitle Icon={ListOrdered} title={appTitle} />
+        <PresenterLauncher
+          appTitle={appTitle}
+          views={[
+            {
+              id: 'stand',
+              label: t('scoreboard.currentStand'),
+              Icon: Trophy,
+              render: () => <ScoreboardPresenter standings={scoreboard.standings} />,
+            },
+          ]}
+        />
+      </section>
 
-        <div className="flex flex-wrap gap-2">
-          <PresenterLauncher
-            appTitle={scoreboardTitle}
-            views={[
-              {
-                id: 'ranking',
-                label: t('scoreboard.ranking'),
-                Icon: Trophy,
-                render: () => (
-                  <ScoreboardPresenter
-                    leader={leader}
-                    recentEvents={recentEvents}
-                    sortedPlayers={sortedPlayers}
-                    teamSummaries={teamSummaries}
-                    totalScore={totalScore}
-                    unassignedScore={unassignedScore}
-                  />
-                ),
-              },
-            ]}
-          />
-          <Button
-            variant="outline"
-            disabled={recentEvents.length === 0}
-            onClick={handleUndo}
-          >
-            <Undo2 className="size-4" />
-            Undo
-          </Button>
-          <AppResetButton
-            title={t('scoreboard.resetTitle')}
-            description={t('scoreboard.resetDescription')}
-            onConfirm={async () => {
-              await resetScores()
-              toast.success(t('scoreboard.resetSuccess'))
+      {scoreboard.error && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle>{t('common.syncError')}</CardTitle>
+            <CardDescription>{scoreboard.error.message}</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      <Card>
+        <CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div className="min-w-0">
+            <div className="type-caption text-muted-foreground">
+              {t('scoreboard.activeScoring')}
+            </div>
+            <InlineTextEdit
+              ariaLabel={t('scoreboard.scoringNameAria')}
+              className="type-section-title py-1"
+              fallback={t('scoreboard.scoringFallback')}
+              inputClassName="type-section-title h-11"
+              value={scoreboard.activeScoring.name}
+              onSave={(name) => scoreboard.updateScoringName(scoreboard.activeScoring.id, name)}
+            />
+          </div>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            {scoreboard.isLoading && <Badge variant="outline">{t('common.syncing')}</Badge>}
+            <ModeToggle
+              disabled={scoreboard.activeEvents.length > 0}
+              mode={scoreboard.activeScoring.mode}
+              onChange={async (mode) => {
+                const didChange = await scoreboard.changeMode(mode)
+                if (!didChange) toast.error(t('scoreboard.error.modeLocked'))
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {scoreboard.targets.length >= 3 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="size-5 text-primary" />
+              {t('scoreboard.currentStand')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RankingBars standings={scoreboard.standings} />
+          </CardContent>
+        </Card>
+      )}
+
+      <section className="grid gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="type-section-title flex items-center gap-2">
+            <UsersRound className="size-5 text-primary" />
+            {scoreboard.activeScoring.mode === 'teams'
+              ? t('scoreboard.teams')
+              : t('scoreboard.players')}
+          </h2>
+          <Badge variant="outline">{scoreboard.targets.length}</Badge>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {scoreboard.targets.map((target) => {
+            const memberNames = target.memberIds
+              .map((memberId) => scoreboard.players.find((player) => player.id === memberId)?.name)
+              .filter((name): name is string => Boolean(name))
+
+            return (
+              <ScoreTargetCard
+                key={target.id}
+                target={target}
+                score={scoresByTargetId.get(target.id) ?? 0}
+                memberNames={memberNames}
+                onScore={(delta) => handleScore(target.id, delta)}
+                onNameChange={(name) =>
+                  target.type === 'team'
+                    ? scoreboard.updateTeam(target.id, { name })
+                    : scoreboard.updatePlayer(target.id, { name })
+                }
+                onColorChange={(color) =>
+                  target.type === 'team'
+                    ? scoreboard.updateTeam(target.id, { color })
+                    : scoreboard.updatePlayer(target.id, { color })
+                }
+                onRemove={() =>
+                  target.type === 'team'
+                    ? handleRemoveTeam(target.id)
+                    : handleRemovePlayer(target.id)
+                }
+              />
+            )
+          })}
+          <AddCard
+            label={
+              scoreboard.activeScoring.mode === 'teams'
+                ? t('scoreboard.addTeam')
+                : t('scoreboard.addPlayer')
+            }
+            onClick={async () => {
+              if (scoreboard.activeScoring.mode === 'teams') {
+                await scoreboard.addTeam()
+                toast.success(t('scoreboard.teamAdded'))
+              } else {
+                await scoreboard.addPlayer()
+                toast.success(t('scoreboard.playerAdded'))
+              }
             }}
           />
         </div>
       </section>
 
-      {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-
-      <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="size-5 text-primary" />
-                {t('scoreboard.teamScores')}
-              </CardTitle>
-              {isLoading && (
-                <CardDescription>{t('common.syncing')}</CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="rounded-lg bg-secondary p-4">
-                <div className="type-ui text-muted-foreground">
-                  {t('scoreboard.leaderWithName', {
-                    name: leader ? leader.name : '-',
-                  })}
-                </div>
-                <div className="type-metric-lg">
-                  {leader?.score ?? 0}
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                {teamSummaries.map((team) => (
-                  <div
-                    key={team.id}
-                    className={cn('rounded-lg border p-4', team.className)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="type-action flex min-w-0 items-center gap-2">
-                        <span
-                          className={cn(
-                            'size-3 shrink-0 rounded-full',
-                            team.dotClassName,
-                          )}
-                        />
-                        <span className="min-w-0 truncate">{t(team.nameKey)}</span>
-                      </div>
-                      <div className="type-metric-sm">
-                        {team.score}
-                      </div>
-                    </div>
-                    <div className="type-ui mt-1 tabular-nums">
-                      {t('scoreboard.memberCount', { count: team.memberCount })}
-                    </div>
-                  </div>
-                ))}
-
-                {unassignedPlayers.length > 0 && (
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="type-action">{t('scoreboard.noTeam')}</div>
-                      <div className="type-metric-sm">
-                        {unassignedScore}
-                      </div>
-                    </div>
-                    <div className="type-ui mt-1 text-muted-foreground tabular-nums">
-                      {t('scoreboard.memberCount', {
-                        count: unassignedPlayers.length,
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="type-ui rounded-lg border p-3">
-                <div className="text-muted-foreground">{t('scoreboard.total')}</div>
-                <div className="type-metric-sm">
-                  {totalScore}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <History className="size-5 text-primary" />
-                {t('common.history')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RecentEvents events={recentEvents} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {scoreboard.activeScoring.mode === 'teams' && (
+        <section className="grid gap-4">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="type-section-title flex items-center gap-2">
               <UsersRound className="size-5 text-primary" />
-              {t('scoreboard.people')}
+              {t('scoreboard.players')}
             </h2>
-            <Button
-              onClick={async () => {
-                await addPlayer()
-                toast.success(t('scoreboard.personAdded'))
-              }}
-            >
-              <Plus className="size-4" />
-              {t('scoreboard.person')}
-            </Button>
+            <Badge variant="outline">{scoreboard.players.length}</Badge>
           </div>
-          <Separator />
-          <div className="grid gap-4 sm:grid-cols-2">
-            {players.map((player) => (
-              <PlayerCard
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {scoreboard.players.map((player) => (
+              <RosterPlayerCard
                 key={player.id}
                 player={player}
-                score={player.score}
-                onDecrement={() => handleChangeScore(player.id, -1)}
-                onIncrement={() => handleChangeScore(player.id, 1)}
-                onIncrementLarge={() => handleChangeScore(player.id, 5)}
-                onNameChange={(name) => updatePlayerName(player.id, name)}
-                onRemove={async () => {
-                  await removePlayer(player.id)
-                  toast.success(t('scoreboard.personRemoved', { name: player.name }))
-                }}
-                onTeamChange={(teamId) => updatePlayerTeam(player.id, teamId)}
+                teams={scoreboard.teams}
+                onNameChange={(name) => scoreboard.updatePlayer(player.id, { name })}
+                onColorChange={(color) => scoreboard.updatePlayer(player.id, { color })}
+                onTeamChange={(teamId) => scoreboard.updatePlayer(player.id, { teamId })}
+                onRemove={() => handleRemovePlayer(player.id)}
               />
             ))}
-            {players.length === 0 && (
-              <Card className="border-dashed">
-                <CardContent className="flex min-h-64 items-center justify-center p-6">
-                  <Button
-                    className="h-24 w-full flex-col gap-2"
-                    variant="outline"
-                    onClick={async () => {
-                      await addPlayer()
-                      toast.success(t('scoreboard.personAdded'))
-                    }}
-                  >
-                    <Plus className="size-6" />
-                    {t('scoreboard.addPerson')}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            <AddCard
+              label={t('scoreboard.addPlayer')}
+              onClick={async () => {
+                await scoreboard.addPlayer()
+                toast.success(t('scoreboard.playerAdded'))
+              }}
+            />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              aria-expanded={isHistoryOpen}
+              onClick={() => setIsHistoryOpen((current) => !current)}
+            >
+              {isHistoryOpen ? (
+                <ChevronDown className="size-4 shrink-0" />
+              ) : (
+                <ChevronRight className="size-4 shrink-0" />
+              )}
+              <History className="size-5 shrink-0 text-primary" />
+              <span className="type-action">{t('common.history')}</span>
+              <Badge variant="secondary">{scoreboard.activeEvents.length}</Badge>
+            </button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                disabled={scoreboard.activeEvents.length === 0}
+                onClick={async () => {
+                  const didUndo = await scoreboard.undoLastScore()
+                  if (didUndo) toast.success(t('scoreboard.undoSuccess'))
+                }}
+              >
+                <Undo2 className="size-4" />
+                {t('scoreboard.undo')}
+              </Button>
+              <ConfirmButton
+                title={t('scoreboard.archiveRestartTitle')}
+                description={t('scoreboard.archiveRestartDescription')}
+                confirmLabel={t('scoreboard.archiveRestartConfirm')}
+                onConfirm={async () => {
+                  const didArchive = await scoreboard.archiveAndRestart()
+                  if (didArchive) {
+                    setIsHistoryOpen(false)
+                    toast.success(t('scoreboard.archiveRestartSuccess'))
+                  }
+                }}
+                trigger={
+                  <Button disabled={scoreboard.activeEvents.length === 0}>
+                    <RotateCcw className="size-4" />
+                    {t('scoreboard.archiveRestart')}
+                  </Button>
+                }
+              />
+            </div>
+          </div>
+        </CardHeader>
+        {isHistoryOpen && (
+          <CardContent>
+            <HistoryList history={scoreboard.history} />
+          </CardContent>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 text-left"
+            aria-expanded={isArchiveOpen}
+            onClick={() => setIsArchiveOpen((current) => !current)}
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <Archive className="size-5 shrink-0 text-primary" />
+              <span className="type-action">{t('scoreboard.oldScorings')}</span>
+              <Badge variant="secondary">{scoreboard.archiveViews.length}</Badge>
+            </span>
+            <ChevronDown
+              className={cn(
+                'size-4 shrink-0 text-muted-foreground transition-transform',
+                isArchiveOpen && 'rotate-180',
+              )}
+            />
+          </button>
+        </CardHeader>
+        {isArchiveOpen && (
+          <CardContent className="grid gap-3">
+            {scoreboard.archiveViews.length === 0 ? (
+              <div className="rounded-md border border-dashed p-6 text-center text-muted-foreground">
+                {t('scoreboard.emptyArchive')}
+              </div>
+            ) : (
+              scoreboard.archiveViews.map((archive) => (
+                <ArchiveCard
+                  key={archive.scoring.id}
+                  archive={archive}
+                  onRename={(name) => scoreboard.updateScoringName(archive.scoring.id, name)}
+                  onDelete={async () => {
+                    await scoreboard.deleteArchivedScoring(archive.scoring.id)
+                    toast.success(t('scoreboard.archiveDeleted'))
+                  }}
+                />
+              ))
+            )}
+          </CardContent>
+        )}
+      </Card>
     </AppPage>
   )
 }

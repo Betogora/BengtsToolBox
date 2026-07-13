@@ -8,6 +8,15 @@ describe('firebase lobby paths', () => {
     expect(firebasePaths.scoreboardPlayers()).toBe(
       'apps/scoreboard/sessions/default/players',
     )
+    expect(firebasePaths.scoreboardTeams()).toBe(
+      'apps/scoreboard/sessions/default/teams',
+    )
+    expect(firebasePaths.scoreboardScorings()).toBe(
+      'apps/scoreboard/sessions/default/scorings',
+    )
+    expect(firebasePaths.scoreboardEvents()).toBe(
+      'apps/scoreboard/sessions/default/events',
+    )
     expect(firebasePaths.swissTournamentsState()).toBe(
       'apps/swiss-tournaments/sessions/default/state/default',
     )
@@ -19,6 +28,15 @@ describe('firebase lobby paths', () => {
     )
     expect(firebasePaths.scoreboardPlayers('ABC234')).toBe(
       'lobbies/ABC234/apps/scoreboard/players',
+    )
+    expect(firebasePaths.scoreboardTeams('ABC234')).toBe(
+      'lobbies/ABC234/apps/scoreboard/teams',
+    )
+    expect(firebasePaths.scoreboardScorings('ABC234')).toBe(
+      'lobbies/ABC234/apps/scoreboard/scorings',
+    )
+    expect(firebasePaths.scoreboardEvents('ABC234')).toBe(
+      'lobbies/ABC234/apps/scoreboard/events',
     )
     expect(firebasePaths.swissTournamentsTournaments('ABC234')).toBe(
       'lobbies/ABC234/apps/swiss-tournaments/tournaments',

@@ -1,31 +1,74 @@
-import type { TeamId } from '@/apps/shared/teams'
+export type ScoreboardMode = 'individual' | 'teams'
 
 export type ScoreboardPlayer = {
   id: string
   name: string
-  score: number
-  teamId: TeamId | null
+  color: string
   position: number
-  updatedBy?: string
+  teamId: string | null
   lastUpdatedBy?: string
 }
 
-export type ScoreboardEvent = {
+export type ScoreboardTeam = {
   id: string
-  playerId: string
-  playerName: string
-  playerColor: string
-  playerTeamId: TeamId | null
-  delta: number
-  previousScore: number
-  nextScore: number
-  createdAtClientIso: string
+  name: string
+  color: string
   position: number
-  updatedBy?: string
+  lastUpdatedBy?: string
+}
+
+export type ScoreboardScoringStatus = 'active' | 'archived'
+
+export type ScoreboardScoring = {
+  id: string
+  name: string
+  mode: ScoreboardMode
+  status: ScoreboardScoringStatus
+  position: number
+  createdAtClientIso: string
+  archivedAtClientIso: string | null
+  playerSnapshot: ScoreboardPlayer[]
+  teamSnapshot: ScoreboardTeam[]
+  lastUpdatedBy?: string
+}
+
+export type ScoreTargetType = 'player' | 'team'
+
+export type ScoreboardScoreEvent = {
+  id: string
+  scoringId: string
+  targetType: ScoreTargetType
+  targetId: string
+  targetName: string
+  targetColor: string
+  delta: number
+  createdAtClientIso: string
+  createdAtClientMs: number
+  lastUpdatedBy?: string
 }
 
 export type ScoreboardState = {
-  events: ScoreboardEvent[]
-  lastScoreEventId: string | null
+  schemaVersion: 2
+  activeScoringId: string
   updatedBy?: string
+}
+
+export type ScoreboardTarget = {
+  id: string
+  name: string
+  color: string
+  position: number
+  type: ScoreTargetType
+  memberIds: string[]
+}
+
+export type ScoreboardStanding = {
+  target: ScoreboardTarget
+  score: number
+  rank: number
+}
+
+export type ScoreboardHistoryEntry = {
+  event: ScoreboardScoreEvent
+  resultingScore: number
 }

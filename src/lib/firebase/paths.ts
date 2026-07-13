@@ -65,6 +65,27 @@ export const firebasePaths = {
     ),
   scoreboardPlayer: (lobbyId: string, playerId: string) =>
     `${firebasePaths.scoreboardPlayers(lobbyId)}/${playerId}`,
+  scoreboardTeams: (lobbyId = 'default') =>
+    scopedOrLegacy(
+      lobbyId,
+      'scoreboard',
+      'apps/scoreboard/sessions/default/teams',
+      'teams',
+    ),
+  scoreboardScorings: (lobbyId = 'default') =>
+    scopedOrLegacy(
+      lobbyId,
+      'scoreboard',
+      'apps/scoreboard/sessions/default/scorings',
+      'scorings',
+    ),
+  scoreboardEvents: (lobbyId = 'default') =>
+    scopedOrLegacy(
+      lobbyId,
+      'scoreboard',
+      'apps/scoreboard/sessions/default/events',
+      'events',
+    ),
   progressDashboardState: (lobbyId = 'default') =>
     scopedOrLegacy(
       lobbyId,
