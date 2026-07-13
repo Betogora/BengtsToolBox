@@ -9,6 +9,7 @@ import type {
 } from '@/apps/swiss-tournaments/types'
 
 const MARIO_KART_LOBBY_SIZE = 4
+const MARIO_KART_COMBINATION_LIMIT = 25_000
 export const MARIO_KART_MAX_PLACEMENT = 24
 
 const pointsByScoringCount: Record<number, number[]> = {
@@ -59,6 +60,29 @@ type PlanningCandidate = {
   player: Player
   scoringCycleNumber: number
 }
+
+type PlanningCandidateScoreFacts = {
+  candidate: PlanningCandidate
+  scoreIndex: number
+  entry: MarioKartLedgerEntry
+  points: number
+  averagePlacement: number
+  fillIns: number
+  fillInRecencyPenalty: number
+  avoided: number
+  initialSeed: number
+}
+
+type PlanningGroupScore = readonly [
+  cycleTotal: number,
+  pointsRange: number,
+  repetitions: number,
+  fillIns: number,
+  fillInRecencyPenalty: number,
+  averagePlacementRange: number,
+  avoided: number,
+  initialSeedTotal: number,
+]
 
 function roundPlayerKey(roundNumber: number, playerId: string) {
   return `${roundNumber}:${playerId}`
@@ -623,33 +647,7 @@ function nextOpenCycle(
   return null
 }
 
-function combinations<T>(values: T[], count: number, limit = 25_000) {
-  const result: T[][] = []
-
-  function visit(start: number, selected: T[]) {
-    if (result.length >= limit) {
-      return
-    }
-
-    if (selected.length === count) {
-      result.push(selected)
-      return
-    }
-
-    for (let index = start; index < values.length; index += 1) {
-      visit(index + 1, [...selected, values[index]])
-    }
-  }
-
-  if (count === 0) {
-    return [[]]
-  }
-
-  visit(0, [])
-  return result
-}
-
-function compareScores(left: number[], right: number[]) {
+function compareScores(left: readonly number[], right: readonly number[]) {
   for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
     const difference = (left[index] ?? 0) - (right[index] ?? 0)
 
@@ -661,25 +659,54 @@ function compareScores(left: number[], right: number[]) {
   return 0
 }
 
-function groupScore(
+function preparePlanningCandidateScores(
   candidates: PlanningCandidate[],
   ledger: MarioKartLedger,
   targetCycle: number,
   avoidedPlayerIds: Set<string>,
 ) {
-  const entries = candidates.map(
-    (candidate) => ledger.byPlayerId.get(candidate.player.id)!,
+  const facts = candidates.map((candidate, scoreIndex) => {
+    const entry = ledger.byPlayerId.get(candidate.player.id)!
+    const isFillIn = candidate.scoringCycleNumber > targetCycle
+
+    return {
+      candidate,
+      scoreIndex,
+      entry,
+      points: entry.points,
+      averagePlacement:
+        averagePlacement(entry) ?? Number.POSITIVE_INFINITY,
+      fillIns: isFillIn ? entry.fillIns : 0,
+      fillInRecencyPenalty: isFillIn
+        ? Math.max(0, 100 - (entry.lastFillInRound ?? -100))
+        : 0,
+      avoided: avoidedPlayerIds.has(candidate.player.id) ? 1 : 0,
+      initialSeed: candidate.player.initialSeed,
+    } satisfies PlanningCandidateScoreFacts
+  })
+  const repetitions = facts.map((left) =>
+    facts.map(
+      (right) => left.entry.opponents.get(right.candidate.player.id) ?? 0,
+    ),
   )
-  const points = entries.map((entry) => entry.points)
-  const averages = entries.map(
-    (entry) => averagePlacement(entry) ?? Number.POSITIVE_INFINITY,
-  )
+
+  return { facts, repetitions }
+}
+
+function groupScore(
+  candidates: PlanningCandidateScoreFacts[],
+  repetitionsByScoreIndex: number[][],
+): PlanningGroupScore {
+  const points = candidates.map((candidate) => candidate.points)
+  const averages = candidates.map((candidate) => candidate.averagePlacement)
   let repetitions = 0
 
   for (let left = 0; left < candidates.length; left += 1) {
     for (let right = left + 1; right < candidates.length; right += 1) {
       repetitions +=
-        entries[left].opponents.get(candidates[right].player.id) ?? 0
+        repetitionsByScoreIndex[candidates[left].scoreIndex][
+          candidates[right].scoreIndex
+        ]
     }
   }
 
@@ -687,39 +714,21 @@ function groupScore(
 
   return [
     candidates.reduce(
-      (sum, candidate) => sum + candidate.scoringCycleNumber,
+      (sum, candidate) => sum + candidate.candidate.scoringCycleNumber,
       0,
     ),
     Math.max(...points) - Math.min(...points),
     repetitions,
+    candidates.reduce((sum, candidate) => sum + candidate.fillIns, 0),
     candidates.reduce(
-      (sum, candidate) =>
-        sum +
-        (candidate.scoringCycleNumber > targetCycle
-          ? ledger.byPlayerId.get(candidate.player.id)!.fillIns
-          : 0),
-      0,
-    ),
-    candidates.reduce(
-      (sum, candidate) =>
-        sum +
-        (candidate.scoringCycleNumber > targetCycle
-          ? Math.max(
-              0,
-              100 -
-                (ledger.byPlayerId.get(candidate.player.id)!
-                  .lastFillInRound ??
-                  -100),
-            )
-          : 0),
+      (sum, candidate) => sum + candidate.fillInRecencyPenalty,
       0,
     ),
     finiteAverages.length > 1
       ? Math.max(...finiteAverages) - Math.min(...finiteAverages)
       : 0,
-    candidates.filter((candidate) => avoidedPlayerIds.has(candidate.player.id))
-      .length,
-    candidates.reduce((sum, candidate) => sum + candidate.player.initialSeed, 0),
+    candidates.reduce((sum, candidate) => sum + candidate.avoided, 0),
+    candidates.reduce((sum, candidate) => sum + candidate.initialSeed, 0),
   ]
 }
 
@@ -730,17 +739,62 @@ function chooseBestCandidates(
   ledger: MarioKartLedger,
   targetCycle: number,
   avoidedPlayerIds: Set<string>,
-) {
-  const choices = combinations(pool, count)
+): PlanningCandidate[] {
+  if (count < 0 || count > pool.length) {
+    return []
+  }
 
-  return (
-    choices.sort((left, right) =>
-      compareScores(
-        groupScore([...fixed, ...left], ledger, targetCycle, avoidedPlayerIds),
-        groupScore([...fixed, ...right], ledger, targetCycle, avoidedPlayerIds),
-      ),
-    )[0] ?? []
+  const prepared = preparePlanningCandidateScores(
+    [...fixed, ...pool],
+    ledger,
+    targetCycle,
+    avoidedPlayerIds,
   )
+  const fixedFacts = prepared.facts.slice(0, fixed.length)
+  const poolFacts = prepared.facts.slice(fixed.length)
+  const selected: PlanningCandidateScoreFacts[] = []
+  let evaluatedGroups = 0
+  let bestScore: PlanningGroupScore | null = null
+  let bestCandidates: PlanningCandidate[] | null = null
+
+  function considerSelection() {
+    const score = groupScore(
+      [...fixedFacts, ...selected],
+      prepared.repetitions,
+    )
+    evaluatedGroups += 1
+
+    if (bestScore === null || compareScores(score, bestScore) < 0) {
+      bestScore = score
+      bestCandidates = selected.map((candidate) => candidate.candidate)
+    }
+
+    return evaluatedGroups >= MARIO_KART_COMBINATION_LIMIT
+  }
+
+  function visit(start: number): boolean {
+    if (selected.length === count) {
+      return considerSelection()
+    }
+
+    const remainingSlots = count - selected.length
+    const lastStartIndex = poolFacts.length - remainingSlots
+
+    for (let index = start; index <= lastStartIndex; index += 1) {
+      selected.push(poolFacts[index])
+      const limitReached = visit(index + 1)
+      selected.pop()
+
+      if (limitReached) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  visit(0)
+  return bestCandidates ?? []
 }
 
 function chooseExtras(

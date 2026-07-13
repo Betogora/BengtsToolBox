@@ -9,18 +9,6 @@ Die Größenangaben sind relativ: **klein** ist ein enger Änderungssatz, **mitt
 
 ## Aktive Abarbeitungsreihenfolge
 
-### 5. Mario-Kart-Planung am Kombinationslimit optimieren — mittel
-
-**Warum:** Die reproduzierbare Chromium-Baseline weist nur für `mario-kart-planning-30-combination-limit` Long Tasks nach. Bei 30 verfügbaren Fahrern und der Grenze von 25.000 Kombinationen lagen alle zehn Messläufe über 50 Millisekunden; die eingecheckte Referenz dokumentiert rund 100 Millisekunden Median und 121,6 Millisekunden p95. Swiss-Paarung, Round-Robin-Reparatur und beide Ranglistenneuberechnungen blieben ohne Long Task.
-
-- [ ] Kombinationen nicht vollständig materialisieren und anschließend sortieren, sondern den besten Kandidaten während einer begrenzten Traversierung bestimmen.
-- [ ] Bewertungsanteile, die für dieselbe Kandidatengruppe wiederholt berechnet werden, einmalig vorbereiten oder zwischenspeichern.
-- [ ] Auswahlreihenfolge und fachliche Ergebnissignatur `created:1:51ab9c87` unverändert halten; die bestehenden Mario-Kart-Golden-Cases bleiben maßgeblich.
-- [ ] Die Browser-Baseline erneut auf derselben Umgebung ausführen und erst bei weiterhin nachgewiesenen Long Tasks einen TypeScript-Web-Worker prüfen.
-- [ ] Bundle-Baselines nicht wegen der Laufzeitoptimierung anheben; eine neue Laufzeitreferenz erst nach dem nachgewiesenen Gewinn übernehmen.
-
-**Fertig, wenn:** das 30-Fahrer-Szenario in zehn Messläufen keine Long Tasks mehr erzeugt, die fachliche Signatur unverändert bleibt und Tests, Build sowie alle übrigen Performance-Szenarien keine Regression zeigen.
-
 ### 6. Browser- und Accessibility-Regressionen automatisieren — mittel bis groß
 
 **Warum:** Viele Oberflächen sind mobil, tabellarisch, fullscreen- oder pointerintensiv; derzeit werden diese Risiken überwiegend manuell geprüft.

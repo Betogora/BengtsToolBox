@@ -220,8 +220,8 @@ function ScoreOverview() {
             <colgroup>
               <col className="hidden w-0 sm:table-column sm:w-14" />
               <col />
-              <col className="w-16 sm:w-32" />
-              <col className="w-16 sm:w-32" />
+              <col className="raab-score-column" />
+              <col className="raab-score-column" />
             </colgroup>
             <TableHeader>
               <TableHead className="hidden text-center sm:table-cell">#</TableHead>
@@ -231,18 +231,17 @@ function ScoreOverview() {
                   key={player.id}
                   className="raab-player-score-head text-center"
                 >
-                  <div className="raab-player-name-editor flex min-w-0 justify-center">
-                    <InlineTextEdit
-                      ariaLabel={`${player.name} Name`}
-                      className="max-w-full truncate"
-                      fallback={t('raab.playerFallback', {
-                        number: player.position,
-                      })}
-                      inputClassName="h-8 text-center"
-                      value={player.name}
-                      onSave={(name) => updatePlayerName(player.id, name)}
-                    />
-                  </div>
+                  <InlineTextEdit
+                    ariaLabel={`${player.name} Name`}
+                    className="raab-player-name-trigger"
+                    fallback={t('raab.playerFallback', {
+                      number: player.position,
+                    })}
+                    inputClassName="h-8 text-center"
+                    triggerMode="label"
+                    value={player.name}
+                    onSave={(name) => updatePlayerName(player.id, name)}
+                  />
                 </TableHead>
               ))}
             </TableHeader>
@@ -457,8 +456,8 @@ function ReadOnlyArchiveTable({
       <colgroup>
         <col className="hidden w-0 sm:table-column sm:w-14" />
         <col />
-        <col className="w-16 sm:w-32" />
-        <col className="w-16 sm:w-32" />
+        <col className="raab-score-column" />
+        <col className="raab-score-column" />
       </colgroup>
       <TableHeader>
         <TableHead className="hidden text-center sm:table-cell">#</TableHead>
@@ -468,7 +467,7 @@ function ReadOnlyArchiveTable({
             key={player.id}
             className="raab-player-score-head text-center"
           >
-            {player.name}
+            <span className="block truncate">{player.name}</span>
           </TableHead>
         ))}
       </TableHeader>

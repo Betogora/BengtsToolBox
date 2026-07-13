@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-13T12:51:36.407Z",
+  "generatedAt": "2026-07-13T13:19:37.111Z",
   "environment": {
     "node": "v24.15.0",
     "vite": "8.1.4",
@@ -20,36 +20,36 @@
     {
       "id": "swiss-pairing-32-round-9",
       "signature": "16:4c91657b",
-      "medianMilliseconds": 7,
-      "p95Milliseconds": 7.9,
-      "maximumMilliseconds": 7.9,
+      "medianMilliseconds": 6.3,
+      "p95Milliseconds": 9.4,
+      "maximumMilliseconds": 9.4,
       "longTaskCount": 0,
       "longTaskDurationMilliseconds": 0
     },
     {
       "id": "round-robin-repair-16-state-limit",
       "signature": "8:92b03b32",
-      "medianMilliseconds": 3.9,
-      "p95Milliseconds": 4.5,
-      "maximumMilliseconds": 4.5,
+      "medianMilliseconds": 3.2,
+      "p95Milliseconds": 3.6,
+      "maximumMilliseconds": 3.6,
       "longTaskCount": 0,
       "longTaskDurationMilliseconds": 0
     },
     {
       "id": "mario-kart-planning-30-combination-limit",
       "signature": "created:1:51ab9c87",
-      "medianMilliseconds": 100,
-      "p95Milliseconds": 121.6,
-      "maximumMilliseconds": 121.6,
-      "longTaskCount": 10,
-      "longTaskDurationMilliseconds": 1033
+      "medianMilliseconds": 4.1,
+      "p95Milliseconds": 4.3,
+      "maximumMilliseconds": 4.3,
+      "longTaskCount": 0,
+      "longTaskDurationMilliseconds": 0
     },
     {
       "id": "swiss-standings-32-rounds-9",
       "signature": "32:d89a0f8a",
-      "medianMilliseconds": 0.8,
-      "p95Milliseconds": 1.3,
-      "maximumMilliseconds": 1.3,
+      "medianMilliseconds": 0.7,
+      "p95Milliseconds": 1.8,
+      "maximumMilliseconds": 1.8,
       "longTaskCount": 0,
       "longTaskDurationMilliseconds": 0
     },
@@ -57,8 +57,8 @@
       "id": "mario-kart-standings-32-cycles-8",
       "signature": "32:476a049c",
       "medianMilliseconds": 2.9,
-      "p95Milliseconds": 3.4,
-      "maximumMilliseconds": 3.4,
+      "p95Milliseconds": 3.8,
+      "maximumMilliseconds": 3.8,
       "longTaskCount": 0,
       "longTaskDurationMilliseconds": 0
     }

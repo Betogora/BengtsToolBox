@@ -12,6 +12,7 @@ export function InlineTextEdit({
   fallback,
   inputClassName,
   onSave,
+  triggerMode = 'label-with-icon',
   value,
 }: {
   ariaLabel: string
@@ -19,6 +20,7 @@ export function InlineTextEdit({
   fallback: string
   inputClassName?: string
   onSave: (value: string) => void | Promise<void>
+  triggerMode?: 'label' | 'label-with-icon'
   value: string
 }) {
   const { t } = useI18n()
@@ -41,6 +43,28 @@ export function InlineTextEdit({
           if (event.key === 'Escape') setIsEditing(false)
         }}
       />
+    )
+  }
+
+  if (triggerMode === 'label') {
+    return (
+      <button
+        type="button"
+        aria-label={t('common.editAria', { label: ariaLabel })}
+        className={cn(
+          'inline-flex min-w-0 items-center rounded-sm leading-tight transition-colors hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          className,
+        )}
+        onClick={() => setIsEditing(true)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            setIsEditing(true)
+          }
+        }}
+      >
+        <span className="block min-w-0 truncate">{displayValue}</span>
+      </button>
     )
   }
 

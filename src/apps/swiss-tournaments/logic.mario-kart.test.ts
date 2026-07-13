@@ -80,6 +80,31 @@ describe('Mario-Kart-Lobbyplanung', () => {
     },
   )
 
+  it('bewahrt am Kombinationslimit die deterministische Auswahlreihenfolge', () => {
+    const result = planNextMarioKartLobby(makeTournament('marioKart', 30))
+
+    expect(racerIds(result.tournament, 1)).toEqual(['p1', 'p2', 'p3', 'p4'])
+  })
+
+  it('begrenzt Gleichstandsauswahl auf die ersten 25.000 Kombinationen', () => {
+    const tournament = makeTournament('marioKart', 30)
+    tournament.players = tournament.players.map((player) => ({
+      ...player,
+      initialSeed: 1,
+    }))
+    const avoidedPlayerIds = new Set(
+      tournament.players.slice(0, 13).map((player) => player.id),
+    )
+    const result = planNextMarioKartLobby(tournament, avoidedPlayerIds)
+
+    expect(racerIds(result.tournament, 1)).toEqual([
+      'p1',
+      'p14',
+      'p15',
+      'p16',
+    ])
+  })
+
   it('reserviert Fahrer über alle aktiven Lobbys hinweg', () => {
     const first = createLobby(makeTournament('marioKart', 8))
     const second = createLobby(first)
