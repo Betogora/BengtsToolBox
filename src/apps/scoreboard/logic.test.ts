@@ -5,7 +5,9 @@ import {
   getScoreboardHistory,
   getScoreboardStandings,
   getScoreboardTargets,
+  hasTeamEvents,
   isValidScoreDelta,
+  sortScoreboardPlayers,
 } from '@/apps/scoreboard/logic'
 import type {
   ScoreboardPlayer,
@@ -41,6 +43,7 @@ function event(
   targetId: string,
   delta: number,
   createdAtClientMs: number,
+  creditedTeamId?: string | null,
 ): ScoreboardScoreEvent {
   return {
     id,
@@ -49,6 +52,7 @@ function event(
     targetId,
     targetName: targetId,
     targetColor: '#0D8E90',
+    ...(targetId.startsWith('player') ? { creditedTeamId: creditedTeamId ?? null } : {}),
     delta,
     createdAtClientIso: new Date(createdAtClientMs).toISOString(),
     createdAtClientMs,
@@ -82,8 +86,34 @@ describe('scoreboard v2 logic', () => {
     ])
   })
 
-  it('keeps team scores stable when a player changes teams', () => {
-    const teamEvents = [event('event-1', 'team-one', 7, 1)]
+  it('credits player events to both the player and the team captured at booking time', () => {
+    const scoringEvents = [
+      event('event-1', 'player-alex', 5, 1, 'team-one'),
+      event('event-2', 'team-one', 2, 2),
+      event('event-3', 'player-bela', -3, 3, 'team-two'),
+    ]
+    const playerStandings = getScoreboardStandings(
+      getScoreboardTargets('individual', players, teams),
+      scoringEvents,
+    )
+    const teamStandings = getScoreboardStandings(
+      getScoreboardTargets('teams', players, teams),
+      scoringEvents,
+    )
+
+    expect(playerStandings.map(({ target, score }) => [target.id, score])).toEqual([
+      ['player-alex', 5],
+      ['player-bela', -3],
+    ])
+    expect(teamStandings.map(({ target, score }) => [target.id, score])).toEqual([
+      ['team-one', 7],
+      ['team-three', 0],
+      ['team-two', -3],
+    ])
+  })
+
+  it('keeps credited team scores stable when a player changes teams', () => {
+    const teamEvents = [event('event-1', 'player-alex', 7, 1, 'team-one')]
     const before = getScoreboardStandings(
       getScoreboardTargets('teams', players, teams),
       teamEvents,
@@ -100,17 +130,90 @@ describe('scoreboard v2 logic', () => {
     expect(after.find(({ target }) => target.id === 'team-one')?.score).toBe(7)
   })
 
-  it('builds a latest-first history with the resulting score per target', () => {
+  it('does not add unassigned or legacy player events to a team score', () => {
+    const teamStandings = getScoreboardStandings(
+      getScoreboardTargets('teams', players, teams),
+      [
+        event('event-1', 'player-alex', 4, 1, null),
+        {
+          ...event('event-2', 'player-bela', 3, 2),
+          creditedTeamId: undefined,
+        },
+      ],
+    )
+
+    expect(teamStandings.every(({ score }) => score === 0)).toBe(true)
+  })
+
+  it('builds a latest-first history with personal and complete team totals', () => {
     const history = getScoreboardHistory([
-      event('event-1', 'player-alex', 5, 1),
-      event('event-2', 'player-bela', -2, 2),
-      event('event-3', 'player-alex', -1, 3),
+      event('event-1', 'player-alex', 5, 1, 'team-one'),
+      event('event-2', 'team-one', 2, 2),
+      event('event-3', 'player-alex', -1, 3, 'team-one'),
     ])
 
     expect(history.map(({ event: entry, resultingScore }) => [entry.id, resultingScore])).toEqual([
       ['event-3', 4],
-      ['event-2', -2],
+      ['event-2', 7],
       ['event-1', 5],
+    ])
+  })
+
+  it('recognizes direct and player-attributed team events', () => {
+    expect(hasTeamEvents([event('event-1', 'team-one', 1, 1)], 'team-one')).toBe(true)
+    expect(
+      hasTeamEvents(
+        [event('event-2', 'player-alex', 1, 2, 'team-one')],
+        'team-one',
+      ),
+    ).toBe(true)
+    expect(
+      hasTeamEvents([event('event-3', 'player-alex', 1, 3, null)], 'team-one'),
+    ).toBe(false)
+  })
+
+  it('sorts players by fixed team order, score, stable position, and unassigned last', () => {
+    const roster: ScoreboardPlayer[] = [
+      ...players,
+      {
+        id: 'player-cem',
+        name: 'Cem',
+        color: '#FAC889',
+        position: 3,
+        teamId: 'team-one',
+      },
+      {
+        id: 'player-dana',
+        name: 'Dana',
+        color: '#91B6BE',
+        position: 4,
+        teamId: null,
+      },
+      {
+        id: 'player-eli',
+        name: 'Eli',
+        color: '#B89ACB',
+        position: 5,
+        teamId: 'team-one',
+      },
+    ]
+    const standings = getScoreboardStandings(
+      getScoreboardTargets('individual', roster, teams),
+      [
+        event('event-1', 'player-alex', 2, 1, 'team-one'),
+        event('event-2', 'player-cem', 5, 2, 'team-one'),
+        event('event-3', 'player-bela', 9, 3, 'team-two'),
+        event('event-4', 'player-dana', 12, 4, null),
+        event('event-5', 'player-eli', 2, 5, 'team-one'),
+      ],
+    )
+
+    expect(sortScoreboardPlayers(roster, teams, standings).map((player) => player.id)).toEqual([
+      'player-cem',
+      'player-alex',
+      'player-eli',
+      'player-bela',
+      'player-dana',
     ])
   })
 

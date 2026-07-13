@@ -128,6 +128,15 @@ export function getScoreboardStandings(
   events.forEach((event) => {
     if (scores.has(event.targetId)) {
       scores.set(event.targetId, (scores.get(event.targetId) ?? 0) + event.delta)
+    } else if (
+      event.targetType === 'player' &&
+      event.creditedTeamId &&
+      scores.has(event.creditedTeamId)
+    ) {
+      scores.set(
+        event.creditedTeamId,
+        (scores.get(event.creditedTeamId) ?? 0) + event.delta,
+      )
     }
   })
 
@@ -149,10 +158,25 @@ export function getScoreboardStandings(
 export function getScoreboardHistory(
   events: ScoreboardScoreEvent[],
 ): ScoreboardHistoryEntry[] {
-  const scores = new Map<string, number>()
+  const playerScores = new Map<string, number>()
+  const teamScores = new Map<string, number>()
   const entries = events.map((event) => {
-    const resultingScore = (scores.get(event.targetId) ?? 0) + event.delta
-    scores.set(event.targetId, resultingScore)
+    if (event.targetType === 'player') {
+      const resultingScore = (playerScores.get(event.targetId) ?? 0) + event.delta
+      playerScores.set(event.targetId, resultingScore)
+
+      if (event.creditedTeamId) {
+        teamScores.set(
+          event.creditedTeamId,
+          (teamScores.get(event.creditedTeamId) ?? 0) + event.delta,
+        )
+      }
+
+      return { event, resultingScore }
+    }
+
+    const resultingScore = (teamScores.get(event.targetId) ?? 0) + event.delta
+    teamScores.set(event.targetId, resultingScore)
 
     return { event, resultingScore }
   })
@@ -166,4 +190,41 @@ export function isValidScoreDelta(value: number) {
 
 export function hasTargetEvents(events: ScoreboardScoreEvent[], targetId: string) {
   return events.some((event) => event.targetId === targetId)
+}
+
+export function hasTeamEvents(events: ScoreboardScoreEvent[], teamId: string) {
+  return events.some(
+    (event) =>
+      (event.targetType === 'team' && event.targetId === teamId) ||
+      event.creditedTeamId === teamId,
+  )
+}
+
+export function sortScoreboardPlayers(
+  players: ScoreboardPlayer[],
+  teams: ScoreboardTeam[],
+  standings: ScoreboardStanding[],
+) {
+  const teamPositions = new Map(teams.map((team) => [team.id, team.position]))
+  const playerScores = new Map(
+    standings
+      .filter((standing) => standing.target.type === 'player')
+      .map((standing) => [standing.target.id, standing.score]),
+  )
+
+  return [...players].sort((left, right) => {
+    const leftTeamPosition = left.teamId
+      ? (teamPositions.get(left.teamId) ?? Number.POSITIVE_INFINITY)
+      : Number.POSITIVE_INFINITY
+    const rightTeamPosition = right.teamId
+      ? (teamPositions.get(right.teamId) ?? Number.POSITIVE_INFINITY)
+      : Number.POSITIVE_INFINITY
+
+    return (
+      leftTeamPosition - rightTeamPosition ||
+      (playerScores.get(right.id) ?? 0) - (playerScores.get(left.id) ?? 0) ||
+      left.position - right.position ||
+      left.name.localeCompare(right.name)
+    )
+  })
 }

@@ -7,12 +7,14 @@ import {
   getScoreboardStandings,
   getScoreboardTargets,
   getScoringEvents,
+  hasTeamEvents,
   hasTargetEvents,
   isValidScoreDelta,
   normalizeScoreboardPlayer,
   normalizeScoreboardTeam,
   sanitizeScoreboardName,
   scoreboardSchemaVersion,
+  sortScoreboardPlayers,
 } from '@/apps/scoreboard/logic'
 import type {
   ScoreboardMode,
@@ -21,6 +23,7 @@ import type {
   ScoreboardScoring,
   ScoreboardState,
   ScoreboardTeam,
+  ScoreTargetType,
 } from '@/apps/scoreboard/types'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
@@ -121,6 +124,10 @@ function normalizeScoreEvent(event: ScoreboardScoreEvent): ScoreboardScoreEvent 
     ...event,
     targetType: event.targetType === 'team' ? 'team' : 'player',
     targetName: event.targetName?.trim() || '-',
+    creditedTeamId:
+      typeof event.creditedTeamId === 'string' && event.creditedTeamId
+        ? event.creditedTeamId
+        : null,
     delta: Math.trunc(Number(event.delta) || 0),
     createdAtClientIso:
       event.createdAtClientIso || new Date(createdAtClientMs).toISOString(),
@@ -284,13 +291,27 @@ export function useScoreboard(lobbyId?: string) {
     () => getScoringEvents(events, activeScoring.id),
     [activeScoring.id, events],
   )
-  const targets = useMemo(
-    () => getScoreboardTargets(activeScoring.mode, players, teams),
-    [activeScoring.mode, players, teams],
+  const playerTargets = useMemo(
+    () => getScoreboardTargets('individual', players, teams),
+    [players, teams],
   )
-  const standings = useMemo(
-    () => getScoreboardStandings(targets, activeEvents),
-    [activeEvents, targets],
+  const teamTargets = useMemo(
+    () => getScoreboardTargets('teams', players, teams),
+    [players, teams],
+  )
+  const playerStandings = useMemo(
+    () => getScoreboardStandings(playerTargets, activeEvents),
+    [activeEvents, playerTargets],
+  )
+  const teamStandings = useMemo(
+    () => getScoreboardStandings(teamTargets, activeEvents),
+    [activeEvents, teamTargets],
+  )
+  const targets = activeScoring.mode === 'teams' ? teamTargets : playerTargets
+  const standings = activeScoring.mode === 'teams' ? teamStandings : playerStandings
+  const rosterPlayers = useMemo(
+    () => sortScoreboardPlayers(players, teams, playerStandings),
+    [playerStandings, players, teams],
   )
   const history = useMemo(() => getScoreboardHistory(activeEvents), [activeEvents])
   const archivedScorings = useMemo(
@@ -384,7 +405,7 @@ export function useScoreboard(lobbyId?: string) {
 
   const removeTeam = async (teamId: string) => {
     if (teams.length <= 2) return 'minimum' as const
-    if (hasTargetEvents(activeEvents, teamId)) return 'scored' as const
+    if (hasTeamEvents(activeEvents, teamId)) return 'scored' as const
 
     await playersStore.saveItems(
       players.map((player) => ({
@@ -407,8 +428,14 @@ export function useScoreboard(lobbyId?: string) {
     return true
   }
 
-  const addScore = async (targetId: string, delta: number) => {
-    const target = targets.find((entry) => entry.id === targetId)
+  const addScore = async (
+    targetType: ScoreTargetType,
+    targetId: string,
+    delta: number,
+  ) => {
+    const target = (targetType === 'team' ? teamTargets : playerTargets).find(
+      (entry) => entry.id === targetId,
+    )
     const normalizedDelta = Math.trunc(delta)
 
     if (!target || !isValidScoreDelta(delta) || normalizedDelta !== delta) return false
@@ -421,6 +448,9 @@ export function useScoreboard(lobbyId?: string) {
       targetId: target.id,
       targetName: target.name,
       targetColor: target.color,
+      ...(target.type === 'player'
+        ? { creditedTeamId: players.find((player) => player.id === target.id)?.teamId ?? null }
+        : {}),
       delta: normalizedDelta,
       createdAtClientIso: now.toISOString(),
       createdAtClientMs: now.getTime(),
@@ -530,11 +560,14 @@ export function useScoreboard(lobbyId?: string) {
       scoringsStore.isRealtime &&
       eventsStore.isRealtime,
     players,
+    playerStandings,
     removePlayer,
     removeTeam,
+    rosterPlayers,
     standings,
     targets,
     teams,
+    teamStandings,
     undoLastScore,
     updatePlayer,
     updateScoringName,
