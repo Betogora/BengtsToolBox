@@ -32,7 +32,7 @@ export function useTrackLobbyDevice(lobbyId?: string) {
     }
 
     window.sessionStorage.setItem(key, String(now))
-    const deviceName = readDeviceName(session.user.uid)
+    const deviceName = readDeviceName(session.user.uid).value
     const clientIso = new Date(now).toISOString()
     const reference = doc(
       services.db,

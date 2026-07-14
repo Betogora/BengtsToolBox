@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:9f156378c21692a76ab79d577fa38717afd070e8f8ec9a5d7d48d627b0429d3e">
+  <meta name="specs-source-sha256" content="sha256:4695c7de0f1652737ec6f4bc66f7dc718e8d16fd8490668b3c77d002607a9677">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -560,18 +560,28 @@
         <div class="flow" aria-label="Datenfluss">
           <div>Semantische Aktion in der Page</div>
           <div>Feature-Hook normalisiert</div>
-          <div>Optimistischer React-/LocalStorage-Stand</div>
-          <div>Firestore + Serverzeit</div>
-          <div>Snapshot wird kanonisch</div>
+          <div>Geordnete optimistische Mutation</div>
+          <div>LocalStorage-Cache + Firestore</div>
+          <div>Snapshot ohne Pending wird kanonisch</div>
         </div>
         <div class="grid-2" style="margin-top:1rem">
           <article class="card accent">
             <h3>Realtime-Modus</h3>
-            <p>Anonymous Auth, Snapshot-Abos und serverseitiges <code>updatedAt</code>. Der Live-Buzzer verwendet für den Gewinner-Buzz eine Firestore-Transaktion.</p>
+            <p>Anonymous Auth, Snapshot-Abos mit Pending-Metadaten und serverseitiges <code>updatedAt</code>. Firestore übernimmt Offline-Queue, Netzwerk-Retry und Reconnect. Definitive Ablehnungen entfernen nur die betroffene Mutation und rebasen jüngere Änderungen auf dem letzten bestätigten Snapshot; die Anwendung wiederholt die fachliche Aktion nicht automatisch.</p>
           </article>
           <article class="card">
             <h3>Lokaler Modus</h3>
-            <p>Fehlt Firebase, bleiben Dokumente und Collections über LocalStorage nutzbar. Es gibt weder Geräte-Sync noch eine Konflikt- oder Offline-Queue.</p>
+            <p>Fehlt Firebase, bleiben Dokumente und Collections über LocalStorage nutzbar. Storage- und Serialisierungsfehler werfen nicht und rollen die sichtbare Änderung sofort zurück. Eine lokale ID bleibt bei fehlender Persistenz wenigstens für den Seitenlauf stabil.</p>
+          </article>
+        </div>
+        <div class="grid-2" style="margin-top:1rem">
+          <article class="card">
+            <h3>Ergebnis- und Fehlervertrag</h3>
+            <p>Mutationen liefern <code>SyncResult&lt;void&gt;</code>; <code>SyncError</code> enthält stabile Werte für Quelle, Operation, Code und Wiederholbarkeit. Fehler bleiben pro Quelle erhalten und werden in der UI lokalisiert. <code>isPending</code> endet erst mit einem serverbestätigten Snapshot.</p>
+          </article>
+          <article class="card">
+            <h3>Gezielte Atomizität</h3>
+            <p><code>SyncBatch</code> bündelt nur erkannte Fachinvarianten. Realtime verwendet einen Firestore-<code>writeBatch</code> mit Limit-Preflight; lokal werden Serialisierung und Raw-Backup vorab geprüft, bei Fehlern kompensiert und erneut eingelesen. Ein gescheiterter Ausgleich heißt <code>rollback-failed</code>. Der Gewinner-Buzz bleibt eine Transaction.</p>
           </article>
         </div>
         <h3 style="margin:2rem 0 0.8rem">Kanonische Datenräume</h3>
@@ -883,7 +893,7 @@ npm run test:browser
 npm run test:firebase</code></pre>
         <div class="card note" style="margin-top:1rem">
           <h3>Browser-Smoke-Suite</h3>
-          <p><code>npm run test:browser</code> startet Vite ohne Firebase auf Port <code>5180</code>. Dashboard, verschachteltes Scoreboard, Presenter und Sushi Map werden mit Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA abgedeckt. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
+          <p><code>npm run test:browser</code> startet Vite ohne Firebase auf Port <code>5180</code>. Dashboard, verschachteltes Scoreboard, Presenter, Sushi Map und der sichtbare Rollback bei voller LocalStorage-Quota werden mit Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA abgedeckt. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
         </div>
         <div class="card note" style="margin-top:1rem">
           <h3>Performance-Baseline</h3>
@@ -893,12 +903,12 @@ npm run test:firebase</code></pre>
 npm run perf:tournament
 npm run perf:baseline:update</code></pre>
         </div>
-        <p><code>npm run docs:check</code> prüft lokale Markdown-Links und den bestätigten SHA-256-Stand der kuratierten HTML-Lesefassung; <code>npm test</code> sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der Lesefassung bestätigt <code>npm run docs:acknowledge</code> den aktuellen Markdown-Stand. Rules-Tests laufen mit Firebase Emulator und Java 21.</p>
+        <p><code>npm run docs:check</code> prüft lokale Markdown-Links und den bestätigten SHA-256-Stand der kuratierten HTML-Lesefassung; <code>npm test</code> sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der Lesefassung bestätigt <code>npm run docs:acknowledge</code> den aktuellen Markdown-Stand. <code>npm run test:firebase</code> prüft Rules und die atomare Ablehnung eines Firestore-Batches im Emulator mit Java 21.</p>
         <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
         <pre><code>npm ci
 Copy-Item .env.example .env.local
 npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
-        <p>Node.js 22 oder neuer ist erforderlich. Port <code>5180</code> ist für Entwicklung, Browser-Smokes und lokale Performance-Messungen reserviert. Vor dem ersten Browserlauf wird Chromium einmalig mit <code>npx playwright install chromium</code> installiert. Der Build umfasst den Bundle-Budgetcheck und überträgt dieses Gate ohne zusätzlichen Workflow in Pull Requests und Deployments.</p>
+        <p>Node.js 22 oder neuer ist erforderlich. Port <code>5180</code> ist für Entwicklung, Browser-Smokes und lokale Performance-Messungen reserviert. Der Server bindet an <code>127.0.0.1</code>; für Anonymous Auth und Realtime-Sync wird er unter <code>http://localhost:5180</code> geöffnet, weil <code>localhost</code> als lokale Auth-Domain autorisiert ist. Vor dem ersten Browserlauf wird Chromium einmalig mit <code>npx playwright install chromium</code> installiert. Der Build umfasst den Bundle-Budgetcheck und überträgt dieses Gate ohne zusätzlichen Workflow in Pull Requests und Deployments.</p>
       </section>
 
       <section class="section" id="betrieb">

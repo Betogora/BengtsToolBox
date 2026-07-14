@@ -101,10 +101,10 @@ export function ScoreTargetCard({
   target,
 }: {
   memberNames: string[]
-  onColorChange: (color: string) => void | Promise<void>
-  onNameChange: (name: string) => void | Promise<void>
-  onRemove: () => void | Promise<void>
-  onScore: (delta: number) => void | Promise<void>
+  onColorChange: (color: string) => void | Promise<unknown>
+  onNameChange: (name: string) => void | Promise<unknown>
+  onRemove: () => void | Promise<unknown>
+  onScore: (delta: number) => void | Promise<unknown>
   score: number
   target: ScoreboardTarget
 }) {
@@ -245,10 +245,10 @@ export function RosterPlayerCard({
   score,
   teams,
 }: {
-  onNameChange: (name: string) => void | Promise<void>
-  onRemove: () => void | Promise<void>
-  onScore: (delta: number) => void | Promise<void>
-  onTeamChange: (teamId: string | null) => void | Promise<void>
+  onNameChange: (name: string) => void | Promise<unknown>
+  onRemove: () => void | Promise<unknown>
+  onScore: (delta: number) => void | Promise<unknown>
+  onTeamChange: (teamId: string | null) => void | Promise<unknown>
   player: ScoreboardPlayer
   score: number
   teams: ScoreboardTeam[]
@@ -385,8 +385,8 @@ export function ArchiveCard({
   onRename,
 }: {
   archive: ReturnType<typeof useScoreboard>['archiveViews'][number]
-  onDelete: () => void | Promise<void>
-  onRename: (name: string) => void | Promise<void>
+  onDelete: () => void | Promise<unknown>
+  onRename: (name: string) => void | Promise<unknown>
 }) {
   const { formatDateTime, t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
@@ -481,7 +481,7 @@ export function AddCard({
   onClick,
 }: {
   label: string
-  onClick: () => void | Promise<void>
+  onClick: () => void | Promise<unknown>
 }) {
   return (
     <Card className="min-h-[13.25rem] border-dashed">
@@ -502,7 +502,7 @@ export function ModeToggle({
 }: {
   disabled: boolean
   mode: 'individual' | 'teams'
-  onChange: (mode: 'individual' | 'teams') => void | Promise<void>
+  onChange: (mode: 'individual' | 'teams') => void | Promise<unknown>
 }) {
   const { t } = useI18n()
 

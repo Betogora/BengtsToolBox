@@ -54,6 +54,7 @@ export function useCoinflip(lobbyId?: string) {
 
   return {
     ...store,
+    error: store.error ?? session.error,
     clearHistory,
     commitFlipResult,
     flip,

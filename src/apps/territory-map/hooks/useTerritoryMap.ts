@@ -13,6 +13,8 @@ import type {
 } from '@/apps/territory-map/types'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
+import { commitSyncBatch, type SyncBatch } from '@/lib/firebase/syncBatch'
+import type { SyncResult } from '@/lib/firebase/syncError'
 import {
   getParticipantColorByPosition,
   normalizeParticipantColor,
@@ -369,7 +371,10 @@ export function useTerritoryMap(lobbyId?: string) {
     datasetsStore.saveItems([dataset])
   }, [datasetsStore, session.userId])
 
-  const saveActiveDataset = (partialValue: Partial<TerritoryDataset>) => {
+  const saveActiveDataset = ((
+    partialValue: Partial<TerritoryDataset>,
+    batch?: SyncBatch,
+  ) => {
     const nextDataset = {
       ...activeDataset,
       ...partialValue,
@@ -378,9 +383,18 @@ export function useTerritoryMap(lobbyId?: string) {
     const value = omitDatasetId(nextDataset)
     const hasStoredDataset = datasets.some((dataset) => dataset.id === activeDataset.id)
 
+    if (batch) {
+      if (hasStoredDataset) datasetsStore.mergeItem(activeDataset.id, value, batch)
+      else datasetsStore.setItem(activeDataset.id, value, batch)
+      return undefined
+    }
+
     return hasStoredDataset
       ? datasetsStore.mergeItem(activeDataset.id, value)
       : datasetsStore.setItem(activeDataset.id, value)
+  }) as {
+    (partialValue: Partial<TerritoryDataset>): Promise<SyncResult<void>>
+    (partialValue: Partial<TerritoryDataset>, batch: SyncBatch): void
   }
 
   const setActiveMap = (activeMap: TerritoryMapId) =>
@@ -410,7 +424,7 @@ export function useTerritoryMap(lobbyId?: string) {
         position: nextPosition,
         lastUpdatedBy: session.userId,
       })
-      .then(() => player)
+      .then((result) => (result.ok ? player : null))
   }
 
   const updatePlayerName = async (playerId: string, name: string) => {
@@ -422,20 +436,26 @@ export function useTerritoryMap(lobbyId?: string) {
 
     const nextName = sanitizeName(name, player)
 
-    await playersStore.mergeItem(playerId, {
-      name: nextName,
-      lastUpdatedBy: session.userId,
-    })
-    await saveActiveDataset({
-      events: activeDataset.events.map((event) =>
-        event.playerId === playerId
-          ? {
-              ...event,
-              playerName: nextName,
-              lastUpdatedBy: session.userId,
-            }
-          : event,
-      ),
+    return commitSyncBatch((batch) => {
+      playersStore.mergeItem(
+        playerId,
+        { name: nextName, lastUpdatedBy: session.userId },
+        batch,
+      )
+      saveActiveDataset(
+        {
+          events: activeDataset.events.map((event) =>
+            event.playerId === playerId
+              ? {
+                  ...event,
+                  playerName: nextName,
+                  lastUpdatedBy: session.userId,
+                }
+              : event,
+          ),
+        },
+        batch,
+      )
     })
   }
 
@@ -448,20 +468,26 @@ export function useTerritoryMap(lobbyId?: string) {
 
     const nextColor = sanitizeColor(color, player.color)
 
-    await playersStore.mergeItem(playerId, {
-      color: nextColor,
-      lastUpdatedBy: session.userId,
-    })
-    await saveActiveDataset({
-      events: activeDataset.events.map((event) =>
-        event.playerId === playerId
-          ? {
-              ...event,
-              playerColor: nextColor,
-              lastUpdatedBy: session.userId,
-            }
-          : event,
-      ),
+    return commitSyncBatch((batch) => {
+      playersStore.mergeItem(
+        playerId,
+        { color: nextColor, lastUpdatedBy: session.userId },
+        batch,
+      )
+      saveActiveDataset(
+        {
+          events: activeDataset.events.map((event) =>
+            event.playerId === playerId
+              ? {
+                  ...event,
+                  playerColor: nextColor,
+                  lastUpdatedBy: session.userId,
+                }
+              : event,
+          ),
+        },
+        batch,
+      )
     })
   }
 
@@ -472,9 +498,8 @@ export function useTerritoryMap(lobbyId?: string) {
       return false
     }
 
-    await playersStore.deleteItem(playerId)
-
-    return true
+    const result = await playersStore.deleteItem(playerId)
+    return result.ok
   }
 
   const claimTerritory = (
@@ -512,7 +537,7 @@ export function useTerritoryMap(lobbyId?: string) {
 
     return saveActiveDataset({
       events: [...activeDataset.events, event],
-    }).then(() => true)
+    }).then((result) => result.ok)
   }
 
   const deleteEvent = (eventId: string) =>
@@ -538,7 +563,7 @@ export function useTerritoryMap(lobbyId?: string) {
           events: activeDataset.events.filter(
             (event) => !eventIds.includes(event.id),
           ),
-        }).then(() => true)
+        }).then((result) => result.ok)
       : Promise.resolve(false)
   }
 
@@ -588,9 +613,12 @@ export function useTerritoryMap(lobbyId?: string) {
     claimsByMap,
     currentClaims,
     deleteEvent,
-    error: stateStore.error ?? playersStore.error ?? datasetsStore.error,
+    error:
+      stateStore.error ?? playersStore.error ?? datasetsStore.error ?? session.error,
     isLoading:
       stateStore.isLoading || playersStore.isLoading || datasetsStore.isLoading,
+    isPending:
+      stateStore.isPending || playersStore.isPending || datasetsStore.isPending,
     isRealtime:
       stateStore.isRealtime && playersStore.isRealtime && datasetsStore.isRealtime,
     players,

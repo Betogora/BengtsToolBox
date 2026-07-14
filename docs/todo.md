@@ -1,6 +1,6 @@
 # BengtsToolBox – sinnvolle nächste Schritte
 
-> **Stand:** 13. Juli 2026
+> **Stand:** 14. Juli 2026
 > **Grundlage:** aktueller Code, Build-Ausgabe und [`specs.md`](specs.md)
 
 Diese Liste enthält nur aktuell begründete Arbeiten. Sie ist von kleinen, risikoarmen Schritten zu größeren Umbauten sortiert, damit sie von oben nach unten abgearbeitet werden kann. Innerhalb derselben Größenklasse stehen Absicherung und Fehlervermeidung vor Komfort. Erledigte Punkte werden entfernt oder als dauerhafter Vertrag in die Spezifikation übernommen.
@@ -8,18 +8,6 @@ Diese Liste enthält nur aktuell begründete Arbeiten. Sie ist von kleinen, risi
 Die Größenangaben sind relativ: **klein** ist ein enger Änderungssatz, **mittel** umfasst mehrere zusammenhängende Dateien oder eine neue Prüfschicht, **groß** benötigt mehrere sichere Refactoring-Schnitte.
 
 ## Aktive Abarbeitungsreihenfolge
-
-### 7. Sync- und LocalStorage-Fehler robust behandeln — groß
-
-**Warum:** LocalStorage-Lesen ist abgesichert, gemeinsame Schreib- und ID-Pfade können bei gesperrtem oder vollem Storage jedoch weiterhin werfen. Optimistische Firestore-Schreibvorgänge besitzen noch kein einheitliches Fehler- und Wiederherstellungsverhalten.
-
-- [ ] LocalStorage-Schreib-, Lösch- und ID-Fehler in der gemeinsamen Infrastruktur abfangen und als verständliches Ergebnis bereitstellen.
-- [ ] Ein kleines gemeinsames Interface für Sync-Fehler festlegen, statt Fehlerbehandlung über Feature-Caller zu verteilen.
-- [ ] Verhalten nach fehlgeschlagenem Firestore-Schreiben definieren: erneuter Snapshot, gezielter Retry oder sichtbare Warnung.
-- [ ] Mehrdokument-Aktionen mit echtem Konsistenzbedarf identifizieren und nur dort Batch oder Transaction einsetzen.
-- [ ] Lokalen Modus, Reload, Doppel-Tab, Reconnect, volle Storage-Quota sowie Auth-, Rules- und Netzwerkfehler dokumentiert testen.
-
-**Fertig, wenn:** ein Schreibfehler weder unbemerkt bleibt noch einen dauerhaft falschen optimistischen Zustand erzeugt.
 
 ### 8. Turnier-App in tiefe fachliche Module gliedern — groß
 

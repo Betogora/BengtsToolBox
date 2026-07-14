@@ -38,6 +38,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
 
 function ScoreboardPresenter({ standings }: { standings: ScoreboardStanding[] }) {
@@ -162,7 +163,9 @@ export function ScoreboardPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.syncError')}</CardTitle>
-            <CardDescription>{scoreboard.error.message}</CardDescription>
+            <CardDescription>
+              {t(syncErrorMessageKey(scoreboard.error))}
+            </CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -180,7 +183,9 @@ export function ScoreboardPage() {
             />
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-            {scoreboard.isLoading && <Badge variant="outline">{t('common.syncing')}</Badge>}
+            {(scoreboard.isLoading || scoreboard.isPending) && (
+              <Badge variant="outline">{t('common.syncing')}</Badge>
+            )}
             <ModeToggle
               disabled={scoreboard.activeEvents.length > 0}
               mode={scoreboard.activeScoring.mode}

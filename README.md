@@ -63,7 +63,7 @@ Copy-Item .env.example .env.local
 npm run dev -- --host 127.0.0.1 --port 5180 --strictPort
 ```
 
-Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Mit Firebase-Werten ist die App normalerweise unter `http://127.0.0.1:5180` mit Realtime-Sync verfügbar.
+Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Der Server bindet weiterhin an `127.0.0.1`; mit Firebase-Werten wird die App für Realtime-Sync unter `http://localhost:5180` geöffnet, weil `localhost` als lokale Auth-Domain autorisiert ist.
 
 ### Qualitätschecks
 

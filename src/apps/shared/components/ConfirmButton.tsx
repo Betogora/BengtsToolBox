@@ -24,7 +24,7 @@ export function ConfirmButton({
   children?: ReactNode
   confirmLabel?: string
   description: string
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => void | Promise<unknown>
   title: string
   trigger: ReactNode
 }) {

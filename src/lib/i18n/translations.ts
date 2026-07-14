@@ -75,6 +75,28 @@ export const de = {
   'common.round': 'Runde {number}',
   'common.score': 'Score',
   'common.syncError': 'Sync-Fehler',
+  'common.syncError.authentication':
+    'Die anonyme Anmeldung ist fehlgeschlagen. Bitte erneut versuchen.',
+  'common.syncError.identity':
+    'Die Gerätekennung konnte nur für diese Sitzung erzeugt werden.',
+  'common.syncError.network':
+    'Die Verbindung wurde unterbrochen. Firebase synchronisiert nach dem Reconnect weiter.',
+  'common.syncError.permissionDenied':
+    'Firebase hat die Änderung abgelehnt. Der bestätigte Zustand wurde wiederhergestellt.',
+  'common.syncError.rollbackFailed':
+    'Der lokale Zustand konnte nicht vollständig wiederhergestellt werden. Bitte neu laden.',
+  'common.syncError.snapshot':
+    'Der gemeinsame Zustand konnte nicht geladen werden. Der letzte bekannte Stand bleibt sichtbar.',
+  'common.syncError.storageQuota':
+    'Der lokale Speicher ist voll. Die Änderung wurde nicht gespeichert.',
+  'common.syncError.storageSerialization':
+    'Die Änderung konnte nicht für den lokalen Speicher aufbereitet werden.',
+  'common.syncError.storageUnavailable':
+    'Der Browser blockiert den lokalen Speicher. Die Änderung ist nicht dauerhaft gespeichert.',
+  'common.syncError.tooManyWrites':
+    'Die Aktion umfasst zu viele Änderungen für einen atomaren Schreibvorgang.',
+  'common.syncError.writeRejected':
+    'Die Änderung konnte nicht gespeichert werden. Bitte die Aktion erneut ausführen.',
   'common.syncing': 'Synchronisiere...',
   'common.teamBlue': 'Team Blau',
   'common.teamYellow': 'Team Gelb',
@@ -721,6 +743,28 @@ export const en: Record<TranslationKey, string> = {
   'common.round': 'Round {number}',
   'common.score': 'Score',
   'common.syncError': 'Sync error',
+  'common.syncError.authentication':
+    'Anonymous sign-in failed. Please try again.',
+  'common.syncError.identity':
+    'The device identifier could only be created for this session.',
+  'common.syncError.network':
+    'The connection was interrupted. Firebase will continue syncing after reconnecting.',
+  'common.syncError.permissionDenied':
+    'Firebase rejected the change. The last confirmed state was restored.',
+  'common.syncError.rollbackFailed':
+    'The local state could not be restored completely. Please reload the page.',
+  'common.syncError.snapshot':
+    'The shared state could not be loaded. The last known state remains visible.',
+  'common.syncError.storageQuota':
+    'Local storage is full. The change was not saved.',
+  'common.syncError.storageSerialization':
+    'The change could not be prepared for local storage.',
+  'common.syncError.storageUnavailable':
+    'The browser is blocking local storage. The change is not stored permanently.',
+  'common.syncError.tooManyWrites':
+    'The action contains too many changes for one atomic write.',
+  'common.syncError.writeRejected':
+    'The change could not be saved. Please repeat the action.',
   'common.syncing': 'Syncing...',
   'common.teamBlue': 'Team Blue',
   'common.teamYellow': 'Team Yellow',

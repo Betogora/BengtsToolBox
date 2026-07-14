@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
 
 const CARD_NUMBER_INPUT_ID = 'next-question-card-number'
@@ -52,6 +53,7 @@ export function NextQuestionPage() {
     error,
     isCatalogLoading,
     isLoading,
+    isPending,
     jumpToQuestion,
     previousQuestion,
     questionCount,
@@ -117,7 +119,7 @@ export function NextQuestionPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -286,7 +288,7 @@ export function NextQuestionPage() {
             </Button>
           </div>
 
-          {isLoading && (
+          {(isLoading || isPending) && (
             <p className="type-caption text-center text-muted-foreground">
               {t('common.syncing')}
             </p>

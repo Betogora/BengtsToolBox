@@ -65,6 +65,7 @@ export function useRandomizer(lobbyId?: string) {
 
   return {
     ...store,
+    error: store.error ?? session.error,
     clearHistory,
     roll,
     updateRange,

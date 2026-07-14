@@ -38,6 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
 
 function outcomeVariant(status: 'open' | 'tiebreak' | 'winner') {
@@ -187,7 +188,7 @@ function ScoreOverview() {
         <CardContent className="grid gap-4">
           {error && (
             <div className="rounded-md border border-destructive/60 bg-destructive/10 p-3 text-sm text-destructive">
-              {t('common.firebaseError')}: {error.message}
+              {t('common.firebaseError')}: {t(syncErrorMessageKey(error))}
             </div>
           )}
 
@@ -309,8 +310,8 @@ function ArchiveSection({
   onRenameArchivedDataset,
 }: {
   archivedDatasets: SchlagDenRaabArchivedDataset[]
-  onDeleteArchivedDataset: (datasetId: string) => void | Promise<void>
-  onRenameArchivedDataset: (datasetId: string, name: string) => void | Promise<void>
+  onDeleteArchivedDataset: (datasetId: string) => void | Promise<unknown>
+  onRenameArchivedDataset: (datasetId: string, name: string) => void | Promise<unknown>
 }) {
   const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
@@ -361,8 +362,8 @@ function ArchiveDatasetCard({
   onRename,
 }: {
   dataset: SchlagDenRaabArchivedDataset
-  onDelete: (datasetId: string) => void | Promise<void>
-  onRename: (datasetId: string, name: string) => void | Promise<void>
+  onDelete: (datasetId: string) => void | Promise<unknown>
+  onRename: (datasetId: string, name: string) => void | Promise<unknown>
 }) {
   const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)

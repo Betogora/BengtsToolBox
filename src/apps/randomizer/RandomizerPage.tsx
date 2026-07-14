@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
 function RandomizerPresenter({
   history,
@@ -97,9 +98,9 @@ export function RandomizerPage() {
 
     isRollLockedRef.current = true
     setIsRolling(true)
-    roll()
-      .catch(() => {
-        toast.error(t('randomizer.error.save'))
+    void roll()
+      .then((result) => {
+        if (!result.ok) toast.error(t('randomizer.error.save'))
       })
       .finally(() => {
         isRollLockedRef.current = false
@@ -135,7 +136,7 @@ export function RandomizerPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}

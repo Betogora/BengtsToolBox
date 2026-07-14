@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
 
 function getPodiumRowClass(rank: number) {
@@ -187,6 +188,7 @@ export function ProgressDashboardPage() {
     deleteEvent,
     error,
     isLoading,
+    isPending,
     leader,
     playerScores,
     players,
@@ -255,7 +257,7 @@ export function ProgressDashboardPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -307,7 +309,7 @@ export function ProgressDashboardPage() {
             <UsersRound className="size-5 text-primary" />
             {t('progress.players')}
           </h2>
-          {isLoading && (
+          {(isLoading || isPending) && (
             <p className="type-ui mt-1 text-muted-foreground">
               {t('common.syncing')}
             </p>

@@ -19,7 +19,7 @@ export function InlineTextEdit({
   className?: string
   fallback: string
   inputClassName?: string
-  onSave: (value: string) => void | Promise<void>
+  onSave: (value: string) => void | Promise<unknown>
   triggerMode?: 'label' | 'label-with-icon'
   value: string
 }) {

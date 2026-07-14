@@ -12,6 +12,7 @@ import {
   type TranslationParams,
 } from '@/lib/i18n/context'
 import { translations } from '@/lib/i18n/translations'
+import { localStore } from '@/lib/firebase/localStore'
 
 const defaultLanguage: Language = 'de'
 const storageKey = 'bengtstoolbox.language'
@@ -33,13 +34,8 @@ function readStoredLanguage() {
     return defaultLanguage
   }
 
-  try {
-    const storedLanguage = window.localStorage.getItem(storageKey)
-
-    return isLanguage(storedLanguage) ? storedLanguage : defaultLanguage
-  } catch {
-    return defaultLanguage
-  }
+  const storedLanguage = localStore.readText(storageKey, defaultLanguage).value
+  return isLanguage(storedLanguage) ? storedLanguage : defaultLanguage
 }
 
 function writeStoredLanguage(language: Language) {
@@ -47,11 +43,9 @@ function writeStoredLanguage(language: Language) {
     return
   }
 
-  try {
-    window.localStorage.setItem(storageKey, language)
-  } catch {
-    // The language switch remains usable when localStorage is unavailable.
-  }
+  // Language persistence is deliberately best-effort; the active UI language
+  // remains usable even when the browser blocks local storage.
+  localStore.writeText(storageKey, language)
 }
 
 function interpolate(value: string, params?: TranslationParams) {

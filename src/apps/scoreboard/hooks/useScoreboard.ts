@@ -32,6 +32,8 @@ import {
 } from '@/apps/shared/historicalRecordNames'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
+import { commitSyncBatch } from '@/lib/firebase/syncBatch'
+import { createSyncError, type SyncError } from '@/lib/firebase/syncError'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -154,7 +156,7 @@ export function useScoreboard(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const [isInitializing, setIsInitializing] = useState(true)
-  const [initializationError, setInitializationError] = useState<Error | null>(null)
+  const [initializationError, setInitializationError] = useState<SyncError | null>(null)
   const initializedLobbyRef = useRef<string | null>(null)
   const statePath = useMemo(
     () => firebasePaths.scoreboardState(activeLobbyId),
@@ -215,37 +217,32 @@ export function useScoreboard(lobbyId?: string) {
           scoreboardSchemaVersion || hasLegacyPlayers
 
       if (isLegacy) {
-        await Promise.all([
-          playersStore.clearItems(),
-          teamsStore.clearItems(),
-          scoringsStore.clearItems(),
-          eventsStore.clearItems(),
-        ])
-        await Promise.all([
-          playersStore.saveItems(initialPlayers),
-          teamsStore.saveItems(initialTeams),
-          scoringsStore.saveItems([initialScoring]),
-        ])
-        await stateStore.save({
-          ...initialState,
-          updatedBy: session.userId,
+        const result = await commitSyncBatch((batch) => {
+          playersStore.saveItems(initialPlayers, batch)
+          teamsStore.saveItems(initialTeams, batch)
+          scoringsStore.saveItems([initialScoring], batch)
+          eventsStore.clearItems(batch)
+          stateStore.save(
+            { ...initialState, updatedBy: session.userId },
+            batch,
+          )
         })
+        if (!result.ok) throw result.error
         return
       }
 
-      const writes: Promise<void>[] = []
-
-      if (playersStore.data.length === 0) {
-        writes.push(playersStore.saveItems(initialPlayers))
-      }
-      if (teamsStore.data.length === 0) {
-        writes.push(teamsStore.saveItems(initialTeams))
-      }
-      if (scoringsStore.data.length === 0) {
-        writes.push(scoringsStore.saveItems([initialScoring]))
-      }
-
-      await Promise.all(writes)
+      const defaultsResult = await commitSyncBatch((batch) => {
+        if (playersStore.data.length === 0) {
+          playersStore.saveItems(initialPlayers, batch)
+        }
+        if (teamsStore.data.length === 0) {
+          teamsStore.saveItems(initialTeams, batch)
+        }
+        if (scoringsStore.data.length === 0) {
+          scoringsStore.saveItems([initialScoring], batch)
+        }
+      })
+      if (!defaultsResult.ok) throw defaultsResult.error
 
       const hasActiveScoring = scoringsStore.data.some(
         (scoring) => scoring.id === stateStore.data.activeScoringId,
@@ -257,18 +254,19 @@ export function useScoreboard(lobbyId?: string) {
           scoringsStore.data.at(-1)
 
         if (fallbackScoring) {
-          await stateStore.save({
+          const result = await stateStore.save({
             schemaVersion: scoreboardSchemaVersion,
             activeScoringId: fallbackScoring.id,
             updatedBy: session.userId,
           })
+          if (!result.ok) throw result.error
         }
       }
     }
 
     void initialize()
       .catch((error: unknown) => {
-        setInitializationError(error instanceof Error ? error : new Error(String(error)))
+        setInitializationError(createSyncError(error, 'firestore', 'batch'))
       })
       .finally(() => setIsInitializing(false))
   }, [
@@ -443,33 +441,36 @@ export function useScoreboard(lobbyId?: string) {
     if (activeScoring.mode === 'individual' && players.length <= 2) return 'minimum' as const
     if (hasTargetEvents(activeEvents, playerId)) return 'scored' as const
 
-    await playersStore.deleteItem(playerId)
-    return 'removed' as const
+    const result = await playersStore.deleteItem(playerId)
+    return result.ok ? ('removed' as const) : ('sync-error' as const)
   }
 
   const removeTeam = async (teamId: string) => {
     if (teams.length <= 2) return 'minimum' as const
     if (hasTeamEvents(activeEvents, teamId)) return 'scored' as const
 
-    await playersStore.saveItems(
-      players.map((player) => ({
-        ...player,
-        teamId: player.teamId === teamId ? null : player.teamId,
-        lastUpdatedBy: session.userId,
-      })),
-    )
-    await teamsStore.deleteItem(teamId)
-    return 'removed' as const
+    const result = await commitSyncBatch((batch) => {
+      playersStore.saveItems(
+        players.map((player) => ({
+          ...player,
+          teamId: player.teamId === teamId ? null : player.teamId,
+          lastUpdatedBy: session.userId,
+        })),
+        batch,
+      )
+      teamsStore.deleteItem(teamId, batch)
+    })
+    return result.ok ? ('removed' as const) : ('sync-error' as const)
   }
 
   const changeMode = async (mode: ScoreboardMode) => {
     if (activeEvents.length > 0) return false
 
-    await scoringsStore.mergeItem(activeScoring.id, {
+    const result = await scoringsStore.mergeItem(activeScoring.id, {
       mode,
       lastUpdatedBy: session.userId,
     })
-    return true
+    return result.ok
   }
 
   const addScore = async (
@@ -502,8 +503,8 @@ export function useScoreboard(lobbyId?: string) {
     }
     const { id, ...value } = event
 
-    await eventsStore.setItem(id, value)
-    return true
+    const result = await eventsStore.setItem(id, value)
+    return result.ok
   }
 
   const undoLastScore = async () => {
@@ -511,8 +512,8 @@ export function useScoreboard(lobbyId?: string) {
 
     if (!latestEvent) return false
 
-    await eventsStore.deleteItem(latestEvent.id)
-    return true
+    const result = await eventsStore.deleteItem(latestEvent.id)
+    return result.ok
   }
 
   const updateScoringName = (scoringId: string, name: string) => {
@@ -561,14 +562,18 @@ export function useScoreboard(lobbyId?: string) {
       },
     ])
 
-    await scoringsStore.saveItems(nextScorings)
-    await stateStore.save({
-      schemaVersion: scoreboardSchemaVersion,
-      activeScoringId: nextId,
-      updatedBy: session.userId,
+    const result = await commitSyncBatch((batch) => {
+      scoringsStore.saveItems(nextScorings, batch)
+      stateStore.save(
+        {
+          schemaVersion: scoreboardSchemaVersion,
+          activeScoringId: nextId,
+          updatedBy: session.userId,
+        },
+        batch,
+      )
     })
-
-    return true
+    return result.ok
   }
 
   const deleteArchivedScoring = async (scoringId: string) => {
@@ -576,8 +581,10 @@ export function useScoreboard(lobbyId?: string) {
       .filter((event) => event.scoringId === scoringId)
       .map((event) => event.id)
 
-    await eventsStore.deleteItems(eventIds)
-    await scoringsStore.deleteItem(scoringId)
+    return commitSyncBatch((batch) => {
+      eventsStore.deleteItems(eventIds, batch)
+      scoringsStore.deleteItem(scoringId, batch)
+    })
   }
 
   return {
@@ -596,9 +603,16 @@ export function useScoreboard(lobbyId?: string) {
       playersStore.error ??
       teamsStore.error ??
       scoringsStore.error ??
-      eventsStore.error,
+      eventsStore.error ??
+      session.error,
     history,
     isLoading: storesAreLoading || isInitializing,
+    isPending:
+      stateStore.isPending ||
+      playersStore.isPending ||
+      teamsStore.isPending ||
+      scoringsStore.isPending ||
+      eventsStore.isPending,
     isRealtime:
       stateStore.isRealtime &&
       playersStore.isRealtime &&

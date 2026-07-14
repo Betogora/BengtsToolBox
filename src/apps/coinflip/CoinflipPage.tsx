@@ -28,6 +28,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
 function CoinflipPresenter({
   history,
@@ -98,6 +99,7 @@ export function CoinflipPage() {
     data,
     error,
     isLoading,
+    isPending,
     prepareFlipResult,
   } = useCoinflip()
   const [coinRotation, setCoinRotation] = useState(() =>
@@ -139,8 +141,8 @@ export function CoinflipPage() {
     )
     flipTimeoutRef.current = window.setTimeout(() => {
       commitFlipResult(result)
-        .catch(() => {
-          toast.error(t('coinflip.error.save'))
+        .then((saveResult) => {
+          if (!saveResult.ok) toast.error(t('coinflip.error.save'))
         })
         .finally(() => {
           flipTimeoutRef.current = null
@@ -176,7 +178,7 @@ export function CoinflipPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -188,7 +190,9 @@ export function CoinflipPage() {
               <Coins className="size-5 text-primary" />
               {t('coinflip.section.coin')}
             </CardTitle>
-            {isLoading && <CardDescription>{t('common.syncing')}</CardDescription>}
+            {(isLoading || isPending) && (
+              <CardDescription>{t('common.syncing')}</CardDescription>
+            )}
           </CardHeader>
           <CardContent className="grid gap-5">
             <button

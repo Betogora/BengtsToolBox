@@ -152,6 +152,7 @@ export function useDecisionWheel(lobbyId?: string) {
 
   return {
     ...store,
+    error: store.error ?? session.error,
     addEntry,
     clearHistory,
     commitSpinResult,

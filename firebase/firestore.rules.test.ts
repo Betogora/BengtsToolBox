@@ -11,12 +11,14 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore'
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 const projectId = 'demo-bengtstoolbox-lobbies'
 let testEnvironment: RulesTestEnvironment
@@ -111,6 +113,32 @@ describe('lobby Firestore rules', () => {
         score: 2,
       }),
     )
+  })
+
+  it('rejects an entire batch when one shared-app write violates the rules', async () => {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'lobbies/ABC234'), {
+        ...validLobby('ABC234', 'creator'),
+        createdAt: new Date(),
+      })
+    })
+    const participant = testEnvironment.authenticatedContext('participant').firestore()
+    const allowedState = doc(
+      participant,
+      'lobbies/ABC234/apps/scoreboard/state/default',
+    )
+    const rejectedState = doc(
+      participant,
+      'lobbies/ZZZ999/apps/scoreboard/state/default',
+    )
+    const batch = writeBatch(participant)
+    batch.set(allowedState, { score: 2 })
+    batch.set(rejectedState, { score: 2 })
+
+    await assertFails(batch.commit())
+
+    const snapshot = await assertSucceeds(getDoc(allowedState))
+    expect(snapshot.exists()).toBe(false)
   })
 
   it('allows a custom lobby to be archived but never hard-deleted', async () => {

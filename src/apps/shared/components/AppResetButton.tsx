@@ -15,7 +15,7 @@ export function AppResetButton({
   children?: ReactNode
   description: string
   disabled?: boolean
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => void | Promise<unknown>
   title: string
 }) {
   const { t } = useI18n()

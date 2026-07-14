@@ -17,6 +17,14 @@ import {
 } from '@/lib/firebase/client'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { readLocalValue, writeLocalValue } from '@/lib/firebase/localStore'
+import { commitSyncBatch, type SyncBatch } from '@/lib/firebase/syncBatch'
+import {
+  createSyncError,
+  syncFailure,
+  syncSuccess,
+  type SyncError,
+  type SyncResult,
+} from '@/lib/firebase/syncError'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -38,24 +46,28 @@ function createLocalPlayerId() {
   return `player-${createRandomId()}`
 }
 
-function getOrCreatePlayerId() {
+function getOrCreatePlayerId(): SyncResult<string> {
   const legacyIdentity = readLocalValue<{ playerId?: string } | null>(
     'app-hub:live-buzzer:identity',
     null,
   )
   const existing = readLocalValue<string | null>(
     playerIdKey,
-    legacyIdentity?.playerId ?? null,
+    legacyIdentity.value?.playerId ?? null,
   )
 
-  if (existing) {
-    writeLocalValue(playerIdKey, existing)
-    return existing
+  if (existing.value) {
+    const writeResult = writeLocalValue(playerIdKey, existing.value)
+    return writeResult.ok
+      ? syncSuccess(existing.value)
+      : syncFailure(existing.value, writeResult.error)
   }
 
   const playerId = createLocalPlayerId()
-  writeLocalValue(playerIdKey, playerId)
-  return playerId
+  const writeResult = writeLocalValue(playerIdKey, playerId)
+  return writeResult.ok
+    ? syncSuccess(playerId)
+    : syncFailure(playerId, writeResult.error)
 }
 
 function fallbackPlayerName(player: Pick<BuzzerPlayer, 'id' | 'position'>) {
@@ -123,7 +135,12 @@ function normalizePlayer(player: BuzzerPlayer, index: number): BuzzerPlayer {
 export function useLiveBuzzer(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
-  const [selectedPlayerId, setSelectedPlayerId] = useState(getOrCreatePlayerId)
+  const initialPlayerId = useMemo(() => getOrCreatePlayerId(), [])
+  const [selectedPlayerId, setSelectedPlayerId] = useState(initialPlayerId.value)
+  const [identityError, setIdentityError] = useState(
+    initialPlayerId.ok ? null : initialPlayerId.error,
+  )
+  const [actionError, setActionError] = useState<SyncError | null>(null)
   const statePath = useMemo(
     () => firebasePaths.liveBuzzerState(activeLobbyId),
     [activeLobbyId],
@@ -242,13 +259,16 @@ export function useLiveBuzzer(lobbyId?: string) {
     })
 
   const removePlayer = async (playerId: string) => {
-    await playersStore.deleteItem(playerId)
+    const deleteResult = await playersStore.deleteItem(playerId)
+    if (!deleteResult.ok) return deleteResult
 
     if (playerId === selectedPlayerId) {
       const nextPlayerId = createLocalPlayerId()
-      writeLocalValue(playerIdKey, nextPlayerId)
+      const result = writeLocalValue(playerIdKey, nextPlayerId)
+      setIdentityError(result.ok ? null : result.error)
       setSelectedPlayerId(nextPlayerId)
     }
+    return deleteResult
   }
 
   const buzz = async () => {
@@ -265,48 +285,62 @@ export function useLiveBuzzer(lobbyId?: string) {
     const services = getFirebaseServices()
 
     if (!services) {
-      await playersStore.mergeItem(selectedPlayerId, {
-        name,
-        isActive: true,
-        buzzedAt: buzzedAtClientIso,
-        buzzedAtClientIso,
-        lastUpdatedBy: session.userId,
+      const isWinner = !sessionState.winnerPlayerId
+      const result = await commitSyncBatch((batch) => {
+        playersStore.mergeItem(
+          selectedPlayerId,
+          {
+            name,
+            isActive: true,
+            buzzedAt: buzzedAtClientIso,
+            buzzedAtClientIso,
+            lastUpdatedBy: session.userId,
+          },
+          batch,
+        )
+
+        if (isWinner) {
+          stateStore.merge(
+            {
+              winnerPlayerId: selectedPlayerId,
+              winnerTeamId: selectedPlayer.teamId,
+              lastBuzzedAt: buzzedAtClientIso,
+              lastBuzzedAtClientIso: buzzedAtClientIso,
+              history: [
+                createRoundResult(sessionState, selectedPlayer, buzzedAtClientIso),
+                ...sessionState.history,
+              ].slice(0, 5),
+              updatedBy: session.userId,
+            },
+            batch,
+          )
+        }
       })
 
-      if (!sessionState.winnerPlayerId) {
-        await stateStore.merge({
-          winnerPlayerId: selectedPlayerId,
-          winnerTeamId: selectedPlayer.teamId,
-          lastBuzzedAt: buzzedAtClientIso,
-          lastBuzzedAtClientIso: buzzedAtClientIso,
-          history: [
-            createRoundResult(sessionState, selectedPlayer, buzzedAtClientIso),
-            ...sessionState.history,
-          ].slice(0, 5),
-          updatedBy: session.userId,
-        })
-        return 'winner' as const
-      }
-
-      return 'late' as const
+      return result.ok
+        ? isWinner
+          ? ('winner' as const)
+          : ('late' as const)
+        : ('sync-error' as const)
     }
 
     await ensureAnonymousUser()
 
-    return runTransaction(services.db, async (transaction) => {
-      const stateRef = doc(services.db, statePath)
-      const playerRef = doc(services.db, playerDocPath(selectedPlayerId))
-      const stateSnapshot = await transaction.get(stateRef)
-      const playerSnapshot = await transaction.get(playerRef)
-      const remoteState = stateSnapshot.data() as
-        | BuzzerSessionState
-        | undefined
-      const remotePlayer =
-        (playerSnapshot.data() as BuzzerPlayer | undefined) ?? selectedPlayer
+    try {
+      const result = await runTransaction(services.db, async (transaction) => {
+        const stateRef = doc(services.db, statePath)
+        const playerRef = doc(services.db, playerDocPath(selectedPlayerId))
+        const stateSnapshot = await transaction.get(stateRef)
+        const playerSnapshot = await transaction.get(playerRef)
+        const remoteState = stateSnapshot.data() as
+          | BuzzerSessionState
+          | undefined
+        const remotePlayer =
+          (playerSnapshot.data() as BuzzerPlayer | undefined) ?? selectedPlayer
 
-      if (!remoteState?.isOpen || remotePlayer.buzzedAt) {
-        return 'blocked' as const
-      }
+        if (!remoteState?.isOpen || remotePlayer.buzzedAt) {
+          return 'blocked' as const
+        }
 
       const isWinnerBuzz = !remoteState.winnerPlayerId
       const nextHistory = isWinnerBuzz
@@ -347,33 +381,49 @@ export function useLiveBuzzer(lobbyId?: string) {
         )
       }
 
-      return isWinnerBuzz ? ('winner' as const) : ('late' as const)
-    })
+        return isWinnerBuzz ? ('winner' as const) : ('late' as const)
+      })
+      setActionError(null)
+      return result
+    } catch (error) {
+      setActionError(createSyncError(error, 'firestore', 'batch'))
+      return 'sync-error' as const
+    }
   }
 
-  const resetVisibleBuzzes = () =>
-    playersStore.saveItems(
-      playersStore.data.map((player, index) => ({
+  const resetVisibleBuzzes = (batch?: SyncBatch) => {
+    const nextPlayers = playersStore.data.map((player, index) => ({
         ...normalizePlayer(player, index),
         buzzedAt: null,
         buzzedAtClientIso: null,
         isActive: true,
         lastUpdatedBy: session.userId,
-      })),
-    )
+      }))
 
-  const openRound = async () => {
-    await resetVisibleBuzzes()
-    await stateStore.merge({
-      isOpen: true,
-      winnerPlayerId: null,
-      winnerTeamId: null,
-      roundNumber: sessionState.roundNumber + 1,
-      lastBuzzedAt: null,
-      lastBuzzedAtClientIso: null,
-      updatedBy: session.userId,
-    })
+    if (batch) {
+      playersStore.saveItems(nextPlayers, batch)
+      return undefined
+    }
+
+    return playersStore.saveItems(nextPlayers)
   }
+
+  const openRound = () =>
+    commitSyncBatch((batch) => {
+      resetVisibleBuzzes(batch)
+      stateStore.merge(
+        {
+          isOpen: true,
+          winnerPlayerId: null,
+          winnerTeamId: null,
+          roundNumber: sessionState.roundNumber + 1,
+          lastBuzzedAt: null,
+          lastBuzzedAtClientIso: null,
+          updatedBy: session.userId,
+        },
+        batch,
+      )
+    })
 
   const closeRound = () =>
     stateStore.merge({
@@ -381,30 +431,38 @@ export function useLiveBuzzer(lobbyId?: string) {
       updatedBy: session.userId,
     })
 
-  const clearRound = async () => {
-    await resetVisibleBuzzes()
-    await stateStore.merge({
-      isOpen: false,
-      winnerPlayerId: null,
-      winnerTeamId: null,
-      lastBuzzedAt: null,
-      lastBuzzedAtClientIso: null,
-      updatedBy: session.userId,
+  const clearRound = () =>
+    commitSyncBatch((batch) => {
+      resetVisibleBuzzes(batch)
+      stateStore.merge(
+        {
+          isOpen: false,
+          winnerPlayerId: null,
+          winnerTeamId: null,
+          lastBuzzedAt: null,
+          lastBuzzedAtClientIso: null,
+          updatedBy: session.userId,
+        },
+        batch,
+      )
     })
-  }
 
-  const resetAndOpenRound = async () => {
-    await resetVisibleBuzzes()
-    await stateStore.merge({
-      isOpen: true,
-      winnerPlayerId: null,
-      winnerTeamId: null,
-      roundNumber: sessionState.roundNumber + 1,
-      lastBuzzedAt: null,
-      lastBuzzedAtClientIso: null,
-      updatedBy: session.userId,
+  const resetAndOpenRound = () =>
+    commitSyncBatch((batch) => {
+      resetVisibleBuzzes(batch)
+      stateStore.merge(
+        {
+          isOpen: true,
+          winnerPlayerId: null,
+          winnerTeamId: null,
+          roundNumber: sessionState.roundNumber + 1,
+          lastBuzzedAt: null,
+          lastBuzzedAtClientIso: null,
+          updatedBy: session.userId,
+        },
+        batch,
+      )
     })
-  }
 
   const clearHistory = () =>
     stateStore.merge({
@@ -420,8 +478,14 @@ export function useLiveBuzzer(lobbyId?: string) {
     clearHistory,
     clearRound,
     closeRound,
-    error: stateStore.error ?? playersStore.error,
+    error:
+      stateStore.error ??
+      playersStore.error ??
+      actionError ??
+      session.error ??
+      identityError,
     isLoading: stateStore.isLoading || playersStore.isLoading,
+    isPending: stateStore.isPending || playersStore.isPending,
     isRealtime: stateStore.isRealtime && playersStore.isRealtime,
     openRound,
     players,

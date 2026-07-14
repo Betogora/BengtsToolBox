@@ -33,6 +33,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
 
 function timestampToDate(value: BuzzerTimestamp, fallbackIso?: string | null) {
@@ -198,6 +199,7 @@ export function LiveBuzzerPage() {
     closeRound,
     error,
     isLoading,
+    isPending,
     isRealtime,
     openRound,
     players,
@@ -248,7 +250,7 @@ export function LiveBuzzerPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -261,7 +263,9 @@ export function LiveBuzzerPage() {
                 <UsersRound className="size-5 text-primary" />
                 {t('liveBuzzer.card.mine')}
               </CardTitle>
-              {isLoading && <CardDescription>{t('common.syncing')}</CardDescription>}
+              {(isLoading || isPending) && (
+                <CardDescription>{t('common.syncing')}</CardDescription>
+              )}
             </CardHeader>
             <CardContent>
               {selectedPlayer ? (
@@ -364,6 +368,8 @@ export function LiveBuzzerPage() {
                   toast.success(t('liveBuzzer.buzz.lateSaved'))
                 } else if (result === 'already-buzzed') {
                   toast.error(t('liveBuzzer.buzz.alreadyBuzzed'))
+                } else if (result === 'sync-error') {
+                  toast.error(t('common.syncError'))
                 } else {
                   toast.error(t('liveBuzzer.buzz.locked'))
                 }

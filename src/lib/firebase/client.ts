@@ -61,9 +61,15 @@ export function ensureAnonymousUser(): Promise<User | null> {
   }
 
   if (!anonymousSignInPromise) {
-    anonymousSignInPromise = signInAnonymously(activeServices.auth).then(
+    const signInPromise = signInAnonymously(activeServices.auth).then(
       (credential) => credential.user,
     )
+    anonymousSignInPromise = signInPromise
+    void signInPromise.catch(() => {
+      if (anonymousSignInPromise === signInPromise) {
+        anonymousSignInPromise = null
+      }
+    })
   }
 
   return anonymousSignInPromise

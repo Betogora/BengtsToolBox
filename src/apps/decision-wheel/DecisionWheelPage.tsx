@@ -57,6 +57,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
 function DecisionWheelPresenter({
   entries,
@@ -245,15 +246,16 @@ export function DecisionWheelPage() {
     setRotation(rotation + spinFullRotationDegrees + correction)
     spinTimeoutRef.current = window.setTimeout(() => {
       commitSpinResult(result)
-        .then(() => {
+        .then((saveResult) => {
+          if (!saveResult.ok) {
+            toast.error(t('decisionWheel.error.saveResult'))
+            return
+          }
           setConfetti((currentConfetti) => ({
             color: result.color,
             trigger: currentConfetti.trigger + 1,
           }))
           showWinnerAnnouncement(result)
-        })
-        .catch(() => {
-          toast.error(t('decisionWheel.error.saveResult'))
         })
         .finally(() => {
           spinTimeoutRef.current = null
@@ -336,7 +338,7 @@ export function DecisionWheelPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}

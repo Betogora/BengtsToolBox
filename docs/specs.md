@@ -105,28 +105,40 @@ Die Firebase-Initialisierung gilt als vollständig, wenn mindestens API-Key, Aut
 **Realtime-Modus:**
 
 1. Der Client meldet sich anonym an.
-2. `useFirestoreDoc` oder `useFirestoreCollection` abonniert einen Firestore-Snapshot.
-3. Schreibaktionen aktualisieren zuerst React State und LocalStorage.
-4. Danach wird Firestore mit `updatedAt: serverTimestamp()` geschrieben.
-5. Eingehende Snapshots sind der kanonische gemeinsame Zustand.
+2. `useFirestoreDoc` oder `useFirestoreCollection` abonniert Firestore einschließlich Pending-Metadaten.
+3. Schreibaktionen werden als geordnete optimistische Reducer auf den letzten bestätigten Stand angewendet und zusätzlich im LocalStorage-Cache gesichert.
+4. Danach wird Firestore mit `updatedAt: serverTimestamp()` geschrieben. Firestore allein übernimmt Offline-Queue, Netzwerk-Retry und Reconnect.
+5. Nur ein Snapshot ohne `hasPendingWrites` ersetzt die bestätigte Basis. Pending-Snapshots halten `isPending` aktiv.
+6. Eine definitive Auth-, Rules- oder Schreibablehnung entfernt nur die betroffene Mutation, berechnet jüngere Mutationen auf der bestätigten Basis neu und fordert über einen sichtbaren Fehler zur erneuten fachlichen Aktion auf. Die Anwendung startet keinen automatischen Retry.
 
 **Lokaler Modus:**
 
 - Fehlt die Konfiguration, liefern dieselben Hooks Daten ausschließlich aus LocalStorage.
 - Die lokale User-ID wird einmal erzeugt und unter `app-hub:local-user-id` gespeichert.
+- Storage-Lese-, Schreib-, Lösch-, Serialisierungs- und ID-Fehler werfen nicht. Fachliche Schreibfehler rollen den optimistischen Zustand sofort zurück.
 - Es gibt keine geräteübergreifende Synchronisation.
 
 ### 4.2 Gemeinsame Interfaces
 
 | Bedarf | Interface | Verhalten |
 | --- | --- | --- |
-| einzelner Dokumentzustand | `useFirestoreDoc<T>` | `data`, `save`, `merge`, Loading, Fehler, Realtime-Flag |
-| geordnete Elemente | `useFirestoreCollection<T>` | Setzen, Mergen, einzeln oder gesammelt Löschen, Sammelspeichern und Leeren; Standardreihenfolge `position` |
-| Nutzerkennung | `useAnonymousSession` | Firebase UID oder lokale Fallback-ID |
+| einzelner Dokumentzustand | `useFirestoreDoc<T>` | `data`, `save`, `merge`, Loading, Pending, typisierter Fehler und Realtime-Flag |
+| geordnete Elemente | `useFirestoreCollection<T>` | Setzen, Mergen, einzeln oder gesammelt Löschen, Sammelspeichern und Leeren; Pending, typisierter Fehler und Standardreihenfolge `position` |
+| Nutzerkennung | `useAnonymousSession` | Firebase UID oder für den Seitenlauf stabile lokale Fallback-ID sowie typisierter Fehler |
 | Lobby-Verzeichnis | `useLobbyDirectory` | Öffentliche Liste, Default-Lobby und transaktionssichere Erstellung |
 | Aktive Lobby | `useActiveLobby` | Lobby aus dem Route-Kontext; außerhalb immer `default` |
 
 LocalStorage-Schlüssel beginnen mit `app-hub:doc:` beziehungsweise `app-hub:collection:` und enthalten den vollständigen kanonischen Pfad.
+
+Erwartete Persistenzfehler verwenden einen nicht werfenden Rückgabewert. Auch der Fehlerzustand im Hook enthält dieselbe `SyncError`-Instanz:
+
+```ts
+type SyncResult<T = void> =
+  | { ok: true; value: T; error: null }
+  | { ok: false; value: T; error: SyncError }
+```
+
+`SyncError` trägt stabile Felder für `source`, `operation`, `code` und `retryable`; Oberflächen übersetzen ausschließlich den Code und zeigen keine rohen Firebase-Texte. Fehler werden je Quelle gehalten. Ein erfolgreicher Remote-Write löscht deshalb keinen weiterhin bestehenden Storage-Fehler, und ein bestätigter Snapshot löst nur den Snapshotfehler.
 
 ### 4.3 Kanonische Firestore-Pfade
 
@@ -159,11 +171,14 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 ### 4.5 Konsistenz und Fehler
 
-- Schreibvorgänge sind lokal optimistisch.
-- Der gemeinsame Cache löst keine konkurrierenden Änderungen auf; in Realtime ist der letzte kanonische Snapshot maßgeblich.
-- Mehrere Dokumente oder Collections werden nicht automatisch atomar geändert.
+- Schreibvorgänge sind lokal optimistisch. Der Mutationskoordinator hält den letzten serverbestätigten Snapshot und rebaset überlappende Mutationen deterministisch.
+- Ein fehlerhafter LocalStorage-Cache verhindert im Realtime-Modus nicht den Remote-Write, bleibt aber sichtbar. Im lokalen Modus führt derselbe Fehler zum sofortigen Rollback.
+- `SyncBatch` und `commitSyncBatch(stage)` bilden gezielte Mehrspeicher-Aktionen ab. Der Stage-Callback ist synchron; die optimistische Änderung beginnt erst nach dem Firestore-Limit- und lokalen Serialisierungs-Preflight.
+- Realtime-Batches verwenden genau einen authentifizierten Firestore-`writeBatch` und scheitern oberhalb von 500 Writes vor der optimistischen Änderung. Sie werden nicht in nichtatomare Teilbatches zerlegt.
+- Im lokalen Modus werden die bisherigen Raw-Werte gesichert. Bei Teilfehlern werden sie bestmöglich kompensiert und anschließend erneut eingelesen; ein gescheiterter Ausgleich wird als `rollback-failed` sichtbar.
+- Batches werden nur für erkannte Fachinvarianten eingesetzt: Scoreboard-Lebenszyklus und abhängige Team-/Archivdaten, Turnier-Lebenszyklus samt aktivem Nachfolger, Archivieren und Zurücksetzen im Fortschritts-Dashboard, gemeinsamer Runden-/Buzz-Zustand im Live-Buzzer sowie denormalisierte Spieleränderungen der Sushi Map. Andere Schreibfolgen bleiben sequenziell und prüfen jedes `SyncResult`.
 - Der Live-Buzzer verwendet für den Gewinner-Buzz ausdrücklich eine Firestore-Transaktion.
-- Auth-, Rules-, Netzwerk- und Snapshotfehler werden als `Error` an das jeweilige Feature weitergereicht.
+- Auth-, Rules-, Netzwerk-, Snapshot- und Storagefehler werden als `SyncError` an das jeweilige Feature weitergereicht.
 - Features dürfen keine eigenen Firebase-Apps, Auth-Flows oder separaten LocalStorage-Fallbacks einführen.
 
 ## 5. App-Spezifikationen
@@ -516,10 +531,11 @@ Zufällige IDs und Zeitstempel sind keine Golden Values. Fixtures verwenden fest
 npm test
 npm run test:watch
 npm run test:coverage
+npm run test:firebase
 npm run test:browser
 ```
 
-`npm test` läuft einmalig und ist der Befehl für die schnellen Kern-Tests in CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. Komponenten-, Firebase-Emulator- und Rules-Tests gehören nicht zu diesem P0-Schnitt.
+`npm test` läuft einmalig und ist der Befehl für die schnellen Kern-Tests in CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. `npm run test:firebase` prüft Rules und die atomare Ablehnung eines Firestore-Batches im lokalen Emulator.
 
 `npm run test:browser` startet Vite ohne Firebase-Konfiguration auf `127.0.0.1:5180` und führt eine kleine Playwright-Chromium-Suite bei 320, 390, 768 und 1440 Pixel Breite aus. Sie prüft Dashboard und responsive Navigation, eine verschachtelte Scoreboard-Route mit Tastatur und Bestätigungsdialog, Presenter und Fokuswiederherstellung sowie Karten- und Tabelleninteraktion der Sushi Map. Ein gemeinsamer Checkpoint lässt Browser- und Konsolenfehler, äußeren Horizontal-Overflow sowie Axe-Verstöße gegen WCAG 2.0 bis 2.2 A/AA fehlschlagen. Playwright-Bericht, Screenshots und Traces liegen ausschließlich in den nicht versionierten Verzeichnissen `playwright-report/` und `test-results/`.
 
@@ -535,6 +551,7 @@ Mindestens für Codeänderungen:
 npm run lint
 npm run docs:check
 npm test
+npm run test:firebase
 npm run test:browser
 npm run build
 ```
@@ -562,7 +579,7 @@ Copy-Item .env.example .env.local
 npm run dev -- --host 127.0.0.1 --port 5180 --strictPort
 ```
 
-Ohne ausgefüllte `.env.local` startet die App absichtlich im lokalen Modus. Weitere Befehle:
+Ohne ausgefüllte `.env.local` startet die App absichtlich im lokalen Modus. Der Server bindet auch bei Firebase-Entwicklung an `127.0.0.1`; für Anonymous Auth und Realtime-Sync wird er unter `http://localhost:5180` geöffnet, weil `localhost` als lokale Auth-Domain autorisiert ist. Weitere Befehle:
 
 ```powershell
 npm run lint

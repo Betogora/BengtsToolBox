@@ -109,6 +109,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
 
 const resultOptions: Array<{ value: GameResult; labelKey?: TranslationKey; label: string }> = [
@@ -1398,7 +1399,7 @@ function TournamentCreator({
             setIsCreating(true)
 
             try {
-              await onCreate({
+              const created = await onCreate({
                 name,
                 format,
                 numberOfRounds: effectiveNumberOfRounds,
@@ -1411,6 +1412,11 @@ function TournamentCreator({
                 byeScore,
                 roundRobinCycles,
               })
+              if (!created) {
+                setCreateError(t('common.syncError'))
+                toast.error(t('swiss.createToastError'))
+                return
+              }
               toast.success(t('swiss.createSuccess'))
               onCreated?.()
             } catch (error) {
@@ -1894,7 +1900,7 @@ export function SwissTournamentsPage() {
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle>{t('common.syncError')}</CardTitle>
-              <CardDescription>{app.error.message}</CardDescription>
+              <CardDescription>{t(syncErrorMessageKey(app.error))}</CardDescription>
             </CardHeader>
           </Card>
         )}
@@ -2017,7 +2023,7 @@ export function SwissTournamentsPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.syncError')}</CardTitle>
-            <CardDescription>{app.error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(app.error))}</CardDescription>
           </CardHeader>
         </Card>
       )}

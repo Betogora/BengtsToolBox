@@ -320,9 +320,10 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
   return {
     archivedDatasets: state.archivedDatasets ?? [],
     deleteArchivedDataset,
-    error: store.error,
+    error: store.error ?? session.error,
     gameWins: summary.gameWins,
     isLoading: store.isLoading,
+    isPending: store.isPending,
     isRealtime: store.isRealtime,
     isTiebreakRequired: summary.isTiebreakRequired,
     outcome: summary.outcome,

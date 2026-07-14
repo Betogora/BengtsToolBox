@@ -141,6 +141,7 @@ export function useNextQuestion(lobbyId?: string) {
 
   return {
     ...store,
+    error: store.error ?? session.error,
     catalogError,
     currentIndex,
     currentPosition: questionCount === 0 ? 0 : currentIndex + 1,

@@ -7,6 +7,7 @@ import {
   isFirebaseConfigured,
 } from '@/lib/firebase/client'
 import { firebasePaths } from '@/lib/firebase/paths'
+import { createSyncError, type SyncError } from '@/lib/firebase/syncError'
 import {
   createLobbyCode,
   isValidDeviceName,
@@ -26,7 +27,7 @@ type CreateLobbyInput = {
 export function useLobbyDirectory() {
   const [lobbies, setLobbies] = useState<Lobby[]>([defaultLobby])
   const [isLoading, setIsLoading] = useState(isFirebaseConfigured)
-  const [error, setError] = useState<Error | null>(null)
+  const [error, setError] = useState<SyncError | null>(null)
 
   useEffect(() => {
     const services = getFirebaseServices()
@@ -61,13 +62,13 @@ export function useLobbyDirectory() {
             setIsLoading(false)
           },
           (snapshotError) => {
-            setError(snapshotError)
+            setError(createSyncError(snapshotError, 'snapshot', 'subscribe'))
             setIsLoading(false)
           },
         )
       })
-      .catch((setupError: Error) => {
-        setError(setupError)
+      .catch((setupError: unknown) => {
+        setError(createSyncError(setupError, 'auth', 'subscribe'))
         setIsLoading(false)
       })
 
@@ -93,7 +94,9 @@ export function useLobbyDirectory() {
       throw new Error('Die anonyme Firebase-Sitzung ist nicht verfügbar.')
     }
 
-    const normalizedDeviceName = saveDeviceName(normalizeDeviceName(deviceName))
+    const deviceNameResult = saveDeviceName(normalizeDeviceName(deviceName))
+    const normalizedDeviceName = deviceNameResult.value
+    if (!deviceNameResult.ok) setError(deviceNameResult.error)
     const normalizedLobbyName = normalizeLobbyName(lobbyName)
 
     for (let attempt = 0; attempt < 10; attempt += 1) {

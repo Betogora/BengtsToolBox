@@ -21,6 +21,7 @@ import {
 } from '@/apps/shared/historicalRecordNames'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
+import { commitSyncBatch } from '@/lib/firebase/syncBatch'
 import {
   getParticipantColorByPosition,
   normalizeParticipantColor,
@@ -445,7 +446,7 @@ export function useProgressDashboard(lobbyId?: string) {
 
     return saveActiveDataset({
       events: [...activeDataset.events, event],
-    }).then(() => true)
+    }).then((result) => result.ok)
   }
 
   const updateEvent = (
@@ -499,10 +500,12 @@ export function useProgressDashboard(lobbyId?: string) {
       },
     ])
 
-    await datasetsStore.saveItems(nextDatasets)
-    await stateStore.merge({
-      activeDatasetId,
-      updatedBy: session.userId,
+    return commitSyncBatch((batch) => {
+      datasetsStore.saveItems(nextDatasets, batch)
+      stateStore.merge(
+        { activeDatasetId, updatedBy: session.userId },
+        batch,
+      )
     })
   }
 
@@ -521,9 +524,12 @@ export function useProgressDashboard(lobbyId?: string) {
     archivedDatasets,
     deleteDataset,
     deleteEvent,
-    error: stateStore.error ?? playersStore.error ?? datasetsStore.error,
+    error:
+      stateStore.error ?? playersStore.error ?? datasetsStore.error ?? session.error,
     isLoading:
       stateStore.isLoading || playersStore.isLoading || datasetsStore.isLoading,
+    isPending:
+      stateStore.isPending || playersStore.isPending || datasetsStore.isPending,
     isRealtime:
       stateStore.isRealtime && playersStore.isRealtime && datasetsStore.isRealtime,
     leader,

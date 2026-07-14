@@ -42,6 +42,7 @@ import type {
   TournamentArchiveReason,
 } from '@/apps/swiss-tournaments/types'
 import { firebasePaths } from '@/lib/firebase/paths'
+import { commitSyncBatch } from '@/lib/firebase/syncBatch'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -261,7 +262,7 @@ export function useSwissTournaments(lobbyId?: string) {
   }, [session.userId, storedTournaments, tournaments, tournamentsStore])
 
   const saveTournament = async (tournament: Tournament) => {
-    await tournamentsStore.setItem(tournament.id, {
+    return tournamentsStore.setItem(tournament.id, {
       ...tournament,
       updatedBy: session.userId,
     })
@@ -282,11 +283,18 @@ export function useSwissTournaments(lobbyId?: string) {
       },
     ])
 
-    await tournamentsStore.saveItems(nextTournaments)
-    await stateStore.merge({
-      activeTournamentId: tournament.id,
-      updatedBy: session.userId,
+    const result = await commitSyncBatch((batch) => {
+      tournamentsStore.saveItems(nextTournaments, batch)
+      stateStore.merge(
+        {
+          activeTournamentId: tournament.id,
+          updatedBy: session.userId,
+        },
+        batch,
+      )
     })
+
+    if (!result.ok) return null
 
     return nextTournaments.find((entry) => entry.id === tournament.id) ?? tournament
   }
@@ -302,16 +310,19 @@ export function useSwissTournaments(lobbyId?: string) {
       return
     }
 
-    await tournamentsStore.deleteItem(tournamentId)
-
-    if (stateStore.data.activeTournamentId === tournamentId) {
-      const nextTournament = activeTournaments.find((entry) => entry.id !== tournamentId)
-
-      await stateStore.merge({
-        activeTournamentId: nextTournament?.id ?? null,
-        updatedBy: session.userId,
-      })
-    }
+    const nextTournament = activeTournaments.find((entry) => entry.id !== tournamentId)
+    return commitSyncBatch((batch) => {
+      tournamentsStore.deleteItem(tournamentId, batch)
+      if (stateStore.data.activeTournamentId === tournamentId) {
+        stateStore.merge(
+          {
+            activeTournamentId: nextTournament?.id ?? null,
+            updatedBy: session.userId,
+          },
+          batch,
+        )
+      }
+    })
   }
 
   const updateActiveTournament = async (
@@ -322,9 +333,8 @@ export function useSwissTournaments(lobbyId?: string) {
     }
 
     const nextTournament = sanitizeTournament(updater(activeTournament))
-    await saveTournament(nextTournament)
-
-    return nextTournament
+    const result = await saveTournament(nextTournament)
+    return result.ok ? nextTournament : null
   }
 
   const updateTournamentMeta = (partial: Partial<Tournament>) =>
@@ -656,13 +666,13 @@ export function useSwissTournaments(lobbyId?: string) {
       updatedBy: session.userId,
     }
 
-    await tournamentsStore.saveItems(sequenceTournamentNames([
+    const result = await tournamentsStore.saveItems(sequenceTournamentNames([
       ...tournaments.filter((entry) => entry.id !== activeTournament.id),
       archivedCopy,
       resetTournament,
     ]))
 
-    return resetTournament
+    return result.ok ? resetTournament : null
   }
 
   const goBackToPreviousRound = () =>
@@ -760,11 +770,12 @@ export function useSwissTournaments(lobbyId?: string) {
     createNewTournament,
     deleteTournament,
     deleteLatestRound: removeLatestRound,
-    error: stateStore.error ?? tournamentsStore.error,
+    error: stateStore.error ?? tournamentsStore.error ?? session.error,
     exportStandingsCsv,
     generateRound,
     goBackToPreviousRound,
     isLoading: stateStore.isLoading || tournamentsStore.isLoading,
+    isPending: stateStore.isPending || tournamentsStore.isPending,
     isRealtime: stateStore.isRealtime && tournamentsStore.isRealtime,
     marioKartPlanningAvailability,
     regenerateRound,

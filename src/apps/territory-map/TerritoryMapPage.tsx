@@ -77,6 +77,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
 type SushiScore = {
   player: TerritoryPlayer
@@ -679,6 +680,7 @@ export function TerritoryMapPage() {
     deleteEvent,
     error,
     isLoading,
+    isPending,
     players,
     removePlayer,
     setActiveMap,
@@ -1091,7 +1093,7 @@ export function TerritoryMapPage() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{error.message}</CardDescription>
+            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -1380,7 +1382,7 @@ export function TerritoryMapPage() {
                 </div>
               ))}
               <AddEaterCard onAdd={handleAddEater} />
-              {isLoading && players.length === 0 && (
+              {(isLoading || isPending) && players.length === 0 && (
                 <p className="type-ui text-muted-foreground">{t('common.syncing')}</p>
               )}
               </CardContent>

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import {
   deviceNameMaxLength,
@@ -41,6 +42,7 @@ export function LobbyDirectoryPage() {
   const [lobbyName, setLobbyName] = useState('')
   const [deviceName, setDeviceNameInput] = useState(identity.deviceName)
   const [isCreating, setIsCreating] = useState(false)
+  const syncError = directory.error ?? session.error ?? identity.error
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -87,6 +89,15 @@ export function LobbyDirectoryPage() {
             <RadioTower className="size-5 shrink-0 text-primary" />
             <p className="type-ui">{t('lobby.firebaseRequired')}</p>
           </CardContent>
+        </Card>
+      )}
+
+      {syncError && (
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle>{t('common.syncError')}</CardTitle>
+            <CardDescription>{t(syncErrorMessageKey(syncError))}</CardDescription>
+          </CardHeader>
         </Card>
       )}
 
