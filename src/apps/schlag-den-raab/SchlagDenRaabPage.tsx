@@ -12,6 +12,7 @@ import {
   getSchlagDenRaabSummary,
   useSchlagDenRaabScoreboard,
 } from '@/apps/schlag-den-raab/hooks/useSchlagDenRaabScoreboard'
+import { ScoreProgressPie } from '@/apps/schlag-den-raab/ScoreProgressPie'
 import type {
   SchlagDenRaabArchivedDataset,
   SchlagDenRaabGame,
@@ -213,6 +214,11 @@ function ScoreOverview() {
               </div>
             </div>
           </div>
+
+          <ScoreProgressPie
+            games={rows.map((row) => row.game)}
+            players={players}
+          />
 
           <Table
             className="raab-score-table"

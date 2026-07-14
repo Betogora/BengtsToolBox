@@ -404,6 +404,7 @@ Pairings tragen harte oder weiche Warnungen. Abgedeckt werden unter anderem fehl
 - Die 15 regulären Spiele tragen die Punkte `1` bis `15`; Titel sind editierbar.
 - Ein Klick setzt oder entfernt den Gewinner eines Spiels und berechnet den kumulierten Score.
 - Ein regulärer Sieger steht fest, sobald eine führende Person mehr als 60 Punkte besitzt.
+- Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht.
 - Sind nach allen 15 Spielen beide Scores gleich, erscheint Spiel 16 als Stechen mit 16 Punkten.
 - Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.
 - Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
