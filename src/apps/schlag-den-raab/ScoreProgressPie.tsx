@@ -7,7 +7,6 @@ import {
 import type {
   SchlagDenRaabGame,
   SchlagDenRaabPlayer,
-  SchlagDenRaabPlayerId,
 } from '@/apps/schlag-den-raab/types'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -37,12 +36,6 @@ function getSlicePath(slice: ScoreProgressSlice) {
     `A ${chartRadius} ${chartRadius} 0 0 ${sweepFlag} ${end.x} ${end.y}`,
     'Z',
   ].join(' ')
-}
-
-function playerDirectionKey(playerId: SchlagDenRaabPlayerId) {
-  return playerId === 'player-1'
-    ? ('raab.progress.counterclockwise' as const)
-    : ('raab.progress.clockwise' as const)
 }
 
 export function ScoreProgressPie({
@@ -77,7 +70,7 @@ export function ScoreProgressPie({
 
   return (
     <section className="raab-progress" aria-labelledby={headingId}>
-      <h3 id={headingId} className="type-action text-center">
+      <h3 id={headingId} className="raab-progress-title text-center">
         {t('raab.progress.title')}
       </h3>
 
@@ -86,7 +79,7 @@ export function ScoreProgressPie({
           aria-labelledby={`${titleId} ${descriptionId}`}
           className="raab-progress-chart"
           role="img"
-          viewBox="0 0 360 360"
+          viewBox="0 36 360 288"
         >
           <title id={titleId}>{t('raab.progress.title')}</title>
           <desc id={descriptionId}>{description}</desc>
@@ -189,14 +182,6 @@ export function ScoreProgressPie({
             cy={chartCenter}
             r={chartRadius}
           />
-          <text
-            aria-hidden="true"
-            className="raab-progress-threshold-label"
-            x={chartCenter}
-            y="347"
-          >
-            {t('raab.progress.threshold')}
-          </text>
         </svg>
       </div>
 
@@ -220,12 +205,6 @@ export function ScoreProgressPie({
                       className="raab-progress-color-dot"
                     />
                     <span className="type-action truncate">{player.name}</span>
-                  </div>
-                  <div className="type-caption mt-1 text-muted-foreground">
-                    <span aria-hidden="true">
-                      {player.id === 'player-1' ? '↺ ' : '↻ '}
-                    </span>
-                    {t(playerDirectionKey(player.id))}
                   </div>
                 </div>
                 <span className="raab-progress-score">

@@ -73,11 +73,9 @@ export function getSchlagDenRaabSummary({
   const isRegularComplete = games.every((game) => game.winnerId)
   const isTiebreakRequired =
     isRegularComplete && regularScores['player-1'] === regularScores['player-2']
-  const visibleGames =
-    isTiebreakRequired && tiebreak ? [...games, tiebreak] : games
   const scores = emptyPlayerNumberMap()
   const wins = emptyPlayerNumberMap()
-  const rows = visibleGames.map((game) => {
+  const rows = games.map((game) => {
     if (game.winnerId) {
       scores[game.winnerId] += game.points
       wins[game.winnerId] += 1
@@ -89,6 +87,13 @@ export function getSchlagDenRaabSummary({
       winsAfterGame: { ...wins },
     }
   })
+  if (isTiebreakRequired && tiebreak) {
+    rows.push({
+      game: tiebreak,
+      scoresAfterGame: { ...scores },
+      winsAfterGame: { ...wins },
+    })
+  }
   const totalScores = rows.at(-1)?.scoresAfterGame ?? emptyPlayerNumberMap()
   const gameWins = rows.at(-1)?.winsAfterGame ?? emptyPlayerNumberMap()
   const tiebreakWinnerId =

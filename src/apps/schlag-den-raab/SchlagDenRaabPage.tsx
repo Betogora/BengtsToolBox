@@ -116,6 +116,7 @@ function ScoreButton({
 }) {
   const { t } = useI18n()
   const isWinner = game.winnerId === player.id
+  const winnerMark = game.position === 16 ? '×' : scoreAfterGame
 
   return (
     <button
@@ -136,7 +137,7 @@ function ScoreButton({
       onClick={() => onSetWinner(game.id, player.id)}
     >
       {isWinner ? (
-        <span className="raab-score-pill">{scoreAfterGame}</span>
+        <span className="raab-score-pill">{winnerMark}</span>
       ) : (
         <span className="sr-only">{t('raab.noScore')}</span>
       )}
@@ -507,7 +508,9 @@ function ReadOnlyArchiveTable({
                 >
                   {row.game.winnerId === player.id && (
                     <span className="raab-score-pill">
-                      {row.scoresAfterGame[player.id]}
+                      {row.game.position === 16
+                        ? '×'
+                        : row.scoresAfterGame[player.id]}
                     </span>
                   )}
                 </div>

@@ -45,7 +45,7 @@ export const defaultSchlagDenRaabTiebreak: SchlagDenRaabGame = {
   id: 'game-16',
   position: 16,
   title: 'Spiel 16 - Stechen',
-  points: 16,
+  points: 0,
   winnerId: null,
 }
 

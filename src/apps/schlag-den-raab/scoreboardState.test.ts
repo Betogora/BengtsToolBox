@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { getSchlagDenRaabSummary } from '@/apps/schlag-den-raab/hooks/useSchlagDenRaabScoreboard'
 import {
+  defaultSchlagDenRaabTiebreak,
   initialSchlagDenRaabState,
   normalizeSchlagDenRaabState,
 } from '@/apps/schlag-den-raab/scoreboardState'
@@ -116,5 +118,37 @@ describe('Schlag den Raab scoreboard state', () => {
     )
 
     expect(normalizeSchlagDenRaabState(once)).toEqual(once)
+  })
+
+  it('uses the tiebreak only to decide the winner', () => {
+    const playerOneWins = new Set([4, 5, 6, 7, 8, 9, 10, 11])
+    const games = initialSchlagDenRaabState.games.map((game) => ({
+      ...game,
+      winnerId: playerOneWins.has(game.position)
+        ? ('player-1' as const)
+        : ('player-2' as const),
+    }))
+    const summary = getSchlagDenRaabSummary({
+      games,
+      players: initialSchlagDenRaabState.players,
+      tiebreak: {
+        ...defaultSchlagDenRaabTiebreak,
+        points: 16,
+        winnerId: 'player-2',
+      },
+    })
+
+    expect(summary.totalScores).toEqual({ 'player-1': 60, 'player-2': 60 })
+    expect(summary.gameWins).toEqual({ 'player-1': 8, 'player-2': 7 })
+    expect(summary.rows).toHaveLength(16)
+    expect(summary.rows.at(-1)?.scoresAfterGame).toEqual({
+      'player-1': 60,
+      'player-2': 60,
+    })
+    expect(summary.rows.at(-1)?.winsAfterGame).toEqual({
+      'player-1': 8,
+      'player-2': 7,
+    })
+    expect(summary.winnerId).toBe('player-2')
   })
 })
