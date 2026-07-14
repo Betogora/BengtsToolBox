@@ -70,7 +70,7 @@ export function ScoreProgressPie({
 
   return (
     <section className="raab-progress" aria-labelledby={headingId}>
-      <h3 id={headingId} className="raab-progress-title text-center">
+      <h3 id={headingId} className="type-action text-center">
         {t('raab.progress.title')}
       </h3>
 

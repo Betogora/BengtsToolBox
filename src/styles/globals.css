@@ -492,12 +492,6 @@ select {
   background: color-mix(in srgb, var(--background) 68%, white);
 }
 
-.raab-progress-title {
-  font-size: 0.75rem;
-  font-weight: var(--btb-weight-strong);
-  line-height: var(--btb-leading-caption);
-}
-
 .raab-progress-chart-wrap {
   display: flex;
   min-width: 0;
