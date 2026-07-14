@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react'
+import { cloneElement, lazy, Suspense } from 'react'
 
 import { registeredApps } from '@/apps/registry'
 import { useI18n } from '@/lib/i18n'
+import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const lazyAppElements = new Map(
   registeredApps.map((app) => {
@@ -59,6 +60,7 @@ function RouteFallback({ label }: { label: string }) {
 
 export function LazyAppRoute({ appId }: { appId: string }) {
   const { t } = useI18n()
+  const activeLobbyId = useActiveLobbyId()
   const app = registeredApps.find((candidate) => candidate.id === appId)
   const appElement = lazyAppElements.get(appId)
 
@@ -68,7 +70,7 @@ export function LazyAppRoute({ appId }: { appId: string }) {
 
   return (
     <Suspense fallback={<RouteFallback label={t(app.titleKey)} />}>
-      {appElement}
+      {cloneElement(appElement, { key: activeLobbyId })}
     </Suspense>
   )
 }

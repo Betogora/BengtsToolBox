@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:62090094fe3af3c4a362adae25d32b0f90d8a18f1c92d4e459b688380cb3dd91">
+  <meta name="specs-source-sha256" content="sha256:3f79e9a121a683fdbdafd8c5df96a5d2a29cdb1c5a116dc61cd034f96147eeb4">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -548,7 +548,7 @@
         </div>
         <div class="card accent" style="margin-top:1rem">
           <h3>Toolbox-weite Lobbys</h3>
-          <p>Die globale Lobby behält alle bestehenden <code>apps/...</code>-Pfade. Benutzerdefinierte Räume speichern Metadaten unter <code>lobbies/{lobbyId}</code>, Geräte unter <code>devices/{uid}</code> und App-Zustände unter <code>lobbies/{lobbyId}/apps/{appId}/...</code>.</p>
+          <p>Die globale Lobby behält alle bestehenden <code>apps/...</code>-Pfade. Benutzerdefinierte Räume speichern Metadaten unter <code>lobbies/{lobbyId}</code>, Geräte unter <code>devices/{uid}</code> und App-Zustände unter <code>lobbies/{lobbyId}/apps/{appId}/...</code>. Beim Anlegen einer Lobby werden keine App-Daten aus der globalen oder einer anderen Lobby kopiert; beim ersten Öffnen entsteht ausschließlich der spezifizierte Erstzustand der jeweiligen App.</p>
           <p>Anonymous Auth dient als Geräteidentität. Alle Teilnehmer bearbeiten denselben State; Clients dürfen nur den eigenen Gerätedatensatz schreiben und keine Lobby löschen. Ohne Firebase bleiben ausschließlich die globalen Apps lokal nutzbar.</p>
         </div>
       </section>
