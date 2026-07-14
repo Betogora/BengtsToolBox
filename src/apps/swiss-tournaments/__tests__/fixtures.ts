@@ -7,6 +7,10 @@ import type {
   Tournament,
   TournamentFormat,
 } from '@/apps/swiss-tournaments/types'
+import {
+  tournamentDomain,
+  type TournamentCommand,
+} from '@/apps/swiss-tournaments/domain/tournamentDomain'
 
 export function makePlayers(count: number): Player[] {
   return Array.from({ length: count }, (_, index) => ({
@@ -105,4 +109,29 @@ export function makeRound(
 
 export function pairingKey(pairing: Pairing) {
   return [pairing.whitePlayerId, pairing.blackPlayerId].sort().join('::')
+}
+
+export function applyTournamentCommand(
+  tournament: Tournament,
+  command: TournamentCommand,
+) {
+  const decision = tournamentDomain.transition(tournament, { command })
+  const applied =
+    decision.status === 'confirmation-required'
+      ? tournamentDomain.transition(tournament, decision.retry)
+      : decision
+
+  if (applied.status !== 'changed') {
+    throw new Error(`Turnieraktion wurde nicht angewendet: ${applied.status}`)
+  }
+
+  return applied.tournament
+}
+
+export function planNextTournamentRound(tournament: Tournament) {
+  return applyTournamentCommand(tournament, { type: 'round.plan-next' })
+}
+
+export function planNextTournamentPairings(tournament: Tournament) {
+  return planNextTournamentRound(tournament).rounds.at(-1)?.pairings ?? []
 }

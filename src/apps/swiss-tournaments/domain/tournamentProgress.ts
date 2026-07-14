@@ -1,6 +1,4 @@
-import {
-  isPairingComplete,
-} from '@/apps/swiss-tournaments/logic'
+import { isPairingComplete } from './pairingSupport'
 import { getMarioKartCycleProgress } from '@/apps/swiss-tournaments/marioKart'
 import type {
   Round,

@@ -1,26 +1,27 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  generatePairings,
-  getRoundRobinRequiredRoundCount,
-} from '@/apps/swiss-tournaments/logic'
-import {
-  makeRound,
   makeTournament,
   pairingKey,
+  planNextTournamentRound,
 } from '@/apps/swiss-tournaments/__tests__/fixtures'
 import type { Pairing, Tournament } from '@/apps/swiss-tournaments/types'
 
 function completeNextRound(tournament: Tournament, roundNumber: number) {
-  const pairings = generatePairings(tournament, roundNumber).map((pairing) =>
+  const planned = planNextTournamentRound(tournament)
+  const pairings = (planned.rounds.at(-1)?.pairings ?? []).map((pairing) =>
     pairing.isBye ? pairing : { ...pairing, result: '1-0' as const },
   )
 
   return {
     tournament: {
-      ...tournament,
+      ...planned,
       currentRound: roundNumber,
-      rounds: [...tournament.rounds, makeRound(roundNumber, pairings)],
+      rounds: planned.rounds.map((round) =>
+        round.roundNumber === roundNumber
+          ? { ...round, pairings, status: 'completed' as const }
+          : round,
+      ),
     },
     pairings,
   }
@@ -45,7 +46,7 @@ describe('Round Robin golden cases', () => {
     const { rounds } = playRounds(tournament, 3)
     const games = rounds.flat().filter((pairing) => !pairing.isBye)
 
-    expect(getRoundRobinRequiredRoundCount(tournament)).toBe(3)
+    expect(tournament.numberOfRounds).toBe(3)
     expect(rounds.map((round) => round.length)).toEqual([2, 2, 2])
     expect(new Set(games.map(pairingKey))).toEqual(
       new Set(['p1::p2', 'p1::p3', 'p1::p4', 'p2::p3', 'p2::p4', 'p3::p4']),

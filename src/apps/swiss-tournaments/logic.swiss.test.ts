@@ -1,20 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  createTournament,
-  generatePairings,
-  recalculateStandings,
-} from '@/apps/swiss-tournaments/logic'
+import { tournamentDomain } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import {
   makeRound,
   makeStandardPairing,
   makeTournament,
   pairingKey,
+  planNextTournamentPairings,
 } from '@/apps/swiss-tournaments/__tests__/fixtures'
 
 describe('Swiss tournament golden cases', () => {
   it('sanitizes tournament input and seeds rated players deterministically', () => {
-    const tournament = createTournament(
+    const tournament = tournamentDomain.create(
       {
         name: '  Club Cup  ',
         format: 'swiss',
@@ -47,7 +44,7 @@ describe('Swiss tournament golden cases', () => {
   })
 
   it('pairs the upper and lower halves in the first round', () => {
-    const pairings = generatePairings(makeTournament('swiss', 8), 1)
+    const pairings = planNextTournamentPairings(makeTournament('swiss', 8))
 
     expect(pairings.filter((pairing) => !pairing.isBye).map(pairingKey)).toEqual([
       'p1::p5',
@@ -59,7 +56,7 @@ describe('Swiss tournament golden cases', () => {
 
   it('assigns a fair bye and avoids repeats when another pairing is possible', () => {
     const tournament = makeTournament('swiss', 5)
-    const firstPairings = generatePairings(tournament, 1)
+    const firstPairings = planNextTournamentPairings(tournament)
     const firstBye = firstPairings.find((pairing) => pairing.isBye)
     const completedFirstRound = firstPairings.map((pairing) =>
       pairing.isBye ? pairing : { ...pairing, result: '1-0' as const },
@@ -69,7 +66,7 @@ describe('Swiss tournament golden cases', () => {
       currentRound: 1,
       rounds: [makeRound(1, completedFirstRound)],
     }
-    const secondPairings = generatePairings(afterRoundOne, 2)
+    const secondPairings = planNextTournamentPairings(afterRoundOne)
     const previousKeys = new Set(
       completedFirstRound.filter((pairing) => !pairing.isBye).map(pairingKey),
     )
@@ -90,7 +87,7 @@ describe('Swiss tournament golden cases', () => {
         makeRound(1, [makeStandardPairing('r1-p1', 1, 'p1', 'p2', '1-0')]),
       ],
     })
-    const [repeat] = generatePairings(tournament, 2)
+    const [repeat] = planNextTournamentPairings(tournament)
 
     expect(pairingKey(repeat)).toBe('p1::p2')
     expect(repeat.warnings).toContainEqual(
@@ -117,7 +114,9 @@ describe('Swiss tournament golden cases', () => {
       ],
     })
 
-    expect(recalculateStandings(tournament).map((row) => row.playerId)).toEqual([
+    expect(
+      tournamentDomain.inspect(tournament).standings.map((row) => row.playerId),
+    ).toEqual([
       'p1',
       'p3',
       'p4',

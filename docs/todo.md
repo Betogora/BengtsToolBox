@@ -9,18 +9,7 @@ Die Größenangaben sind relativ: **klein** ist ein enger Änderungssatz, **mitt
 
 ## Aktive Abarbeitungsreihenfolge
 
-### 8. Turnier-App in tiefe fachliche Module gliedern — groß
-
-**Warum:** `SwissTournamentsPage.tsx` enthält mehr als 4.300 nichtleere Zeilen; `logic.ts` mehr als 3.100 und rund 26 exportierte Funktionen. Für Menschen und KI-Agenten ist dadurch bei lokalen Änderungen unnötig viel Kontext erforderlich.
-
-- [ ] Die vorhandenen Golden-, Lifecycle- und Format-Tests als Refactoring-Schutz an den heutigen öffentlichen Interfaces festhalten.
-- [ ] Swiss, Round Robin, Hand and Brain, Rangfolge und Turnierlebenszyklus hinter jeweils kleinen fachlichen Interfaces kapseln.
-- [ ] Keine Sammlung flacher Einzelfunktionen erzeugen: Ein Modul soll mehrere zusammengehörige Regeln verbergen und für Caller weniger Wissen erfordern.
-- [ ] Das äußere Turnier-Interface für Paarungsgenerierung, Vollständigkeit, Wertung und Zustandsübergänge bewusst verkleinern.
-- [ ] Große Page-Bereiche entlang sichtbarer Arbeitsabläufe, Tabs und Dialoge feature-lokal aufteilen.
-- [ ] Nach jedem Schnitt Tests, Build und die betroffenen Browser-Flows ausführen; keine parallelen Zustandsmodelle oder vorsorglichen Adapter einführen.
-
-**Fertig, wenn:** eine Änderung an einem Turnierformat überwiegend dessen eigenes Modul berührt und Page, Hook sowie Tests nur das kleine gemeinsame Interface kennen müssen.
+Derzeit liegen keine aktiven Punkte vor.
 
 ## Konditionale Gates – derzeit nicht abarbeiten
 

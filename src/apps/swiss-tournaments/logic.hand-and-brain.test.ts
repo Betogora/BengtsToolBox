@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  createManualHandBrainPairing,
-  generatePairings,
-} from '@/apps/swiss-tournaments/logic'
-import {
+  applyTournamentCommand,
   makeRound,
   makeTournament,
+  planNextTournamentPairings,
+  planNextTournamentRound,
 } from '@/apps/swiss-tournaments/__tests__/fixtures'
 import type { Pairing } from '@/apps/swiss-tournaments/types'
 
@@ -43,7 +42,9 @@ function pairingPlayerIds(pairing: Pairing) {
 
 describe('Hand and Brain golden cases', () => {
   it('creates two complete boards for eight players', () => {
-    const pairings = generatePairings(makeTournament('handAndBrain', 8), 1)
+    const pairings = planNextTournamentPairings(
+      makeTournament('handAndBrain', 8),
+    )
     const playerIds = pairings.flatMap(pairingPlayerIds)
 
     expect(pairings).toHaveLength(2)
@@ -52,7 +53,9 @@ describe('Hand and Brain golden cases', () => {
   })
 
   it('creates one team board and one single game for six players', () => {
-    const pairings = generatePairings(makeTournament('handAndBrain', 6), 1)
+    const pairings = planNextTournamentPairings(
+      makeTournament('handAndBrain', 6),
+    )
 
     expect(pairings.map((pairing) => pairing.kind)).toEqual([
       'handAndBrain',
@@ -62,7 +65,9 @@ describe('Hand and Brain golden cases', () => {
   })
 
   it('creates one team board and a fair bye for five players', () => {
-    const pairings = generatePairings(makeTournament('handAndBrain', 5), 1)
+    const pairings = planNextTournamentPairings(
+      makeTournament('handAndBrain', 5),
+    )
 
     expect(pairings.find((pairing) => pairing.isBye)?.byePlayerId).toBe('p5')
     expect(pairings.filter((pairing) => pairing.kind === 'handAndBrain')).toHaveLength(1)
@@ -74,12 +79,19 @@ describe('Hand and Brain golden cases', () => {
       currentRound: 1,
       rounds: [makeRound(1, [previous])],
     })
-    const pairing = createManualHandBrainPairing(
-      tournament,
-      2,
-      previous.handBrainSides,
-    )
-    const warningIds = pairing.warnings?.map((warning) => warning.id)
+    const draftTournament = planNextTournamentRound(tournament)
+    const pinnedTournament = applyTournamentCommand(draftTournament, {
+      type: 'pairing.pin',
+      roundNumber: 2,
+      assignment: {
+        kind: 'handAndBrain',
+        sides: previous.handBrainSides!,
+      },
+    })
+    const pairing = pinnedTournament.rounds
+      .find((round) => round.roundNumber === 2)
+      ?.pairings.find((entry) => entry.isManual)
+    const warningIds = pairing?.warnings?.map((warning) => warning.id)
 
     expect(warningIds).toContain('repeat-hand-brain-team')
     expect(warningIds).toContain('repeat-hand-brain-partner')

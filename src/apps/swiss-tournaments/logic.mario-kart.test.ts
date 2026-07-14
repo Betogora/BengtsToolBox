@@ -1,25 +1,140 @@
 import { describe, expect, it } from 'vitest'
 
+import { tournamentDomain } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import {
-  correctClosedMarioKartLobby,
-  createMarioKartBeerStandingRows,
-  deleteLatestEmptyMarioKartLobby,
-  getMarioKartPlanningAvailability,
-  getMarioKartRacers,
-  isLatestEmptyMarioKartLobby,
-  planNextMarioKartLobby,
-  rerollLatestEmptyMarioKartLobby,
-  setMarioKartLobbyReservation,
-  setMarioKartPlayerStatus,
-  updateMarioKartRacer,
-} from '@/apps/swiss-tournaments/marioKart'
-import {
-  addPlayerAfterStart,
-  recalculateStandings,
-} from '@/apps/swiss-tournaments/logic'
-import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
-import { makeTournament } from '@/apps/swiss-tournaments/__tests__/fixtures'
-import type { Tournament } from '@/apps/swiss-tournaments/types'
+  applyTournamentCommand,
+  makeTournament,
+} from '@/apps/swiss-tournaments/__tests__/fixtures'
+import type {
+  MarioKartRacer,
+  Pairing,
+  PlayerStatus,
+  Tournament,
+} from '@/apps/swiss-tournaments/types'
+
+function getMarioKartRacers(pairing: Pairing): readonly MarioKartRacer[] {
+  return pairing.marioKartRacers ?? []
+}
+
+function planNextMarioKartLobby(tournament: Tournament) {
+  const decision = tournamentDomain.transition(tournament, {
+    command: { type: 'round.plan-next' },
+  })
+
+  return {
+    tournament: decision.tournament,
+    blockedReason:
+      decision.status === 'rejected' ? decision.issues[0]?.reason : undefined,
+  }
+}
+
+function updateMarioKartRacer(
+  tournament: Tournament,
+  roundNumber: number,
+  playerId: string,
+  changes: { placement?: number; event?: boolean },
+) {
+  const pairing = tournament.rounds.find((round) => round.roundNumber === roundNumber)
+    ?.pairings[0]
+
+  if (!pairing) {
+    return tournament
+  }
+
+  const decision = tournamentDomain.transition(tournament, {
+    command: {
+      type: 'mario-kart.set-racer',
+      roundNumber,
+      pairingId: pairing.id,
+      playerId,
+      changes,
+    },
+  })
+
+  return decision.status === 'changed' ? decision.tournament : tournament
+}
+
+function setMarioKartPlayerStatus(
+  tournament: Tournament,
+  playerId: string,
+  status: PlayerStatus,
+) {
+  return applyTournamentCommand(tournament, {
+    type: 'player.set-status',
+    playerId,
+    status,
+  })
+}
+
+function recalculateStandings(tournament: Tournament) {
+  return tournamentDomain.inspect(tournament).standings
+}
+
+function getTournamentProgress(tournament: Tournament) {
+  return tournamentDomain.inspect(tournament).progress
+}
+
+function addPlayerAfterStart(tournament: Tournament, name: string) {
+  return applyTournamentCommand(tournament, { type: 'player.add', name })
+}
+
+function setMarioKartLobbyReservation(
+  tournament: Tournament,
+  playerIds: readonly string[] | null,
+) {
+  return applyTournamentCommand(tournament, {
+    type: 'mario-kart.reserve-next-lobby',
+    playerIds,
+  })
+}
+
+function rerollLatestEmptyMarioKartLobby(
+  tournament: Tournament,
+  roundNumber: number,
+) {
+  void roundNumber
+  const decision = tournamentDomain.transition(tournament, {
+    command: { type: 'round.regenerate-latest' },
+  })
+
+  return decision.status === 'changed' ? decision.tournament : tournament
+}
+
+function deleteLatestEmptyMarioKartLobby(
+  tournament: Tournament,
+  roundNumber: number,
+) {
+  const inspected = tournamentDomain.inspect(tournament).rounds.get(roundNumber)
+
+  return inspected?.isLatestEmptyMarioKartLobby
+    ? applyTournamentCommand(tournament, { type: 'round.delete-latest' })
+    : tournament
+}
+
+function isLatestEmptyMarioKartLobby(tournament: Tournament, roundNumber: number) {
+  return tournamentDomain.inspect(tournament).rounds.get(roundNumber)
+    ?.isLatestEmptyMarioKartLobby ?? false
+}
+
+function getMarioKartPlanningAvailability(tournament: Tournament) {
+  return tournamentDomain.inspect(tournament).planning
+}
+
+function correctClosedMarioKartLobby(
+  tournament: Tournament,
+  roundNumber: number,
+  racers: readonly { playerId: string; placement?: number; event?: boolean }[],
+) {
+  return applyTournamentCommand(tournament, {
+    type: 'mario-kart.correct-lobby',
+    roundNumber,
+    racers,
+  })
+}
+
+function createMarioKartBeerStandingRows(tournament: Tournament) {
+  return tournamentDomain.inspect(tournament).beerStandings
+}
 
 function createLobby(tournament: Tournament) {
   return planNextMarioKartLobby(tournament).tournament
@@ -64,7 +179,7 @@ describe('Mario-Kart-Lobbyplanung', () => {
 
     expect(result.tournament).toBe(tournament)
     expect(result.blockedReason).toBe('not-enough-eligible-players')
-    expect(getMarioKartPlanningAvailability(tournament).canCreate).toBe(false)
+    expect(getMarioKartPlanningAvailability(tournament)?.canCreate).toBe(false)
   })
 
   it.each([4, 5, 6, 8, 10])(
@@ -86,23 +201,15 @@ describe('Mario-Kart-Lobbyplanung', () => {
     expect(racerIds(result.tournament, 1)).toEqual(['p1', 'p2', 'p3', 'p4'])
   })
 
-  it('begrenzt Gleichstandsauswahl auf die ersten 25.000 Kombinationen', () => {
+  it('behält bei 30 Gleichständen eine stabile Auswahl bei', () => {
     const tournament = makeTournament('marioKart', 30)
     tournament.players = tournament.players.map((player) => ({
       ...player,
       initialSeed: 1,
     }))
-    const avoidedPlayerIds = new Set(
-      tournament.players.slice(0, 13).map((player) => player.id),
-    )
-    const result = planNextMarioKartLobby(tournament, avoidedPlayerIds)
+    const result = planNextMarioKartLobby(tournament)
 
-    expect(racerIds(result.tournament, 1)).toEqual([
-      'p1',
-      'p14',
-      'p15',
-      'p16',
-    ])
+    expect(racerIds(result.tournament, 1)).toEqual(['p1', 'p2', 'p3', 'p4'])
   })
 
   it('reserviert Fahrer über alle aktiven Lobbys hinweg', () => {

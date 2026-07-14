@@ -1573,14 +1573,14 @@ export function setMarioKartPlayerStatus(
   })
 }
 
-export function getMarioKartPhysicalRaceNumber(
+export function createMarioKartPhysicalRaceNumberLookup(
   tournament: Tournament,
-  roundNumber: number,
-  playerId: string,
 ) {
-  return (
-    deriveMarioKartLedger(tournament).physicalRaceNumberByRoundAndPlayer.get(
+  const physicalRaceNumberByRoundAndPlayer =
+    deriveMarioKartLedger(tournament).physicalRaceNumberByRoundAndPlayer
+
+  return (roundNumber: number, playerId: string) =>
+    physicalRaceNumberByRoundAndPlayer.get(
       roundPlayerKey(roundNumber, playerId),
     ) ?? 0
-  )
 }

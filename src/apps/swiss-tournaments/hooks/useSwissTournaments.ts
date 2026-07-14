@@ -1,41 +1,16 @@
 import { useEffect, useMemo } from 'react'
 
 import {
-  addPlayerAfterStart,
-  correctResult,
-  createManualHandBrainPairing,
-  createManualPairing,
-  createTournament,
-  deleteLatestRound,
-  getCurrentDraftRound,
-  getNextAllowedRoundNumber,
-  isPairingComplete,
-  recalculateStandings,
-  removePlayerFromTournament,
-  reopenPreviousRound,
-  resetTournamentProgress,
-  setPlayerStatus,
-  standingsToCsv,
-  updateMarioKartResult,
-  updateResult,
-  upsertRound,
-} from '@/apps/swiss-tournaments/logic'
-import {
-  correctClosedMarioKartLobby,
-  deleteLatestEmptyMarioKartLobby,
-  getMarioKartPlanningAvailability,
-  planNextMarioKartLobby,
-  rerollLatestEmptyMarioKartLobby,
-  setMarioKartLobbyReservation,
-} from '@/apps/swiss-tournaments/marioKart'
+  tournamentDomain,
+  type TournamentCommand,
+  type TournamentNoticeCode,
+} from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import { sequenceTournamentNames } from '@/apps/swiss-tournaments/historicalNames'
-import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
 import type {
   ByeScore,
   CreateTournamentInput,
   GameResult,
   HandBrainSide,
-  Pairing,
   PlayerStatus,
   SwissTournamentsState,
   Tournament,
@@ -50,51 +25,6 @@ import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const initialState: SwissTournamentsState = {
   activeTournamentId: null,
-}
-
-function sanitizeTournament(tournament: Tournament): Tournament {
-  const players = [...(tournament.players ?? [])].sort(
-    (left, right) => left.initialSeed - right.initialSeed,
-  )
-  const playerIds = new Set(players.map((player) => player.id))
-  const reservationPlayerIds = [
-    ...new Set(tournament.marioKartLobbyReservation?.playerIds ?? []),
-  ].filter((playerId) => playerIds.has(playerId))
-  const sanitizedTournament = {
-    ...tournament,
-    format: tournament.format ?? 'swiss',
-    players,
-    rounds: [...(tournament.rounds ?? [])]
-      .map((round) => ({
-        ...round,
-        status:
-          (round.status as string) === 'published'
-            ? ('draft' as const)
-            : round.status,
-      }))
-      .sort((left, right) => left.roundNumber - right.roundNumber),
-    settings: {
-      initialSeedingMode: tournament.settings?.initialSeedingMode ?? 'rating',
-      byeScore: tournament.settings?.byeScore ?? 1,
-      byePolicy: tournament.settings?.byePolicy ?? 'protectLateEntrants',
-      roundRobinCycles: tournament.settings?.roundRobinCycles ?? 1,
-      roundByeScores: tournament.settings?.roundByeScores ?? {},
-    },
-  }
-
-  if (
-    tournament.format === 'marioKart' &&
-    reservationPlayerIds.length >= 2 &&
-    reservationPlayerIds.length <= 4
-  ) {
-    sanitizedTournament.marioKartLobbyReservation = {
-      playerIds: reservationPlayerIds,
-    }
-  } else {
-    delete sanitizedTournament.marioKartLobbyReservation
-  }
-
-  return sanitizedTournament
 }
 
 function downloadText(filename: string, content: string, type: string) {
@@ -142,50 +72,6 @@ function createArchivedCopy(
   }
 }
 
-function highestCompletedRoundNumber(tournament: Tournament) {
-  return tournament.rounds.reduce(
-    (highestRound, round) =>
-      round.status === 'completed'
-        ? Math.max(highestRound, round.roundNumber)
-        : highestRound,
-    0,
-  )
-}
-
-function minimumPlannedUnitCount(tournament: Tournament) {
-  return tournament.format === 'marioKart'
-    ? getTournamentProgress(tournament).minimumSavableUnitCount
-    : highestCompletedRoundNumber(tournament)
-}
-
-function pairingPlayerIds(pairing: Pairing) {
-  return [
-    pairing.whitePlayerId,
-    pairing.blackPlayerId,
-    pairing.byePlayerId,
-    pairing.handBrainSides?.white.brainPlayerId,
-    pairing.handBrainSides?.white.handPlayerId,
-    pairing.handBrainSides?.black.brainPlayerId,
-    pairing.handBrainSides?.black.handPlayerId,
-    ...(pairing.marioKartRacers?.map((racer) => racer.playerId) ?? []),
-  ].filter((playerId): playerId is string => typeof playerId === 'string')
-}
-
-function pairingScoringPlayerIds(pairing: Pairing) {
-  if (pairing.isBye) {
-    return pairing.byePlayerId ? [pairing.byePlayerId] : []
-  }
-
-  if (pairing.kind === 'marioKart') {
-    return (
-      pairing.marioKartRacers
-        ?.filter((racer) => racer.scoringCycleNumber !== null)
-        .map((racer) => racer.playerId) ?? []
-    )
-  }
-
-  return pairingPlayerIds(pairing)
-}
 
 export function useSwissTournaments(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
@@ -208,7 +94,10 @@ export function useSwissTournaments(lobbyId?: string) {
     'position',
   )
   const storedTournaments = useMemo(
-    () => tournamentsStore.data.map(sanitizeTournament),
+    () =>
+      tournamentsStore.data.map(
+        (tournament) => tournamentDomain.inspect(tournament).tournament,
+      ),
     [tournamentsStore.data],
   )
   const tournaments = useMemo(
@@ -236,10 +125,11 @@ export function useSwissTournaments(lobbyId?: string) {
     ) ??
     [...activeTournaments].sort((left, right) => right.position - left.position)[0] ??
     null
-  const standings = useMemo(
-    () => (activeTournament ? recalculateStandings(activeTournament) : []),
+  const inspection = useMemo(
+    () => (activeTournament ? tournamentDomain.inspect(activeTournament) : null),
     [activeTournament],
   )
+  const standings = inspection?.standings ?? []
 
   useEffect(() => {
     if (
@@ -271,7 +161,7 @@ export function useSwissTournaments(lobbyId?: string) {
   const createNewTournament = async (input: CreateTournamentInput) => {
     const nextPosition =
       tournaments.reduce((max, tournament) => Math.max(max, tournament.position), 0) + 1
-    const tournament = createTournament(input, nextPosition)
+    const tournament = tournamentDomain.create(input, nextPosition)
     const archivePatch = createArchivePatch('newTournament')
     const nextTournaments = sequenceTournamentNames([
       ...tournaments.map((entry) =>
@@ -325,231 +215,84 @@ export function useSwissTournaments(lobbyId?: string) {
     })
   }
 
-  const updateActiveTournament = async (
-    updater: (tournament: Tournament) => Tournament,
+  const commitCommand = async (
+    command: TournamentCommand,
+    acknowledged?: readonly TournamentNoticeCode[],
   ) => {
     if (!activeTournament) {
       return null
     }
 
-    const nextTournament = sanitizeTournament(updater(activeTournament))
-    const result = await saveTournament(nextTournament)
-    return result.ok ? nextTournament : null
+    const decision = tournamentDomain.transition(activeTournament, {
+      command,
+      acknowledged,
+    })
+
+    if (decision.status !== 'changed') {
+      return decision
+    }
+
+    const result = await saveTournament(decision.tournament)
+    return result.ok ? decision : null
   }
 
   const updateTournamentMeta = (partial: Partial<Tournament>) =>
-    updateActiveTournament((tournament) => {
-      const nextTournament = {
-        ...tournament,
-        ...partial,
-        format: tournament.format,
-        name: partial.name?.trim() || tournament.name,
-        numberOfRounds: partial.numberOfRounds
-          ? Math.max(
-              1,
-              minimumPlannedUnitCount(tournament),
-              Math.floor(partial.numberOfRounds),
-            )
-          : tournament.numberOfRounds,
-      }
-
-      return nextTournament
+    commitCommand({
+      type: 'tournament.configure',
+      changes: {
+        name: partial.name,
+        numberOfRounds: partial.numberOfRounds,
+      },
     })
 
   const updateSettings = (partial: Partial<Tournament['settings']>) =>
-    updateActiveTournament((tournament) => {
-      const requestedRoundRobinCycles =
-        partial.roundRobinCycles === undefined
-          ? tournament.settings.roundRobinCycles
-          : Math.max(1, Math.floor(partial.roundRobinCycles) || 1)
-      const roundRobinCycles =
-        tournament.format === 'roundRobin' && tournament.rounds.length > 0
-          ? Math.max(tournament.settings.roundRobinCycles ?? 1, requestedRoundRobinCycles ?? 1)
-          : requestedRoundRobinCycles
-      return {
-        ...tournament,
-        settings: {
-          ...tournament.settings,
-          ...partial,
-          roundRobinCycles,
-        },
-      }
+    commitCommand({
+      type: 'tournament.configure',
+      changes: { settings: partial },
     })
 
   const setRoundByeScore = (roundNumber: number, byeScore: ByeScore) =>
-    updateActiveTournament((tournament) => ({
-      ...tournament,
-      settings: {
-        ...tournament.settings,
-        roundByeScores: {
-          ...tournament.settings.roundByeScores,
-          [roundNumber]: byeScore,
-        },
-      },
-    }))
+    commitCommand({ type: 'round-bye-score.set', roundNumber, byeScore })
 
   const addPlayer = (name: string, rating?: number) =>
-    updateActiveTournament((tournament) =>
-      addPlayerAfterStart(tournament, name, rating),
-    )
+    commitCommand({ type: 'player.add', name, rating })
 
   const removePlayer = (playerId: string) =>
-    updateActiveTournament((tournament) =>
-      removePlayerFromTournament(tournament, playerId),
-    )
+    commitCommand({ type: 'player.remove', playerId })
 
   const updatePlayer = (
     playerId: string,
     partial: { name?: string; rating?: number },
   ) =>
-    updateActiveTournament((tournament) => ({
-      ...tournament,
-      players: tournament.players.map((player) => {
-        if (player.id !== playerId) {
-          return player
-        }
-
-        const nextPlayer = {
-          ...player,
-          name: partial.name?.trim() || player.name,
-        }
-
-        if (partial.rating === undefined || !Number.isFinite(partial.rating)) {
-          delete nextPlayer.rating
-        } else {
-          nextPlayer.rating = Math.round(partial.rating)
-        }
-
-        return nextPlayer
-      }),
-    }))
+    commitCommand({ type: 'player.update', playerId, changes: partial })
 
   const changePlayerStatus = (
     playerId: string,
     status: PlayerStatus,
     fromRound?: number,
   ) =>
-    updateActiveTournament((tournament) =>
-      setPlayerStatus(tournament, playerId, status, fromRound),
-    )
+    commitCommand({
+      type: 'player.set-status',
+      playerId,
+      status,
+      fromRound,
+    })
 
   const generateRound = () =>
-    updateActiveTournament((tournament) => {
-      if (tournament.format === 'marioKart') {
-        return planNextMarioKartLobby(tournament).tournament
-      }
-
-      const sortedRounds = [...tournament.rounds].sort(
-        (left, right) => left.roundNumber - right.roundNumber,
-      )
-      const latestRound = sortedRounds[sortedRounds.length - 1]
-
-      if (!latestRound) {
-        const nextRoundNumber = getNextAllowedRoundNumber(tournament)
-
-        return nextRoundNumber ? upsertRound(tournament, nextRoundNumber) : tournament
-      }
-
-      if (latestRound.status === 'completed') {
-        const nextRoundNumber = getNextAllowedRoundNumber(tournament)
-
-        return nextRoundNumber ? upsertRound(tournament, nextRoundNumber) : tournament
-      }
-
-      if (
-        latestRound.status !== 'draft' ||
-        latestRound.pairings.some((pairing) => !isPairingComplete(pairing))
-      ) {
-        return tournament
-      }
-
-      const completedTournament = {
-        ...tournament,
-        rounds: tournament.rounds.map((round) =>
-          round.roundNumber === latestRound.roundNumber
-            ? { ...round, status: 'completed' as const }
-            : round,
-        ),
-      }
-
-      const nextRoundNumber = getNextAllowedRoundNumber(completedTournament)
-
-      return nextRoundNumber ? upsertRound(completedTournament, nextRoundNumber) : completedTournament
-    })
+    commitCommand({ type: 'round.plan-next' })
 
   const regenerateRound = () =>
-    updateActiveTournament((tournament) => {
-      if (tournament.format === 'marioKart') {
-        const latestActiveRound = [...tournament.rounds]
-          .sort((left, right) => right.roundNumber - left.roundNumber)
-          .find((round) => round.status === 'draft')
-
-        return latestActiveRound
-          ? rerollLatestEmptyMarioKartLobby(
-              tournament,
-              latestActiveRound.roundNumber,
-            )
-          : tournament
-      }
-
-      const existing = getCurrentDraftRound(tournament)
-      const latestRound = [...tournament.rounds].sort(
-        (left, right) => right.roundNumber - left.roundNumber,
-      )[0]
-
-      if (!existing || existing.roundNumber !== latestRound?.roundNumber) {
-        return tournament
-      }
-
-      return upsertRound(
-        tournament,
-        existing.roundNumber,
-        existing?.pairings.filter((pairing) => pairing.isManual) ?? [],
-      )
-    })
+    commitCommand({ type: 'round.regenerate-latest' })
 
   const addManualPairing = (
     roundNumber: number,
     whitePlayerId: string,
     blackPlayerId: string,
   ) =>
-    updateActiveTournament((tournament) => {
-      const existing = tournament.rounds.find(
-        (round) => round.roundNumber === roundNumber,
-      )
-      const latestRound = [...tournament.rounds].sort(
-        (left, right) => right.roundNumber - left.roundNumber,
-      )[0]
-
-      if (
-        !existing ||
-        existing.status !== 'draft' ||
-        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
-        existing.roundNumber !== latestRound?.roundNumber
-      ) {
-        return tournament
-      }
-
-      const fixedPlayerIds = new Set(
-        existing.pairings
-          .filter((pairing) => pairing.isManual)
-          .flatMap(pairingScoringPlayerIds),
-      )
-
-      if (
-        whitePlayerId === blackPlayerId ||
-        fixedPlayerIds.has(whitePlayerId) ||
-        fixedPlayerIds.has(blackPlayerId)
-      ) {
-        return tournament
-      }
-
-      const fixedPairings = [
-        ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
-        createManualPairing(tournament, roundNumber, whitePlayerId, blackPlayerId),
-      ]
-
-      return upsertRound(tournament, roundNumber, fixedPairings)
+    commitCommand({
+      type: 'pairing.pin',
+      roundNumber,
+      assignment: { kind: 'standard', whitePlayerId, blackPlayerId },
     })
 
   const addManualHandBrainPairing = (
@@ -559,99 +302,17 @@ export function useSwissTournaments(lobbyId?: string) {
       black: HandBrainSide
     },
   ) =>
-    updateActiveTournament((tournament) => {
-      const existing = tournament.rounds.find(
-        (round) => round.roundNumber === roundNumber,
-      )
-      const latestRound = [...tournament.rounds].sort(
-        (left, right) => right.roundNumber - left.roundNumber,
-      )[0]
-
-      if (
-        !existing ||
-        existing.status !== 'draft' ||
-        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
-        existing.roundNumber !== latestRound?.roundNumber
-      ) {
-        return tournament
-      }
-
-      const requestedPlayerIds = [
-        handBrainSides.white.brainPlayerId,
-        handBrainSides.white.handPlayerId,
-        handBrainSides.black.brainPlayerId,
-        handBrainSides.black.handPlayerId,
-      ]
-      const fixedPlayerIds = new Set(
-        existing.pairings
-          .filter((pairing) => pairing.isManual)
-          .flatMap(pairingScoringPlayerIds),
-      )
-
-      if (
-        new Set(requestedPlayerIds).size !== 4 ||
-        requestedPlayerIds.some((playerId) => fixedPlayerIds.has(playerId))
-      ) {
-        return tournament
-      }
-
-      const fixedPairings = [
-        ...(existing?.pairings.filter((pairing) => pairing.isManual) ?? []),
-        createManualHandBrainPairing(tournament, roundNumber, handBrainSides),
-      ]
-
-      return upsertRound(tournament, roundNumber, fixedPairings)
+    commitCommand({
+      type: 'pairing.pin',
+      roundNumber,
+      assignment: { kind: 'handAndBrain', sides: handBrainSides },
     })
 
   const removeManualPairing = (roundNumber: number, pairingId: string) =>
-    updateActiveTournament((tournament) => {
-      const existing = tournament.rounds.find(
-        (round) => round.roundNumber === roundNumber,
-      )
-      const latestRound = [...tournament.rounds].sort(
-        (left, right) => right.roundNumber - left.roundNumber,
-      )[0]
-
-      if (
-        !existing ||
-        existing.status !== 'draft' ||
-        existing.roundNumber !== getCurrentDraftRound(tournament)?.roundNumber ||
-        existing.roundNumber !== latestRound?.roundNumber
-      ) {
-        return tournament
-      }
-
-      const fixedPairings = existing.pairings.filter(
-        (pairing) => pairing.isManual && pairing.id !== pairingId,
-      )
-
-      return upsertRound(tournament, roundNumber, fixedPairings)
-    })
+    commitCommand({ type: 'pairing.unpin', roundNumber, pairingId })
 
   const completeRound = (roundNumber: number) =>
-    updateActiveTournament((tournament) => {
-      const latestRound = [...tournament.rounds].sort(
-        (left, right) => right.roundNumber - left.roundNumber,
-      )[0]
-
-      if (
-        !latestRound ||
-        latestRound.roundNumber !== roundNumber ||
-        latestRound.status !== 'draft' ||
-        latestRound.pairings.some((pairing) => !isPairingComplete(pairing))
-      ) {
-        return tournament
-      }
-
-      return {
-        ...tournament,
-        rounds: tournament.rounds.map((round) =>
-          round.roundNumber === roundNumber
-            ? { ...round, status: 'completed' as const }
-            : round,
-        ),
-      }
-    })
+    commitCommand({ type: 'round.complete', roundNumber })
 
   const resetTournament = async () => {
     if (!activeTournament) {
@@ -661,8 +322,16 @@ export function useSwissTournaments(lobbyId?: string) {
     const nextPosition =
       tournaments.reduce((max, tournament) => Math.max(max, tournament.position), 0) + 1
     const archivedCopy = createArchivedCopy(activeTournament, nextPosition, 'reset')
+    const decision = tournamentDomain.transition(activeTournament, {
+      command: { type: 'tournament.reset-progress' },
+    })
+
+    if (decision.status !== 'changed') {
+      return null
+    }
+
     const resetTournament = {
-      ...resetTournamentProgress(activeTournament),
+      ...decision.tournament,
       updatedBy: session.userId,
     }
 
@@ -676,39 +345,28 @@ export function useSwissTournaments(lobbyId?: string) {
   }
 
   const goBackToPreviousRound = () =>
-    updateActiveTournament((tournament) => reopenPreviousRound(tournament))
+    commitCommand({ type: 'round.reopen-previous' })
 
   const removeLatestRound = () =>
-    updateActiveTournament((tournament) => {
-      if (tournament.format === 'marioKart') {
-        const latestActiveRound = [...tournament.rounds]
-          .sort((left, right) => right.roundNumber - left.roundNumber)
-          .find((round) => round.status === 'draft')
-
-        return latestActiveRound
-          ? deleteLatestEmptyMarioKartLobby(
-              tournament,
-              latestActiveRound.roundNumber,
-            )
-          : tournament
-      }
-
-      return deleteLatestRound(tournament)
-    })
+    commitCommand({ type: 'round.delete-latest' })
 
   const updateMarioKartLobbyReservation = (playerIds: string[] | null) =>
-    updateActiveTournament((tournament) =>
-      setMarioKartLobbyReservation(tournament, playerIds),
-    )
+    commitCommand({
+      type: 'mario-kart.reserve-next-lobby',
+      playerIds,
+    })
 
   const setResult = (
     roundNumber: number,
     pairingId: string,
     result?: GameResult,
   ) =>
-    updateActiveTournament((tournament) =>
-      updateResult(tournament, roundNumber, pairingId, result),
-    )
+    commitCommand({
+      type: 'result.set',
+      roundNumber,
+      pairingId,
+      result,
+    })
 
   const setMarioKartResult = (
     roundNumber: number,
@@ -716,9 +374,13 @@ export function useSwissTournaments(lobbyId?: string) {
     playerId: string,
     partial: { placement?: number; event?: boolean },
   ) =>
-    updateActiveTournament((tournament) =>
-      updateMarioKartResult(tournament, roundNumber, pairingId, playerId, partial),
-    )
+    commitCommand({
+      type: 'mario-kart.set-racer',
+      roundNumber,
+      pairingId,
+      playerId,
+      changes: partial,
+    })
 
   const correctMarioKartLobby = (
     roundNumber: number,
@@ -728,18 +390,37 @@ export function useSwissTournaments(lobbyId?: string) {
       event?: boolean
     }>,
   ) =>
-    updateActiveTournament((tournament) =>
-      correctClosedMarioKartLobby(tournament, roundNumber, racers),
-    )
+    commitCommand({
+      type: 'mario-kart.correct-lobby',
+      roundNumber,
+      racers,
+    })
 
   const correctPairingResult = (
     roundNumber: number,
     pairingId: string,
     result?: GameResult,
   ) =>
-    updateActiveTournament((tournament) =>
-      correctResult(tournament, roundNumber, pairingId, result),
+    commitCommand(
+      { type: 'result.correct', roundNumber, pairingId, result },
+      ['correction-regenerates-current-draft'],
     )
+
+  const shouldConfirmResultCorrection = (
+    roundNumber: number,
+    pairingId: string,
+    result?: GameResult,
+  ) => {
+    if (!activeTournament) {
+      return false
+    }
+
+    return (
+      tournamentDomain.transition(activeTournament, {
+        command: { type: 'result.correct', roundNumber, pairingId, result },
+      }).status === 'confirmation-required'
+    )
+  }
 
   const exportStandingsCsv = (tournament = activeTournament) => {
     if (!tournament) {
@@ -748,14 +429,12 @@ export function useSwissTournaments(lobbyId?: string) {
 
     downloadText(
       `${sanitizeDownloadName(tournament.name)}-rangliste.csv`,
-      standingsToCsv(recalculateStandings(tournament), tournament.format),
+      tournamentDomain.inspect(tournament).standingsCsv,
       'text/csv;charset=utf-8',
     )
   }
 
-  const marioKartPlanningAvailability = activeTournament
-    ? getMarioKartPlanningAvailability(activeTournament)
-    : null
+  const marioKartPlanningAvailability = inspection?.planning ?? null
 
   return {
     activeTournament,
@@ -774,6 +453,8 @@ export function useSwissTournaments(lobbyId?: string) {
     exportStandingsCsv,
     generateRound,
     goBackToPreviousRound,
+    inspection,
+    inspectTournament: tournamentDomain.inspect,
     isLoading: stateStore.isLoading || tournamentsStore.isLoading,
     isPending: stateStore.isPending || tournamentsStore.isPending,
     isRealtime: stateStore.isRealtime && tournamentsStore.isRealtime,
@@ -788,6 +469,7 @@ export function useSwissTournaments(lobbyId?: string) {
     setMarioKartLobbyReservation: updateMarioKartLobbyReservation,
     setResult,
     setRoundByeScore,
+    shouldConfirmResultCorrection,
     standings,
     tournaments,
     updatePlayer,

@@ -1,24 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import { tournamentDomain } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import {
-  addPlayerAfterStart,
-  canRemovePlayerFromTournament,
-  correctResult,
-  deleteLatestRound,
-  getCurrentDraftRound,
-  isPairingComplete,
-  removePlayerFromTournament,
-  reopenPreviousRound,
-  resetTournamentProgress,
-  setPlayerStatus,
-  updateResult,
-  upsertRound,
-  willResultCorrectionRegenerateCurrentDraftRound,
-} from '@/apps/swiss-tournaments/logic'
-import {
+  applyTournamentCommand,
   makeRound,
   makeStandardPairing,
   makeTournament,
+  planNextTournamentRound,
 } from '@/apps/swiss-tournaments/__tests__/fixtures'
 
 function tournamentWithUnscoredDraft() {
@@ -34,22 +22,37 @@ function tournamentWithUnscoredDraft() {
     isManual: true,
   }
 
-  return upsertRound(tournament, 2, [manualPairing])
+  const planned = planNextTournamentRound(tournament)
+
+  return applyTournamentCommand(planned, {
+    type: 'pairing.pin',
+    roundNumber: 2,
+    assignment: {
+      kind: 'standard',
+      whitePlayerId: manualPairing.whitePlayerId!,
+      blackPlayerId: manualPairing.blackPlayerId!,
+    },
+  })
 }
 
 describe('tournament lifecycle', () => {
   it('recognizes byes, results and open games through the common interface', () => {
-    expect(
-      isPairingComplete({
+    const tournament = makeTournament('swiss', 2, {
+      rounds: [makeRound(1, [
+        {
         ...makeStandardPairing('bye', 1, 'p1', 'p2'),
         isBye: true,
         byePlayerId: 'p3',
-      }),
-    ).toBe(true)
-    expect(isPairingComplete(makeStandardPairing('done', 1, 'p1', 'p2', '0.5-0.5'))).toBe(
-      true,
-    )
-    expect(isPairingComplete(makeStandardPairing('open', 1, 'p1', 'p2'))).toBe(false)
+        },
+        makeStandardPairing('done', 1, 'p1', 'p2', '0.5-0.5'),
+        makeStandardPairing('open', 1, 'p1', 'p2'),
+      ], 'draft')],
+    })
+    const inspection = tournamentDomain.inspect(tournament)
+
+    expect(inspection.pairings.get('bye')?.isComplete).toBe(true)
+    expect(inspection.pairings.get('done')?.isComplete).toBe(true)
+    expect(inspection.pairings.get('open')?.isComplete).toBe(false)
   })
 
   it('updates results only in the latest draft round', () => {
@@ -62,57 +65,84 @@ describe('tournament lifecycle', () => {
       currentRound: 1,
       rounds: [draft],
     })
-    const updated = updateResult(tournament, 1, 'draft-game', '1-0')
+    const updated = applyTournamentCommand(tournament, {
+      type: 'result.set',
+      roundNumber: 1,
+      pairingId: 'draft-game',
+      result: '1-0',
+    })
     const completedTournament = {
       ...tournament,
       rounds: [{ ...draft, status: 'completed' as const }],
     }
 
     expect(updated.rounds[0].pairings[0].result).toBe('1-0')
-    expect(updateResult(completedTournament, 1, 'draft-game', '0-1')).toBe(
-      completedTournament,
-    )
+    const decision = tournamentDomain.transition(completedTournament, {
+        command: {
+          type: 'result.set',
+          roundNumber: 1,
+          pairingId: 'draft-game',
+          result: '0-1',
+        },
+      })
+    expect(decision.status).toBe('unchanged')
+    expect(decision.tournament).toBe(completedTournament)
   })
 
   it('corrects an old result and regenerates only the unscored current draft', () => {
     const tournament = tournamentWithUnscoredDraft()
 
-    expect(
-      willResultCorrectionRegenerateCurrentDraftRound(
-        tournament,
-        1,
-        'completed-game',
-        '0-1',
-      ),
-    ).toBe(true)
+    const preview = tournamentDomain.transition(tournament, {
+      command: {
+        type: 'result.correct',
+        roundNumber: 1,
+        pairingId: 'completed-game',
+        result: '0-1',
+      },
+    })
+    expect(preview.status).toBe('confirmation-required')
 
-    const corrected = correctResult(tournament, 1, 'completed-game', '0-1')
-    const currentDraft = getCurrentDraftRound(corrected)
+    const corrected = applyTournamentCommand(tournament, {
+      type: 'result.correct',
+      roundNumber: 1,
+      pairingId: 'completed-game',
+      result: '0-1',
+    })
+    const currentDraft = tournamentDomain.inspect(corrected).currentDraftRound
 
     expect(corrected.rounds[0].pairings[0].result).toBe('0-1')
     expect(currentDraft?.pairings).toContainEqual(
-      expect.objectContaining({ id: 'manual-game', isManual: true }),
+      expect.objectContaining({ isManual: true }),
     )
     expect(currentDraft?.pairings.every((pairing) => !pairing.result)).toBe(true)
   })
 
   it('regenerates pairings after status changes only while the draft is unscored', () => {
     const tournament = tournamentWithUnscoredDraft()
-    const inactive = setPlayerStatus(tournament, 'p1', 'inactive')
-    const inactiveDraftIds = getCurrentDraftRound(inactive)?.pairings.flatMap(
+    const inactive = applyTournamentCommand(tournament, {
+      type: 'player.set-status',
+      playerId: 'p1',
+      status: 'inactive',
+    })
+    const inactiveDraftIds = tournamentDomain.inspect(inactive).currentDraftRound?.pairings.flatMap(
       (pairing) => [pairing.whitePlayerId, pairing.blackPlayerId].filter(Boolean),
     )
-    const scoredDraft = updateResult(
-      tournament,
-      2,
-      getCurrentDraftRound(tournament)?.pairings[0].id ?? '',
-      '1-0',
-    )
-    const pairingsBeforeStatusChange = getCurrentDraftRound(scoredDraft)?.pairings
-    const changedAfterScore = setPlayerStatus(scoredDraft, 'p1', 'inactive')
+    const draftPairingId = tournamentDomain.inspect(tournament).currentDraftRound?.pairings[0].id ?? ''
+    const scoredDraft = applyTournamentCommand(tournament, {
+      type: 'result.set',
+      roundNumber: 2,
+      pairingId: draftPairingId,
+      result: '1-0',
+    })
+    const pairingsBeforeStatusChange = tournamentDomain.inspect(scoredDraft).currentDraftRound?.pairings
+    const changedAfterScore = applyTournamentCommand(scoredDraft, {
+      type: 'player.set-status',
+      playerId: 'p1',
+      status: 'inactive',
+    })
 
     expect(inactiveDraftIds).not.toContain('p1')
-    expect(getCurrentDraftRound(changedAfterScore)?.pairings).toEqual(
+    expect(tournamentDomain.inspect(changedAfterScore).currentDraftRound?.pairings).toEqual(
       pairingsBeforeStatusChange,
     )
   })
@@ -120,9 +150,9 @@ describe('tournament lifecycle', () => {
   it('allows every current player status to be reversed', () => {
     let tournament = makeTournament('swiss', 4)
 
-    tournament = setPlayerStatus(tournament, 'p1', 'withdrawn')
-    tournament = setPlayerStatus(tournament, 'p1', 'inactive')
-    tournament = setPlayerStatus(tournament, 'p1', 'active')
+    tournament = applyTournamentCommand(tournament, { type: 'player.set-status', playerId: 'p1', status: 'withdrawn' })
+    tournament = applyTournamentCommand(tournament, { type: 'player.set-status', playerId: 'p1', status: 'inactive' })
+    tournament = applyTournamentCommand(tournament, { type: 'player.set-status', playerId: 'p1', status: 'active' })
 
     expect(tournament.players.find((player) => player.id === 'p1')?.status).toBe(
       'active',
@@ -131,16 +161,25 @@ describe('tournament lifecycle', () => {
 
   it('adds players to the current draft and protects players from played rounds', () => {
     const tournament = tournamentWithUnscoredDraft()
-    const withNewPlayer = addPlayerAfterStart(tournament, '  New Player  ', 1500.7)
+    const withNewPlayer = applyTournamentCommand(tournament, {
+      type: 'player.add',
+      name: '  New Player  ',
+      rating: 1500.7,
+    })
     const addedPlayer = withNewPlayer.players.find((player) => player.name === 'New Player')
 
     expect(addedPlayer).toEqual(
       expect.objectContaining({ rating: 1501, addedInRound: 2, status: 'active' }),
     )
-    expect(canRemovePlayerFromTournament(tournament, 'p1')).toBe(false)
-    expect(canRemovePlayerFromTournament(tournament, 'p4')).toBe(true)
-    expect(removePlayerFromTournament(tournament, 'p1')).toBe(tournament)
-    expect(removePlayerFromTournament(tournament, 'p4').players.map((player) => player.id)).not.toContain(
+    expect(tournamentDomain.inspect(tournament).players.get('p1')?.canRemove).toBe(false)
+    expect(tournamentDomain.inspect(tournament).players.get('p4')?.canRemove).toBe(true)
+    expect(tournamentDomain.transition(tournament, {
+      command: { type: 'player.remove', playerId: 'p1' },
+    }).status).toBe('rejected')
+    expect(applyTournamentCommand(tournament, {
+      type: 'player.remove',
+      playerId: 'p4',
+    }).players.map((player) => player.id)).not.toContain(
       'p4',
     )
   })
@@ -157,7 +196,7 @@ describe('tournament lifecycle', () => {
         statusOverrides: { 3: 'inactive' as const },
       })),
     }
-    const reset = resetTournamentProgress(changed)
+    const reset = applyTournamentCommand(changed, { type: 'tournament.reset-progress' })
 
     expect(reset.currentRound).toBe(0)
     expect(reset.rounds).toEqual([])
@@ -185,8 +224,8 @@ describe('tournament lifecycle', () => {
       currentRound: 2,
       rounds: [first, second],
     })
-    const reopened = reopenPreviousRound(tournament)
-    const deleted = deleteLatestRound(tournament)
+    const reopened = applyTournamentCommand(tournament, { type: 'round.reopen-previous' })
+    const deleted = applyTournamentCommand(tournament, { type: 'round.delete-latest' })
 
     expect(reopened.currentRound).toBe(1)
     expect(reopened.rounds).toHaveLength(1)

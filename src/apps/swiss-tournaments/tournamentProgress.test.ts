@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getTournamentProgress } from '@/apps/swiss-tournaments/tournamentProgress'
+import { tournamentDomain } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import {
   makeMarioKartPairing,
   makeRound,
@@ -24,7 +24,7 @@ describe('getTournamentProgress', () => {
       ],
     })
 
-    expect(getTournamentProgress(tournament)).toEqual({
+    expect(tournamentDomain.inspect(tournament).progress).toEqual({
       completedUnitCount: 2,
       completionRoundNumber: null,
       currentUnitCount: 2,
@@ -44,7 +44,7 @@ describe('getTournamentProgress', () => {
       ],
     })
 
-    expect(getTournamentProgress(tournament).isComplete).toBe(true)
+    expect(tournamentDomain.inspect(tournament).progress.isComplete).toBe(true)
   })
 
   it('measures Mario Kart progress by races played by every active racer', () => {
@@ -71,7 +71,7 @@ describe('getTournamentProgress', () => {
       ],
     })
 
-    expect(getTournamentProgress(tournament)).toEqual({
+    expect(tournamentDomain.inspect(tournament).progress).toEqual({
       completedUnitCount: 1,
       completionRoundNumber: null,
       currentUnitCount: 2,
@@ -94,12 +94,11 @@ describe('getTournamentProgress', () => {
       ],
     })
 
-    expect(getTournamentProgress(tournament)).toMatchObject({
+    expect(tournamentDomain.inspect(tournament).progress).toMatchObject({
       completedUnitCount: 1,
       completionRoundNumber: 1,
       isComplete: true,
       minimumSavableUnitCount: 1,
     })
   })
-
 })

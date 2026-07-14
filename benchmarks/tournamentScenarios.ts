@@ -1,5 +1,4 @@
-import { generatePairings, recalculateStandings } from '@/apps/swiss-tournaments/logic'
-import { planNextMarioKartLobby } from '@/apps/swiss-tournaments/marioKart'
+import { tournamentDomain } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import type {
   GameResult,
   Pairing,
@@ -210,7 +209,7 @@ function pairingSignature(pairings: Pairing[]) {
 }
 
 function standingsSignature(tournament: Tournament) {
-  const rows = recalculateStandings(tournament)
+  const rows = tournamentDomain.inspect(tournament).standings
   const content = rows
     .map(
       (row) =>
@@ -219,6 +218,21 @@ function standingsSignature(tournament: Tournament) {
     .join('|')
 
   return `${rows.length}:${hashSignature(content)}`
+}
+
+function planNextPairings(tournament: Tournament) {
+  const decision = tournamentDomain.transition(tournament, {
+    command: { type: 'round.plan-next' },
+  })
+
+  if (decision.status !== 'changed') {
+    return { label: decision.status, pairings: [] as Pairing[] }
+  }
+
+  return {
+    label: 'created',
+    pairings: decision.tournament.rounds.at(-1)?.pairings ?? [],
+  }
 }
 
 export function getTournamentBenchmarkScenarios(): TournamentBenchmarkScenario[] {
@@ -248,18 +262,18 @@ export function getTournamentBenchmarkScenarios(): TournamentBenchmarkScenario[]
   return [
     {
       id: 'swiss-pairing-32-round-9',
-      execute: () => pairingSignature(generatePairings(swissPairingTournament, 9)),
+      execute: () => pairingSignature(planNextPairings(swissPairingTournament).pairings),
     },
     {
       id: 'round-robin-repair-16-state-limit',
-      execute: () => pairingSignature(generatePairings(roundRobinBoundaryTournament, 10)),
+      execute: () =>
+        pairingSignature(planNextPairings(roundRobinBoundaryTournament).pairings),
     },
     {
       id: 'mario-kart-planning-30-combination-limit',
       execute: () => {
-        const result = planNextMarioKartLobby(marioKartPlanningTournament)
-        const latestRound = result.tournament.rounds.at(-1)
-        return `${result.blockedReason ?? 'created'}:${pairingSignature(latestRound?.pairings ?? [])}`
+        const result = planNextPairings(marioKartPlanningTournament)
+        return `${result.label}:${pairingSignature(result.pairings)}`
       },
     },
     {
