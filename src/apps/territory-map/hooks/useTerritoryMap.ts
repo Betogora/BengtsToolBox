@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import type {
@@ -32,6 +32,8 @@ import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 export const territoryColorPresets = [...participantColorPresets]
 
 const activeDatasetId = 'dataset-current'
+const legacyUnitedKingdomTerritoryId = 'gb'
+const englandTerritoryId = 'gb-eng'
 
 const initialState: TerritoryMapState = {
   activeMap: 'world',
@@ -156,6 +158,34 @@ function getTerritoryName(mapId: TerritoryMapId, territoryId: string) {
   )
 }
 
+function normalizeTerritoryId(mapId: TerritoryMapId, territoryId: string) {
+  return mapId === 'world' && territoryId === legacyUnitedKingdomTerritoryId
+    ? englandTerritoryId
+    : territoryId
+}
+
+export function migrateLegacyUnitedKingdomEvents(
+  events: TerritoryVisitEvent[],
+) {
+  let changed = false
+  const migrated = events.map((event) => {
+    const territoryId = normalizeTerritoryId(event.mapId, event.territoryId)
+
+    if (territoryId === event.territoryId) {
+      return event
+    }
+
+    changed = true
+    return {
+      ...event,
+      territoryId,
+      territoryName: getTerritoryName(event.mapId, territoryId),
+    }
+  })
+
+  return changed ? migrated : events
+}
+
 function compareEventsAscending(
   left: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
   right: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
@@ -188,6 +218,7 @@ function normalizeEvent(
   players: TerritoryPlayer[],
 ): TerritoryVisitEvent {
   const mapId = event.mapId === 'germany' ? 'germany' : 'world'
+  const territoryId = normalizeTerritoryId(mapId, event.territoryId)
   const player = players.find((entry) => entry.id === event.playerId)
   const fallbackColor = getTerritoryColorByIndex(index)
   const createdAtClientIso = event.createdAtClientIso || new Date().toISOString()
@@ -195,10 +226,8 @@ function normalizeEvent(
   return {
     ...event,
     mapId,
-    territoryName:
-      getTerritoryName(mapId, event.territoryId) ??
-      event.territoryName ??
-      event.territoryId,
+    territoryId,
+    territoryName: getTerritoryName(mapId, territoryId),
     playerName: player?.name ?? event.playerName,
     playerColor: player?.color ?? sanitizeColor(event.playerColor, fallbackColor),
     createdAtClientIso,
@@ -331,6 +360,7 @@ function getLatestEventIdsForTerritoryDay(
 
 export function useTerritoryMap(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
+  const legacyMigrationStarted = useRef(false)
   const session = useAnonymousSession()
   const statePath = useMemo(
     () => firebasePaths.territoryMapState(activeLobbyId),
@@ -366,7 +396,14 @@ export function useTerritoryMap(lobbyId?: string) {
     () => datasetsStore.data.map((dataset) => normalizeDataset(dataset, players)),
     [datasetsStore.data, players],
   )
+  const rawActiveDataset = selectCurrentDataset(datasetsStore.data)
   const storedActiveDataset = selectCurrentDataset(datasets)
+  const hasLegacyUnitedKingdomEvents =
+    rawActiveDataset?.events?.some(
+      (event) =>
+        event.mapId === 'world' &&
+        event.territoryId === legacyUnitedKingdomTerritoryId,
+    ) ?? false
   const activeDataset = useMemo(
     () => storedActiveDataset ?? createDataset(),
     [storedActiveDataset],
@@ -374,7 +411,8 @@ export function useTerritoryMap(lobbyId?: string) {
   const isDatasetReady =
     !datasetsStore.isLoading &&
     datasetsStore.error === null &&
-    storedActiveDataset !== undefined
+    storedActiveDataset !== undefined &&
+    !hasLegacyUnitedKingdomEvents
   const claimsByMap = useMemo(
     () => getCurrentClaims(activeDataset.events),
     [activeDataset.events],
@@ -413,11 +451,38 @@ export function useTerritoryMap(lobbyId?: string) {
     datasetsStore.setItem(activeDatasetId, omitDatasetId(dataset))
   }, [datasetsStore, session.userId])
 
+  useEffect(() => {
+    if (!hasLegacyUnitedKingdomEvents) {
+      legacyMigrationStarted.current = false
+      return
+    }
+
+    if (
+      legacyMigrationStarted.current ||
+      datasetsStore.isLoading ||
+      datasetsStore.error !== null ||
+      !rawActiveDataset
+    ) {
+      return
+    }
+
+    legacyMigrationStarted.current = true
+    datasetsStore.mergeItem(activeDatasetId, {
+      events: migrateLegacyUnitedKingdomEvents(rawActiveDataset.events ?? []),
+      lastUpdatedBy: session.userId,
+    })
+  }, [
+    datasetsStore,
+    hasLegacyUnitedKingdomEvents,
+    rawActiveDataset,
+    session.userId,
+  ])
+
   const saveActiveDataset = ((
     partialValue: Partial<TerritoryDataset>,
     batch?: SyncBatch,
   ) => {
-    if (!storedActiveDataset) {
+    if (!isDatasetReady || !storedActiveDataset) {
       return batch
         ? undefined
         : Promise.resolve(datasetNotReadyResult())

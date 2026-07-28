@@ -98,6 +98,15 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
 
   await expect(page.getByRole('heading', { level: 1, name: 'Sushi Map' })).toBeVisible()
 
+  for (const territory of ['England', 'Nordirland', 'Schottland', 'Wales']) {
+    await expect(
+      page.getByRole('button', { name: new RegExp(`^${territory}, `) }),
+    ).toBeVisible()
+  }
+  await expect(
+    page.getByRole('button', { name: /^Vereinigtes Königreich, / }),
+  ).toHaveCount(0)
+
   const zoomIn = page.getByRole('button', { name: 'Reinzoomen' })
   const zoomOut = page.getByRole('button', { name: 'Rauszoomen' })
   await expect(zoomOut).toBeDisabled()
@@ -143,5 +152,62 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await expect.poll(storedDatasets).not.toBe(storedBeforeDateEdit)
 
   await page.evaluate(() => window.scrollTo({ top: 0 }))
+  await app.expectHealthy()
+})
+
+test('Sushi Map migriert UK-Altbesuche lobbyweise zu England', async ({
+  app,
+  page,
+}) => {
+  const datasetStorageKey =
+    'app-hub:collection:apps/territory-map/sessions/default/datasets'
+
+  await page.addInitScript(
+    ({ key }) => {
+      window.localStorage.setItem(
+        key,
+        JSON.stringify([
+          {
+            id: 'dataset-current',
+            position: 1,
+            name: 'Datensatz',
+            status: 'active',
+            createdAtClientIso: '2026-06-03T15:33:11.470Z',
+            archivedAtClientIso: null,
+            events: [
+              {
+                id: 'event-uk',
+                mapId: 'world',
+                territoryId: 'gb',
+                territoryName: 'Vereinigtes Königreich',
+                playerId: 'person-2',
+                playerName: 'Paul',
+                playerColor: '#a24a02',
+                createdAtClientIso: '2026-06-04T14:46:48.421Z',
+                createdAtLabel: '2026-06-04T14:46:48.421Z',
+                position: 1,
+              },
+            ],
+          },
+        ]),
+      )
+    },
+    { key: datasetStorageKey },
+  )
+
+  await app.open('/apps/sushi')
+
+  await expect(page.getByRole('button', { name: 'England, Paul' })).toBeVisible()
+  await expect.poll(() => page.evaluate((key) => {
+    const stored = window.localStorage.getItem(key) ?? ''
+
+    return {
+      hasEngland: stored.includes('"territoryId":"gb-eng"'),
+      hasLegacy: stored.includes('"territoryId":"gb"'),
+    }
+  }, datasetStorageKey)).toEqual({
+    hasEngland: true,
+    hasLegacy: false,
+  })
   await app.expectHealthy()
 })

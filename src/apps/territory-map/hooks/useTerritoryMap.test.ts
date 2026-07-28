@@ -78,6 +78,7 @@ vi.mock('@/lib/firebase/useFirestoreCollection', () => ({
 
 import {
   getCurrentClaims,
+  migrateLegacyUnitedKingdomEvents,
   selectCurrentDataset,
   shouldInitializeCurrentDataset,
   useTerritoryMap,
@@ -143,6 +144,75 @@ describe('Sushi-Map-Datensatzbereitschaft', () => {
     expect(stores.dataset.mergeItem).not.toHaveBeenCalled()
     expect(stores.dataset.setItem).not.toHaveBeenCalled()
   })
+
+  it('sperrt Änderungen, solange ein UK-Altbestand migriert werden muss', async () => {
+    const legacyDataset = dataset()
+    legacyDataset.events = [
+      {
+        id: 'event-uk',
+        mapId: 'world',
+        territoryId: 'gb',
+        territoryName: 'Vereinigtes Königreich',
+        playerId: 'person-1',
+        playerName: 'Bengt',
+        playerColor: '#063852',
+        createdAtClientIso: '2026-06-04T14:46:48.421Z',
+        createdAtLabel: '2026-06-04T14:46:48.421Z',
+        position: 1,
+      },
+    ]
+    stores.dataset.data = [legacyDataset]
+    stores.dataset.isLoading = false
+    let territoryMap: ReturnType<typeof useTerritoryMap> | undefined
+
+    function Probe() {
+      territoryMap = useTerritoryMap()
+      return null
+    }
+
+    renderToStaticMarkup(createElement(Probe))
+    await territoryMap?.updateEvent('event-uk', { territoryId: 'gb-sct' })
+
+    expect(territoryMap?.isDatasetReady).toBe(false)
+    expect(stores.dataset.mergeItem).not.toHaveBeenCalled()
+  })
+})
+
+describe('Sushi-Map-Migration des Vereinigten Königreichs', () => {
+  const legacyEvent: TerritoryVisitEvent = {
+    id: 'event-uk',
+    mapId: 'world',
+    territoryId: 'gb',
+    territoryName: 'Vereinigtes Königreich',
+    playerId: 'person-2',
+    playerName: 'Paul',
+    playerColor: '#a24a02',
+    createdAtClientIso: '2026-06-04T14:46:48.421Z',
+    createdAtLabel: '2026-06-04T14:46:48.421Z',
+    position: 7,
+    lastUpdatedBy: 'legacy-user',
+  }
+
+  it('ordnet Altbesuche England zu und erhält alle übrigen Felder', () => {
+    const [migrated] = migrateLegacyUnitedKingdomEvents([legacyEvent])
+
+    expect(migrated).toEqual({
+      ...legacyEvent,
+      territoryId: 'gb-eng',
+      territoryName: 'England',
+    })
+  })
+
+  it('ist für bereits kanonische Events wirkungslos', () => {
+    const canonical = {
+      ...legacyEvent,
+      territoryId: 'gb-eng',
+      territoryName: 'England',
+    }
+    const events = [canonical]
+
+    expect(migrateLegacyUnitedKingdomEvents(events)).toBe(events)
+  })
 })
 
 describe('Sushi-Map-Projektion der reparierten Events', () => {
@@ -178,7 +248,9 @@ describe('Sushi-Map-Projektion der reparierten Events', () => {
         }) as TerritoryVisitEvent,
     )
 
-    const claims = getCurrentClaims(recovered)
+    const claims = getCurrentClaims(
+      migrateLegacyUnitedKingdomEvents(recovered),
+    )
     const allClaims = [
       ...Object.values(claims.germany),
       ...Object.values(claims.world),

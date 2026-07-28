@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:8267444ed136dbc1230fa432a58321198dedd29df78df8144c0e380c76e551f7">
+  <meta name="specs-source-sha256" content="sha256:e24f87a0537f3b69dd5d331b831e229308bb46d1a2c2b0655417adaa50ec4724">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -706,9 +706,10 @@
           <summary><span class="app-number">8</span><span><span class="app-summary-title">Sushi Map</span><span class="app-summary-route">/apps/sushi</span></span></summary>
           <div class="app-body">
             <ul>
-              <li>241 Weltterritorien und 16 Bundesländer; drei Initialtouristen.</li>
+              <li>244 Weltterritorien und 16 Bundesländer; England, Nordirland, Schottland und Wales sind eigenständig und drei Initialtouristen vorhanden.</li>
               <li>Je Lobby genau ein veränderlicher Event-Datensatz <code>dataset-current</code>; keine Archive oder weiteren aktiven Datensätze.</li>
               <li>Nur ein bestätigt leerer Snapshot erzeugt den leeren Datensatz; bis zum bestätigten Dokument bleiben Claims, Events und Spieleränderungen gesperrt und es wird kein Ersatzdatensatz gespeichert.</li>
+              <li>Frühere Welt-Events für <code>gb</code> werden lobbyweise einmalig zu England (<code>gb-eng</code>) migriert; bis zum erfolgreichen Schreibvorgang bleibt der Datensatz gesperrt.</li>
               <li>Claims stammen aus dem jüngsten lokalen Kalendertag; mehrere Owner am selben Tag sind möglich.</li>
               <li>„Unbesucht“ löscht nur die Events des jüngsten Claim-Tages.</li>
               <li>Rangliste über aktuelle Welt-/Deutschland-Claims; zehn historische Achievements.</li>

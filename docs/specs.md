@@ -293,11 +293,12 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 **Zweck:** Sushi-Besuche in Weltländern und deutschen Bundesländern Personen zuordnen.
 
-- Kartenräume sind Weltkarte mit 241 Territorien und Deutschlandkarte mit 16 Bundesländern.
+- Kartenräume sind Weltkarte mit 244 Territorien und Deutschlandkarte mit 16 Bundesländern. England, Nordirland, Schottland und Wales sind eigenständige Weltterritorien; das Vereinigte Königreich ist nicht zusätzlich auswählbar.
 - Initial existieren Bengt, Paul und `Sushi-Tourist 3` mit unterschiedlichen Farben.
 - Die ersten zwei Personen können nicht entfernt werden; weitere Touristen sind anleg- und löschbar.
 - Je Lobby existiert genau ein veränderlicher Event-Datensatz mit der festen Dokument-ID `dataset-current`; es gibt weder Archive noch weitere aktive Datensätze.
 - Eine bestätigte leere Datensatz-Collection erzeugt genau diesen leeren `dataset-current`. Während der initiale Snapshot lädt, fehlschlägt oder das Dokument fehlt, bleiben Claims, Events und Spieleränderungen gesperrt; ein lokaler Ersatzdatensatz wird niemals gespeichert.
+- Vorhandene Welt-Events mit der früheren Territoriums-ID `gb` werden nach dem Laden des jeweiligen Lobby-Datensatzes einmalig zu England (`gb-eng`) migriert. Bis zum erfolgreichen Migrationsschreibvorgang bleiben Datensatzänderungen gesperrt.
 - Ein Besuch speichert Karte, Territorium, Personensnapshot, Farbe, Zeit und Position als Event.
 - Der aktuelle Claim eines Territoriums stammt aus dessen jüngstem lokalen Kalendertag.
 - Mehrere Personen können am selben jüngsten Tag gemeinsame Owner desselben Territoriums sein.
