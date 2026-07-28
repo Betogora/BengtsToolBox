@@ -23,6 +23,7 @@ import { getColorWithAlpha } from '@/apps/shared/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -141,12 +142,11 @@ export function ScoreTargetCard({
               onSave={onNameChange}
             />
           </div>
-          <Input
-            type="color"
-            aria-label={t('scoreboard.colorAria', { name: target.name })}
+          <ColorPicker
+            ariaLabel={t('scoreboard.colorAria', { name: target.name })}
             className="size-11 shrink-0 cursor-pointer rounded-md border p-1 sm:size-9"
             value={target.color}
-            onChange={(event) => void onColorChange(event.currentTarget.value)}
+            onValueCommit={onColorChange}
           />
           <ConfirmButton
             title={t('scoreboard.removeTitle')}

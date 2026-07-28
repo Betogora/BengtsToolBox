@@ -2,13 +2,25 @@ import {
   CirclePlus,
   Trash2,
 } from 'lucide-react'
-import { memo, useRef, useState } from 'react'
+import {
+  memo,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 
 import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import { unclaimedValue } from '@/apps/territory-map/mapConfig'
+import {
+  getAdaptiveStripeWidth,
+  getTerritoryClaimColor,
+  getTerritoryClaimOwners,
+} from '@/apps/territory-map/ownershipPattern'
 import type {
   Territory,
   TerritoryClaim,
+  TerritoryClaimOwner,
   TerritoryDataset,
   TerritoryPlayer,
   TerritoryVisitEvent,
@@ -80,12 +92,93 @@ function getEventTable(events: TerritoryVisitEvent[]) {
   )
 }
 
-function getClaimColor(
-  claimPlayerId: string,
-  claimColor: string,
-  players: TerritoryPlayer[],
-) {
-  return players.find((player) => player.id === claimPlayerId)?.color ?? claimColor
+export function AdaptiveTerritoryOwnerPattern({
+  measurementKey,
+  owners,
+  pathRef,
+  patternId,
+  players,
+}: {
+  measurementKey?: number
+  owners: TerritoryClaimOwner[]
+  pathRef: RefObject<SVGPathElement | null>
+  patternId: string
+  players: TerritoryPlayer[]
+}) {
+  const [stripeWidth, setStripeWidth] = useState(1)
+
+  useLayoutEffect(() => {
+    const path = pathRef.current
+
+    if (!path) {
+      return
+    }
+
+    let frameId: number | null = null
+    const measure = () => {
+      frameId = null
+      const screenBounds = path.getBoundingClientRect()
+      const svgBounds = path.getBBox()
+      const nextStripeWidth = getAdaptiveStripeWidth({
+        ownerCount: owners.length,
+        screenHeight: screenBounds.height,
+        screenWidth: screenBounds.width,
+        svgHeight: svgBounds.height,
+        svgWidth: svgBounds.width,
+      })
+
+      setStripeWidth((current) =>
+        Math.abs(current - nextStripeWidth) < 0.01
+          ? current
+          : nextStripeWidth,
+      )
+    }
+    const scheduleMeasure = () => {
+      if (frameId === null) {
+        frameId = window.requestAnimationFrame(measure)
+      }
+    }
+    const svg = path.ownerSVGElement
+    const resizeObserver = new ResizeObserver(scheduleMeasure)
+
+    if (svg) {
+      resizeObserver.observe(svg)
+    }
+    scheduleMeasure()
+
+    return () => {
+      resizeObserver.disconnect()
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId)
+      }
+    }
+  }, [measurementKey, owners.length, pathRef])
+
+  return (
+    <pattern
+      data-owner-count={owners.length}
+      data-stripe-width={stripeWidth}
+      id={patternId}
+      width={owners.length * stripeWidth}
+      height={stripeWidth}
+      patternUnits="userSpaceOnUse"
+      patternTransform="rotate(45)"
+    >
+      {owners.map((owner, index) => (
+        <rect
+          key={owner.playerId}
+          x={index * stripeWidth}
+          width={stripeWidth}
+          height={stripeWidth}
+          fill={getTerritoryClaimColor(
+            owner.playerId,
+            owner.playerColor,
+            players,
+          )}
+        />
+      ))}
+    </pattern>
+  )
 }
 
 export const TerritoryShape = memo(function TerritoryShape({
@@ -95,6 +188,7 @@ export const TerritoryShape = memo(function TerritoryShape({
   onSelect,
   players,
   territory,
+  zoom,
 }: {
   claim?: TerritoryClaim
   isDisabled: boolean
@@ -102,25 +196,21 @@ export const TerritoryShape = memo(function TerritoryShape({
   onSelect: (territoryId: string) => void
   players: TerritoryPlayer[]
   territory: Territory
+  zoom: number
 }) {
   const { t } = useI18n()
-  const owners = claim?.owners?.length
-    ? claim.owners
-    : claim
-      ? [
-          {
-            playerId: claim.playerId,
-            playerName: claim.playerName,
-            playerColor: claim.playerColor,
-          },
-        ]
-      : []
+  const pathRef = useRef<SVGPathElement>(null)
+  const owners = getTerritoryClaimOwners(claim)
   const patternId = `territory-shared-${territory.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`
   const ownerColor =
     owners.length > 1
       ? `url(#${patternId})`
       : owners.length === 1
-        ? getClaimColor(owners[0].playerId, owners[0].playerColor, players)
+        ? getTerritoryClaimColor(
+            owners[0].playerId,
+            owners[0].playerColor,
+            players,
+          )
         : 'url(#territory-unclaimed)'
   const ownerLabel =
     owners.length > 0
@@ -130,25 +220,16 @@ export const TerritoryShape = memo(function TerritoryShape({
   return (
     <>
       {owners.length > 1 && (
-        <pattern
-          id={patternId}
-          width={owners.length * 8}
-          height="8"
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(45)"
-        >
-          {owners.map((owner, index) => (
-            <rect
-              key={owner.playerId}
-              x={index * 8}
-              width="8"
-              height="8"
-              fill={getClaimColor(owner.playerId, owner.playerColor, players)}
-            />
-          ))}
-        </pattern>
+        <AdaptiveTerritoryOwnerPattern
+          measurementKey={zoom}
+          owners={owners}
+          pathRef={pathRef}
+          patternId={patternId}
+          players={players}
+        />
       )}
       <path
+        ref={pathRef}
         d={territory.path}
         role="button"
         tabIndex={isDisabled ? -1 : 0}

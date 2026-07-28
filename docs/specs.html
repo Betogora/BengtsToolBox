@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:e24f87a0537f3b69dd5d331b831e229308bb46d1a2c2b0655417adaa50ec4724">
+  <meta name="specs-source-sha256" content="sha256:e182e5bc63c8669b8d4b7b0a6c916beba9d1559ca8308c7d949798ebfcf50e48">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -542,6 +542,7 @@
               <li>Ab 320 px; breite Tabellen in eigenem Scrollcontainer.</li>
               <li>Labels, ARIA-Namen, sichtbare Fokuszustände.</li>
               <li>Bestätigung destruktiver Aktionen; Farbe nie allein.</li>
+              <li>Freie App-Farben verwenden einen gemeinsamen Farbkreis; nur bestätigte <code>#RRGGBB</code>-Werte werden gespeichert.</li>
               <li>Kompakte Oberflächen; erklärende Untertitel nur auf ausdrücklichen Wunsch oder für notwendige Status- und Fehlermeldungen.</li>
             </ul>
           </article>
@@ -710,10 +711,10 @@
               <li>Je Lobby genau ein veränderlicher Event-Datensatz <code>dataset-current</code>; keine Archive oder weiteren aktiven Datensätze.</li>
               <li>Nur ein bestätigt leerer Snapshot erzeugt den leeren Datensatz; bis zum bestätigten Dokument bleiben Claims, Events und Spieleränderungen gesperrt und es wird kein Ersatzdatensatz gespeichert.</li>
               <li>Frühere Welt-Events für <code>gb</code> werden lobbyweise einmalig zu England (<code>gb-eng</code>) migriert; bis zum erfolgreichen Schreibvorgang bleibt der Datensatz gesperrt.</li>
-              <li>Claims stammen aus dem jüngsten lokalen Kalendertag; mehrere Owner am selben Tag sind möglich.</li>
+              <li>Claims stammen aus dem jüngsten lokalen Kalendertag; mehrere Owner am selben Tag erhalten adaptive diagonale Streifen mit vollständigem Farbzyklus und höchstens etwa drei Pixel breiten Einzelstreifen.</li>
               <li>„Unbesucht“ löscht nur die Events des jüngsten Claim-Tages.</li>
               <li>Rangliste über aktuelle Welt-/Deutschland-Claims; zehn historische Achievements.</li>
-              <li>Tastatur, Drag, Pinch und Zoomstufen 1/2/4; Karten-Presenter.</li>
+              <li>Tastatur, Drag, Pinch und Zoomstufen 1/2/4/8; Karten-Presenter.</li>
             </ul>
           </div>
         </details>

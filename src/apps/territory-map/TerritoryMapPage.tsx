@@ -31,6 +31,7 @@ import {
 import { toast } from 'sonner'
 
 import {
+  AdaptiveTerritoryOwnerPattern,
   AddEaterCard,
   ClaimDialog,
   TerritoryEventTable,
@@ -51,6 +52,10 @@ import {
   tapMoveThreshold,
   unclaimedValue,
 } from '@/apps/territory-map/mapConfig'
+import {
+  getTerritoryClaimColor,
+  getTerritoryClaimOwners,
+} from '@/apps/territory-map/ownershipPattern'
 import type {
   Territory,
   TerritoryClaim,
@@ -67,7 +72,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 import {
   Table,
   TableBody,
@@ -410,14 +415,6 @@ function getAchievements(events: TerritoryVisitEvent[]): AchievementResult[] {
   })
 }
 
-function getPresenterClaimColor(
-  claimPlayerId: string,
-  claimColor: string,
-  players: TerritoryPlayer[],
-) {
-  return players.find((player) => player.id === claimPlayerId)?.color ?? claimColor
-}
-
 function PresenterTerritoryShape({
   claim,
   patternPrefix,
@@ -425,23 +422,18 @@ function PresenterTerritoryShape({
   territory,
 }: PresenterTerritoryShapeProps) {
   const { t } = useI18n()
-  const owners = claim?.owners?.length
-    ? claim.owners
-    : claim
-      ? [
-          {
-            playerId: claim.playerId,
-            playerName: claim.playerName,
-            playerColor: claim.playerColor,
-          },
-        ]
-      : []
+  const pathRef = useRef<SVGPathElement>(null)
+  const owners = getTerritoryClaimOwners(claim)
   const patternId = `${patternPrefix}-${territory.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`
   const ownerColor =
     owners.length > 1
       ? `url(#${patternId})`
       : owners.length === 1
-        ? getPresenterClaimColor(owners[0].playerId, owners[0].playerColor, players)
+        ? getTerritoryClaimColor(
+            owners[0].playerId,
+            owners[0].playerColor,
+            players,
+          )
         : `url(#${patternPrefix}-unclaimed)`
   const ownerLabel =
     owners.length > 0
@@ -451,25 +443,15 @@ function PresenterTerritoryShape({
   return (
     <>
       {owners.length > 1 && (
-        <pattern
-          id={patternId}
-          width={owners.length * 8}
-          height="8"
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(45)"
-        >
-          {owners.map((owner, index) => (
-            <rect
-              key={owner.playerId}
-              x={index * 8}
-              width="8"
-              height="8"
-              fill={getPresenterClaimColor(owner.playerId, owner.playerColor, players)}
-            />
-          ))}
-        </pattern>
+        <AdaptiveTerritoryOwnerPattern
+          owners={owners}
+          pathRef={pathRef}
+          patternId={patternId}
+          players={players}
+        />
       )}
       <path
+        ref={pathRef}
         d={territory.path}
         className="territory-shape"
         fill={ownerColor}
@@ -1112,12 +1094,12 @@ export function TerritoryMapPage() {
             <div className="flex min-w-0 items-center justify-between gap-2">
               <div
                 aria-label={t('territory.map')}
-                className="flex h-14 min-w-0 flex-1 items-center gap-1 rounded-md border bg-muted/65 p-1 shadow-sm backdrop-blur"
+                className="flex h-10 min-w-0 flex-1 items-center gap-1 rounded-md border bg-muted/65 p-0.5 shadow-sm backdrop-blur sm:h-9"
                 role="group"
               >
                 <Button
                   aria-pressed={state.activeMap === 'world'}
-                  className="h-12 min-w-0 flex-1 px-3"
+                  className="h-full min-w-0 flex-1 px-3"
                   size="sm"
                   type="button"
                   variant={state.activeMap === 'world' ? 'secondary' : 'ghost'}
@@ -1127,7 +1109,7 @@ export function TerritoryMapPage() {
                 </Button>
                 <Button
                   aria-pressed={state.activeMap === 'germany'}
-                  className="h-12 min-w-0 flex-1 px-3"
+                  className="h-full min-w-0 flex-1 px-3"
                   size="sm"
                   type="button"
                   variant={state.activeMap === 'germany' ? 'secondary' : 'ghost'}
@@ -1316,6 +1298,7 @@ export function TerritoryMapPage() {
                       onSelect={handleTerritorySelect}
                       players={players}
                       territory={territory}
+                      zoom={view.zoom}
                     />
                   ))}
                 </g>
@@ -1366,16 +1349,15 @@ export function TerritoryMapPage() {
                         <span className="type-label">{player.name}</span>
                       )}
                     </div>
-                    <Input
-                      type="color"
-                      aria-label={t('territory.touristColorAria', {
+                    <ColorPicker
+                      ariaLabel={t('territory.touristColorAria', {
                         name: player.name,
                       })}
                       className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
                       disabled={!isDatasetReady}
                       value={player.color}
-                      onChange={(event) =>
-                        void updatePlayerColor(player.id, event.currentTarget.value)
+                      onValueCommit={(color) =>
+                        updatePlayerColor(player.id, color)
                       }
                     />
                     {player.position > 2 ? (

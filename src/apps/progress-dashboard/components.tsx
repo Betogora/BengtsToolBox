@@ -33,6 +33,7 @@ import {
   CardContent,
   CardHeader,
 } from '@/components/ui/card'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -937,14 +938,10 @@ export function PlayerCard({
       </CardHeader>
       <CardContent className="grid gap-3 p-4 pt-0">
         <div className="flex items-center justify-between gap-3">
-          <Input
-            type="color"
-            aria-label={t('progress.chooseColorAria', { name: player.name })}
-            className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
+          <ColorPicker
+            ariaLabel={t('progress.chooseColorAria', { name: player.name })}
             value={player.color}
-            onChange={(event) =>
-              onColorChange(player.id, event.currentTarget.value)
-            }
+            onValueCommit={(color) => onColorChange(player.id, color)}
           />
           <div className="grid grid-cols-4 gap-1.5" aria-label={t('progress.drinkType')}>
             {drinkIcons.map((icon) => {

@@ -92,6 +92,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 - Lade-, Leer-, Fehler- und lokaler Modus müssen verständlich darstellbar sein.
 - Destruktive Aktionen benötigen eine angemessene Bestätigung.
 - Farbe darf nie der einzige Informationsträger sein.
+- Frei wählbare App-Farben verwenden den gemeinsamen Farbkreis. Zwischenstände bleiben lokal; erst die bestätigte Farbe wird als kanonisches `#RRGGBB` an die jeweilige App übergeben.
 - Fokuszustände und Tastaturbedienung müssen sichtbar und funktionsfähig bleiben.
 - Globale Typografie verwendet Manrope Variable und semantische `type-*`-Rollen aus `src/styles/globals.css`.
 - Oberflächen bleiben standardmäßig kompakt und verzichten auf erklärende Untertitel. Untertitel werden nur auf ausdrücklichen Produktwunsch oder für notwendige Status- und Fehlermeldungen ergänzt.
@@ -302,12 +303,13 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Ein Besuch speichert Karte, Territorium, Personensnapshot, Farbe, Zeit und Position als Event.
 - Der aktuelle Claim eines Territoriums stammt aus dessen jüngstem lokalen Kalendertag.
 - Mehrere Personen können am selben jüngsten Tag gemeinsame Owner desselben Territoriums sein.
+- Gemeinsame Owner werden in stabiler Reihenfolge durch adaptive diagonale Farbstreifen dargestellt. Pro Territorium passt mindestens ein vollständiger Owner-Zyklus; sichtbare Einzelstreifen sind höchstens etwa drei Pixel breit.
 - „Unbesucht“ löscht alle Events des jüngsten Claim-Tages dieses Territoriums, nicht die ältere Historie.
 - Eventdatum, Person und Territorium können korrigiert; einzelne Events können gelöscht werden.
-- Namens- und Farbänderungen aktualisieren die Events von `dataset-current`.
+- Namens- und bestätigte Farbänderungen aktualisieren die Events von `dataset-current`.
 - Die Rangliste zählt pro Person alle aktuell gehaltenen Welt- und Deutschland-Claims.
 - Zehn Achievements werden aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.
-- Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen `1`, `2`, `4`.
+- Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen `1`, `2`, `4`, `8`.
 - Der Presenter zeigt aktive Karte, Claims, Legende und Rangliste.
 
 ### 5.9 SK Anderten Turnier-App

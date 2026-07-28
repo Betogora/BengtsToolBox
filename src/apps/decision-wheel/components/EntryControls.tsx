@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
 import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
 import { Button } from '@/components/ui/button'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/lib/i18n'
@@ -127,47 +128,31 @@ export function EntryColorControl({
   const entryLabel = getEntryDisplayText(entry, index, (number) =>
     t('decisionWheel.fallbackOption', { number }),
   )
-  const input = (
-    <Input
-      id={mode === 'mobile' ? `entry-color-${entry.id}` : `entry-color-table-${entry.id}`}
-      type="color"
-      aria-label={t('decisionWheel.option.colorAria', { option: entryLabel })}
-      className={
-        mode === 'mobile'
-          ? 'h-11 cursor-pointer rounded-md border p-1'
-          : 'h-9 w-10 cursor-pointer rounded-md border p-1'
-      }
-      value={entry.color}
-      onChange={(event) =>
-        onUpdateEntry(entry.id, { color: event.currentTarget.value })
-      }
-    />
-  )
 
   if (mode === 'mobile') {
     return (
-      <div className="relative">
-        <Input
-          id={`entry-color-${entry.id}`}
-          type="color"
-          aria-label={t('decisionWheel.option.colorAria', { option: entryLabel })}
-          className="h-11 cursor-pointer rounded-md border px-2 pb-1.5 pt-5"
-          value={entry.color}
-          onChange={(event) =>
-            onUpdateEntry(entry.id, { color: event.currentTarget.value })
-          }
-        />
-        <label
-          className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-muted-foreground"
-          htmlFor={`entry-color-${entry.id}`}
-        >
-          {t('decisionWheel.color')}
-        </label>
-      </div>
+      <ColorPicker
+        ariaLabel={t('decisionWheel.option.colorAria', { option: entryLabel })}
+        label={t('decisionWheel.color')}
+        value={entry.color}
+        variant="field"
+        onValueCommit={(color) =>
+          onUpdateEntry(entry.id, { color })
+        }
+      />
     )
   }
 
-  return input
+  return (
+    <ColorPicker
+      ariaLabel={t('decisionWheel.option.colorAria', { option: entryLabel })}
+      className="h-9 w-10"
+      value={entry.color}
+      onValueCommit={(color) =>
+        onUpdateEntry(entry.id, { color })
+      }
+    />
+  )
 }
 
 export function RemoveEntryButton({
