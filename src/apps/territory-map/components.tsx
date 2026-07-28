@@ -328,19 +328,38 @@ export function TerritoryEventTable({
 
   const renderDateInput = (event: TerritoryVisitEvent) => (
     <Input
+      key={event.createdAtClientIso}
       type="date"
       disabled={disabled}
       aria-label={t('territory.date')}
       className="h-9"
-      value={toDateInputValue(event.createdAtClientIso)}
-      onChange={(inputEvent) =>
-        onUpdateEvent(event.id, {
+      defaultValue={toDateInputValue(event.createdAtClientIso)}
+      onBlur={(inputEvent) => {
+        const nextValue = inputEvent.currentTarget.value
+
+        if (nextValue === toDateInputValue(event.createdAtClientIso)) {
+          return
+        }
+
+        void onUpdateEvent(event.id, {
           createdAtClientIso: fromDateInputValue(
-            inputEvent.currentTarget.value,
+            nextValue,
             event.createdAtClientIso,
           ),
         })
-      }
+      }}
+      onKeyDown={(inputEvent) => {
+        if (inputEvent.key === 'Enter') {
+          inputEvent.currentTarget.blur()
+        }
+
+        if (inputEvent.key === 'Escape') {
+          inputEvent.currentTarget.value = toDateInputValue(
+            event.createdAtClientIso,
+          )
+          inputEvent.currentTarget.blur()
+        }
+      }}
     />
   )
   const renderPlayerSelect = (event: TerritoryVisitEvent) => (

@@ -122,6 +122,26 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await page.getByRole('button', { name: 'Datensatz' }).click()
   const expectedVisibleTables = (page.viewportSize()?.width ?? 0) >= 768 ? 2 : 1
   await expect(page.getByRole('table')).toHaveCount(expectedVisibleTables)
+
+  const dateInput = page.locator('input[type="date"]:visible')
+  const storedDatasets = () =>
+    page.evaluate(() => {
+      const key = Object.keys(window.localStorage).find((entry) =>
+        entry.endsWith('/datasets'),
+      )
+
+      return key ? window.localStorage.getItem(key) : null
+    })
+  const storedBeforeDateEdit = await storedDatasets()
+
+  await dateInput.fill('2024-01-02')
+  await expect(dateInput).toHaveValue('2024-01-02')
+  expect(await storedDatasets()).toBe(storedBeforeDateEdit)
+
+  await dateInput.press('Enter')
+  await expect(dateInput).not.toBeFocused()
+  await expect.poll(storedDatasets).not.toBe(storedBeforeDateEdit)
+
   await page.evaluate(() => window.scrollTo({ top: 0 }))
   await app.expectHealthy()
 })
