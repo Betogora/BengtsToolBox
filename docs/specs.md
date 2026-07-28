@@ -296,12 +296,14 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Kartenräume sind Weltkarte mit 241 Territorien und Deutschlandkarte mit 16 Bundesländern.
 - Initial existieren Bengt, Paul und `Sushi-Tourist 3` mit unterschiedlichen Farben.
 - Die ersten zwei Personen können nicht entfernt werden; weitere Touristen sind anleg- und löschbar.
+- Je Lobby existiert genau ein veränderlicher Event-Datensatz mit der festen Dokument-ID `dataset-current`; es gibt weder Archive noch weitere aktive Datensätze.
+- Eine bestätigte leere Datensatz-Collection erzeugt genau diesen leeren `dataset-current`. Während der initiale Snapshot lädt, fehlschlägt oder das Dokument fehlt, bleiben Claims, Events und Spieleränderungen gesperrt; ein lokaler Ersatzdatensatz wird niemals gespeichert.
 - Ein Besuch speichert Karte, Territorium, Personensnapshot, Farbe, Zeit und Position als Event.
 - Der aktuelle Claim eines Territoriums stammt aus dessen jüngstem lokalen Kalendertag.
 - Mehrere Personen können am selben jüngsten Tag gemeinsame Owner desselben Territoriums sein.
 - „Unbesucht“ löscht alle Events des jüngsten Claim-Tages dieses Territoriums, nicht die ältere Historie.
 - Eventdatum, Person und Territorium können korrigiert; einzelne Events können gelöscht werden.
-- Namens- und Farbänderungen aktualisieren die Events des aktiven Datensatzes.
+- Namens- und Farbänderungen aktualisieren die Events von `dataset-current`.
 - Die Rangliste zählt pro Person alle aktuell gehaltenen Welt- und Deutschland-Claims.
 - Zehn Achievements werden aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.
 - Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen `1`, `2`, `4`.

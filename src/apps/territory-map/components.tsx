@@ -90,12 +90,14 @@ function getClaimColor(
 
 export const TerritoryShape = memo(function TerritoryShape({
   claim,
+  isDisabled,
   isSelected,
   onSelect,
   players,
   territory,
 }: {
   claim?: TerritoryClaim
+  isDisabled: boolean
   isSelected: boolean
   onSelect: (territoryId: string) => void
   players: TerritoryPlayer[]
@@ -149,9 +151,15 @@ export const TerritoryShape = memo(function TerritoryShape({
       <path
         d={territory.path}
         role="button"
-        tabIndex={0}
+        tabIndex={isDisabled ? -1 : 0}
+        aria-disabled={isDisabled}
         aria-label={`${territory.name}, ${ownerLabel}`}
-        className="territory-shape cursor-pointer transition-[opacity,stroke-width] focus:outline-none focus-visible:stroke-ring sm:hover:brightness-105"
+        className={[
+          'territory-shape transition-[opacity,stroke-width] focus:outline-none focus-visible:stroke-ring',
+          isDisabled
+            ? 'cursor-default'
+            : 'cursor-pointer sm:hover:brightness-105',
+        ].join(' ')}
         data-territory-id={territory.id}
         fill={ownerColor}
         opacity={claim ? 0.94 : 1}
@@ -159,7 +167,7 @@ export const TerritoryShape = memo(function TerritoryShape({
         strokeWidth={isSelected ? 2.2 : 0.75}
         vectorEffect="non-scaling-stroke"
         onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
+          if (!isDisabled && (event.key === 'Enter' || event.key === ' ')) {
             event.preventDefault()
             onSelect(territory.id)
           }
@@ -173,12 +181,14 @@ export const TerritoryShape = memo(function TerritoryShape({
 
 export function ClaimDialog({
   claim,
+  isDisabled,
   onClaim,
   onOpenChange,
   players,
   territory,
 }: {
   claim?: TerritoryClaim
+  isDisabled: boolean
   onClaim: (playerId: string) => Promise<void>
   onOpenChange: (open: boolean) => void
   players: TerritoryPlayer[]
@@ -216,6 +226,7 @@ export function ClaimDialog({
         <div className="flex flex-col gap-3 min-[34rem]:flex-row min-[34rem]:items-end">
           <div className="min-w-0 flex-1">
             <Select
+              disabled={isDisabled}
               open={isPlayerSelectOpen}
               value={selectedPlayerId}
               onOpenChange={(open) => {
@@ -255,6 +266,7 @@ export function ClaimDialog({
           </div>
           <Button
             className="h-9 w-full min-[34rem]:h-11 min-[34rem]:w-auto"
+            disabled={isDisabled}
             size="ifta"
             onClick={() => onClaim(selectedPlayerId)}
           >
@@ -267,8 +279,10 @@ export function ClaimDialog({
 }
 
 export function AddEaterCard({
+  disabled,
   onAdd,
 }: {
+  disabled: boolean
   onAdd: () => Promise<void>
 }) {
   const { t } = useI18n()
@@ -277,6 +291,7 @@ export function AddEaterCard({
     <div className="rounded-md border border-dashed bg-background p-3">
       <Button
         className="h-9 w-full"
+        disabled={disabled}
         variant="outline"
         onClick={() => void onAdd()}
       >
@@ -289,11 +304,13 @@ export function AddEaterCard({
 
 export function TerritoryEventTable({
   dataset,
+  disabled,
   onDeleteEvent,
   onUpdateEvent,
   players,
 }: {
   dataset: TerritoryDataset
+  disabled: boolean
   onDeleteEvent: (eventId: string) => void | Promise<void>
   onUpdateEvent: ReturnType<typeof useTerritoryMap>['updateEvent']
   players: TerritoryPlayer[]
@@ -312,6 +329,7 @@ export function TerritoryEventTable({
   const renderDateInput = (event: TerritoryVisitEvent) => (
     <Input
       type="date"
+      disabled={disabled}
       aria-label={t('territory.date')}
       className="h-9"
       value={toDateInputValue(event.createdAtClientIso)}
@@ -327,6 +345,7 @@ export function TerritoryEventTable({
   )
   const renderPlayerSelect = (event: TerritoryVisitEvent) => (
     <Select
+      disabled={disabled}
       value={event.playerId}
       onValueChange={(value) =>
         onUpdateEvent(event.id, {
@@ -354,6 +373,7 @@ export function TerritoryEventTable({
   )
   const renderTerritorySelect = (event: TerritoryVisitEvent) => (
     <Select
+      disabled={disabled}
       value={event.territoryId}
       onValueChange={(value) =>
         onUpdateEvent(event.id, {
@@ -380,6 +400,7 @@ export function TerritoryEventTable({
       onConfirm={() => onDeleteEvent(event.id)}
       trigger={
         <Button
+          disabled={disabled}
           variant="delete"
           size="icon"
           aria-label={t('territory.claimDeleteTitle')}

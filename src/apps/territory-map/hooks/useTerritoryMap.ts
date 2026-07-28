@@ -14,7 +14,11 @@ import type {
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { commitSyncBatch, type SyncBatch } from '@/lib/firebase/syncBatch'
-import type { SyncResult } from '@/lib/firebase/syncError'
+import {
+  SyncError,
+  syncFailure,
+  type SyncResult,
+} from '@/lib/firebase/syncError'
 import {
   getParticipantColorByPosition,
   normalizeParticipantColor,
@@ -220,7 +224,9 @@ function normalizeDataset(
   }
 }
 
-function getCurrentClaims(events: TerritoryVisitEvent[]): TerritoryClaimsByMap {
+export function getCurrentClaims(
+  events: TerritoryVisitEvent[],
+): TerritoryClaimsByMap {
   const claimsByMap: TerritoryClaimsByMap = {
     world: {},
     germany: {},
@@ -275,6 +281,31 @@ function getCurrentClaims(events: TerritoryVisitEvent[]): TerritoryClaimsByMap {
   })
 
   return claimsByMap
+}
+
+export function selectCurrentDataset(datasets: TerritoryDataset[]) {
+  return datasets.find((dataset) => dataset.id === activeDatasetId)
+}
+
+export function shouldInitializeCurrentDataset(
+  isLoading: boolean,
+  datasets: TerritoryDataset[],
+  hasError = false,
+) {
+  return !isLoading && !hasError && datasets.length === 0
+}
+
+function datasetNotReadyResult(): SyncResult<void> {
+  return syncFailure(
+    undefined,
+    new SyncError(
+      'The Sushi Map dataset is not ready.',
+      'snapshot',
+      'merge-item',
+      'snapshot-failed',
+      true,
+    ),
+  )
 }
 
 function getLatestEventIdsForTerritoryDay(
@@ -335,10 +366,15 @@ export function useTerritoryMap(lobbyId?: string) {
     () => datasetsStore.data.map((dataset) => normalizeDataset(dataset, players)),
     [datasetsStore.data, players],
   )
-  const activeDataset =
-    datasets.find((dataset) => dataset.id === activeDatasetId) ??
-    datasets.find((dataset) => dataset.status === 'active') ??
-    createDataset()
+  const storedActiveDataset = selectCurrentDataset(datasets)
+  const activeDataset = useMemo(
+    () => storedActiveDataset ?? createDataset(),
+    [storedActiveDataset],
+  )
+  const isDatasetReady =
+    !datasetsStore.isLoading &&
+    datasetsStore.error === null &&
+    storedActiveDataset !== undefined
   const claimsByMap = useMemo(
     () => getCurrentClaims(activeDataset.events),
     [activeDataset.events],
@@ -359,7 +395,13 @@ export function useTerritoryMap(lobbyId?: string) {
   }, [playersStore, session.userId])
 
   useEffect(() => {
-    if (datasetsStore.isLoading || datasetsStore.data.length > 0) {
+    if (
+      !shouldInitializeCurrentDataset(
+        datasetsStore.isLoading,
+        datasetsStore.data,
+        datasetsStore.error !== null,
+      )
+    ) {
       return
     }
 
@@ -368,30 +410,32 @@ export function useTerritoryMap(lobbyId?: string) {
       lastUpdatedBy: session.userId,
     }
 
-    datasetsStore.saveItems([dataset])
+    datasetsStore.setItem(activeDatasetId, omitDatasetId(dataset))
   }, [datasetsStore, session.userId])
 
   const saveActiveDataset = ((
     partialValue: Partial<TerritoryDataset>,
     batch?: SyncBatch,
   ) => {
+    if (!storedActiveDataset) {
+      return batch
+        ? undefined
+        : Promise.resolve(datasetNotReadyResult())
+    }
+
     const nextDataset = {
-      ...activeDataset,
+      ...storedActiveDataset,
       ...partialValue,
       lastUpdatedBy: session.userId,
     }
     const value = omitDatasetId(nextDataset)
-    const hasStoredDataset = datasets.some((dataset) => dataset.id === activeDataset.id)
 
     if (batch) {
-      if (hasStoredDataset) datasetsStore.mergeItem(activeDataset.id, value, batch)
-      else datasetsStore.setItem(activeDataset.id, value, batch)
+      datasetsStore.mergeItem(activeDatasetId, value, batch)
       return undefined
     }
 
-    return hasStoredDataset
-      ? datasetsStore.mergeItem(activeDataset.id, value)
-      : datasetsStore.setItem(activeDataset.id, value)
+    return datasetsStore.mergeItem(activeDatasetId, value)
   }) as {
     (partialValue: Partial<TerritoryDataset>): Promise<SyncResult<void>>
     (partialValue: Partial<TerritoryDataset>, batch: SyncBatch): void
@@ -404,6 +448,10 @@ export function useTerritoryMap(lobbyId?: string) {
     })
 
   const addPlayer = (name = '', color = '') => {
+    if (!isDatasetReady) {
+      return Promise.resolve(null)
+    }
+
     const nextPosition =
       players.reduce((max, player) => Math.max(max, player.position), 0) + 1
     const id = `person-${nextPosition}`
@@ -430,7 +478,7 @@ export function useTerritoryMap(lobbyId?: string) {
   const updatePlayerName = async (playerId: string, name: string) => {
     const player = players.find((entry) => entry.id === playerId)
 
-    if (!player) {
+    if (!isDatasetReady || !storedActiveDataset || !player) {
       return
     }
 
@@ -444,7 +492,7 @@ export function useTerritoryMap(lobbyId?: string) {
       )
       saveActiveDataset(
         {
-          events: activeDataset.events.map((event) =>
+          events: storedActiveDataset.events.map((event) =>
             event.playerId === playerId
               ? {
                   ...event,
@@ -462,7 +510,7 @@ export function useTerritoryMap(lobbyId?: string) {
   const updatePlayerColor = async (playerId: string, color: string) => {
     const player = players.find((entry) => entry.id === playerId)
 
-    if (!player) {
+    if (!isDatasetReady || !storedActiveDataset || !player) {
       return
     }
 
@@ -476,7 +524,7 @@ export function useTerritoryMap(lobbyId?: string) {
       )
       saveActiveDataset(
         {
-          events: activeDataset.events.map((event) =>
+          events: storedActiveDataset.events.map((event) =>
             event.playerId === playerId
               ? {
                   ...event,
@@ -494,7 +542,7 @@ export function useTerritoryMap(lobbyId?: string) {
   const removePlayer = async (playerId: string) => {
     const player = players.find((entry) => entry.id === playerId)
 
-    if (!player || player.position <= 2) {
+    if (!isDatasetReady || !player || player.position <= 2) {
       return false
     }
 
@@ -511,13 +559,13 @@ export function useTerritoryMap(lobbyId?: string) {
     const player =
       playerOverride ?? players.find((entry) => entry.id === playerId)
 
-    if (!player) {
+    if (!isDatasetReady || !storedActiveDataset || !player) {
       return Promise.resolve(false)
     }
 
     const now = new Date().toISOString()
     const nextPosition =
-      activeDataset.events.reduce(
+      storedActiveDataset.events.reduce(
         (max, event) => Math.max(max, event.position),
         0,
       ) + 1
@@ -536,13 +584,15 @@ export function useTerritoryMap(lobbyId?: string) {
     }
 
     return saveActiveDataset({
-      events: [...activeDataset.events, event],
+      events: [...storedActiveDataset.events, event],
     }).then((result) => result.ok)
   }
 
   const deleteEvent = (eventId: string) =>
     saveActiveDataset({
-      events: activeDataset.events.filter((event) => event.id !== eventId),
+      events:
+        storedActiveDataset?.events.filter((event) => event.id !== eventId) ??
+        [],
     })
 
   const unclaimTerritory = (
@@ -552,15 +602,19 @@ export function useTerritoryMap(lobbyId?: string) {
   ) => {
     void previousClaimOverride
 
+    if (!isDatasetReady || !storedActiveDataset) {
+      return Promise.resolve(false)
+    }
+
     const eventIds = getLatestEventIdsForTerritoryDay(
-      activeDataset.events,
+      storedActiveDataset.events,
       mapId,
       territoryId,
     )
 
     return eventIds.length > 0
       ? saveActiveDataset({
-          events: activeDataset.events.filter(
+          events: storedActiveDataset.events.filter(
             (event) => !eventIds.includes(event.id),
           ),
         }).then((result) => result.ok)
@@ -577,7 +631,7 @@ export function useTerritoryMap(lobbyId?: string) {
     >,
   ) =>
     saveActiveDataset({
-      events: activeDataset.events.map((event) => {
+      events: (storedActiveDataset?.events ?? []).map((event) => {
         if (event.id !== eventId) {
           return event
         }
@@ -617,6 +671,7 @@ export function useTerritoryMap(lobbyId?: string) {
       stateStore.error ?? playersStore.error ?? datasetsStore.error ?? session.error,
     isLoading:
       stateStore.isLoading || playersStore.isLoading || datasetsStore.isLoading,
+    isDatasetReady,
     isPending:
       stateStore.isPending || playersStore.isPending || datasetsStore.isPending,
     isRealtime:

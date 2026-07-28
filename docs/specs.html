@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:3f79e9a121a683fdbdafd8c5df96a5d2a29cdb1c5a116dc61cd034f96147eeb4">
+  <meta name="specs-source-sha256" content="sha256:8267444ed136dbc1230fa432a58321198dedd29df78df8144c0e380c76e551f7">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -707,6 +707,8 @@
           <div class="app-body">
             <ul>
               <li>241 Weltterritorien und 16 Bundesländer; drei Initialtouristen.</li>
+              <li>Je Lobby genau ein veränderlicher Event-Datensatz <code>dataset-current</code>; keine Archive oder weiteren aktiven Datensätze.</li>
+              <li>Nur ein bestätigt leerer Snapshot erzeugt den leeren Datensatz; bis zum bestätigten Dokument bleiben Claims, Events und Spieleränderungen gesperrt und es wird kein Ersatzdatensatz gespeichert.</li>
               <li>Claims stammen aus dem jüngsten lokalen Kalendertag; mehrere Owner am selben Tag sind möglich.</li>
               <li>„Unbesucht“ löscht nur die Events des jüngsten Claim-Tages.</li>
               <li>Rangliste über aktuelle Welt-/Deutschland-Claims; zehn historische Achievements.</li>

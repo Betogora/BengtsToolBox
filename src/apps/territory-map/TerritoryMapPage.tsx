@@ -679,8 +679,7 @@ export function TerritoryMapPage() {
     currentClaims,
     deleteEvent,
     error,
-    isLoading,
-    isPending,
+    isDatasetReady,
     players,
     removePlayer,
     setActiveMap,
@@ -1031,7 +1030,7 @@ export function TerritoryMapPage() {
   }
 
   const handleClaim = async (playerId: string) => {
-    if (!selectedTerritory) {
+    if (!isDatasetReady || !selectedTerritory) {
       return
     }
 
@@ -1054,12 +1053,21 @@ export function TerritoryMapPage() {
   }
 
   const handleAddEater = async () => {
+    if (!isDatasetReady) {
+      return
+    }
+
     await addPlayer()
   }
 
-  const handleTerritorySelect = useCallback((territoryId: string) => {
-    setSelectedTerritoryId(territoryId)
-  }, [])
+  const handleTerritorySelect = useCallback(
+    (territoryId: string) => {
+      if (isDatasetReady) {
+        setSelectedTerritoryId(territoryId)
+      }
+    },
+    [isDatasetReady],
+  )
 
   return (
     <AppPage className="gap-5 py-6 lg:py-6" width="wide">
@@ -1230,6 +1238,7 @@ export function TerritoryMapPage() {
 
                 if (
                   tapCandidate &&
+                  isDatasetReady &&
                   tapCandidate.pointerId === event.pointerId &&
                   tapCandidate.territoryId &&
                   !multiPointerActiveRef.current &&
@@ -1302,6 +1311,7 @@ export function TerritoryMapPage() {
                     <TerritoryShape
                       key={territory.id}
                       claim={currentClaims[territory.id]}
+                      isDisabled={!isDatasetReady}
                       isSelected={selectedTerritoryId === territory.id}
                       onSelect={handleTerritorySelect}
                       players={players}
@@ -1343,14 +1353,18 @@ export function TerritoryMapPage() {
                       aria-hidden="true"
                     />
                     <div className="min-w-0 flex-1">
-                      <InlineTextEdit
-                        ariaLabel={t('territory.touristNameAria', {
-                          name: player.name,
-                        })}
-                        fallback={`Sushi-Tourist ${player.position}`}
-                        value={player.name}
-                        onSave={(value) => updatePlayerName(player.id, value)}
-                      />
+                      {isDatasetReady ? (
+                        <InlineTextEdit
+                          ariaLabel={t('territory.touristNameAria', {
+                            name: player.name,
+                          })}
+                          fallback={`Sushi-Tourist ${player.position}`}
+                          value={player.name}
+                          onSave={(value) => updatePlayerName(player.id, value)}
+                        />
+                      ) : (
+                        <span className="type-label">{player.name}</span>
+                      )}
                     </div>
                     <Input
                       type="color"
@@ -1358,6 +1372,7 @@ export function TerritoryMapPage() {
                         name: player.name,
                       })}
                       className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
+                      disabled={!isDatasetReady}
                       value={player.color}
                       onChange={(event) =>
                         void updatePlayerColor(player.id, event.currentTarget.value)
@@ -1368,6 +1383,7 @@ export function TerritoryMapPage() {
                         variant="delete"
                         size="icon"
                         className="size-11 sm:size-9"
+                        disabled={!isDatasetReady}
                         aria-label={t('shared.playerCard.removeAria', {
                           name: player.name,
                         })}
@@ -1381,8 +1397,11 @@ export function TerritoryMapPage() {
                   </div>
                 </div>
               ))}
-              <AddEaterCard onAdd={handleAddEater} />
-              {(isLoading || isPending) && players.length === 0 && (
+              <AddEaterCard
+                disabled={!isDatasetReady}
+                onAdd={handleAddEater}
+              />
+              {!isDatasetReady && (
                 <p className="type-ui text-muted-foreground">{t('common.syncing')}</p>
               )}
               </CardContent>
@@ -1546,17 +1565,26 @@ export function TerritoryMapPage() {
         />
         {isDatasetOpen && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-            <TerritoryEventTable
-              dataset={activeDataset}
-              players={players}
-              onDeleteEvent={async (eventId) => {
-                await deleteEvent(eventId)
-                toast.success(t('territory.claimDeleted'))
-              }}
-              onUpdateEvent={(eventId, partialValue) =>
-                updateEvent(eventId, partialValue)
-              }
-            />
+            {!isDatasetReady ? (
+              <p className="type-ui text-muted-foreground" role="status">
+                {t('common.syncing')}
+              </p>
+            ) : (
+              <TerritoryEventTable
+                dataset={activeDataset}
+                disabled={false}
+                players={players}
+                onDeleteEvent={async (eventId) => {
+                  const result = await deleteEvent(eventId)
+                  if (result.ok) {
+                    toast.success(t('territory.claimDeleted'))
+                  }
+                }}
+                onUpdateEvent={(eventId, partialValue) =>
+                  updateEvent(eventId, partialValue)
+                }
+              />
+            )}
           </CardContent>
         )}
       </Card>
@@ -1564,6 +1592,7 @@ export function TerritoryMapPage() {
       <ClaimDialog
         key={selectedTerritory?.id ?? 'empty-territory'}
         claim={selectedClaim}
+        isDisabled={!isDatasetReady}
         onClaim={handleClaim}
         onOpenChange={(open) => {
           if (!open) {
