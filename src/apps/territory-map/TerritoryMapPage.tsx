@@ -1335,12 +1335,13 @@ export function TerritoryMapPage() {
                       className="size-3 rounded-full bg-[var(--player-color)]"
                       aria-hidden="true"
                     />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 [&_[data-slot=button]]:size-9">
                       {isDatasetReady ? (
                         <InlineTextEdit
                           ariaLabel={t('territory.touristNameAria', {
                             name: player.name,
                           })}
+                          className="truncate"
                           fallback={`Sushi-Tourist ${player.position}`}
                           value={player.name}
                           onSave={(value) => updatePlayerName(player.id, value)}
@@ -1364,7 +1365,7 @@ export function TerritoryMapPage() {
                       <Button
                         variant="delete"
                         size="icon"
-                        className="size-11 sm:size-9"
+                        className="size-9"
                         disabled={!isDatasetReady}
                         aria-label={t('shared.playerCard.removeAria', {
                           name: player.name,
@@ -1402,9 +1403,9 @@ export function TerritoryMapPage() {
                 <Table className="table-fixed md:hidden" containerClassName="md:hidden">
                     <colgroup>
                       <col />
-                      <col className="w-14" />
-                      <col className="w-20" />
-                      <col className="w-14" />
+                      <col className="w-16 min-[400px]:w-[4.25rem]" />
+                      <col className="w-16 min-[400px]:w-[4.25rem]" />
+                      <col className="w-16 min-[400px]:w-[4.25rem]" />
                     </colgroup>
                     <TableHeader>
                         <TableHead className="px-2 py-2">
@@ -1414,7 +1415,7 @@ export function TerritoryMapPage() {
                           {t('territory.world')}
                         </TableHead>
                         <TableHead className="px-1 py-2 text-right">DE</TableHead>
-                        <TableHead className="px-2 py-2 text-right">
+                        <TableHead className="px-1 py-2 text-right">
                           {t('territory.total')}
                         </TableHead>
                     </TableHeader>
@@ -1437,7 +1438,7 @@ export function TerritoryMapPage() {
                           <TableCell className="px-1 py-2 text-right tabular-nums">
                             {score.germany}
                           </TableCell>
-                          <TableCell className="type-action px-2 py-2 text-right tabular-nums">
+                          <TableCell className="type-action px-1 py-2 text-right tabular-nums">
                             {score.total}
                           </TableCell>
                         </TableRow>

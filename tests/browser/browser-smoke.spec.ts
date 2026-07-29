@@ -107,6 +107,31 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     page.getByRole('button', { name: /^Vereinigtes Königreich, / }),
   ).toHaveCount(0)
 
+  const viewportWidth = page.viewportSize()?.width ?? 0
+
+  await page.getByRole('button', { name: 'Sushi-Tourist' }).click()
+
+  if (viewportWidth < 768) {
+    const colorPickerBounds = await page
+      .getByRole('button', { name: 'Sushi-Tourist 3 Farbe wählen' })
+      .boundingBox()
+    const removeButtonBounds = await page
+      .getByRole('button', { name: 'Sushi-Tourist 3 entfernen' })
+      .boundingBox()
+    const playerCardHeight = await page
+      .getByRole('button', { name: 'Sushi-Tourist 3 entfernen' })
+      .evaluate(
+        (button) =>
+          button.parentElement?.parentElement?.getBoundingClientRect().height,
+      )
+
+    expect(colorPickerBounds?.width).toBeCloseTo(36, 0)
+    expect(colorPickerBounds?.height).toBeCloseTo(36, 0)
+    expect(removeButtonBounds?.width).toBeCloseTo(colorPickerBounds?.width ?? 0, 0)
+    expect(removeButtonBounds?.height).toBeCloseTo(colorPickerBounds?.height ?? 0, 0)
+    expect(playerCardHeight).toBeCloseTo(62, 0)
+  }
+
   const zoomIn = page.getByRole('button', { name: 'Reinzoomen' })
   const zoomOut = page.getByRole('button', { name: 'Rauszoomen' })
   const mapSelector = page.getByRole('group', { name: 'Karte' })
@@ -140,11 +165,44 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await page.getByRole('button', { name: 'Punktzahl' }).click()
   await expect(page.getByRole('table')).toHaveCount(1)
 
+  if (viewportWidth < 768) {
+    const scoreTable = page.getByRole('table')
+    const scoreContainer = page.locator('[data-slot="table-container"]:visible')
+    const scoreOverflow = await scoreContainer.evaluate(
+      (container) => container.scrollWidth - container.clientWidth,
+    )
+    const scoreColumnWidths = await scoreTable.locator('th').evaluateAll(
+      (headers) =>
+        headers
+          .slice(1)
+          .map((header) => header.getBoundingClientRect().width),
+    )
+
+    expect(scoreOverflow).toBeLessThanOrEqual(1)
+    expect(scoreColumnWidths).toHaveLength(3)
+    expect(scoreColumnWidths[0]).toBeCloseTo(scoreColumnWidths[1] ?? 0, 0)
+    expect(scoreColumnWidths[1]).toBeCloseTo(scoreColumnWidths[2] ?? 0, 0)
+  }
+
   await page.getByRole('button', { name: 'Datensatz' }).click()
-  const expectedVisibleTables = (page.viewportSize()?.width ?? 0) >= 768 ? 2 : 1
+  const expectedVisibleTables = viewportWidth >= 768 ? 2 : 1
   await expect(page.getByRole('table')).toHaveCount(expectedVisibleTables)
 
   const dateInput = page.locator('input[type="date"]:visible')
+
+  if (viewportWidth < 768) {
+    const playerSelect = page.getByRole('combobox', { name: 'Sushi-Tourist' })
+    const territorySelect = page.getByRole('combobox', { name: 'Territorium' })
+    const dateBounds = await dateInput.boundingBox()
+    const playerBounds = await playerSelect.boundingBox()
+    const territoryBounds = await territorySelect.boundingBox()
+
+    expect(dateBounds?.y).toBeCloseTo(playerBounds?.y ?? 0, 0)
+    expect(territoryBounds?.y).toBeGreaterThan(
+      (dateBounds?.y ?? 0) + (dateBounds?.height ?? 0),
+    )
+  }
+
   const storedDatasets = () =>
     page.evaluate(() => {
       const key = Object.keys(window.localStorage).find((entry) =>

@@ -413,7 +413,7 @@ export function TerritoryEventTable({
       type="date"
       disabled={disabled}
       aria-label={t('territory.date')}
-      className="h-9"
+      className="h-9 px-2 md:px-3"
       defaultValue={toDateInputValue(event.createdAtClientIso)}
       onBlur={(inputEvent) => {
         const nextValue = inputEvent.currentTarget.value
@@ -453,8 +453,13 @@ export function TerritoryEventTable({
         })
       }
     >
-      <SelectTrigger aria-label={t('territory.tourist')} className="w-48">
-        <SelectValue />
+      <SelectTrigger
+        aria-label={t('territory.tourist')}
+        className="w-full min-w-0 md:w-48"
+      >
+        <span className="min-w-0 truncate">
+          <SelectValue />
+        </span>
       </SelectTrigger>
       <SelectContent>
         {players.map((player) => (
@@ -481,8 +486,13 @@ export function TerritoryEventTable({
         })
       }
     >
-      <SelectTrigger aria-label={t('territory.territory')} className="w-64">
-        <SelectValue />
+      <SelectTrigger
+        aria-label={t('territory.territory')}
+        className="w-full min-w-0 md:w-64"
+      >
+        <span className="min-w-0 truncate">
+          <SelectValue />
+        </span>
       </SelectTrigger>
       <SelectContent>
         {territoryOptionsByMap[event.mapId].map((territory) => (
@@ -541,20 +551,20 @@ export function TerritoryEventTable({
                 </div>
                 {renderDeleteButton(event)}
               </div>
-              <div className="mt-3 grid gap-3">
-                <div>
+              <div className="mt-3 grid grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                <div className="min-w-0">
                   <div className="type-caption mb-1.5 text-muted-foreground">
                     {t('territory.date')}
                   </div>
                   {renderDateInput(event)}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="type-caption mb-1.5 text-muted-foreground">
                     {t('territory.player')}
                   </div>
                   {renderPlayerSelect(event)}
                 </div>
-                <div>
+                <div className="col-span-2 min-w-0">
                   <div className="type-caption mb-1.5 text-muted-foreground">
                     {t('territory.territory')}
                   </div>
