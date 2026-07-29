@@ -225,6 +225,98 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await app.expectHealthy()
 })
 
+test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
+  app,
+  page,
+}) => {
+  type MapPanTestWindow = typeof window & {
+    __territoryMapRafTest?: {
+      flush: () => {
+        flushed: number
+        pending: number
+      }
+      restore: () => void
+    }
+  }
+
+  await app.open('/apps/sushi')
+
+  const mapViewport = page.locator('[data-map-dragging]')
+  const mapLayer = page.locator('.territory-map-layer')
+  const zoomIn = page.getByRole('button', { name: 'Reinzoomen' })
+  const touchSession = await page.context().newCDPSession(page)
+
+  await expect(mapViewport).toBeVisible()
+  await zoomIn.click()
+  await zoomIn.click()
+  await zoomIn.click()
+  await expect(mapLayer).toHaveAttribute('transform', /scale\(8\)/)
+
+  const mapBefore = await mapViewport.evaluate((viewport) => {
+    const rect = viewport.getBoundingClientRect()
+    const layer = viewport.querySelector('.territory-map-layer')
+
+    return {
+      startX: rect.left + rect.width / 2,
+      startY: rect.top + rect.height / 2,
+      transform: layer?.getAttribute('transform'),
+    }
+  })
+
+  await page.evaluate(() => {
+    const testWindow = window as MapPanTestWindow
+    const originalRequestAnimationFrame = window.requestAnimationFrame
+    const callbacks: FrameRequestCallback[] = []
+
+    window.requestAnimationFrame = (callback) => {
+      callbacks.push(callback)
+      return callbacks.length
+    }
+    testWindow.__territoryMapRafTest = {
+      flush: () => {
+        const currentCallbacks = callbacks.splice(0)
+        currentCallbacks.forEach((callback) => callback(performance.now()))
+
+        return {
+          flushed: currentCallbacks.length,
+          pending: callbacks.length,
+        }
+      },
+      restore: () => {
+        window.requestAnimationFrame = originalRequestAnimationFrame
+        delete testWindow.__territoryMapRafTest
+      },
+    }
+  })
+
+  await touchSession.send('Input.dispatchTouchEvent', {
+    touchPoints: [{ id: 1, x: mapBefore.startX, y: mapBefore.startY }],
+    type: 'touchStart',
+  })
+  await touchSession.send('Input.dispatchTouchEvent', {
+    touchPoints: [{ id: 1, x: mapBefore.startX - 44, y: mapBefore.startY + 36 }],
+    type: 'touchMove',
+  })
+
+  const frameState = await page.evaluate(
+    () => (window as MapPanTestWindow).__territoryMapRafTest?.flush(),
+  )
+  const transformAfter = await mapLayer.getAttribute('transform')
+
+  expect(frameState).toEqual({ flushed: 1, pending: 0 })
+  expect(transformAfter).not.toBe(mapBefore.transform)
+
+  await touchSession.send('Input.dispatchTouchEvent', {
+    touchPoints: [],
+    type: 'touchEnd',
+  })
+  await page.evaluate(() =>
+    (window as MapPanTestWindow).__territoryMapRafTest?.restore(),
+  )
+
+  await app.expectHealthy()
+})
+
 test('Globaler Farbkreis speichert erst bestätigte Änderungen', async ({
   app,
   page,

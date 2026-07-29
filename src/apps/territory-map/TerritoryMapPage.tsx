@@ -697,7 +697,6 @@ export function TerritoryMapPage() {
   const multiPointerActiveRef = useRef(false)
   const pendingDragMoveRef = useRef<PendingDragMove | null>(null)
   const panRafRef = useRef<number | null>(null)
-  const rafRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const tapCandidateRef = useRef<{
     pointerId: number
@@ -754,25 +753,9 @@ export function TerritoryMapPage() {
   )
   const appTitle = t('app.territoryMap.title')
 
-  const applyLiveTransform = () => {
-    rafRef.current = null
-    mapLayerRef.current?.setAttribute(
-      'transform',
-      getMapTransform(liveViewRef.current),
-    )
-  }
-
-  const scheduleLiveTransform = () => {
-    if (rafRef.current !== null) {
-      return
-    }
-
-    rafRef.current = window.requestAnimationFrame(applyLiveTransform)
-  }
-
   const applyView = (nextView: MapView, shouldCommit = false) => {
     liveViewRef.current = nextView
-    scheduleLiveTransform()
+    mapLayerRef.current?.setAttribute('transform', getMapTransform(nextView))
 
     if (shouldCommit) {
       setView(nextView)
@@ -975,10 +958,6 @@ export function TerritoryMapPage() {
 
   useEffect(
     () => () => {
-      if (rafRef.current !== null) {
-        window.cancelAnimationFrame(rafRef.current)
-      }
-
       if (panRafRef.current !== null) {
         window.cancelAnimationFrame(panRafRef.current)
       }
