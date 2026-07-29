@@ -1415,7 +1415,7 @@ export function TerritoryMapPage() {
                           {t('territory.world')}
                         </TableHead>
                         <TableHead className="px-1 py-2 text-right">DE</TableHead>
-                        <TableHead className="px-1 py-2 text-right">
+                        <TableHead className="py-2 pr-2 pl-0 text-right">
                           {t('territory.total')}
                         </TableHead>
                     </TableHeader>
@@ -1438,7 +1438,7 @@ export function TerritoryMapPage() {
                           <TableCell className="px-1 py-2 text-right tabular-nums">
                             {score.germany}
                           </TableCell>
-                          <TableCell className="type-action px-1 py-2 text-right tabular-nums">
+                          <TableCell className="type-action py-2 pr-2 pl-0 text-right tabular-nums">
                             {score.total}
                           </TableCell>
                         </TableRow>
