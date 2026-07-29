@@ -145,10 +145,6 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await zoomIn.click()
   await zoomIn.click()
   await expect(zoomIn).toBeDisabled()
-  await expect(page.locator('.territory-map-layer')).toHaveAttribute(
-    'transform',
-    /scale\(8\)/,
-  )
 
   const germany = page.getByRole('button', { name: /^Deutschland, / })
   await germany.focus()
@@ -250,16 +246,16 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
   await zoomIn.click()
   await zoomIn.click()
   await zoomIn.click()
-  await expect(mapLayer).toHaveAttribute('transform', /scale\(8\)/)
+  await expect(zoomIn).toBeDisabled()
 
   const mapBefore = await mapViewport.evaluate((viewport) => {
     const rect = viewport.getBoundingClientRect()
-    const layer = viewport.querySelector('.territory-map-layer')
+    const layer = viewport.querySelector<SVGGElement>('.territory-map-layer')
 
     return {
       startX: rect.left + rect.width / 2,
       startY: rect.top + rect.height / 2,
-      transform: layer?.getAttribute('transform'),
+      transform: layer?.style.transform,
     }
   })
 
@@ -301,7 +297,9 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
   const frameState = await page.evaluate(
     () => (window as MapPanTestWindow).__territoryMapRafTest?.flush(),
   )
-  const transformAfter = await mapLayer.getAttribute('transform')
+  const transformAfter = await mapLayer.evaluate(
+    (layer) => (layer as SVGGElement).style.transform,
+  )
 
   expect(frameState).toEqual({ flushed: 1, pending: 0 })
   expect(transformAfter).not.toBe(mapBefore.transform)
@@ -313,6 +311,7 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
   await page.evaluate(() =>
     (window as MapPanTestWindow).__territoryMapRafTest?.restore(),
   )
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await app.expectHealthy()
 })

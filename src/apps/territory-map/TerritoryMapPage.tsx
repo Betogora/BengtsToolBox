@@ -367,7 +367,7 @@ const achievementDefinitions: AchievementDefinition[] = [
 ]
 
 function getMapTransform(view: MapView) {
-  return `translate(${view.offset.x} ${view.offset.y}) scale(${view.zoom})`
+  return `translate(${view.offset.x}px, ${view.offset.y}px) scale(${view.zoom})`
 }
 
 function getEventDateKey(event: TerritoryVisitEvent) {
@@ -755,7 +755,9 @@ export function TerritoryMapPage() {
 
   const applyView = (nextView: MapView, shouldCommit = false) => {
     liveViewRef.current = nextView
-    mapLayerRef.current?.setAttribute('transform', getMapTransform(nextView))
+    if (mapLayerRef.current) {
+      mapLayerRef.current.style.transform = getMapTransform(nextView)
+    }
 
     if (shouldCommit) {
       setView(nextView)
@@ -953,7 +955,9 @@ export function TerritoryMapPage() {
 
   useEffect(() => {
     liveViewRef.current = view
-    mapLayerRef.current?.setAttribute('transform', getMapTransform(view))
+    if (mapLayerRef.current) {
+      mapLayerRef.current.style.transform = getMapTransform(view)
+    }
   }, [view])
 
   useEffect(
@@ -1254,7 +1258,10 @@ export function TerritoryMapPage() {
                 <g
                   ref={mapLayerRef}
                   className="territory-map-layer"
-                  transform={getMapTransform(view)}
+                  style={{
+                    transform: getMapTransform(view),
+                    transformOrigin: '0 0',
+                  }}
                 >
                   {isMapLoading && territories.length === 0 && (
                     <text
