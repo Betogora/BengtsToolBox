@@ -144,7 +144,7 @@ export function ScoreTargetCard({
           </div>
           <ColorPicker
             ariaLabel={t('scoreboard.colorAria', { name: target.name })}
-            className="size-11 shrink-0 cursor-pointer rounded-md border p-1 sm:size-9"
+            className="size-11 shrink-0 cursor-pointer sm:size-9"
             value={target.color}
             onValueCommit={onColorChange}
           />

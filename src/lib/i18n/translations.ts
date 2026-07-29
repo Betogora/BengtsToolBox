@@ -394,7 +394,6 @@ export const de = {
   'common.action': 'Aktion',
   'common.actions': 'Aktionen',
   'common.close': 'Schließen',
-  'common.colorPicker.title': 'Farbe auswählen',
   'common.colorPicker.wheelAria':
     'Farbkreis: links und rechts ändern den Farbton, oben und unten die Intensität',
   'common.name': 'Name',
@@ -1069,7 +1068,6 @@ export const en: Record<TranslationKey, string> = {
   'common.action': 'Action',
   'common.actions': 'Actions',
   'common.close': 'Close',
-  'common.colorPicker.title': 'Choose colour',
   'common.colorPicker.wheelAria':
     'Colour wheel: left and right change the hue, up and down the intensity',
   'common.name': 'Name',

@@ -1340,7 +1340,7 @@ export function TerritoryMapPage() {
                       ariaLabel={t('territory.touristColorAria', {
                         name: player.name,
                       })}
-                      className="size-9 shrink-0 cursor-pointer rounded-md border p-1"
+                      className="size-9 shrink-0 cursor-pointer"
                       disabled={!isDatasetReady}
                       value={player.color}
                       onValueCommit={(color) =>
