@@ -180,6 +180,14 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     expect(scoreColumnWidths[1]).toBeCloseTo(scoreColumnWidths[2] ?? 0, 0)
   }
 
+  await expect(
+    page.locator('[data-dataset-warmed="true"]'),
+  ).toHaveCount(1)
+
+  const preparedDateInputs = page.locator('input[type="date"]')
+  await expect.poll(() => preparedDateInputs.count()).toBeGreaterThan(0)
+  await expect(page.locator('input[type="date"]:visible')).toHaveCount(0)
+
   await page.getByRole('button', { name: 'Datensatz' }).click()
   const expectedVisibleTables = viewportWidth >= 768 ? 2 : 1
   await expect(page.getByRole('table')).toHaveCount(expectedVisibleTables)
@@ -193,9 +201,21 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     const playerBounds = await playerSelect.boundingBox()
     const territoryBounds = await territorySelect.boundingBox()
 
-    expect(dateBounds?.y).toBeCloseTo(playerBounds?.y ?? 0, 0)
+    expect(dateBounds?.width).toBeCloseTo(playerBounds?.width ?? 0, 0)
+
+    if (viewportWidth < 368) {
+      expect(playerBounds?.y).toBeGreaterThan(
+        (dateBounds?.y ?? 0) + (dateBounds?.height ?? 0),
+      )
+    } else {
+      expect(dateBounds?.y).toBeCloseTo(playerBounds?.y ?? 0, 0)
+    }
+
     expect(territoryBounds?.y).toBeGreaterThan(
-      (dateBounds?.y ?? 0) + (dateBounds?.height ?? 0),
+      Math.max(
+        (dateBounds?.y ?? 0) + (dateBounds?.height ?? 0),
+        (playerBounds?.y ?? 0) + (playerBounds?.height ?? 0),
+      ),
     )
   }
 

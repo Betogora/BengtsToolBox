@@ -526,7 +526,7 @@ export function TerritoryEventTable({
       <div className="grid gap-2 md:hidden">
         {events.map((event) => (
           <div key={event.id} className="type-ui rounded-md border bg-card p-3">
-            <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[23rem]:grid-cols-2">
               <div className="min-w-0">
                 <div className="type-caption mb-1.5 text-muted-foreground">
                   {t('territory.date')}
@@ -539,7 +539,7 @@ export function TerritoryEventTable({
                 </div>
                 {renderPlayerSelect(event)}
               </div>
-              <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_2.25rem] items-end gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] items-end gap-3 min-[23rem]:col-span-2">
                 <div className="min-w-0">
                   <div className="type-caption mb-1.5 text-muted-foreground">
                     {t('territory.territory')}

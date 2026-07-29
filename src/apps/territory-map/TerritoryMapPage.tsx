@@ -20,6 +20,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import {
+  Activity,
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -673,6 +675,8 @@ export function TerritoryMapPage() {
   } = useTerritoryMap()
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(true)
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
+  const [isDatasetPrepared, setIsDatasetPrepared] = useState(false)
+  const [isDatasetWarmed, setIsDatasetWarmed] = useState(false)
   const [isScoreOpen, setIsScoreOpen] = useState(false)
   const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
@@ -987,6 +991,36 @@ export function TerritoryMapPage() {
       isActive = false
     }
   }, [state.activeMap])
+
+  useEffect(() => {
+    if (isDatasetPrepared || isMapLoading || !isDatasetReady) {
+      return
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setIsDatasetPrepared(true)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [isDatasetPrepared, isDatasetReady, isMapLoading])
+
+  useEffect(() => {
+    if (!isDatasetPrepared || isDatasetOpen || isDatasetWarmed) {
+      return
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      startTransition(() => {
+        setIsDatasetWarmed(true)
+      })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [isDatasetOpen, isDatasetPrepared, isDatasetWarmed])
 
   const handleMapChange = (nextMap: string) => {
     setSelectedTerritoryId(null)
@@ -1530,31 +1564,45 @@ export function TerritoryMapPage() {
           icon={<BarChart3 className="size-5" />}
           isOpen={isDatasetOpen}
           title={t('territory.datasetTitle')}
-          onToggle={() => setIsDatasetOpen((current) => !current)}
+          onToggle={() => {
+            if (!isDatasetOpen) {
+              setIsDatasetPrepared(true)
+              setIsDatasetWarmed(true)
+            }
+            setIsDatasetOpen((current) => !current)
+          }}
         />
-        {isDatasetOpen && (
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-            {!isDatasetReady ? (
-              <p className="type-ui text-muted-foreground" role="status">
-                {t('common.syncing')}
-              </p>
-            ) : (
-              <TerritoryEventTable
-                dataset={activeDataset}
-                disabled={false}
-                players={players}
-                onDeleteEvent={async (eventId) => {
-                  const result = await deleteEvent(eventId)
-                  if (result.ok) {
-                    toast.success(t('territory.claimDeleted'))
-                  }
-                }}
-                onUpdateEvent={(eventId, partialValue) =>
-                  updateEvent(eventId, partialValue)
-                }
-              />
-            )}
-          </CardContent>
+        {isDatasetPrepared && (
+          <div
+            aria-hidden={!isDatasetOpen}
+            className={isDatasetOpen ? '' : 'invisible h-0 overflow-hidden'}
+            data-dataset-warmed={isDatasetWarmed}
+          >
+            <Activity mode={isDatasetWarmed ? 'visible' : 'hidden'}>
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                {!isDatasetReady ? (
+                  <p className="type-ui text-muted-foreground" role="status">
+                    {t('common.syncing')}
+                  </p>
+                ) : (
+                  <TerritoryEventTable
+                    dataset={activeDataset}
+                    disabled={false}
+                    players={players}
+                    onDeleteEvent={async (eventId) => {
+                      const result = await deleteEvent(eventId)
+                      if (result.ok) {
+                        toast.success(t('territory.claimDeleted'))
+                      }
+                    }}
+                    onUpdateEvent={(eventId, partialValue) =>
+                      updateEvent(eventId, partialValue)
+                    }
+                  />
+                )}
+              </CardContent>
+            </Activity>
+          </div>
         )}
       </Card>
 
