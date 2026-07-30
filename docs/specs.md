@@ -296,7 +296,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 - Kartenräume sind Weltkarte mit 244 Territorien und Deutschlandkarte mit 16 Bundesländern. England, Nordirland, Schottland und Wales sind eigenständige Weltterritorien; das Vereinigte Königreich ist nicht zusätzlich auswählbar.
 - Initial existieren Bengt, Paul und `Sushi-Tourist 3` mit unterschiedlichen Farben.
-- Die ersten zwei Personen können nicht entfernt werden; weitere Touristen sind anleg- und löschbar.
+- Die ersten drei Personen der sortierten Spielerliste können unabhängig von Positionslücken nicht entfernt werden; weitere Touristen sind anleg- und löschbar. Farben bleiben für alle Personen änderbar.
 - Je Lobby existiert genau ein veränderlicher Event-Datensatz mit der festen Dokument-ID `dataset-current`; es gibt weder Archive noch weitere aktive Datensätze.
 - Eine bestätigte leere Datensatz-Collection erzeugt genau diesen leeren `dataset-current`. Während der initiale Snapshot lädt, fehlschlägt oder das Dokument fehlt, bleiben Claims, Events und Spieleränderungen gesperrt; ein lokaler Ersatzdatensatz wird niemals gespeichert.
 - Vorhandene Welt-Events mit der früheren Territoriums-ID `gb` werden nach dem Laden des jeweiligen Lobby-Datensatzes einmalig zu England (`gb-eng`) migriert. Bis zum erfolgreichen Migrationsschreibvorgang bleiben Datensatzänderungen gesperrt.
@@ -308,7 +308,8 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Eventdatum, Person und Territorium können korrigiert; einzelne Events können gelöscht werden.
 - Namens- und bestätigte Farbänderungen aktualisieren die Events von `dataset-current`.
 - Die Rangliste zählt pro Person alle aktuell gehaltenen Welt- und Deutschland-Claims.
-- Zehn Achievements werden aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.
+- Zehn Achievements werden für alle Personen aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.
+- Die Punktzahl ist initial ausgeklappt, die Achievements sind initial eingeklappt; beide Zustände werden je Lobby im App-State synchronisiert.
 - Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen `1`, `2`, `4`, `8`.
 - Der Presenter zeigt aktive Karte, Claims, Legende und Rangliste.
 

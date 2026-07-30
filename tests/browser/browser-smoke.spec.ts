@@ -115,20 +115,18 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     const colorPickerBounds = await page
       .getByRole('button', { name: 'Sushi-Tourist 3 Farbe wählen' })
       .boundingBox()
-    const removeButtonBounds = await page
-      .getByRole('button', { name: 'Sushi-Tourist 3 entfernen' })
-      .boundingBox()
     const playerCardHeight = await page
-      .getByRole('button', { name: 'Sushi-Tourist 3 entfernen' })
+      .getByRole('button', { name: 'Sushi-Tourist 3 Farbe wählen' })
       .evaluate(
         (button) =>
           button.parentElement?.parentElement?.getBoundingClientRect().height,
       )
 
+    await expect(
+      page.getByRole('button', { name: 'Sushi-Tourist 3 entfernen' }),
+    ).toHaveCount(0)
     expect(colorPickerBounds?.width).toBeCloseTo(36, 0)
     expect(colorPickerBounds?.height).toBeCloseTo(36, 0)
-    expect(removeButtonBounds?.width).toBeCloseTo(colorPickerBounds?.width ?? 0, 0)
-    expect(removeButtonBounds?.height).toBeCloseTo(colorPickerBounds?.height ?? 0, 0)
     expect(playerCardHeight).toBeCloseTo(62, 0)
   }
 
@@ -158,7 +156,6 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await expect(claimDialog).toBeHidden()
   await expect(page.getByRole('button', { name: 'Deutschland, Bengt' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Punktzahl' }).click()
   await expect(page.getByRole('table')).toHaveCount(1)
 
   if (viewportWidth < 768) {
@@ -238,6 +235,125 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await expect.poll(storedDatasets).not.toBe(storedBeforeDateEdit)
 
   await page.evaluate(() => window.scrollTo({ top: 0 }))
+  await app.expectHealthy()
+})
+
+test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', async ({
+  app,
+  page,
+}) => {
+  const playersStorageKey =
+    'app-hub:collection:apps/territory-map/sessions/default/players'
+  const datasetStorageKey =
+    'app-hub:collection:apps/territory-map/sessions/default/datasets'
+
+  await page.addInitScript(
+    ({ playersKey, datasetKey }) => {
+      window.localStorage.setItem(
+        playersKey,
+        JSON.stringify([
+          { id: 'person-1', name: 'Bengt', color: '#0D8E90', position: 1 },
+          { id: 'person-2', name: 'Paul', color: '#FD7261', position: 2 },
+          { id: 'person-4', name: 'Lennart', color: '#FAC889', position: 4 },
+        ]),
+      )
+      window.localStorage.setItem(
+        datasetKey,
+        JSON.stringify([
+          {
+            id: 'dataset-current',
+            position: 1,
+            name: 'Datensatz',
+            status: 'active',
+            createdAtClientIso: '2026-07-30T10:00:00.000Z',
+            archivedAtClientIso: null,
+            events: [
+              {
+                id: 'event-japan-lennart',
+                mapId: 'world',
+                territoryId: 'jp',
+                territoryName: 'Japan',
+                playerId: 'person-4',
+                playerName: 'Lennart',
+                playerColor: '#FAC889',
+                createdAtClientIso: '2026-07-30T10:00:00.000Z',
+                createdAtLabel: '2026-07-30T10:00:00.000Z',
+                position: 1,
+              },
+            ],
+          },
+        ]),
+      )
+    },
+    { playersKey: playersStorageKey, datasetKey: datasetStorageKey },
+  )
+
+  await app.open('/apps/sushi')
+
+  const scoreToggle = page.getByRole('button', { name: 'Punktzahl' })
+  const achievementsToggle = page.getByRole('button', { name: 'Achievements' })
+
+  await expect(scoreToggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('table')).toHaveCount(1)
+  await expect(achievementsToggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByText('Land der Sushis')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Sushi-Tourist' }).click()
+  for (const player of ['Bengt', 'Paul', 'Lennart']) {
+    await expect(
+      page.getByRole('button', { name: `${player} entfernen` }),
+    ).toHaveCount(0)
+  }
+
+  const bengtColorPicker = page.getByRole('button', {
+    name: 'Bengt Farbe wählen',
+  })
+  const bengtSwatch = bengtColorPicker.locator('span[aria-hidden="true"]')
+  const colorBefore = await bengtSwatch.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  )
+
+  await bengtColorPicker.click()
+  await page.getByRole('slider').press('ArrowRight')
+  await expect
+    .poll(() =>
+      bengtSwatch.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    )
+    .not.toBe(colorBefore)
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('button', { name: 'Sushi-Tourist hinzufügen' }).click()
+  const removeFourthPlayer = page.getByRole('button', {
+    name: 'Sushi-Tourist 5 entfernen',
+  })
+  await expect(removeFourthPlayer).toBeVisible()
+  await removeFourthPlayer.click()
+  await expect(removeFourthPlayer).toHaveCount(0)
+
+  await achievementsToggle.click()
+  const japanAchievement = page
+    .getByText('Land der Sushis')
+    .locator('xpath=ancestor::details')
+
+  await expect(japanAchievement).toContainText('Lennart')
+  await scoreToggle.click()
+  await expect(page.getByRole('table')).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'BengtsToolBox' }).click()
+  await page.getByRole('link', { name: 'Sushi Map öffnen' }).click()
+
+  await expect(
+    page.getByRole('button', { name: 'Achievements' }),
+  ).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByText('Land der Sushis').locator('xpath=ancestor::details'))
+    .toContainText('Lennart')
+  await expect(page.getByRole('button', { name: 'Punktzahl' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+  await expect(page.getByRole('table')).toHaveCount(0)
   await app.expectHealthy()
 })
 

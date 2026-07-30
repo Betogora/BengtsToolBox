@@ -666,18 +666,18 @@ export function TerritoryMapPage() {
     isDatasetReady,
     players,
     removePlayer,
+    setAchievementsOpen,
     setActiveMap,
+    setScoreOpen,
     state,
     unclaimTerritory,
     updateEvent,
     updatePlayerColor,
     updatePlayerName,
   } = useTerritoryMap()
-  const [isAchievementsOpen, setIsAchievementsOpen] = useState(true)
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
   const [isDatasetPrepared, setIsDatasetPrepared] = useState(false)
   const [isDatasetWarmed, setIsDatasetWarmed] = useState(false)
-  const [isScoreOpen, setIsScoreOpen] = useState(false)
   const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
   const [territoriesByMap, setTerritoriesByMap] = useState<
@@ -1330,7 +1330,7 @@ export function TerritoryMapPage() {
         <div
           className={[
             'grid min-w-0 gap-4 lg:grid-cols-2',
-            isSushiTouristOpen && isScoreOpen
+            isSushiTouristOpen && state.isScoreOpen
               ? 'lg:items-stretch'
               : 'lg:items-start',
           ].join(' ')}
@@ -1344,7 +1344,7 @@ export function TerritoryMapPage() {
             />
             {isSushiTouristOpen && (
               <CardContent className="grid gap-3 p-4 pt-0">
-              {players.map((player) => (
+              {players.map((player, playerIndex) => (
                 <div
                   key={player.id}
                   className="grid gap-2 rounded-md border bg-background p-3"
@@ -1381,7 +1381,7 @@ export function TerritoryMapPage() {
                         updatePlayerColor(player.id, color)
                       }
                     />
-                    {player.position > 2 ? (
+                    {playerIndex >= 3 ? (
                       <Button
                         variant="delete"
                         size="icon"
@@ -1414,11 +1414,11 @@ export function TerritoryMapPage() {
           <Card className="min-w-0">
             <CollapsibleCardHeader
               icon={<ListOrdered className="size-5" />}
-              isOpen={isScoreOpen}
+              isOpen={state.isScoreOpen}
               title={t('territory.score')}
-              onToggle={() => setIsScoreOpen((current) => !current)}
+              onToggle={() => void setScoreOpen(!state.isScoreOpen)}
             />
-            {isScoreOpen && (
+            {state.isScoreOpen && (
               <CardContent className="p-4 pt-0">
                 <Table className="table-fixed md:hidden" containerClassName="md:hidden">
                     <colgroup>
@@ -1514,11 +1514,13 @@ export function TerritoryMapPage() {
       <Card>
         <CollapsibleCardHeader
           icon={<Trophy className="size-5" />}
-          isOpen={isAchievementsOpen}
+          isOpen={state.isAchievementsOpen}
           title="Achievements"
-          onToggle={() => setIsAchievementsOpen((current) => !current)}
+          onToggle={() =>
+            void setAchievementsOpen(!state.isAchievementsOpen)
+          }
         />
-        {isAchievementsOpen && (
+        {state.isAchievementsOpen && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {achievements.map((achievement) => {

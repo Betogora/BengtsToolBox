@@ -29,6 +29,8 @@ export type TerritoryClaimsByMap = Record<
 
 export type TerritoryMapState = {
   activeMap: TerritoryMapId
+  isAchievementsOpen: boolean
+  isScoreOpen: boolean
   updatedBy?: string
 }
 

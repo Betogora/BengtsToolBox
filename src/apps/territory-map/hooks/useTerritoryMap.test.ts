@@ -176,6 +176,38 @@ describe('Sushi-Map-Datensatzbereitschaft', () => {
     expect(territoryMap?.isDatasetReady).toBe(false)
     expect(stores.dataset.mergeItem).not.toHaveBeenCalled()
   })
+
+  it('schützt auch den dritten initialen Spieler vor dem Löschen', async () => {
+    stores.dataset.data = [dataset()]
+    stores.dataset.isLoading = false
+    stores.players.data = [
+      stores.players.data[0],
+      {
+        id: 'person-2',
+        name: 'Paul',
+        color: '#a24a02',
+        position: 2,
+      },
+      {
+        id: 'person-4',
+        name: 'Lennart',
+        color: '#fac889',
+        position: 4,
+      },
+    ]
+    let territoryMap: ReturnType<typeof useTerritoryMap> | undefined
+
+    function Probe() {
+      territoryMap = useTerritoryMap()
+      return null
+    }
+
+    renderToStaticMarkup(createElement(Probe))
+    const result = await territoryMap?.removePlayer('person-4')
+
+    expect(result).toBe(false)
+    expect(stores.players.deleteItem).not.toHaveBeenCalled()
+  })
 })
 
 describe('Sushi-Map-Migration des Vereinigten Königreichs', () => {

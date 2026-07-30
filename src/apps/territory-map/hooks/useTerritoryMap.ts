@@ -37,6 +37,8 @@ const englandTerritoryId = 'gb-eng'
 
 const initialState: TerritoryMapState = {
   activeMap: 'world',
+  isAchievementsOpen: false,
+  isScoreOpen: true,
 }
 
 const defaultPlayers: TerritoryPlayer[] = [
@@ -112,14 +114,6 @@ function sanitizeName(
   return trimmedName || fallbackPlayerName(player)
 }
 
-function isDefaultPlayerName(name: string, position: number) {
-  return (
-    name === defaultPlayers.find((player) => player.position === position)?.name ||
-    name === `Sushi-Tourist ${position}` ||
-    name === `Esser ${position}`
-  )
-}
-
 function normalizePlayer(
   player: TerritoryPlayer,
   index: number,
@@ -129,9 +123,7 @@ function normalizePlayer(
     : index + 1
   const fallbackColor = getTerritoryColorByIndex(index)
   const name = sanitizeName(player.name ?? '', { id: player.id, position })
-  const color = isDefaultPlayerName(name, position)
-    ? getTerritoryColorByIndex(position - 1)
-    : sanitizeColor(player.color ?? fallbackColor, fallbackColor)
+  const color = sanitizeColor(player.color ?? fallbackColor, fallbackColor)
 
   return {
     ...player,
@@ -148,6 +140,8 @@ function normalizeState(state: TerritoryMapState): TerritoryMapState {
     ...initialState,
     ...state,
     activeMap,
+    isAchievementsOpen: state.isAchievementsOpen === true,
+    isScoreOpen: state.isScoreOpen !== false,
   }
 }
 
@@ -512,6 +506,18 @@ export function useTerritoryMap(lobbyId?: string) {
       updatedBy: session.userId,
     })
 
+  const setAchievementsOpen = (isAchievementsOpen: boolean) =>
+    stateStore.merge({
+      isAchievementsOpen,
+      updatedBy: session.userId,
+    })
+
+  const setScoreOpen = (isScoreOpen: boolean) =>
+    stateStore.merge({
+      isScoreOpen,
+      updatedBy: session.userId,
+    })
+
   const addPlayer = (name = '', color = '') => {
     if (!isDatasetReady) {
       return Promise.resolve(null)
@@ -605,9 +611,9 @@ export function useTerritoryMap(lobbyId?: string) {
   }
 
   const removePlayer = async (playerId: string) => {
-    const player = players.find((entry) => entry.id === playerId)
+    const playerIndex = players.findIndex((entry) => entry.id === playerId)
 
-    if (!isDatasetReady || !player || player.position <= 2) {
+    if (!isDatasetReady || playerIndex < 3) {
       return false
     }
 
@@ -744,7 +750,9 @@ export function useTerritoryMap(lobbyId?: string) {
     players,
     removePlayer,
     session,
+    setAchievementsOpen,
     setActiveMap,
+    setScoreOpen,
     state,
     territoryColorPresets,
     unclaimTerritory,
