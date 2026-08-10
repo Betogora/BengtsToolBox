@@ -13,6 +13,7 @@ import { useI18n } from '@/lib/i18n'
 
 const unlockKey = 'bengts-toolbox:schlag-den-raab:unlocked'
 const password = '5340'
+const passwordErrorId = 'schlag-den-raab-password-error'
 
 function isUnlocked() {
   try {
@@ -63,6 +64,8 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
             <div>
               <IftaInput
                 id="schlag-den-raab-password"
+                aria-describedby={error ? passwordErrorId : undefined}
+                aria-invalid={Boolean(error)}
                 label={t('raab.password')}
                 autoComplete="current-password"
                 autoFocus
@@ -74,7 +77,9 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
                 }}
               />
               {error && (
-                <p className="type-label text-destructive">{error}</p>
+                <p className="type-label text-destructive" id={passwordErrorId}>
+                  {error}
+                </p>
               )}
             </div>
             <Button type="submit">

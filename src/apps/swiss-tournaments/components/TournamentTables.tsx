@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { IftaSelectTrigger } from '@/components/ui/ifta-field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -685,9 +686,9 @@ export function PairingsTable({
             handleResultSelect(pairing.id, value as ResultSelectValue)
           }
         >
-          <SelectTrigger className="w-full" label={t('swiss.result')}>
+          <IftaSelectTrigger label={t('swiss.result')}>
             <SelectValue placeholder={t('swiss.result.open')} />
-          </SelectTrigger>
+          </IftaSelectTrigger>
           <SelectContent>
             <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
             {resultOptions.map((option) => (

@@ -24,12 +24,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ColorPicker } from '@/components/ui/ColorPicker'
+import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
@@ -295,9 +295,9 @@ export function RosterPlayerCard({
           value={player.teamId ?? 'unassigned'}
           onValueChange={(value) => void onTeamChange(value === 'unassigned' ? null : value)}
         >
-          <SelectTrigger label={t('scoreboard.teamAssignment')}>
+          <IftaSelectTrigger label={t('scoreboard.teamAssignment')}>
             <SelectValue />
-          </SelectTrigger>
+          </IftaSelectTrigger>
           <SelectContent>
             <SelectItem value="unassigned">{t('scoreboard.unassigned')}</SelectItem>
             {teams.map((team) => (

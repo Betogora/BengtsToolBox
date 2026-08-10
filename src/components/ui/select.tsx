@@ -13,31 +13,22 @@ function Select({
 function SelectTrigger({
   className,
   children,
-  label,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  label?: React.ReactNode
-}) {
+}: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
+  const isInvalid =
+    props['aria-invalid'] === true || props['aria-invalid'] === 'true'
+
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
         'type-ui flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 shadow-xs outline-none focus:ring-[3px] focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
-        label && 'h-12 py-1',
+        isInvalid && 'border-destructive! focus:ring-destructive/20',
         className,
       )}
       {...props}
     >
-      {label ? (
-        <span className="flex min-w-0 flex-1 flex-col items-start justify-center text-left">
-          <span className="type-field-label block max-w-full truncate text-muted-foreground">
-            {label}
-          </span>
-          <span className="block h-6 max-w-full leading-6 [&>span]:block [&>span]:truncate">
-            {children}
-          </span>
-        </span>
-      ) : children}
+      {children}
       <SelectPrimitive.Icon asChild>
         <ChevronDownIcon className="size-4 opacity-50" />
       </SelectPrimitive.Icon>

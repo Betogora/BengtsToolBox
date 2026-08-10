@@ -69,6 +69,27 @@ test('verschachtelte Scoreboard-Route unterstützt Aktion und Dialog per Tastatu
   await app.expectHealthy()
 })
 
+test('Schlag-den-Raab-Passwortfehler ist mit dem Feld verknüpft', async ({
+  app,
+  page,
+}) => {
+  await app.open('/schlag-den-raab')
+
+  const passwordInput = page.getByLabel('Passwort')
+  await passwordInput.fill('falsch')
+  await page.getByRole('button', { name: 'Freischalten' }).click()
+
+  const error = page.getByText('Das Passwort ist nicht korrekt.')
+  await expect(error).toBeVisible()
+  await expect(error).toHaveAttribute('id', 'schlag-den-raab-password-error')
+  await expect(passwordInput).toHaveAttribute('aria-invalid', 'true')
+  await expect(passwordInput).toHaveAttribute(
+    'aria-describedby',
+    'schlag-den-raab-password-error',
+  )
+  await app.expectHealthy()
+})
+
 test('Presenter bleibt read-only und stellt den Fokus wieder her', async ({ app, page }) => {
   await app.open('/apps/coinflip')
 
