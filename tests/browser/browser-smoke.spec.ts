@@ -1,5 +1,10 @@
 import { expect, test } from './browserApp'
 
+const progressPlayersStorageKey =
+  'app-hub:collection:apps/progress-dashboard/sessions/default/players'
+const progressDatasetsStorageKey =
+  'app-hub:collection:apps/progress-dashboard/sessions/default/datasets'
+
 test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
   await app.open('/')
 
@@ -20,6 +25,150 @@ test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
     await expect(page.getByRole('link', { name: 'App Hub', exact: true })).toBeVisible()
   }
 
+  await app.expectHealthy()
+})
+
+test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe responsiv', async ({
+  app,
+  page,
+}) => {
+  const players = [
+    { id: 'person-1', name: 'Damian', position: 1, color: '#facc15' },
+    { id: 'person-2', name: 'Jan', position: 2, color: '#0d8e90' },
+    { id: 'person-3', name: 'Niggy', position: 3, color: '#fac889' },
+    { id: 'person-4', name: 'Eddy', position: 4, color: '#fd7261' },
+    { id: 'person-5', name: 'Bengt', position: 5, color: '#385d73' },
+  ]
+  const eventValues = [
+    ['person-1', 'Damian', '#facc15', 4, '2026-08-10T18:00:00.000Z'],
+    ['person-2', 'Jan', '#0d8e90', 5, '2026-08-10T18:10:00.000Z'],
+    ['person-3', 'Niggy', '#fac889', 2, '2026-08-10T18:20:00.000Z'],
+    ['person-4', 'Eddy', '#fd7261', 4, '2026-08-10T18:30:00.000Z'],
+    ['person-5', 'Bengt', '#385d73', 3.5, '2026-08-10T18:40:00.000Z'],
+    ['person-3', 'Niggy', '#fac889', 4, '2026-08-10T18:50:00.000Z'],
+    ['person-2', 'Jan', '#0d8e90', 4.5, '2026-08-10T19:00:00.000Z'],
+    ['person-1', 'Damian', '#facc15', 6.5, '2026-08-10T19:10:00.000Z'],
+  ]
+  const events = eventValues.map(
+    ([playerId, playerName, playerColor, valueDelta, createdAtClientIso], index) => ({
+      id: `event-${index + 1}`,
+      playerId,
+      playerName,
+      playerColor,
+      valueDelta,
+      icon: 'plus',
+      createdAtClientIso,
+      createdAtLabel: createdAtClientIso,
+      position: index + 1,
+    }),
+  )
+
+  await page.addInitScript(
+    ({ datasetsKey, events: initialEvents, players: initialPlayers, playersKey }) => {
+      window.localStorage.setItem(playersKey, JSON.stringify(initialPlayers))
+      window.localStorage.setItem(
+        datasetsKey,
+        JSON.stringify([
+          {
+            id: 'dataset-current',
+            position: 1,
+            name: 'Datensatz',
+            chartTitle: 'Getränke-Dashboard',
+            unit: 'Getränke',
+            status: 'active',
+            createdAtClientIso: '2026-08-10T18:00:00.000Z',
+            archivedAtClientIso: null,
+            events: initialEvents,
+          },
+        ]),
+      )
+    },
+    {
+      datasetsKey: progressDatasetsStorageKey,
+      events,
+      players,
+      playersKey: progressPlayersStorageKey,
+    },
+  )
+
+  await app.open('/apps/progress-dashboard')
+
+  const chart = page.getByRole('group', { name: 'Getränke-Dashboard' })
+  const progressList = page.getByRole('list', { name: 'Topliste' })
+  const progressItems = progressList.getByRole('listitem')
+
+  await expect(chart).toBeVisible()
+  await expect(progressList).toBeVisible()
+  await expect(progressItems).toHaveCount(5)
+  await expect(progressItems.nth(0)).toContainText('Damian')
+  await expect(progressItems.nth(1)).toContainText('Jan')
+  await expect(progressItems.nth(2)).toContainText('Niggy')
+  await expect(progressItems.nth(3)).toContainText('Eddy')
+  await expect(progressItems.nth(4)).toContainText('Bengt')
+  await expect(progressList.locator('[data-progress-variant="detailed"]')).toHaveCount(3)
+  await expect(progressList.locator('[data-progress-variant="compact"]')).toHaveCount(2)
+  await expect(progressList.getByRole('img')).toHaveCount(5)
+  await expect(progressList.getByRole('button')).toHaveCount(0)
+  await expect(page.getByRole('tab', { name: 'Stand' })).toHaveCount(0)
+  await expect(page.getByRole('tab', { name: 'Verlauf' })).toHaveCount(0)
+  await expect(progressItems.nth(0).locator('path')).toHaveAttribute('stroke', /#facc15/i)
+  await expect(progressItems.nth(3).locator('path')).toHaveAttribute('stroke', /#fd7261/i)
+
+  const chartBounds = await chart.boundingBox()
+  const listBounds = await progressList.boundingBox()
+
+  expect(listBounds?.y ?? 0).toBeGreaterThan(
+    (chartBounds?.y ?? 0) + (chartBounds?.height ?? 0),
+  )
+  await app.expectHealthy()
+})
+
+test('Fortschritts-Dashboard zeigt Spieler-Verläufe auch ohne Ereignisse', async ({
+  app,
+  page,
+}) => {
+  await page.addInitScript(
+    ({ datasetsKey, playersKey }) => {
+      window.localStorage.setItem(
+        playersKey,
+        JSON.stringify([
+          { id: 'person-1', name: 'Ada', position: 1, color: '#0d8e90' },
+          { id: 'person-2', name: 'Bea', position: 2, color: '#fd7261' },
+        ]),
+      )
+      window.localStorage.setItem(
+        datasetsKey,
+        JSON.stringify([
+          {
+            id: 'dataset-current',
+            position: 1,
+            name: 'Datensatz',
+            chartTitle: 'Getränke-Dashboard',
+            unit: 'Getränke',
+            status: 'active',
+            createdAtClientIso: '2026-08-10T18:00:00.000Z',
+            archivedAtClientIso: null,
+            events: [],
+          },
+        ]),
+      )
+    },
+    {
+      datasetsKey: progressDatasetsStorageKey,
+      playersKey: progressPlayersStorageKey,
+    },
+  )
+
+  await app.open('/apps/progress-dashboard')
+
+  const progressList = page.getByRole('list', { name: 'Topliste' })
+
+  await expect(page.getByText('Noch keine Ereignisse im aktuellen Datensatz.')).toBeVisible()
+  await expect(progressList.getByRole('listitem')).toHaveCount(2)
+  await expect(progressList.locator('[data-progress-variant="detailed"]')).toHaveCount(2)
+  await expect(progressList.locator('[data-progress-variant="compact"]')).toHaveCount(0)
+  await expect(progressList.getByRole('img')).toHaveCount(2)
+  await expect(progressList.getByRole('button')).toHaveCount(0)
   await app.expectHealthy()
 })
 

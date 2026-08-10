@@ -103,6 +103,8 @@ type ProgressChartSeries = {
 
 type ProgressChartMobileView = 'stand' | 'verlauf'
 
+type ProgressChartMode = 'chart' | 'dashboard'
+
 type ArchivePlayerSummary = {
   eventCount: number
   firstEventAt: string | null
@@ -275,17 +277,27 @@ function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[
   const validEventTimes = sortedEvents
     .map((event) => Date.parse(event.createdAtClientIso))
     .filter(Number.isFinite)
-
-  if (sortedEvents.length === 0 || validEventTimes.length === 0) {
-    return null
-  }
-
-  const minTime = Math.min(...validEventTimes)
-  const maxTime = Math.max(...validEventTimes)
+  const hasValidEvents = validEventTimes.length > 0
+  const datasetStartTime = Date.parse(dataset.createdAtClientIso)
+  const fallbackTime = Number.isFinite(datasetStartTime) ? datasetStartTime : 0
+  const minTime = hasValidEvents ? Math.min(...validEventTimes) : fallbackTime
+  const maxTime = hasValidEvents ? Math.max(...validEventTimes) : fallbackTime
   const xDomainMin = minTime === maxTime ? minTime - 60_000 : minTime
   const xDomainMax = minTime === maxTime ? maxTime + 60_000 : maxTime
+  const eventsByPlayerId = new Map<string, ProgressEvent[]>()
+
+  sortedEvents.forEach((event) => {
+    const playerEvents = eventsByPlayerId.get(event.playerId)
+
+    if (playerEvents) {
+      playerEvents.push(event)
+    } else {
+      eventsByPlayerId.set(event.playerId, [event])
+    }
+  })
+
   const series: ProgressChartSeries[] = players.map((player) => {
-    const playerEvents = sortedEvents.filter((event) => event.playerId === player.id)
+    const playerEvents = eventsByPlayerId.get(player.id) ?? []
     let score = 0
     const eventValues: ProgressChartSeries['eventValues'] = []
     const segments: ProgressChartSegment[] = [
@@ -362,22 +374,25 @@ function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[
       y: yScale(eventValue.value),
     })),
   )
-  const rankedScores: PlayerScore[] = series
-    .map(({ player, score }) => ({ player, score }))
-    .sort(
-      (left, right) =>
-        right.score - left.score ||
-        left.player.position - right.player.position,
-    )
+  const rankedSeries = [...series].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.player.position - right.player.position,
+  )
+  const rankedScores: PlayerScore[] = rankedSeries.map(({ player, score }) => ({
+    player,
+    score,
+  }))
 
   return {
     chartSeries,
     eventPoints,
+    hasValidEvents,
     maxValue,
     plotCenterX,
     plotCenterY,
     rankedScores,
-    series,
+    rankedSeries,
     xDomainMax,
     xDomainMin,
     xScale,
@@ -388,9 +403,9 @@ function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[
   }
 }
 
-function getMobileSparklinePath(
+function getPlayerTimelinePath(
   segments: ProgressChartSegment[],
-  chartData: NonNullable<ReturnType<typeof getProgressChartData>>,
+  chartData: ReturnType<typeof getProgressChartData>,
 ) {
   const plotWidth =
     mobileSparklineWidth - mobileSparklinePadding.left - mobileSparklinePadding.right
@@ -407,6 +422,56 @@ function getMobileSparklinePath(
     (value / chartData.yDomainMax) * plotHeight
 
   return createStepPath(segments, xScale, yScale)
+}
+
+function PlayerTimeline({
+  ariaLabel,
+  chartData,
+  className,
+  player,
+  segments,
+}: {
+  ariaLabel: string
+  chartData: ReturnType<typeof getProgressChartData>
+  className?: string
+  player: ProgressPlayer
+  segments: ProgressChartSegment[]
+}) {
+  const path = getPlayerTimelinePath(segments, chartData)
+
+  return (
+    <svg
+      role="img"
+      aria-label={ariaLabel}
+      viewBox={`0 0 ${mobileSparklineWidth} ${mobileSparklineHeight}`}
+      className={cn('block w-full overflow-visible', className)}
+      preserveAspectRatio="none"
+    >
+      <rect
+        width={mobileSparklineWidth}
+        height={mobileSparklineHeight}
+        fill="#ffffff"
+        rx="6"
+      />
+      <line
+        x1={mobileSparklinePadding.left}
+        x2={mobileSparklineWidth - mobileSparklinePadding.right}
+        y1={mobileSparklineHeight - mobileSparklinePadding.bottom}
+        y2={mobileSparklineHeight - mobileSparklinePadding.bottom}
+        stroke="var(--muted)"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d={path}
+        fill="none"
+        stroke={player.color}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        strokeWidth="3"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  )
 }
 
 function MobileScoreBars({
@@ -483,17 +548,12 @@ function MobilePlayerTimelines({
   chartData,
   unit,
 }: {
-  chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  chartData: ReturnType<typeof getProgressChartData>
   unit: string
 }) {
   const { t } = useI18n()
-  const rankedSeries = chartData.rankedScores
-    .map((score) =>
-      chartData.series.find((entry) => entry.player.id === score.player.id),
-    )
-    .filter((entry): entry is ProgressChartSeries => Boolean(entry))
 
-  if (rankedSeries.length === 0) {
+  if (chartData.rankedSeries.length === 0) {
     return (
       <EmptyState className="p-4">
         {t('progress.emptyPlayers')}
@@ -503,67 +563,158 @@ function MobilePlayerTimelines({
 
   return (
     <div className="grid gap-2">
-      {rankedSeries.map(({ player, score, segments }) => {
-        const path = getMobileSparklinePath(segments, chartData)
-
-        return (
-          <div key={player.id} className="rounded-md border bg-background p-3">
-            <div className="flex min-w-0 items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <span
-                  className="size-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: player.color }}
-                />
-                <span className="type-action min-w-0 truncate">
-                  {player.name}
-                </span>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className="type-action tabular-nums">
-                  {formatNumber(score)}
-                </div>
-                {unit.trim() && (
-                  <div className="type-caption max-w-24 truncate text-muted-foreground">
-                    {unit}
-                  </div>
-                )}
-              </div>
+      {chartData.rankedSeries.map(({ player, score, segments }) => (
+        <div key={player.id} className="rounded-md border bg-background p-3">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="size-3 shrink-0 rounded-full"
+                style={{ backgroundColor: player.color }}
+              />
+              <span className="type-action min-w-0 truncate">
+                {player.name}
+              </span>
             </div>
-            <svg
-              role="img"
-              aria-label={t('progress.timelineAria', { name: player.name })}
-              viewBox={`0 0 ${mobileSparklineWidth} ${mobileSparklineHeight}`}
-              className="mt-3 block h-14 w-full overflow-visible"
-              preserveAspectRatio="none"
-            >
-              <rect
-                width={mobileSparklineWidth}
-                height={mobileSparklineHeight}
-                fill="#ffffff"
-                rx="6"
-              />
-              <line
-                x1={mobileSparklinePadding.left}
-                x2={mobileSparklineWidth - mobileSparklinePadding.right}
-                y1={mobileSparklineHeight - mobileSparklinePadding.bottom}
-                y2={mobileSparklineHeight - mobileSparklinePadding.bottom}
-                stroke="var(--muted)"
-                vectorEffect="non-scaling-stroke"
-              />
-              <path
-                d={path}
-                fill="none"
-                stroke={player.color}
-                strokeLinecap="square"
-                strokeLinejoin="miter"
-                strokeWidth="3"
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
+            <div className="shrink-0 text-right">
+              <div className="type-action tabular-nums">
+                {formatNumber(score)}
+              </div>
+              {unit.trim() && (
+                <div className="type-caption max-w-24 truncate text-muted-foreground">
+                  {unit}
+                </div>
+              )}
+            </div>
           </div>
-        )
-      })}
+          <PlayerTimeline
+            ariaLabel={t('progress.timelineAria', { name: player.name })}
+            chartData={chartData}
+            className="mt-3 h-14"
+            player={player}
+            segments={segments}
+          />
+        </div>
+      ))}
     </div>
+  )
+}
+
+function DashboardPlayerProgress({
+  chartData,
+  unit,
+}: {
+  chartData: ReturnType<typeof getProgressChartData>
+  unit: string
+}) {
+  const { t } = useI18n()
+
+  return (
+    <section className="mt-4" aria-labelledby="dashboard-player-progress-title">
+      <h3 id="dashboard-player-progress-title" className="type-section-title mb-3">
+        {t('progress.topList')}
+      </h3>
+      {chartData.rankedSeries.length === 0 ? (
+        <EmptyState className="p-4">
+          {t('progress.emptyPlayers')}
+        </EmptyState>
+      ) : (
+        <ol
+          aria-labelledby="dashboard-player-progress-title"
+          className="grid gap-2"
+        >
+          {chartData.rankedSeries.map(({ player, score, segments }, index) => {
+            const rank = index + 1
+            const isTopThree = rank <= 3
+
+            if (isTopThree) {
+              return (
+                <li
+                  key={player.id}
+                  data-progress-variant="detailed"
+                  className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)] overflow-hidden rounded-lg border"
+                  style={{
+                    backgroundColor: getColorWithAlpha(player.color, '12'),
+                    borderColor: getColorWithAlpha(player.color, '70'),
+                  }}
+                >
+                  <div
+                    className="type-section-title grid place-items-center border-r tabular-nums"
+                    style={{
+                      backgroundColor: getColorWithAlpha(player.color, '24'),
+                      borderColor: getColorWithAlpha(player.color, '70'),
+                    }}
+                  >
+                    {rank}
+                  </div>
+                  <div className="min-w-0 p-3">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="size-3 shrink-0 rounded-full"
+                          style={{ backgroundColor: player.color }}
+                        />
+                        <span className="type-action min-w-0 truncate">
+                          {player.name}
+                        </span>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="type-metric-sm">{formatNumber(score)}</div>
+                        {unit.trim() && (
+                          <div className="type-caption max-w-24 truncate text-muted-foreground">
+                            {unit}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <PlayerTimeline
+                      ariaLabel={t('progress.timelineAria', { name: player.name })}
+                      chartData={chartData}
+                      className="mt-2 h-14"
+                      player={player}
+                      segments={segments}
+                    />
+                  </div>
+                </li>
+              )
+            }
+
+            return (
+              <li
+                key={player.id}
+                data-progress-variant="compact"
+                className="grid min-w-0 grid-cols-[1.75rem_minmax(4.5rem,0.9fr)_minmax(4rem,1.1fr)_auto] items-center gap-2 rounded-md border bg-background p-2 sm:grid-cols-[2rem_minmax(7rem,0.8fr)_minmax(8rem,1fr)_auto] sm:px-3"
+              >
+                <span className="type-action tabular-nums text-muted-foreground">
+                  {rank}
+                </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: player.color }}
+                  />
+                  <span className="type-action min-w-0 truncate">{player.name}</span>
+                </div>
+                <PlayerTimeline
+                  ariaLabel={t('progress.timelineAria', { name: player.name })}
+                  chartData={chartData}
+                  className="h-7 min-w-0"
+                  player={player}
+                  segments={segments}
+                />
+                <div className="shrink-0 text-right">
+                  <div className="type-action tabular-nums">{formatNumber(score)}</div>
+                  {unit.trim() && (
+                    <div className="type-caption max-w-16 truncate text-muted-foreground">
+                      {unit}
+                    </div>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </section>
   )
 }
 
@@ -572,7 +723,7 @@ function MobileProgressChart({
   dataset,
   defaultView = 'stand',
 }: {
-  chartData: NonNullable<ReturnType<typeof getProgressChartData>>
+  chartData: ReturnType<typeof getProgressChartData>
   defaultView?: ProgressChartMobileView
   dataset: ProgressDataset
 }) {
@@ -603,11 +754,13 @@ function MobileProgressChart({
 export function ProgressChart({
   dataset,
   emptyMessage,
+  mode = 'chart',
   mobileDefaultView = 'stand',
   players,
 }: {
   dataset: ProgressDataset
   emptyMessage?: string
+  mode?: ProgressChartMode
   mobileDefaultView?: ProgressChartMobileView
   players: ProgressPlayer[]
 }) {
@@ -626,7 +779,9 @@ export function ProgressChart({
     (hoveredPlayerId && playerIds.has(hoveredPlayerId) ? hoveredPlayerId : null) ??
     (pinnedPlayerId && playerIds.has(pinnedPlayerId) ? pinnedPlayerId : null)
 
-  if (!chartData) {
+  const isDashboard = mode === 'dashboard'
+
+  if (!chartData.hasValidEvents && !isDashboard) {
     return (
       <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
         {emptyMessage ?? t('progress.emptyEvents')}
@@ -670,21 +825,29 @@ export function ProgressChart({
 
   return (
     <>
-      <MobileProgressChart
-        chartData={chartData}
-        defaultView={mobileDefaultView}
-        dataset={dataset}
-      />
-      <div className="hidden overflow-hidden rounded-lg border bg-white p-3 md:block">
-        <svg
-          role="group"
-          aria-label={dataset.chartTitle}
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="block h-auto w-full"
-          onClick={clearHighlightedPlayer}
-          onPointerLeave={() => setHoveredPlayerId(null)}
+      {!isDashboard && (
+        <MobileProgressChart
+          chartData={chartData}
+          defaultView={mobileDefaultView}
+          dataset={dataset}
+        />
+      )}
+      {chartData.hasValidEvents ? (
+        <div
+          className={cn(
+            'overflow-hidden rounded-lg border bg-white',
+            isDashboard ? 'block p-1.5 sm:p-3' : 'hidden p-3 md:block',
+          )}
         >
-          <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
+          <svg
+            role="group"
+            aria-label={dataset.chartTitle}
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            className="block h-auto w-full"
+            onClick={clearHighlightedPlayer}
+            onPointerLeave={() => setHoveredPlayerId(null)}
+          >
+            <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
         {chartData.yTicks.map((tick) => (
           <g key={`y-${tick}`}>
             <line
@@ -698,6 +861,7 @@ export function ProgressChart({
               x={chartPadding.left - 14}
               y={chartData.yScale(tick) + 4}
               textAnchor="end"
+              className={isDashboard ? 'text-[28px] md:text-[12px]' : undefined}
               fontSize="12"
               fill="var(--muted-foreground)"
             >
@@ -705,8 +869,11 @@ export function ProgressChart({
             </text>
           </g>
         ))}
-        {chartData.xTicks.map((tick) => (
-          <g key={`x-${tick.time}`}>
+        {chartData.xTicks.map((tick, index) => (
+          <g
+            key={`x-${tick.time}`}
+            className={cn(isDashboard && index % 2 === 1 && 'hidden md:block')}
+          >
             <line
               x1={chartData.xScale(tick.time)}
               x2={chartData.xScale(tick.time)}
@@ -718,6 +885,7 @@ export function ProgressChart({
               x={chartData.xScale(tick.time)}
               y={chartHeight - 24}
               textAnchor="middle"
+              className={isDashboard ? 'text-[28px] md:text-[12px]' : undefined}
               fontSize="12"
               fill="var(--muted-foreground)"
             >
@@ -745,6 +913,7 @@ export function ProgressChart({
           textAnchor="middle"
           dominantBaseline="central"
           transform={`rotate(-90 20 ${chartData.plotCenterY})`}
+          className={isDashboard ? 'text-[32px] md:text-[17px]' : undefined}
           fontSize="17"
           fill="var(--foreground)"
         >
@@ -754,6 +923,7 @@ export function ProgressChart({
           x={chartData.plotCenterX}
           y={chartHeight - 6}
           textAnchor="middle"
+          className={isDashboard ? 'text-[32px] md:text-[17px]' : undefined}
           fontSize="17"
           fill="var(--foreground)"
         >
@@ -785,7 +955,7 @@ export function ProgressChart({
                 stroke={player.color}
                 strokeLinecap="square"
                 strokeLinejoin="miter"
-                strokeWidth={isActive ? '6' : '4'}
+                strokeWidth={isActive ? (isDashboard ? '8' : '6') : isDashboard ? '6' : '4'}
                 style={{
                   filter: isActive
                     ? 'drop-shadow(0 3px 5px rgb(15 23 42 / 0.24))'
@@ -857,22 +1027,30 @@ export function ProgressChart({
               <circle
                 cx={point.x}
                 cy={point.y}
-                r={isActive ? '13' : '11'}
+                r={isActive ? (isDashboard ? '17' : '13') : isDashboard ? '15' : '11'}
                 fill={point.event.playerColor}
               />
               <Icon
-                x={point.x - 6.5}
-                y={point.y - 6.5}
-                width="13"
-                height="13"
+                x={point.x - (isDashboard ? 8.5 : 6.5)}
+                y={point.y - (isDashboard ? 8.5 : 6.5)}
+                width={isDashboard ? '17' : '13'}
+                height={isDashboard ? '17' : '13'}
                 color={markerIconColor}
                 strokeWidth="2.4"
               />
             </g>
           )
         })}
-      </svg>
-      </div>
+          </svg>
+        </div>
+      ) : (
+        <EmptyState className="flex aspect-[2.45/1] min-h-0 items-center justify-center bg-card p-4">
+          {emptyMessage ?? t('progress.emptyEvents')}
+        </EmptyState>
+      )}
+      {isDashboard && (
+        <DashboardPlayerProgress chartData={chartData} unit={dataset.unit} />
+      )}
     </>
   )
 }

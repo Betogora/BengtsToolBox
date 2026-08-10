@@ -287,7 +287,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Änderungen der Einheit aktualisieren einen noch automatisch abgeleiteten Diagrammtitel mit.
 - „Archivieren und neu starten“ kopiert den aktiven Datensatz mit Datumsnamen ins Archiv und erzeugt einen leeren aktiven Datensatz. Mehrere Archive desselben lokalen Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
 - Archive können umbenannt und gelöscht werden.
-- Desktop zeigt ein interaktives Zeitdiagramm; mobil stehen Rang- und Timeline-Ansichten bereit.
+- Die aktive Seite zeigt Desktop und mobil ein interaktives Zeitdiagramm mit einer gemeinsamen Rangliste darunter. Die ersten drei Personen besitzen dauerhaft sichtbare, farbige Detailverläufe; weitere Personen erscheinen als kompakte Zeilen mit Mini-Verlauf und ohne Aufklappsteuerung.
 - Der Presenter zeigt Stand, Führung, Eventzahl und Gesamtscore.
 
 ### 5.8 Sushi Map

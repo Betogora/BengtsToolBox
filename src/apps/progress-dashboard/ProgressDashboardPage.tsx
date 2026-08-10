@@ -295,9 +295,10 @@ export function ProgressDashboardPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
           <ProgressChart
             dataset={activeDataset}
+            mode="dashboard"
             players={players}
           />
         </CardContent>
