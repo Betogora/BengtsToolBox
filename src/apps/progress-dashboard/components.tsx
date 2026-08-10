@@ -60,9 +60,11 @@ const chartHeight = 420
 const chartPadding = {
   top: 38,
   right: 36,
-  bottom: 58,
-  left: 70,
+  bottom: 96,
+  left: 104,
 }
+const dashboardChartTickClassName = 'text-[28px] md:text-[20px] lg:text-[12px]'
+const dashboardChartAxisClassName = 'text-[32px] md:text-[24px] lg:text-[17px]'
 const mobileSparklineWidth = 240
 const mobileSparklineHeight = 56
 const mobileSparklinePadding = {
@@ -861,7 +863,7 @@ export function ProgressChart({
               x={chartPadding.left - 14}
               y={chartData.yScale(tick) + 4}
               textAnchor="end"
-              className={isDashboard ? 'text-[28px] md:text-[12px]' : undefined}
+              className={isDashboard ? dashboardChartTickClassName : undefined}
               fontSize="12"
               fill="var(--muted-foreground)"
             >
@@ -883,9 +885,9 @@ export function ProgressChart({
             />
             <text
               x={chartData.xScale(tick.time)}
-              y={chartHeight - 24}
+              y={chartHeight - 60}
               textAnchor="middle"
-              className={isDashboard ? 'text-[28px] md:text-[12px]' : undefined}
+              className={isDashboard ? dashboardChartTickClassName : undefined}
               fontSize="12"
               fill="var(--muted-foreground)"
             >
@@ -908,12 +910,12 @@ export function ProgressChart({
           stroke="var(--brand-surface)"
         />
         <text
-          x={20}
+          x={24}
           y={chartData.plotCenterY}
           textAnchor="middle"
           dominantBaseline="central"
-          transform={`rotate(-90 20 ${chartData.plotCenterY})`}
-          className={isDashboard ? 'text-[32px] md:text-[17px]' : undefined}
+          transform={`rotate(-90 24 ${chartData.plotCenterY})`}
+          className={isDashboard ? dashboardChartAxisClassName : undefined}
           fontSize="17"
           fill="var(--foreground)"
         >
@@ -921,9 +923,9 @@ export function ProgressChart({
         </text>
         <text
           x={chartData.plotCenterX}
-          y={chartHeight - 6}
+          y={chartHeight - 5}
           textAnchor="middle"
-          className={isDashboard ? 'text-[32px] md:text-[17px]' : undefined}
+          className={isDashboard ? dashboardChartAxisClassName : undefined}
           fontSize="17"
           fill="var(--foreground)"
         >
