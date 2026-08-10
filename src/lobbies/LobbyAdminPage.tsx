@@ -198,7 +198,7 @@ export function LobbyAdminPage() {
                         <Button
                           aria-label={t('lobbyAdmin.deleteAria', { name: lobby.name })}
                           size="icon"
-                          variant="delete"
+                          variant="destructive"
                         >
                           <Trash2 />
                         </Button>

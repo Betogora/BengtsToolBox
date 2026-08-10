@@ -702,7 +702,7 @@ export function TournamentPairingsWorkflow({
                                     className="h-8 w-full p-0 md:w-10"
                                     size="sm"
                                     title={t("swiss.deleteRound")}
-                                    variant="delete"
+                                    variant="destructive"
                                     onClick={() => void onDeleteLatestRound()}
                                   >
                                     <Trash2 className="size-4" />
@@ -756,7 +756,7 @@ export function TournamentPairingsWorkflow({
                                     className="h-8 w-full p-0 md:w-10"
                                     size="sm"
                                     title={t("swiss.deleteRound")}
-                                    variant="delete"
+                                    variant="destructive"
                                   >
                                     <Trash2 className="size-4" />
                                   </Button>

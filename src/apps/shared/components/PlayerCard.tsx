@@ -104,7 +104,7 @@ export function PlayerCard({
             </Button>
           )}
           <Button
-            variant="delete"
+            variant="destructive"
             size="icon"
             aria-label={t('shared.playerCard.removeAria', { name: player.name })}
             onClick={onRemove}

@@ -1383,7 +1383,7 @@ export function TerritoryMapPage() {
                     />
                     {playerIndex >= 3 ? (
                       <Button
-                        variant="delete"
+                        variant="destructive"
                         size="icon"
                         className="size-9"
                         disabled={!isDatasetReady}

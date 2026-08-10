@@ -171,7 +171,7 @@ export function RemoveEntryButton({
       aria-label={t('decisionWheel.option.deleteAria', { option: entryLabel })}
       className={mode === 'mobile' ? 'w-11 px-0' : 'h-9 w-9 px-0'}
       size={mode === 'mobile' ? 'ifta' : 'icon'}
-      variant="delete"
+      variant="destructive"
       onClick={() => onRemoveEntry(entry.id)}
     >
       <Trash2 className="size-4" />

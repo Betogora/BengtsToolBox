@@ -154,7 +154,7 @@ export function ScoreTargetCard({
             onConfirm={onRemove}
             trigger={
               <Button
-                variant="delete"
+                variant="destructive"
                 size="icon"
                 className="size-11 sm:size-9"
                 aria-label={t('scoreboard.removeAria', { name: target.name })}
@@ -279,7 +279,7 @@ export function RosterPlayerCard({
             onConfirm={onRemove}
             trigger={
               <Button
-                variant="delete"
+                variant="destructive"
                 size="icon"
                 className="size-11 sm:size-9"
                 aria-label={t('scoreboard.removeAria', { name: player.name })}
@@ -446,7 +446,7 @@ export function ArchiveCard({
           description={t('scoreboard.archiveDeleteDescription')}
           onConfirm={onDelete}
           trigger={
-            <Button variant="delete" size="icon" aria-label={t('common.archive.delete')}>
+            <Button variant="destructive" size="icon" aria-label={t('common.archive.delete')}>
               <Trash2 className="size-4" />
             </Button>
           }

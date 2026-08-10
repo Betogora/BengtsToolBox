@@ -449,12 +449,9 @@
       <section class="catalog-section" id="chancen" data-filter-section>
         <div class="section-heading">
           <div><h2>Priorisierte Vereinheitlichungschancen</h2><p>Die stärksten, im aktuellen Bestand belegbaren Anstöße. Jede Empfehlung bleibt innerhalb der vorhandenen Architektur.</p></div>
-          <span class="section-count">6 Prüfkandidaten</span>
+          <span class="section-count">5 Prüfkandidaten</span>
         </div>
         <div class="catalog-grid">
-          <article class="catalog-card" data-catalog-item data-category="finding" data-priority="high">
-            <div class="finding"><span class="finding__priority finding__priority--high">H</span><div><h3><code>delete</code> und <code>destructive</code> zusammenführen</h3><p>Beide Button-Varianten besitzen identische Klassen. Im Bestand stehen 20 statische <code>delete</code>- gegen 2 <code>destructive</code>-Verwendungen.</p><ul><li>eine semantische Variante als kanonischen Namen wählen</li><li>Bestätigungsbedarf bleibt Aufgabe von <code>ConfirmButton</code></li></ul></div></div>
-          </article>
           <article class="catalog-card" data-catalog-item data-category="finding" data-priority="high">
             <div class="finding"><span class="finding__priority finding__priority--high">H</span><div><h3>Status-Badges fachlich ordnen</h3><p>Turnierstatus, Korrekturen, Warnungen, Teams und Synchronisationszustände nutzen dieselben vier Badge-Varianten mit vielen lokalen Farbüberschreibungen.</p><ul><li><code>RoundStatusBadge</code> existiert doppelt im selben Feature</li><li>semantische Statusrollen feature-lokal bündeln, visuelle Basis im Badge belassen</li></ul></div></div>
           </article>
@@ -558,10 +555,10 @@
             <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>default</code>, <code>secondary</code>, <code>destructive</code>, <code>outline</code></dd><dt>Fundstellen</dt><dd>67 Instanzen in 16 Dateien; besonders Turnier-App (36)</dd><dt>Quelle</dt><dd><code>src/components/ui/badge.tsx</code></dd></dl><p class="note note--high">Die visuelle Basis ist kanonisch. Semantische Statuszuordnung ist vor allem im Turnierbereich lokal zu bündeln.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="high">
-            <div class="catalog-card__header"><div><h3>Button</h3><p class="catalog-card__purpose">Kanonisches Aktions-Control und Link-Adapter über Radix Slot.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span><span class="tag tag--high">Hoch</span></div></div>
+          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
+            <div class="catalog-card__header"><div><h3>Button</h3><p class="catalog-card__purpose">Kanonisches Aktions-Control und Link-Adapter über Radix Slot.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span></div></div>
             <div class="preview preview--center"><button class="demo-button" type="button"><svg class="icon"><use href="#i-plus"/></svg>Primär</button><button class="demo-button demo-button--outline" type="button">Outline</button><button class="demo-button demo-button--secondary" type="button">Sekundär</button><button class="demo-button demo-button--ghost" type="button">Ghost</button><button class="demo-button demo-button--destructive" type="button"><svg class="icon"><use href="#i-trash"/></svg>Löschen</button><button class="demo-button demo-button--icon" type="button" aria-label="Beispielhafte Icon-Aktion"><svg class="icon"><use href="#i-plus"/></svg></button><button class="demo-button" type="button" disabled>Disabled</button></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>default</code>, <code>destructive</code>, <code>delete</code>, <code>outline</code>, <code>secondary</code>, <code>ghost</code>, <code>link</code></dd><dt>Größen</dt><dd><code>default</code>, <code>ifta</code>, <code>sm</code>, <code>lg</code>, <code>icon</code></dd><dt>Fundstellen</dt><dd>98 Instanzen in 29 Dateien; 38 outline, 20 delete, 23 icon</dd><dt>Quelle</dt><dd><code>src/components/ui/button.tsx</code></dd></dl><p class="note note--high"><code>delete</code> und <code>destructive</code> sind CSS-identisch. Das ist die klarste kleine Vereinheitlichung im Bestand.</p></div>
+            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>default</code>, <code>destructive</code>, <code>outline</code>, <code>secondary</code>, <code>ghost</code>, <code>link</code></dd><dt>Größen</dt><dd><code>default</code>, <code>ifta</code>, <code>sm</code>, <code>lg</code>, <code>icon</code></dd><dt>Fundstellen</dt><dd>98 Instanzen in 29 Dateien; 38 outline, 22 destructive, 23 icon</dd><dt>Quelle</dt><dd><code>src/components/ui/button.tsx</code></dd></dl><p class="note"><code>destructive</code> ist der einzige rote Aktionsmodus; Bestätigungsbedarf bleibt Aufgabe von <code>ConfirmButton</code>.</p></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">

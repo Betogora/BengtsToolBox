@@ -411,7 +411,7 @@ function ArchiveDatasetCard({
           description={t('raab.archive.deleteDescription')}
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="delete" size="icon" aria-label={t('common.archive.delete')}>
+            <Button variant="destructive" size="icon" aria-label={t('common.archive.delete')}>
               <Trash2 className="size-4" />
             </Button>
           }

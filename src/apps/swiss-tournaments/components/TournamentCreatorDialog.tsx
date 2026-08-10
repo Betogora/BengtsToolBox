@@ -506,7 +506,7 @@ function TournamentCreator({
                       className="h-11 w-9 px-0"
                       size="ifta"
                       type="button"
-                      variant="delete"
+                      variant="destructive"
                       onClick={() =>
                         setPlayers((currentPlayers) =>
                           currentPlayers.filter((entry) => entry.id !== player.id),
@@ -617,7 +617,7 @@ function TournamentCreator({
                           })}
                           className="h-9"
                           size="sm"
-                          variant="delete"
+                          variant="destructive"
                           onClick={() =>
                             setPlayers((currentPlayers) =>
                               currentPlayers.filter(

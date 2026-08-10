@@ -511,7 +511,7 @@ export function TerritoryEventTable({
       trigger={
         <Button
           disabled={disabled}
-          variant="delete"
+          variant="destructive"
           size="icon"
           aria-label={t('territory.claimDeleteTitle')}
         >

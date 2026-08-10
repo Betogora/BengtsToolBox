@@ -242,7 +242,7 @@ export function ArchivedTournamentsList({
           <Button
             aria-label={t('swiss.playerRemoveAria', { name: tournament.name })}
             size="sm"
-            variant="delete"
+            variant="destructive"
           >
             <Trash2 className="size-4" />
           </Button>

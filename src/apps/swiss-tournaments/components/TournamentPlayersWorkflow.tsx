@@ -211,7 +211,7 @@ export function TournamentPlayersWorkflow({
                           ? t("swiss.playerRemoveAria", { name: player.name })
                           : t("swiss.playerAlreadyUsed")
                       }
-                      variant="delete"
+                      variant="destructive"
                       onClick={async () => {
                         if (!canRemove) {
                           return;
@@ -334,7 +334,7 @@ export function TournamentPlayersWorkflow({
                                 })
                               : t("swiss.playerAlreadyUsed")
                           }
-                          variant="delete"
+                          variant="destructive"
                           onClick={async () => {
                             if (!canRemove) {
                               return;

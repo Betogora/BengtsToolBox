@@ -924,7 +924,7 @@ export function PlayerCard({
             onConfirm={() => onRemove(player.id)}
             trigger={
               <Button
-                variant="delete"
+                variant="destructive"
                 size="icon"
                 aria-label={t('shared.playerCard.removeAria', {
                   name: player.name,
@@ -1127,7 +1127,7 @@ export function EventTable({
       description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}
       trigger={
-        <Button variant="delete" size="icon" aria-label={t('common.event.delete')}>
+        <Button variant="destructive" size="icon" aria-label={t('common.event.delete')}>
           <Trash2 className="size-4" />
         </Button>
       }
@@ -1279,7 +1279,7 @@ export function EventTable({
                   description={t('common.event.deleteDescription')}
                   onConfirm={() => onDeleteEvent(event.id)}
                   trigger={
-                    <Button variant="delete" size="icon" aria-label={t('common.event.delete')}>
+                    <Button variant="destructive" size="icon" aria-label={t('common.event.delete')}>
                       <Trash2 className="size-4" />
                     </Button>
                   }
@@ -1347,7 +1347,7 @@ export function ArchiveDatasetCard({
           description={t('common.dataset.deleteArchivedDescription')}
           onConfirm={() => onDelete(dataset.id)}
           trigger={
-            <Button variant="delete" size="icon" aria-label={t('common.archive.delete')}>
+            <Button variant="destructive" size="icon" aria-label={t('common.archive.delete')}>
               <Trash2 className="size-4" />
             </Button>
           }
