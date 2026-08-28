@@ -310,7 +310,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Die Rangliste zählt pro Person alle aktuell gehaltenen Welt- und Deutschland-Claims.
 - Zehn Achievements werden für alle Personen aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.
 - Die Punktzahl ist initial ausgeklappt, die Achievements sind initial eingeklappt; beide Zustände werden je Lobby im App-State synchronisiert.
-- Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen `1`, `2`, `4`, `8`.
+- Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen `1`, `2`, `4`, `8`, `16`, `32`, `64`, `128`, `256`, `512`, `1024`.
 - Der Presenter zeigt aktive Karte, Claims, Legende und Rangliste.
 
 ### 5.9 SK Anderten Turnier-App

@@ -310,9 +310,23 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await expect(zoomOut).toBeDisabled()
   await zoomIn.click()
   await expect(zoomOut).toBeEnabled()
-  await zoomIn.click()
-  await zoomIn.click()
+
+  while (await zoomIn.isEnabled()) {
+    await zoomIn.click()
+  }
+
   await expect(zoomIn).toBeDisabled()
+
+  const monacoBounds = await page
+    .getByRole('button', { name: /^Monaco, / })
+    .evaluate((territory) => {
+      const bounds = territory.getBoundingClientRect()
+
+      return { height: bounds.height, width: bounds.width }
+    })
+
+  expect(monacoBounds.width).toBeGreaterThanOrEqual(24)
+  expect(monacoBounds.height).toBeGreaterThanOrEqual(24)
 
   const germany = page.getByRole('button', { name: /^Deutschland, / })
   await germany.focus()
@@ -552,7 +566,7 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
   await zoomIn.click()
   await zoomIn.click()
   await zoomIn.click()
-  await expect(zoomIn).toBeDisabled()
+  await expect(zoomOut).toBeEnabled()
 
   const mapBefore = await mapViewport.evaluate((viewport) => {
     const rect = viewport.getBoundingClientRect()
