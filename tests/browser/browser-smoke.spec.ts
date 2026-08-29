@@ -560,6 +560,7 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
   const mapViewport = page.locator('[data-map-dragging]')
   const mapLayer = page.locator('.territory-map-layer')
   const zoomIn = page.getByRole('button', { name: 'Reinzoomen' })
+  const zoomOut = page.getByRole('button', { name: 'Rauszoomen' })
   const touchSession = await page.context().newCDPSession(page)
 
   await expect(mapViewport).toBeVisible()
