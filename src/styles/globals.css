@@ -379,6 +379,49 @@ select {
   min-width: 0;
 }
 
+.swiss-standings-card [data-slot="card-content"] {
+  container-type: inline-size;
+}
+
+@container (max-width: 23rem) {
+  .swiss-standings-mobile .swiss-mobile-col-rank {
+    width: 2.75rem;
+  }
+
+  .swiss-standings-mobile .swiss-mobile-col-points {
+    width: 3.25rem;
+  }
+
+  .swiss-standings-mobile col.swiss-mobile-col-buchholz {
+    width: 3.75rem;
+  }
+
+  .swiss-standings-mobile col.swiss-mobile-sb {
+    width: 0;
+    visibility: collapse;
+  }
+
+  .swiss-standings-mobile th.swiss-mobile-sb,
+  .swiss-standings-mobile td.swiss-mobile-sb {
+    display: none;
+  }
+
+  .swiss-standings-mobile .swiss-mobile-buchholz-label {
+    display: none;
+  }
+
+  .swiss-standings-mobile .swiss-mobile-buch-label,
+  .swiss-standings-mobile .swiss-mobile-sb-detail {
+    display: inline;
+  }
+
+  .swiss-standings-mobile th,
+  .swiss-standings-mobile td {
+    padding-right: 0.25rem;
+    padding-left: 0.25rem;
+  }
+}
+
 .raab-score-card {
   position: relative;
   overflow: hidden;
