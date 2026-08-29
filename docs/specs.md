@@ -335,6 +335,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 - Standardresultate sind `1-0`, `0-1`, `½-½` und kampflose Siege.
 - Bye-Wertungen sind `1`, `0,5` oder `0` und können pro Runde überschrieben werden.
+- Eine Draft-Runde beeinflusst die Rangliste erst ab dem ersten eingetragenen Partieergebnis. Automatische Bye-Wertungen allein aktivieren sie nicht; danach wird die gesamte Runde einschließlich offener Pairings und Byes berücksichtigt.
 - Nicht-Mario-Kart-Rangfolge: Punkte, Buchholz, Sonneborn-Berger, Siege, direkter Vergleich, initialer Seed.
 - Mario-Kart-Rangfolge: Turnierpunkte, Siege, bessere Durchschnittsplatzierung und direkter Vergleich. Vollständig gleiche sportliche Werte teilen sich den Rang nach `1, 1, 3`; Seed und Name stabilisieren nur die Anzeige.
 - Ergebniskorrekturen dürfen eine noch ungewertete aktuelle Draft-Runde neu generieren; die UI muss davor warnen.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { Pairing } from '@/apps/swiss-tournaments/types'
 import { tournamentDomain } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import {
   makeRound,
@@ -122,5 +123,71 @@ describe('Swiss tournament golden cases', () => {
       'p4',
       'p2',
     ])
+  })
+
+  it('keeps an unscored draft out of the standings until its first game result', () => {
+    const firstRoundBye = {
+      id: 'r1-bye',
+      roundNumber: 1,
+      boardNumber: 3,
+      kind: 'standard',
+      result: 'bye-1',
+      isManual: false,
+      isBye: true,
+      byePlayerId: 'p5',
+    } satisfies Pairing
+    const secondRoundBye = {
+      ...firstRoundBye,
+      id: 'r2-bye',
+      roundNumber: 2,
+      byePlayerId: 'p4',
+    } satisfies Pairing
+    const firstRound = makeRound(1, [
+      makeStandardPairing('r1-a', 1, 'p1', 'p2', '1-0'),
+      makeStandardPairing('r1-b', 1, 'p3', 'p4', '1-0'),
+      firstRoundBye,
+    ])
+    const secondRoundPairings = [
+      makeStandardPairing('r2-a', 2, 'p1', 'p5'),
+      makeStandardPairing('r2-b', 2, 'p2', 'p3'),
+      secondRoundBye,
+    ]
+    const tournament = makeTournament('swiss', 5, {
+      currentRound: 2,
+      rounds: [firstRound],
+    })
+    const standingsByPlayer = (pairings: Pairing[]) =>
+      Object.fromEntries(
+        tournamentDomain
+          .inspect({
+            ...tournament,
+            rounds: [firstRound, makeRound(2, pairings, 'draft')],
+          })
+          .standings.map((row) => [
+            row.playerId,
+            { points: row.points, buchholz: row.buchholz },
+          ]),
+      )
+
+    expect(standingsByPlayer(secondRoundPairings)).toEqual({
+      p1: { points: 1, buchholz: 0 },
+      p2: { points: 0, buchholz: 1 },
+      p3: { points: 1, buchholz: 0 },
+      p4: { points: 0, buchholz: 1 },
+      p5: { points: 1, buchholz: 0 },
+    })
+
+    expect(
+      standingsByPlayer([
+        { ...secondRoundPairings[0], result: '1-0' },
+        ...secondRoundPairings.slice(1),
+      ]),
+    ).toEqual({
+      p1: { points: 2, buchholz: 1 },
+      p2: { points: 0, buchholz: 3 },
+      p3: { points: 1, buchholz: 1 },
+      p4: { points: 1, buchholz: 1 },
+      p5: { points: 1, buchholz: 2 },
+    })
   })
 })

@@ -62,6 +62,16 @@ export function isPairingComplete(pairing: Pairing) {
   return Boolean(pairing.result)
 }
 
+export function hasEnteredResult(pairing: Pairing) {
+  if (pairing.kind === 'marioKart') {
+    return marioKartRacers(pairing).some(
+      (racer) => racer.placement || racer.event,
+    )
+  }
+
+  return !pairing.isBye && Boolean(pairing.result)
+}
+
 function sidePlayerIds(side?: HandBrainSide) {
   return side ? [side.brainPlayerId, side.handPlayerId] : []
 }
@@ -335,7 +345,11 @@ export function getSummaryBeforeRound(
   })
 
   tournament.rounds
-    .filter((round) => round.roundNumber < beforeRoundNumber)
+    .filter(
+      (round) =>
+        round.roundNumber < beforeRoundNumber &&
+        (round.status === 'completed' || round.pairings.some(hasEnteredResult)),
+    )
     .sort((left, right) => left.roundNumber - right.roundNumber)
     .forEach((round) => {
       const seen = new Set<string>()

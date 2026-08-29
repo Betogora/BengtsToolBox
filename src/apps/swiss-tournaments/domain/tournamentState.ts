@@ -1,6 +1,6 @@
 import type { GameResult, Pairing, Player, PlayerStatus, Round, Tournament } from '@/apps/swiss-tournaments/types'
 import { getMarioKartEntryCycle, getMarioKartPlanningAvailability, getMarioKartRacers as marioKartRacers, setMarioKartPlayerStatus, updateMarioKartRacer } from '@/apps/swiss-tournaments/marioKart'
-import { assignColors, blackSidePlayerIds, getPlayerStatusForRound, getSummaryBeforeRound, makeId, marioKartScoringPlayerIds, pairingKind, pairingPlayerIds, sameStringSet, validatePairing, whiteSidePlayerIds } from './pairingSupport'
+import { assignColors, blackSidePlayerIds, getPlayerStatusForRound, getSummaryBeforeRound, hasEnteredResult, makeId, marioKartScoringPlayerIds, pairingKind, pairingPlayerIds, sameStringSet, validatePairing, whiteSidePlayerIds } from './pairingSupport'
 import { generatePairings } from './pairingGeneration'
 
 export function updateResult(
@@ -107,22 +107,6 @@ function getLatestRound(tournament: Tournament) {
   )[0]
 }
 
-function hasGameResult(pairing: Pairing) {
-  if (pairing.kind === 'marioKart') {
-    return marioKartRacers(pairing).some(
-      (racer) =>
-        racer.placement ||
-        racer.event,
-    )
-  }
-
-  if (pairing.isBye) {
-    return false
-  }
-
-  return !pairing.isBye && Boolean(pairing.result)
-}
-
 function canRegenerateUnscoredDraftRound(tournament: Tournament, round: Round) {
   const latestRound = getLatestRound(tournament)
 
@@ -130,7 +114,7 @@ function canRegenerateUnscoredDraftRound(tournament: Tournament, round: Round) {
     round.status === 'draft' &&
     round.pairings.length > 0 &&
     round.roundNumber === latestRound?.roundNumber &&
-    !round.pairings.some(hasGameResult)
+    !round.pairings.some(hasEnteredResult)
   )
 }
 
