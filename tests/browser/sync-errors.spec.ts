@@ -24,6 +24,11 @@ test('LocalStorage-Quota-Fehler wird angezeigt und die Aktion zurückgerollt', a
   await expect(
     page.getByText('Der lokale Speicher ist voll. Die Änderung wurde nicht gespeichert.'),
   ).toBeVisible()
+  const saveErrorToast = page.locator('[data-sonner-toast]').filter({
+    hasText: 'Der Wurf konnte nicht gespeichert werden.',
+  })
+  await expect(saveErrorToast).toBeVisible()
+  await expect(saveErrorToast).toHaveCSS('opacity', '1')
   await expect(page.getByText('Noch keine Würfe vorhanden.')).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Würfeln' }).first().getByText('-'),
