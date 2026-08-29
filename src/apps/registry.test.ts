@@ -59,6 +59,13 @@ describe('app registry contract', () => {
     )
   })
 
+  it('places the Triathlon-Tracker last after Nächste Frage', () => {
+    expect(registeredApps.slice(-2).map((app) => app.id)).toEqual([
+      'next-question',
+      'triathlon-tracker',
+    ])
+  })
+
   it('matches both documented registry route lists in registry order', () => {
     const expectedRoutes = registeredApps.map((app) => app.href)
 

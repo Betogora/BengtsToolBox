@@ -189,6 +189,110 @@ function ProgressIllustration() {
   )
 }
 
+function TriathlonIllustration() {
+  return (
+    <SvgShell>
+      <ellipse
+        cx="264"
+        cy="137"
+        fill={palette.navy}
+        opacity="0.08"
+        rx="93"
+        ry="10"
+      />
+      <path
+        d="M154 111c24-52 51-77 83-62 24 11 23 49 47 58 22 8 37-15 54-47"
+        fill="none"
+        stroke={palette.mint}
+        strokeDasharray="7 9"
+        strokeLinecap="round"
+        strokeWidth="6"
+      />
+
+      <g>
+        <circle
+          cx="184"
+          cy="104"
+          fill="#ffffff"
+          r="31"
+          stroke={palette.mint}
+          strokeWidth="8"
+        />
+        <circle cx="178" cy="91" fill={palette.coral} r="4.5" />
+        <path
+          d="m182 94 11 7m-27 5c6-6 12-6 18 0s12 6 18 0m-36 11c6-6 12-6 18 0s12 6 18 0"
+          fill="none"
+          stroke={palette.teal}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="4"
+        />
+      </g>
+
+      <g>
+        <circle
+          cx="254"
+          cy="58"
+          fill="#ffffff"
+          r="35"
+          stroke={palette.apricot}
+          strokeWidth="8"
+        />
+        <circle
+          cx="238"
+          cy="64"
+          fill="none"
+          r="10"
+          stroke={palette.teal}
+          strokeWidth="3.5"
+        />
+        <circle
+          cx="270"
+          cy="64"
+          fill="none"
+          r="10"
+          stroke={palette.teal}
+          strokeWidth="3.5"
+        />
+        <path
+          d="m238 64 11-17 10 17h-21l8-10h15l9 10m-23-17h8m6-6 5 3"
+          fill="none"
+          stroke={palette.teal}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="3.5"
+        />
+        <circle cx="261" cy="41" fill={palette.coral} r="3.5" />
+      </g>
+
+      <g>
+        <circle
+          cx="321"
+          cy="105"
+          fill="#ffffff"
+          r="31"
+          stroke={palette.coral}
+          strokeWidth="8"
+        />
+        <g fill={palette.teal} transform="rotate(-24 321 105)">
+          <ellipse cx="311" cy="96" rx="5" ry="9" />
+          <circle cx="306" cy="86" r="2.5" />
+          <circle cx="311" cy="84" r="2.3" />
+          <circle cx="316" cy="86" r="2.1" />
+          <ellipse cx="329" cy="114" rx="5" ry="9" />
+          <circle cx="324" cy="104" r="2.5" />
+          <circle cx="329" cy="102" r="2.3" />
+          <circle cx="334" cy="104" r="2.1" />
+        </g>
+      </g>
+
+      <circle cx="220" cy="37" fill={palette.mint} r="4" />
+      <circle cx="292" cy="132" fill={palette.apricot} r="4" />
+      <circle cx="349" cy="48" fill={palette.coral} opacity="0.65" r="3" />
+    </SvgShell>
+  )
+}
+
 function ScoreboardIllustration() {
   return (
     <SvgShell>
@@ -456,6 +560,8 @@ export function DashboardIllustration({ appId }: { appId: string }) {
       return <CoinflipIllustration />
     case 'progress-dashboard':
       return <ProgressIllustration />
+    case 'triathlon-tracker':
+      return <TriathlonIllustration />
     case 'scoreboard':
       return <ScoreboardIllustration />
     case 'live-buzzer':

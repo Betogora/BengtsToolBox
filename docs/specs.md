@@ -1,6 +1,6 @@
 # BengtsToolBox – Produkt- und Systemspezifikation
 
-> **Stand:** 11. Juli 2026
+> **Stand:** 22. August 2026
 > **Status:** aus dem aktuellen Laufzeitcode rekonstruiert  
 > **Geltungsbereich:** gesamtes Repository
 
@@ -33,7 +33,7 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 
 ## 2. Produktlandkarte und Routen
 
-Das Dashboard unter `/` zeigt alle neun regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
+Das Dashboard unter `/` zeigt alle zehn regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
 
 | Bereich | Route | Registrierung | Kernzweck |
 | --- | --- | --- | --- |
@@ -47,6 +47,7 @@ Das Dashboard unter `/` zeigt alle neun regulär registrierten Apps. Die Registr
 | Random Number Generator | `/apps/randomizer` | Registry | Zufällige Ganzzahl in einem Bereich |
 | SK Anderten Turnier-App | `/apps/swiss-tournaments` | Registry | Swiss-, Rundenturnier-, Hand-and-Brain- und Mario-Kart-Turniere |
 | Nächste Frage | `/apps/next-question` | Registry | Quizkarten mit verdeckter Antwort |
+| Triathlon-Tracker | `/apps/triathlon-tracker` | Registry | Trainingsplanung, -erfassung und Leistungsentwicklung |
 | Schlag den Raab | `/schlag-den-raab` | explizite Sonderroute | Zwei-Personen-Abendwertung |
 | Lobbys | `/lobbies` | explizite Sonderroute | Öffentliche Räume erstellen und betreten |
 | Lobby-Dashboard | `/lobbies/:lobbyId` | explizite Sonderroute | Alle regulären Apps innerhalb eines isolierten Raums |
@@ -157,6 +158,7 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 | Fortschritts-Dashboard | `apps/progress-dashboard/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
 | Sushi Map | `apps/territory-map/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
 | Turnier-App | `apps/swiss-tournaments/sessions/{sessionId}/state/default` | `.../tournaments` |
+| Triathlon-Tracker | `apps/triathlon-tracker/sessions/{sessionId}/state/default` | `.../planned-trainings`, `.../actual-trainings` |
 
 Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In einer Lobby kapseln sie ihre Daten unter `lobbies/{lobbyId}/apps/{appId}/...`; Metadaten liegen in `lobbies/{lobbyId}`, Gerätezugriffe in `lobbies/{lobbyId}/devices/{uid}`. Beim Anlegen einer Lobby werden keine App-Daten aus der globalen oder einer anderen Lobby kopiert; beim ersten Öffnen entsteht ausschließlich der spezifizierte Erstzustand der jeweiligen App. Die globale Lobby behält bewusst alle bestehenden `apps/...`-Pfade und benötigt keine Datenmigration.
 
@@ -401,7 +403,23 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 Pairings tragen harte oder weiche Warnungen. Abgedeckt werden unter anderem fehlende/inaktive/mehrfach verwendete Spieler, Wiederholung, Scoregruppen-Floater, zu große Punktdifferenz, Farbe, wiederholte Hand-and-Brain-Teams und -Rollen, unausgeglichene Mario-Kart-Lobbys sowie erneute Bye-Zyklen.
 
-### 5.10 Schlag den Raab
+### 5.10 Triathlon-Tracker
+
+**Zweck:** Triathlon-Training planen, manuell erfassen und seine Entwicklung nachvollziehen.
+
+- Das optionale aktuelle Gewicht steht direkt bei den Kontextfiltern der Leistungsentwicklung; einen separaten Einstellungsdialog gibt es nicht. Die App verwendet metrische Einheiten, `Europe/Berlin` und Montag als Wochenbeginn.
+- Geplante Einheiten enthalten Datum, optionale Zeit, Disziplin, optionale Dauer und Distanz sowie ein kurzes Label. Sie sind passive Kalendereinträge ohne Status, Plan-Ist-Verknüpfung oder Erfüllungswertung. Eine Woche kann nach Vorschau einschließlich möglicher Duplikate kopiert werden.
+- Absolvierte Einheiten benötigen Datum, Disziplin sowie Dauer oder Distanz. Bei vorhandener Distanz berechnen sich Dauer und Durchschnittspace gegenseitig; die Pace gilt beim Schwimmen pro 100 Meter, sonst pro Kilometer. Optional sind Zeit, Kontext, Durchschnittspuls, Durchschnittsleistung, RPE und manuell aufgebaute Belastungs-/Pausenintervalle.
+- Monat und Woche zeigen mehrere Plan- und Ist-Einträge pro Tag. Mobil wird die Woche zur vertikalen Agenda. Plan und Ist unterscheiden sich zusätzlich zur Farbe durch Rand, Füllung, Icon und Label.
+- Die aktuelle Woche fasst Zeit, Distanz und Anzahl je Disziplin zusammen. Wochen- und Leistungsdiagramme besitzen 4W-, 12W-, 6M-, 1J- und Gesamtbereiche sowie zugängliche Tabellenalternativen.
+- Leistungsmodelle verwenden höchstens zwölf Monate kontinuierlicher, kontextgleicher Einheiten. Intervalle sind keine Modellanker. Unter drei geeigneten, unterschiedlich langen beziehungsweise weiten Einheiten wird keine Hochrechnung ausgegeben; die Leistungskarten nennen vorhandene und benötigte geeignete Trainings.
+- Laufen schätzt 5 und 10 km aus Critical Speed oder einem personalisierten Potenzgesetz. Schwimmen schätzt 750 und 1.500 m bevorzugt über Critical Swim Speed, sonst per Potenzgesetz. Radfahren zeigt bei ausreichenden Leistungsdaten Critical Power und optional W/kg, andernfalls 20- und 40-km-Zeiten aus einem Potenzgesetz.
+- Ein normalisierter Index beginnt je Disziplin bei 100; ein geometrischer Gesamtindex existiert nur bei verfügbaren Werten aller drei Disziplinen. Historische Punkte verwenden keine späteren Daten.
+- Es gibt weder Datenimport noch Datenexport noch einen globalen Reset.
+
+Die ausführliche, iterierbare Produktspezifikation steht in [`spec_tracker.md`](spec_tracker.md).
+
+### 5.11 Schlag den Raab
 
 **Zweck:** zwei Personen über 15 aufsteigend gewichtete Spiele und bei Bedarf ein Stechen bewerten.
 

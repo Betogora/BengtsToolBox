@@ -139,5 +139,25 @@ export const firebasePaths = {
       'apps/swiss-tournaments/sessions/default/tournaments',
       'tournaments',
     ),
+  triathlonTrackerState: (lobbyId = 'default') =>
+    scopedOrLegacy(
+      lobbyId,
+      'triathlon-tracker',
+      'apps/triathlon-tracker/sessions/default/state/default',
+    ),
+  triathlonTrackerPlannedTrainings: (lobbyId = 'default') =>
+    scopedOrLegacy(
+      lobbyId,
+      'triathlon-tracker',
+      'apps/triathlon-tracker/sessions/default/planned-trainings',
+      'planned-trainings',
+    ),
+  triathlonTrackerActualTrainings: (lobbyId = 'default') =>
+    scopedOrLegacy(
+      lobbyId,
+      'triathlon-tracker',
+      'apps/triathlon-tracker/sessions/default/actual-trainings',
+      'actual-trainings',
+    ),
   lobbyAppState: appStatePath,
 } as const

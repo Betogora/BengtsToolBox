@@ -116,6 +116,24 @@ const appPathContracts: Record<string, readonly PathContract[]> = {
       scopedSuffix: 'tournaments',
     },
   ],
+  'triathlon-tracker': [
+    {
+      build: firebasePaths.triathlonTrackerState,
+      legacy: 'apps/triathlon-tracker/sessions/default/state/default',
+      scopedSuffix: 'state/default',
+    },
+    {
+      build: firebasePaths.triathlonTrackerPlannedTrainings,
+      legacy:
+        'apps/triathlon-tracker/sessions/default/planned-trainings',
+      scopedSuffix: 'planned-trainings',
+    },
+    {
+      build: firebasePaths.triathlonTrackerActualTrainings,
+      legacy: 'apps/triathlon-tracker/sessions/default/actual-trainings',
+      scopedSuffix: 'actual-trainings',
+    },
+  ],
   'next-question': [
     {
       build: firebasePaths.nextQuestionState,

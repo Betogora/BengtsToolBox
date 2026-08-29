@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:838c6e7b7d87a2427933a446716b131d7a6074af54cb48fc298fcfbca8d957be">
+  <meta name="specs-source-sha256" content="sha256:ccd5d86508ae104075628b5885f650cb8534d88cdd0281a604be738d28710f77">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -398,7 +398,7 @@
       <p class="lede">Ein verifizierter Überblick über Produktumfang, Fachregeln, Datenhaltung, Architektur, Entwicklung und Betrieb der React-/Firebase-Toolbox.</p>
       <div class="hero-meta" aria-label="Dokumentstatus">
         <span class="chip live">Ist-Spezifikation</span>
-        <span class="chip">Stand 11. Juli 2026</span>
+        <span class="chip">Stand 22. August 2026</span>
         <span class="chip">aus Laufzeitcode rekonstruiert</span>
       </div>
       <div class="hero-actions">
@@ -446,7 +446,7 @@
         <h2>Werkzeuge zuerst, Einrichtung zuletzt</h2>
         <p class="section-intro">BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spieleabende, Gruppen, Quizrunden und kleine Turniere. Die Werkzeuge starten direkt, synchronisieren bei vorhandener Firebase-Konfiguration und bleiben sonst lokal nutzbar.</p>
         <div class="stats" aria-label="Projektkennzahlen">
-          <div class="stat"><strong>9</strong><span>registrierte Dashboard-Apps</span></div>
+          <div class="stat"><strong>10</strong><span>registrierte Dashboard-Apps</span></div>
           <div class="stat"><strong>1</strong><span>bewusster Sonderbereich</span></div>
           <div class="stat"><strong>5.044</strong><span>statische Quizfragen</span></div>
           <div class="stat"><strong>4</strong><span>Turnierformate</span></div>
@@ -494,6 +494,7 @@
               <tr><td>Randomizer</td><td><code>/apps/randomizer</code></td><td>Registry</td><td>Ganzzahl in einem Bereich</td></tr>
               <tr><td>Turnier-App</td><td><code>/apps/swiss-tournaments</code></td><td>Registry</td><td>Vier Turnierformate</td></tr>
               <tr><td>Nächste Frage</td><td><code>/apps/next-question</code></td><td>Registry</td><td>Quizkarten mit verdeckter Antwort</td></tr>
+              <tr><td>Triathlon-Tracker</td><td><code>/apps/triathlon-tracker</code></td><td>Registry</td><td>Trainingsplanung, -erfassung und Leistungsentwicklung</td></tr>
               <tr><td>Schlag den Raab</td><td><code>/schlag-den-raab</code></td><td>Sonderroute</td><td>Zwei-Personen-Abendwertung</td></tr>
               <tr><td>Lobbys</td><td><code>/lobbies</code></td><td>Sonderroute</td><td>Öffentliche Räume erstellen und betreten</td></tr>
               <tr><td>Lobby-Dashboard</td><td><code>/lobbies/:lobbyId</code></td><td>Lobby-Kontext</td><td>Alle Apps in einem isolierten Raum</td></tr>
@@ -597,6 +598,7 @@
               <tr><td>Fortschritts-Dashboard</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
               <tr><td>Sushi Map</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
               <tr><td>Turnier-App</td><td><code>.../state/default</code></td><td><code>tournaments</code></td></tr>
+              <tr><td>Triathlon-Tracker</td><td><code>.../state/default</code></td><td><code>planned-trainings</code>, <code>actual-trainings</code></td></tr>
             </tbody>
           </table>
         </div>
@@ -794,7 +796,22 @@
         </details>
 
         <details class="app">
-          <summary><span class="app-number">10</span><span><span class="app-summary-title">Schlag den Raab</span><span class="app-summary-route">/schlag-den-raab</span></span></summary>
+          <summary><span class="app-number">10</span><span><span class="app-summary-title">Triathlon-Tracker</span><span class="app-summary-route">/apps/triathlon-tracker</span></span></summary>
+          <div class="app-body">
+            <ul>
+              <li>Manuelle Planung und Erfassung für Schwimmen, Radfahren und Laufen; das optionale Gewicht steht direkt bei den Kontextfiltern der Leistungsentwicklung.</li>
+              <li>Planungen sind passive Kalendereinträge ohne Status oder Plan-Ist-Wertung. Eine Woche kann nach Vorschau einschließlich möglicher Duplikate kopiert werden.</li>
+              <li>Absolvierte Einheiten benötigen Datum, Disziplin sowie Dauer oder Distanz. Bei vorhandener Distanz berechnen sich Dauer und Durchschnittspace gegenseitig. Kontext, Puls, Leistung, RPE und manuell aufgebaute Intervalle sind optional.</li>
+              <li>Monats- und Wochenkalender, mobile Tagesagenda, Wochenstatistiken sowie Leistungs- und Volumenverläufe mit zugänglicher Tabellenalternative.</li>
+              <li>Kontextgetrennte Modelle verwenden mindestens drei geeignete kontinuierliche Einheiten aus höchstens zwölf Monaten und zeigen bis dahin den Datenfortschritt. Laufen nutzt Critical Speed oder Potenzgesetz, Schwimmen CSS oder Potenzgesetz, Rad Critical Power oder distanzbasierte Schätzungen.</li>
+              <li>Es gibt weder Datenimport noch Datenexport noch einen globalen Reset.</li>
+            </ul>
+            <p>Die ausführliche Produktspezifikation steht in <a href="spec_tracker.md"><code>spec_tracker.md</code></a>.</p>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">11</span><span><span class="app-summary-title">Schlag den Raab</span><span class="app-summary-route">/schlag-den-raab</span></span></summary>
           <div class="app-body">
             <ul>
               <li>Zwei Personen, 15 Spiele mit Punkten 1–15 sowie ein optionales Stechen, das den Abend per Kreuz entscheidet, aber keine Punkte vergibt und nicht als gewonnenes Spiel zählt.</li>

@@ -21,6 +21,7 @@
 | Scoreboard | Gemeinsame Spielstände, Spieler und Ereignisse | Firestore + lokaler Cache |
 | Live-Buzzer | Team-Buzzer und Rundensteuerung | Firestore + lokaler Cache |
 | Fortschritts-Dashboard | Spieler, Events, Diagramm und Archiv | Firestore + lokaler Cache |
+| Triathlon-Tracker | Trainingsplanung, manuelle Erfassung und Leistungsentwicklung | Firestore + lokaler Cache |
 | Random Number Generator | Würfel und Zufallszahlen | Firestore + lokaler Cache |
 | Glücksrad | Gewichtete Einträge und Ziehungsverlauf | Firestore + lokaler Cache |
 | Coinflip | Münzwurf mit Verlauf und Presenter-Ansicht | Firestore + lokaler Cache |

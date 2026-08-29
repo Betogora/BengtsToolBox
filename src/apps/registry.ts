@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  Activity,
   Bell,
   ChartNoAxesCombined,
   ChessKing,
@@ -146,6 +147,19 @@ const appDefinitions: readonly HubApp[] = [
     loadPage: () =>
       import('@/apps/next-question').then(({ NextQuestionPage }) => ({
         default: NextQuestionPage,
+      })),
+  },
+  {
+    id: 'triathlon-tracker',
+    titleKey: 'app.triathlonTracker.title',
+    descriptionKey: 'app.triathlonTracker.description',
+    href: '/apps/triathlon-tracker',
+    routePath: 'apps/triathlon-tracker',
+    status: 'Live',
+    Icon: Activity,
+    loadPage: () =>
+      import('@/apps/triathlon-tracker').then(({ TriathlonTrackerPage }) => ({
+        default: TriathlonTrackerPage,
       })),
   },
 ]

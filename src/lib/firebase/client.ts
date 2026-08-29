@@ -25,11 +25,14 @@ const firebaseConfig = {
 let services: FirebaseServices | null = null
 let anonymousSignInPromise: Promise<User> | null = null
 
+const hasConfiguredValue = (value: string | undefined) =>
+  typeof value === 'string' && value.trim().length > 0
+
 export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId &&
-    firebaseConfig.appId,
+  hasConfiguredValue(firebaseConfig.apiKey) &&
+    hasConfiguredValue(firebaseConfig.authDomain) &&
+    hasConfiguredValue(firebaseConfig.projectId) &&
+    hasConfiguredValue(firebaseConfig.appId),
 )
 
 export function getFirebaseServices(): FirebaseServices | null {

@@ -75,7 +75,7 @@ export function AppShell() {
           <div className="flex shrink-0 items-center gap-2">
             <LanguageSelector />
 
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav className="hidden items-center gap-1 lg:flex">
               {navigationItems.map(({ href, labelKey, Icon }) => (
                 <NavLink
                   key={href}
@@ -93,7 +93,7 @@ export function AppShell() {
               ))}
             </nav>
 
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="secondary" size="icon" aria-label={t('nav.menu')}>
