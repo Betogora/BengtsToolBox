@@ -14,7 +14,7 @@ test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
   const viewportWidth = page.viewportSize()?.width ?? 0
   const mobileNavigation = page.getByRole('button', { name: 'Navigation' })
 
-  if (viewportWidth < 768) {
+  if (viewportWidth < 1024) {
     await expect(mobileNavigation).toBeVisible()
     await mobileNavigation.click()
     await expect(page.getByRole('menuitem', { name: 'App Hub' })).toBeVisible()
