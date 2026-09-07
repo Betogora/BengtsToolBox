@@ -60,6 +60,17 @@ export type PowerActivityPerformancePoint = {
   averagePowerWatts: number
 }
 
+// Conservative product guards, not statistical confidence intervals.
+const maximumModelError = 0.1
+const performanceWindowMonths = 3
+
+function preferBenchmarks<T extends { training: ActualTraining }>(
+  samples: T[],
+): T[] {
+  const benchmarks = samples.filter((sample) => sample.training.isBenchmark)
+  return benchmarks.length > 0 ? benchmarks : samples
+}
+
 const insufficient = (
   availableAnchors: number,
   requiredAnchors = 3,
@@ -69,7 +80,9 @@ const insufficient = (
   requiredAnchors,
 })
 
-function linearRegression(points: readonly [number, number][]): LinearFit | null {
+function linearRegression(
+  points: readonly [number, number][],
+): LinearFit | null {
   if (points.length < 2) {
     return null
   }
@@ -96,18 +109,15 @@ function isComparableContinuousTraining(
 ) {
   const baseAvailability =
     training.analyticsAvailableFromLocalDate ?? training.localDate
-  const metricAvailability = metric === 'distance'
-    ? training.distanceAnalyticsAvailableFromLocalDate
-    : training.powerAnalyticsAvailableFromLocalDate
+  const metricAvailability =
+    metric === 'distance'
+      ? training.distanceAnalyticsAvailableFromLocalDate
+      : training.powerAnalyticsAvailableFromLocalDate
   return (
     training.discipline === discipline &&
-    (
-      training.context === context ||
-      (
-        training.context === null &&
-        defaultTrainingContexts[discipline] === context
-      )
-    ) &&
+    (training.context === context ||
+      (training.context === null &&
+        defaultTrainingContexts[discipline] === context)) &&
     training.intervals.length === 0 &&
     baseAvailability <= asOfLocalDate &&
     (metricAvailability ?? baseAvailability) <= asOfLocalDate &&
@@ -141,12 +151,14 @@ export function getDistanceActivityPerformancePoints(
     ) {
       return []
     }
-    return [{
-      activityId: training.id,
-      localDate: training.localDate,
-      speedKilometersPerHour:
-        (training.distanceMeters / training.durationSeconds) * 3.6,
-    }]
+    return [
+      {
+        activityId: training.id,
+        localDate: training.localDate,
+        speedKilometersPerHour:
+          (training.distanceMeters / training.durationSeconds) * 3.6,
+      },
+    ]
   })
 }
 
@@ -175,11 +187,13 @@ export function getPowerActivityPerformancePoints(
     ) {
       return []
     }
-    return [{
-      activityId: training.id,
-      localDate: training.localDate,
-      averagePowerWatts: training.averagePowerWatts,
-    }]
+    return [
+      {
+        activityId: training.id,
+        localDate: training.localDate,
+        averagePowerWatts: training.averagePowerWatts,
+      },
+    ]
   })
 }
 
@@ -198,7 +212,11 @@ function eligibleDistanceSamples(
         asOfLocalDate,
         'distance',
       ) ||
-      !isInRollingMonthWindow(training.localDate, asOfLocalDate) ||
+      !isInRollingMonthWindow(
+        training.localDate,
+        asOfLocalDate,
+        performanceWindowMonths,
+      ) ||
       training.durationSeconds === null ||
       training.durationSeconds <= 0 ||
       training.distanceMeters === null ||
@@ -220,7 +238,9 @@ function durationBucket(durationSeconds: number): number {
   return Math.floor(Math.log2(Math.max(durationSeconds, 60) / 60))
 }
 
-function selectDistanceAnchors(samples: readonly DistanceSample[]): DistanceSample[] {
+function selectDistanceAnchors(
+  samples: readonly DistanceSample[],
+): DistanceSample[] {
   const fastestByDistance = new Map<number, DistanceSample>()
   samples.forEach((sample) => {
     const current = fastestByDistance.get(sample.distanceMeters)
@@ -286,7 +306,7 @@ function fitPowerLaw(samples: readonly DistanceSample[]): DistanceModel | null {
       Math.log(sample.durationSeconds),
     ]),
   )
-  if (!fit || fit.slope < 0.95 || fit.slope > 1.5) {
+  if (!fit || fit.slope < 1 || fit.slope > 1.5) {
     return null
   }
   const coefficient = Math.exp(fit.intercept)
@@ -317,21 +337,28 @@ function buildDistanceResult(
   targetDistances: readonly number[],
   supportingTrainingCount = anchors.length,
 ): DistancePerformanceAnalysis | null {
-  const estimates = targetDistances.flatMap<PerformanceEstimate>((targetDistance) => {
-    const predictedDuration = model.predict(targetDistance)
-    return predictedDuration === null
-      ? []
-      : [{
-          targetDistanceMeters: targetDistance,
-          predictedDurationSeconds: predictedDuration,
-        }]
-  })
+  const estimates = targetDistances.flatMap<PerformanceEstimate>(
+    (targetDistance) => {
+      const predictedDuration = model.predict(targetDistance)
+      return predictedDuration === null
+        ? []
+        : [
+            {
+              targetDistanceMeters: targetDistance,
+              predictedDurationSeconds: predictedDuration,
+            },
+          ]
+    },
+  )
   if (estimates.length !== targetDistances.length) {
     return null
   }
 
   return {
     status: 'ready',
+    basis: anchors.every((sample) => sample.training.isBenchmark)
+      ? 'benchmark'
+      : 'training',
     model: model.kind,
     anchorIds: anchors.map((sample) => sample.training.id),
     supportingTrainingCount,
@@ -344,17 +371,21 @@ function buildDistanceResult(
 
 const provisionalRunExponent = 1.06
 
-function fitProvisionalRunModel(
-  samples: readonly DistanceSample[],
-): { anchor: DistanceSample; model: DistanceModel; supportingTrainingCount: number } | null {
+function fitProvisionalRunModel(samples: readonly DistanceSample[]): {
+  anchor: DistanceSample
+  model: DistanceModel
+  supportingTrainingCount: number
+} | null {
   let anchor: DistanceSample | null = null
   let fastestFiveKilometers = Number.POSITIVE_INFINITY
   let supportingTrainingCount = 0
   for (const sample of samples) {
-    if (sample.distanceMeters < 5_000) continue
+    if (sample.distanceMeters < 5_000 || sample.distanceMeters > 21_100)
+      continue
     supportingTrainingCount += 1
     const predictedFiveKilometers =
-      sample.durationSeconds * (5_000 / sample.distanceMeters) ** provisionalRunExponent
+      sample.durationSeconds *
+      (5_000 / sample.distanceMeters) ** provisionalRunExponent
     if (predictedFiveKilometers < fastestFiveKilometers) {
       anchor = sample
       fastestFiveKilometers = predictedFiveKilometers
@@ -380,11 +411,13 @@ export function analyzeRun(
   trainings: readonly ActualTraining[],
   options: DistanceAnalysisOptions<RunningContext>,
 ): DistancePerformanceAnalysis | InsufficientPerformanceAnalysis {
-  const samples = eligibleDistanceSamples(
-    trainings,
-    'run',
-    options.context,
-    options.asOfLocalDate,
+  const samples = preferBenchmarks(
+    eligibleDistanceSamples(
+      trainings,
+      'run',
+      options.context,
+      options.asOfLocalDate,
+    ),
   )
   const anchors = selectDistanceAnchors(samples)
   if (hasDistanceDiversity(anchors)) {
@@ -397,9 +430,11 @@ export function analyzeRun(
       ? crossValidationError(anchors, fitPowerLaw)
       : Number.POSITIVE_INFINITY
     const model =
-      criticalSpeed && criticalSpeedError <= powerLawError
-        ? criticalSpeed
-        : powerLaw
+      Math.min(criticalSpeedError, powerLawError) > maximumModelError
+        ? null
+        : criticalSpeed && criticalSpeedError <= powerLawError
+          ? criticalSpeed
+          : powerLaw
     const result = model
       ? buildDistanceResult(model, anchors, [5_000, 10_000], samples.length)
       : null
@@ -408,12 +443,12 @@ export function analyzeRun(
 
   const provisional = fitProvisionalRunModel(samples)
   return provisional
-    ? buildDistanceResult(
+    ? (buildDistanceResult(
         provisional.model,
         [provisional.anchor],
         [5_000, 10_000],
         provisional.supportingTrainingCount,
-      ) ?? insufficient(0, 1)
+      ) ?? insufficient(0, 1))
     : insufficient(0, 1)
 }
 
@@ -433,7 +468,8 @@ function fitCss(
   twoHundred: DistanceSample,
   fourHundred: DistanceSample,
 ): DistanceModel | null {
-  const timeDifference = fourHundred.durationSeconds - twoHundred.durationSeconds
+  const timeDifference =
+    fourHundred.durationSeconds - twoHundred.durationSeconds
   if (timeDifference <= 0) {
     return null
   }
@@ -457,17 +493,15 @@ export function analyzeSwim(
   trainings: readonly ActualTraining[],
   options: DistanceAnalysisOptions<SwimmingContext>,
 ): DistancePerformanceAnalysis | InsufficientPerformanceAnalysis {
-  const samples = eligibleDistanceSamples(
-    trainings,
-    'swim',
-    options.context,
-    options.asOfLocalDate,
+  const samples = preferBenchmarks(
+    eligibleDistanceSamples(
+      trainings,
+      'swim',
+      options.context,
+      options.asOfLocalDate,
+    ),
   )
   const anchors = selectDistanceAnchors(samples)
-  if (!hasDistanceDiversity(anchors)) {
-    return insufficient(anchors.length)
-  }
-
   const twoHundred = fastestAtDistance(samples, 200)
   const fourHundred = fastestAtDistance(samples, 400)
   const css = twoHundred && fourHundred ? fitCss(twoHundred, fourHundred) : null
@@ -483,13 +517,35 @@ export function analyzeSwim(
       ),
     )
   }
-  const model = css ?? fitPowerLaw(anchors)
-  const modelAnchors = css ? cssAnchors : anchors
-  if (!model || modelAnchors.length < 3) {
-    return insufficient(anchors.length)
-  }
-  return buildDistanceResult(model, modelAnchors, [750, 1_500], samples.length) ??
+  const cssValidated =
+    css &&
+    cssAnchors.length >= 2 &&
+    (cssAnchors.every((sample) => sample.training.isBenchmark) ||
+      cssAnchors.length >= 3) &&
+    cssAnchors.every(
+      (sample) =>
+        Math.abs(
+          (css.predict(sample.distanceMeters) ?? 0) - sample.durationSeconds,
+        ) /
+          sample.durationSeconds <=
+        maximumModelError,
+    )
+  const powerLaw =
+    hasDistanceDiversity(anchors) &&
+    crossValidationError(anchors, fitPowerLaw) <= maximumModelError
+      ? fitPowerLaw(anchors)
+      : null
+  const model = cssValidated ? css : powerLaw
+  const modelAnchors = cssValidated ? cssAnchors : anchors
+  if (!model)
+    return insufficient(
+      anchors.length,
+      samples.some((sample) => sample.training.isBenchmark) ? 2 : 3,
+    )
+  return (
+    buildDistanceResult(model, modelAnchors, [750, 1_500], samples.length) ??
     insufficient(modelAnchors.length)
+  )
 }
 
 function eligiblePowerSamples(
@@ -506,7 +562,11 @@ function eligiblePowerSamples(
         asOfLocalDate,
         'power',
       ) ||
-      !isInRollingMonthWindow(training.localDate, asOfLocalDate) ||
+      !isInRollingMonthWindow(
+        training.localDate,
+        asOfLocalDate,
+        performanceWindowMonths,
+      ) ||
       training.durationSeconds === null ||
       training.durationSeconds <= 0 ||
       training.averagePowerWatts === null ||
@@ -514,11 +574,13 @@ function eligiblePowerSamples(
     ) {
       return []
     }
-    return [{
-      training,
-      durationSeconds: training.durationSeconds,
-      averagePowerWatts: training.averagePowerWatts,
-    }]
+    return [
+      {
+        training,
+        durationSeconds: training.durationSeconds,
+        averagePowerWatts: training.averagePowerWatts,
+      },
+    ]
   })
 }
 
@@ -552,11 +614,28 @@ function analyzeBikePower(
       sample.averagePowerWatts * sample.durationSeconds,
     ]),
   )
-  if (!fit || fit.slope <= 0 || fit.intercept <= 0) {
+  if (
+    !fit ||
+    fit.slope <= 0 ||
+    fit.intercept <= 0 ||
+    anchors.some(
+      (sample) =>
+        Math.abs(
+          fit.slope +
+            fit.intercept / sample.durationSeconds -
+            sample.averagePowerWatts,
+        ) /
+          sample.averagePowerWatts >
+        maximumModelError,
+    )
+  ) {
     return null
   }
   return {
     status: 'ready',
+    basis: anchors.every((sample) => sample.training.isBenchmark)
+      ? 'benchmark'
+      : 'training',
     model: 'critical-power',
     anchorIds: anchors.map((sample) => sample.training.id),
     criticalPowerWatts: fit.slope,
@@ -574,7 +653,10 @@ function analyzeBikeDistance(
     return null
   }
   const model = fitPowerLaw(anchors)
-  if (!model) {
+  if (
+    !model ||
+    crossValidationError(anchors, fitPowerLaw) > maximumModelError
+  ) {
     return null
   }
   const result = buildDistanceResult(
@@ -595,11 +677,13 @@ export function analyzeBike(
     options.context,
     options.asOfLocalDate,
   )
-  const powerAnchors = selectPowerAnchors(powerSamples)
-  const powerResult = analyzeBikePower(
-    powerAnchors,
-    options.weightKg,
+  const powerAnchors = selectPowerAnchors(
+    preferBenchmarks(powerSamples).filter(
+      (sample) =>
+        sample.durationSeconds >= 120 && sample.durationSeconds <= 1200,
+    ),
   )
+  const powerResult = analyzeBikePower(powerAnchors, options.weightKg)
   if (powerResult) {
     return powerResult
   }
@@ -610,11 +694,16 @@ export function analyzeBike(
     options.context,
     options.asOfLocalDate,
   )
-  const distanceResult = analyzeBikeDistance(distanceSamples)
-  return distanceResult ??
+  const distanceResult = analyzeBikeDistance(preferBenchmarks(distanceSamples))
+  return (
+    distanceResult ??
     insufficient(
-      Math.max(powerAnchors.length, selectDistanceAnchors(distanceSamples).length),
+      Math.max(
+        powerAnchors.length,
+        selectDistanceAnchors(distanceSamples).length,
+      ),
     )
+  )
 }
 
 export function calculateDisciplineProgressIndex(

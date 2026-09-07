@@ -87,6 +87,7 @@ function getPerformanceAnalyticsChanges(
   partial: Partial<ActualTrainingInput>,
 ) {
   const structuralFields = [
+    'isBenchmark',
     'localDate',
     'discipline',
     'context',

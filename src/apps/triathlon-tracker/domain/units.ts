@@ -40,7 +40,9 @@ export function averagePaceSeconds(
     return null
   }
 
-  return durationSeconds * averagePaceReferenceMeters(discipline) / distanceMeters
+  return (
+    (durationSeconds * averagePaceReferenceMeters(discipline)) / distanceMeters
+  )
 }
 
 export function durationSecondsFromAveragePace(
@@ -52,7 +54,7 @@ export function durationSecondsFromAveragePace(
     return null
   }
 
-  return paceSeconds * distanceMeters / averagePaceReferenceMeters(discipline)
+  return (paceSeconds * distanceMeters) / averagePaceReferenceMeters(discipline)
 }
 
 export function formatPace(paceSeconds: number | null): string {
@@ -74,4 +76,61 @@ export function parsePace(value: string): number | null {
 
   const seconds = Number(match[1]) * 60 + Number(match[2])
   return seconds > 0 ? seconds : null
+}
+
+export type TrainingMetricField = 'duration' | 'distance' | 'pace'
+export type TrainingMetricDraft = Record<TrainingMetricField, string> & {
+  inputs: [TrainingMetricField, TrainingMetricField]
+}
+
+export function updateTrainingMetrics(
+  current: TrainingMetricDraft,
+  field: TrainingMetricField,
+  value: string,
+  discipline: Discipline,
+): TrainingMetricDraft {
+  const inputs = [
+    ...current.inputs.filter((input) => input !== field),
+    field,
+  ].slice(-2) as TrainingMetricDraft['inputs']
+  const next = { ...current, [field]: value, inputs }
+  const derived = (['duration', 'distance', 'pace'] as const).find(
+    (input) => !inputs.includes(input),
+  )!
+  const duration = Number(next.duration.replace(',', '.')) * 60
+  const distance = Number(next.distance.replace(',', '.')) * 1000
+  const pace = parsePace(next.pace)
+  const positive = (number: number) => Number.isFinite(number) && number > 0
+  if (derived === 'pace') {
+    next.pace =
+      positive(duration) && positive(distance)
+        ? formatPace(averagePaceSeconds(duration, distance, discipline))
+        : ''
+  } else if (derived === 'duration') {
+    next.duration =
+      pace && positive(distance)
+        ? String(
+            Number(
+              (
+                (pace * distance) /
+                averagePaceReferenceMeters(discipline) /
+                60
+              ).toFixed(6),
+            ),
+          )
+        : ''
+  } else {
+    next.distance =
+      pace && positive(duration)
+        ? String(
+            Number(
+              (
+                ((duration / pace) * averagePaceReferenceMeters(discipline)) /
+                1000
+              ).toFixed(6),
+            ),
+          )
+        : ''
+  }
+  return next
 }

@@ -1,6 +1,6 @@
 # Triathlon-Tracker
 
-**Stand:** 28. August 2026
+**Stand:** 6. September 2026
 
 **Route:** `/apps/triathlon-tracker`
 **Status:** Live
@@ -56,20 +56,21 @@ Eine absolvierte Einheit benötigt Datum, Disziplin und mindestens Dauer oder Di
 
 Intervalle werden ausschließlich über Eingabefelder aufgebaut. Es gibt keinen Textparser. Einheiten lassen sich nachträglich bearbeiten und löschen.
 
-Sobald eine positive Distanz vorliegt, bedingen sich Dauer und Durchschnittspace gegenseitig: Eine Eingabe oder Änderung in einem der beiden Felder berechnet das andere. Gespeichert werden weiterhin Dauer und Distanz; die Pace bleibt ein daraus abgeleiteter Wert.
+Je zwei positive Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe. Maßgeblich sind die beiden zuletzt manuell bearbeiteten Felder; unvollständige Eingaben leeren die daraus berechnete Größe. Gespeichert werden weiterhin Dauer und Distanz; die Pace bleibt ein daraus abgeleiteter Wert.
 
-### Kalender und Verlauf
+### Kalender, Tagebuch und Statistik
 
-- Monats- und Wochenansicht mit Montag als erstem Wochentag.
-- Mehrere geplante und absolvierte Einheiten pro Tag.
-- Desktop-Monatsansicht als gleichmäßig unterteiltes Sieben-Spalten-Grid mit gleich hohen Tagen und internem Scrollen bei mehr als drei Einträgen.
-- Die aktuelle Kalenderwoche ist in der Desktop-Monatsansicht über alle sieben Tage zusammenhängend dezent umrandet.
-- Auf Tablet und Mobilgeräten zeigt die Monatsansicht ein kompaktes Datumsgitter mit einer Tagesagenda für das gewählte Datum; die Wochenansicht erscheint als kurze vertikale Tagesagenda.
-- Neue Planungen entstehen über eine gestrichelte Karte in der Größe eines Trainingseintrags im jeweiligen Tag.
-- Plan und Ist unterscheiden sich nicht nur durch Farbe, sondern zusätzlich durch Füllung, Rand, Icon und Textlabel.
-- Die Disziplinfarben für Schwimmen, Radfahren und Laufen bleiben in Kalender, Kennzahlen, Leistungsdarstellung, Diagrammen und Trainingsliste konsistent.
-- Keine Filter und kein Drag-and-drop.
-- Kompakte Liste der letzten absolvierten Einheiten mit Bearbeiten und Löschen.
+- Drei Tabs nach dem Navigationsmuster der Turnier-App trennen Trainingsplan, absolvierte Trainings und Statistik.
+- Der Kalender zeigt ausschließlich geplante Einheiten; absolvierte Einheiten erscheinen dort nicht.
+- Monats- und Wochenansicht beginnen montags. Desktop: sieben Tagesspalten mit mehreren Trainingskarten und einer zusätzlichen Wochensumme für Dauer und Anzahl sowie Dauer je Disziplin.
+- Mobil und auf Tablets: kompaktes Monatsgitter mit ausgewählter Tagesagenda; die Wochenansicht zeigt sieben Tage untereinander.
+- Der heutige Tag wird markiert. Navigation über Heute, Vor/Zurück und eine direkte Datumsauswahl.
+- Tagesaktionen öffnen den Planeditor. Eine einzelne Einheit lässt sich als bearbeitbare Kopie übernehmen; ganze Wochen werden weiterhin nach Vorschau kopiert.
+- Drag-and-drop verschiebt Planungen zwischen sichtbaren Tagen. Das Datumsfeld im Editor erlaubt dieselbe Änderung auf Touch-Geräten und per Tastatur.
+- Das Tagebuch zeigt sämtliche absolvierten Einheiten in einer horizontal scrollbar zugänglichen Tabelle: Datum, Disziplin, Dauer, Distanz, Pace, Puls, Leistung, RPE, Kontext und Aktionen. Intervalleinheiten tragen eine Angabe zur Zahl ihrer Abschnitte.
+- Filter für Disziplin und Datumsbereich, umkehrbare Datumssortierung und Seiten zu 20 Einträgen erschließen auch ältere Datensätze.
+- Die Erfassungsmaske gruppiert Training, Messwerte und optionale Detailangaben einschließlich Intervallen. Nach dem Speichern öffnet sich das Tagebuch. Bearbeiten und Löschen bleiben möglich.
+- Disziplinfarben bleiben über Kalender, Tagebuch und Statistik konsistent. Leistungsmodelle und bestehende Speicherpfade bleiben erhalten.
 
 ### Wochenstatistik
 
@@ -78,13 +79,15 @@ Für die aktuelle Woche zeigt die App:
 - gesamte Trainingszeit,
 - Zeit, Distanz und Anzahl je Disziplin.
 
-Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen verwenden disziplinspezifische Farben aus dem Toolbox-Farbraum. Ein Verlauf visualisiert standardmäßig die Wochendistanz und umschaltbar die Wochenzeit je Disziplin; `Distanz pro Woche` steht dabei links von `Zeit pro Woche`. Dieses Wochenvolumen besitzt keine zusätzliche Tabellenansicht. Auf Bildschirmbreiten unter 1280 Pixeln wird je Zeitpunkt nur das Leistungsdiagramm einer Disziplin angezeigt. Eine Planerfüllungsquote oder Belastungsmetrik wird nicht berechnet.
+Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen verwenden disziplinspezifische Farben aus dem Toolbox-Farbraum. Ein Verlauf visualisiert standardmäßig die Wochendistanz und umschaltbar die Wochenzeit je Disziplin; `Distanz pro Woche` steht dabei links von `Zeit pro Woche`. Dieses Wochenvolumen besitzt keine zusätzliche Tabellenansicht. Das Wochenvolumen und der Fortschrittsindex stehen auf großen Bildschirmen nebeneinander. Darunter wählt ein Disziplin-Tab ein breites Leistungsdiagramm. Zeitachsen bilden tatsächliche Datumsabstände ab; Laufen und Schwimmen zeigen Pace statt Geschwindigkeit. Eine Planerfüllungsquote oder Belastungsmetrik wird nicht berechnet.
 
 ## Leistungsmodelle
 
 ### Gemeinsame Regeln
 
-- Die aktuelle Hochrechnung verwendet höchstens die letzten zwölf Monate.
+- Die aktuelle Hochrechnung verwendet höchstens die letzten drei Monate.
+- Als maximaler Leistungstest oder Wettkampf markierte Einheiten werden bevorzugt. Ohne solche Einheiten heißen die Ergebnisse Trainingsäquivalente und versprechen keine Wettkampfzeit. Die Karten nennen Datenbasis und Modell.
+- Das Dreimonatsfenster und die Fehlergrenze von 10 % sind konservative Produktregeln, keine statistischen Konfidenzintervalle.
 - Modelle verwenden automatisch die stärksten vergleichbaren kontinuierlichen Einheiten als obere Leistungshülle.
 - Strukturierte Intervalleinheiten erscheinen in den Trainingsdaten, werden aber nie als Leistungsanker verwendet.
 - Für ein individuell angepasstes Modell sind mindestens drei geeignete Einheiten in ausreichend unterschiedlichen Dauer- beziehungsweise Distanzbereichen nötig. Ohne eine disziplinspezifische Ersatzregel zeigt die Oberfläche `Noch nicht genug Daten.` sowie die Zahl der vorhandenen und benötigten geeigneten Trainings.
@@ -97,21 +100,21 @@ Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen v
 ### Laufen
 
 - Zielzeiten: 5 km und 10 km.
-- Bei mindestens drei ausreichend unterschiedlichen Ankern sind ein Critical-Speed-Modell und ein individuell angepasstes Potenzgesetz die Kandidaten; gewählt wird das gültige Modell mit dem kleineren Leave-one-out-Fehler.
-- Fehlt diese Streuung, reicht ein kontinuierlicher Lauf über mindestens 5 km für eine Hochrechnung mit dem festen Riegel-Exponent 1,06. Unter mehreren passenden Läufen liefert die stärkste auf 5 km normierte Leistung den Modellanker; alle passenden Läufe werden als bestätigende Datenbasis ausgewiesen.
+- Bei mindestens drei ausreichend unterschiedlichen Ankern sind ein Critical-Speed-Modell und ein individuell angepasstes Potenzgesetz die Kandidaten; gewählt wird das gültige Modell mit dem kleineren Leave-one-out-Fehler, sofern dieser höchstens 10 % beträgt.
+- Fehlt diese Streuung, reicht ein kontinuierlicher Lauf zwischen 5 km und 21,1 km für eine Hochrechnung mit dem festen Riegel-Exponent 1,06. Unter mehreren passenden Läufen liefert die stärkste auf 5 km normierte Leistung den Modellanker; alle passenden Läufe werden als bestätigende Datenbasis ausgewiesen.
 - Die durchschnittliche Herzfrequenz bleibt als Trainingskontext erhalten, korrigiert die Hochrechnung aber nicht. Ohne Maximalpuls oder individuelle Zonen lässt sich aus einem niedrigeren oder höheren Durchschnittspuls keine belastbare Wettkampfleistung ableiten.
 
 ### Schwimmen
 
 - Zielzeiten: 750 m und 1.500 m.
-- Bevorzugt wird Critical Swim Speed aus passenden starken 200-m- und 400-m-Leistungen mit mindestens einer weiteren Stützeinheit.
-- Falls CSS nicht anwendbar ist, wird bei mindestens drei unterschiedlichen Distanzen ein individuelles Potenzgesetz verwendet.
+- Bevorzugt wird Critical Swim Speed aus passenden starken 200-m- und 400-m-Leistungen aus zwei markierten maximalen Tests. Ohne Testmarkierung ist mindestens eine weitere Stützeinheit erforderlich. Alle Stützwerte müssen innerhalb von 10 % zur CSS-Schätzung liegen.
+- Falls CSS nicht anwendbar ist, wird bei mindestens drei unterschiedlichen Distanzen ein individuelles Potenzgesetz mit höchstens 10 % Leave-one-out-Fehler verwendet.
 
 ### Radfahren
 
-- Bei mindestens drei geeigneten Leistungs-Dauer-Ankern wird Critical Power mit W′ berechnet.
+- Bei mindestens drei geeigneten Leistungs-Dauer-Ankern zwischen 2 und 20 Minuten wird Critical Power mit W′ berechnet. Stützwerte dürfen höchstens 10 % vom Modell abweichen.
 - Angezeigt wird Critical Power in Watt und, falls Gewicht gesetzt ist, in W/kg. Critical Power wird nicht in eine Distanzzeit umgerechnet.
-- Ohne ausreichende Leistungsdaten werden 20-km- und 40-km-Zeiten aus vergleichbaren Distanz-Zeit-Ankern per Potenzgesetz geschätzt; die 20-km-Zeit ist die Hauptkennzahl.
+- Ohne ausreichende Leistungsdaten werden 20-km- und 40-km-Zeiten aus vergleichbaren Distanz-Zeit-Ankern per Potenzgesetz mit höchstens 10 % Leave-one-out-Fehler geschätzt; die 20-km-Zeit ist die Hauptkennzahl.
 
 ### Fortschrittsanzeige
 
@@ -123,16 +126,16 @@ Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen v
 
 ## Seitenaufbau
 
-Die einzelne Tracker-Seite verwendet vorhandene Toolbox-Komponenten und ordnet die Inhalte so an:
-
-1. kompakte Zusammenfassung dieser Woche und der drei Disziplinen,
-2. Hauptaktion `Training eintragen`,
-3. aktuelle Hochrechnungen in der Reihenfolge Schwimmen, Radfahren und Laufen mit Kontextfiltern und Gewicht; die Karten wiederholen den aktiven Kontext nicht,
-4. Monats- beziehungsweise Wochenkalender mit tageweiser Planaktion,
-5. Leistungs- und Wochenvolumendiagramme,
-6. letzte absolvierte Einheiten als mobile Liste beziehungsweise Desktop-Tabelle.
+Die Tracker-Seite besitzt die Tabs Kalender, Tagebuch und Statistik sowie die Hauptaktion `Training eintragen`. Der Wochenkalender zeigt ab 768 Pixeln alle sieben Tage nebeneinander; auf Tablet-Breiten steht die Wochensumme darunter. Die Statistik bündelt Wochenkennzahlen, Hochrechnungen, Modellhinweise und Diagramme.
 
 Formulare öffnen in vorhandenen Dialogen. Die Trainingseingabe zeigt zuerst Datum, Disziplin, Kontext, Dauer, Distanz, Pace und durchschnittliche Herzfrequenz. Leistung, RPE und Intervalle liegen im aufklappbaren Bereich `Weitere Angaben`. Die Seite funktioniert kompakt auf Desktop, Tablet und Mobilgeräten, unterstützt Tastatur und Dark Mode und erzeugt keine horizontale Seiten-Scrollleiste.
+
+### Wissenschaftliche Grundlage
+
+- [Vickers & Vertosick (2016): Laufzeitprognosen](https://pubmed.ncbi.nlm.nih.gov/27570626/): Riegel als begrenzte Distanzübertragung. 36 Minuten über 6 km ergeben mit Exponent 1,06 rund 29:40 über 5 km; eine zusätzliche Leistungsreserve eines lockeren Trainings ist daraus nicht ableitbar.
+- [Systematischer Review zu Critical Speed (2025)](https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2025.1520914/full): maximale Tests und vergleichbare Bedingungen sind wesentlich.
+- [Stroke-Specific Swimming Critical Speed Testing (2024)](https://pubmed.ncbi.nlm.nih.gov/38380294/): 200-/400-m-Testverfahren; längere Zielzeiten bleiben Extrapolationen.
+- [Power-duration relationship (2021)](https://pubmed.ncbi.nlm.nih.gov/34708276/): Critical Power und W′ statt einer universellen Watt-zu-Geschwindigkeit-Umrechnung. Distanzbasierte Radschätzungen setzen vergleichbare Strecke, Wind und Fahrbedingungen voraus.
 
 ## Technische Einordnung
 

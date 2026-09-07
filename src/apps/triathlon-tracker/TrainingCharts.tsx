@@ -7,12 +7,13 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
+  ReferenceLine,
   Scatter,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { disciplineColors } from '@/apps/triathlon-tracker/presentation'
@@ -116,7 +117,11 @@ function RangePicker({
   const options: ChartRange[] = ['4w', '12w', '6m', '1y', 'all']
 
   return (
-    <div aria-label={t('triathlon.charts.range')} className="flex flex-wrap rounded-md border bg-background p-0.5" role="group">
+    <div
+      aria-label={t('triathlon.charts.range')}
+      className="flex flex-wrap rounded-md border bg-background p-0.5"
+      role="group"
+    >
       {options.map((option) => (
         <Button
           aria-pressed={range === option}
@@ -134,21 +139,32 @@ function RangePicker({
 }
 
 function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
-  const { formatNumber, t } = useI18n()
+  const { formatNumber, formatDateTime, t } = useI18n()
   const disciplineColor = disciplineColors[plot.id]
   const visiblePoints = plot.points.filter(
     (point) => point.primaryValue !== null || point.secondaryValue !== null,
   )
+  const isPace = plot.id !== 'bike'
+  const toAxis = (value: number | null) =>
+    value === null
+      ? null
+      : isPace
+        ? (plot.id === 'swim' ? 360 : 3600) / value
+        : value
   const chartPoints = [
     ...visiblePoints.map((point) => ({
       ...point,
+      timestamp: Date.parse(point.localDate + 'T12:00:00Z'),
+      primaryValue: toAxis(point.primaryValue),
+      secondaryValue: toAxis(point.secondaryValue),
       actualValue: null as number | null,
       pointKind: 'model' as const,
       rowKey: `model-${point.localDate}`,
     })),
     ...plot.activityPoints.map((point) => ({
       ...point,
-      actualValue: point.value,
+      timestamp: Date.parse(point.localDate + 'T12:00:00Z'),
+      actualValue: toAxis(point.value),
       pointKind: 'actual' as const,
       primaryValue: null,
       secondaryValue: null,
@@ -156,38 +172,75 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
       secondaryDisplayValue: null,
       rowKey: `actual-${point.activityId}-${point.localDate}`,
     })),
-  ].sort((left, right) =>
-    left.localDate.localeCompare(right.localDate) ||
-    left.pointKind.localeCompare(right.pointKind),
+  ].sort(
+    (left, right) =>
+      left.localDate.localeCompare(right.localDate) ||
+      left.pointKind.localeCompare(right.pointKind),
   )
   const valueFormatter = (value: number) =>
-    plot.unit === 'watts'
-      ? `${formatNumber(value, { maximumFractionDigits: 0 })} W`
-      : `${formatNumber(value, { maximumFractionDigits: 1 })} km/h`
+    isPace
+      ? `${formatClock(value)} min/${plot.id === 'swim' ? '100 m' : 'km'}`
+      : plot.unit === 'watts'
+        ? `${formatNumber(value, { maximumFractionDigits: 0 })} W`
+        : `${formatNumber(value, { maximumFractionDigits: 1 })} km/h`
   const modelValueFormatter = (value: number) =>
     plot.modelUnit === 'seconds'
       ? formatClock(value)
       : `${formatNumber(value, { maximumFractionDigits: 0 })} W`
 
   return (
-    <Card style={{ boxShadow: `inset 0 3px 0 ${disciplineColor}` }}>
+    <Card className="shadow-none" data-performance-plot={plot.id}>
       <CardHeader className="p-4 pb-2">
         <CardTitle>{plot.title}</CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
         {chartPoints.length === 0 ? (
-          <EmptyState className="my-2">{t('triathlon.performance.notEnough')}</EmptyState>
+          <EmptyState className="my-2">
+            {t('triathlon.performance.notEnough')}
+          </EmptyState>
         ) : (
           <>
-            <div className="h-56 min-w-0 sm:h-64">
+            <div className="h-72 min-w-0 sm:h-80">
               <ResponsiveContainer height="100%" width="100%">
-                <ComposedChart data={chartPoints} margin={{ bottom: 4, left: 4, right: 12, top: 12 }}>
-                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" minTickGap={28} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
+                <ComposedChart
+                  data={chartPoints}
+                  margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
+                >
+                  <CartesianGrid
+                    stroke="var(--border)"
+                    strokeOpacity={0.6}
+                    strokeDasharray="2 6"
+                    vertical={false}
+                  />
+                  <XAxis
+                    type="number"
+                    dataKey="timestamp"
+                    domain={['dataMin - 43200000', 'dataMax + 43200000']}
+                    tickCount={5}
+                    minTickGap={40}
+                    tickFormatter={(value) =>
+                      formatDateTime(new Date(Number(value)), {
+                        day: '2-digit',
+                        month: 'short',
+                      })
+                    }
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={12}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                  />
                   <YAxis
                     domain={['auto', 'auto']}
+                    reversed={isPace}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={8}
                     tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                    tickFormatter={(value: number) => valueFormatter(value)}
+                    tickFormatter={(value: number) =>
+                      isPace
+                        ? formatClock(value)
+                        : formatNumber(value, { maximumFractionDigits: 0 })
+                    }
                     width={58}
                   />
                   <Tooltip
@@ -196,18 +249,27 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                       valueFormatter(Number(value)),
                       String(name),
                     ]}
-                    labelFormatter={(_, payload) => payload[0]?.payload.localDate ?? ''}
+                    labelFormatter={(_, payload) =>
+                      payload[0]?.payload.localDate ?? ''
+                    }
                     itemStyle={tooltipItemStyle}
                   />
-                  <Legend />
+                  <Legend
+                    verticalAlign="top"
+                    align="left"
+                    iconSize={16}
+                    height={36}
+                    wrapperStyle={{ fontSize: 12 }}
+                  />
                   <Line
                     connectNulls
                     dataKey="primaryValue"
-                    dot={{ r: 3 }}
+                    dot={{ r: 2.5, fill: 'var(--card)', strokeWidth: 2 }}
                     name={plot.primaryLabel}
                     stroke={disciplineColor}
-                    strokeWidth={2}
-                    type="monotone"
+                    strokeWidth={2.5}
+                    isAnimationActive={false}
+                    type="linear"
                   />
                   {plot.secondaryLabel && (
                     <Line
@@ -217,28 +279,34 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                       name={plot.secondaryLabel}
                       stroke={disciplineColor}
                       strokeDasharray="5 4"
-                      strokeOpacity={0.55}
+                      strokeOpacity={0.8}
                       strokeWidth={2}
-                      type="monotone"
+                      isAnimationActive={false}
+                      type="linear"
                     />
                   )}
                   <Scatter
                     dataKey="actualValue"
+                    isAnimationActive={false}
                     fill={disciplineColor}
-                    legendType="none"
+                    legendType="circle"
                     name={plot.activityLabel}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
             <details className="mt-3 rounded-md border bg-background p-3">
-              <summary className="type-action cursor-pointer">{t('triathlon.charts.table')}</summary>
+              <summary className="type-action cursor-pointer">
+                {t('triathlon.charts.table')}
+              </summary>
               <Table containerClassName="mt-3">
                 <TableHeader>
                   <TableHead>{t('triathlon.form.date')}</TableHead>
                   <TableHead>{t('triathlon.charts.kind')}</TableHead>
                   <TableHead>{plot.primaryLabel}</TableHead>
-                  {plot.secondaryLabel && <TableHead>{plot.secondaryLabel}</TableHead>}
+                  {plot.secondaryLabel && (
+                    <TableHead>{plot.secondaryLabel}</TableHead>
+                  )}
                   <TableHead>{plot.activityLabel}</TableHead>
                 </TableHeader>
                 <TableBody>
@@ -280,101 +348,160 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
 }
 
 function hasPerformanceData(plot: PerformancePlot) {
-  return plot.activityPoints.length > 0 || plot.points.some(
-    (point) => point.primaryValue !== null || point.secondaryValue !== null,
+  return (
+    plot.activityPoints.length > 0 ||
+    plot.points.some(
+      (point) => point.primaryValue !== null || point.secondaryValue !== null,
+    )
   )
-}
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia(query).matches
-      : false,
-  )
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return
-    const mediaQuery = window.matchMedia(query)
-    const handleChange = (event: MediaQueryListEvent) => setMatches(event.matches)
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [query])
-
-  return matches
 }
 
 function PerformancePlots({ plots }: { plots: PerformancePlot[] }) {
-  const { t } = useI18n()
-  const showAllPlots = useMediaQuery('(min-width: 1280px)')
-  if (!plots.some(hasPerformanceData)) {
-    return (
-      <Card>
-        <CardContent className="p-4">
-          <EmptyState>{t('triathlon.performance.notEnough')}</EmptyState>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!showAllPlots) {
-    return (
-      <Tabs defaultValue={plots.find(hasPerformanceData)?.id ?? plots[0]?.id}>
-        <TabsList className="grid w-full grid-cols-3">
-          {plots.map((plot) => (
-            <TabsTrigger key={plot.id} value={plot.id}>{plot.title}</TabsTrigger>
-          ))}
-        </TabsList>
-        {plots.map((plot) => (
-          <TabsContent key={plot.id} value={plot.id}>
-            <PerformancePlotCard plot={plot} />
-          </TabsContent>
-        ))}
-      </Tabs>
-    )
-  }
-
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {plots.map((plot) => <PerformancePlotCard key={plot.id} plot={plot} />)}
-    </div>
+    <Tabs
+      defaultValue={plots.find(hasPerformanceData)?.id ?? plots[0]?.id}
+      className="gap-3"
+    >
+      <TabsList className="grid h-auto w-full grid-cols-3 sm:max-w-md">
+        {plots.map((plot) => (
+          <TabsTrigger className="py-2" key={plot.id} value={plot.id}>
+            {plot.title}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      {plots.map((plot) => (
+        <TabsContent key={plot.id} value={plot.id}>
+          <PerformancePlotCard plot={plot} />
+        </TabsContent>
+      ))}
+    </Tabs>
   )
 }
 
 function hasProgressData(points: ProgressChartPoint[]) {
-  return points.some((point) => point.swim !== null || point.bike !== null || point.run !== null)
+  return points.some(
+    (point) => point.swim !== null || point.bike !== null || point.run !== null,
+  )
 }
 
 function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
-  const { formatNumber, t } = useI18n()
+  const { formatNumber, formatDateTime, t } = useI18n()
   return (
     <Card>
-      <CardHeader className="p-4 pb-2"><CardTitle>{t('triathlon.charts.progress')}</CardTitle></CardHeader>
+      <CardHeader className="p-4 pb-2">
+        <CardTitle>{t('triathlon.charts.progress')}</CardTitle>
+      </CardHeader>
       <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
         <div className="h-56 min-w-0 sm:h-72">
           <ResponsiveContainer height="100%" width="100%">
-            <LineChart data={points} margin={{ bottom: 4, left: 4, right: 12, top: 12 }}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" minTickGap={28} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
-              <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} width={44} />
+            <LineChart
+              data={points.map((point) => ({
+                ...point,
+                timestamp: Date.parse(point.localDate + 'T12:00:00Z'),
+              }))}
+              margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
+            >
+              <CartesianGrid
+                stroke="var(--border)"
+                strokeOpacity={0.6}
+                strokeDasharray="2 6"
+                vertical={false}
+              />
+              <XAxis
+                type="number"
+                dataKey="timestamp"
+                domain={['dataMin - 43200000', 'dataMax + 43200000']}
+                tickCount={4}
+                minTickGap={32}
+                tickFormatter={(value) =>
+                  formatDateTime(new Date(Number(value)), {
+                    day: '2-digit',
+                    month: 'short',
+                  })
+                }
+                axisLine={false}
+                tickLine={false}
+                tickMargin={10}
+                tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                width={44}
+              />
+              <ReferenceLine
+                y={100}
+                stroke="var(--muted-foreground)"
+                strokeDasharray="4 4"
+              />
               <Tooltip
                 contentStyle={tooltipContentStyle}
                 formatter={(value, name) => [
                   formatNumber(Number(value), { maximumFractionDigits: 1 }),
-                  name === 'overall' ? t('triathlon.charts.overall') : t(disciplineKey(name)),
+                  name === 'overall'
+                    ? t('triathlon.charts.overall')
+                    : t(disciplineKey(name)),
                 ]}
-                labelFormatter={(_, payload) => payload[0]?.payload.localDate ?? ''}
+                labelFormatter={(_, payload) =>
+                  payload[0]?.payload.localDate ?? ''
+                }
                 itemStyle={tooltipItemStyle}
               />
-              <Legend formatter={(value) => value === 'overall' ? t('triathlon.charts.overall') : t(disciplineKey(value))} />
-              <Line connectNulls={false} dataKey="swim" dot={false} stroke={disciplineColors.swim} strokeWidth={2} />
-              <Line connectNulls={false} dataKey="bike" dot={false} stroke={disciplineColors.bike} strokeWidth={2} />
-              <Line connectNulls={false} dataKey="run" dot={false} stroke={disciplineColors.run} strokeWidth={2} />
-              <Line connectNulls={false} dataKey="overall" dot={false} stroke="var(--foreground)" strokeDasharray="5 4" strokeWidth={2} />
+              <Legend
+                verticalAlign="top"
+                align="left"
+                iconType="circle"
+                iconSize={8}
+                height={36}
+                wrapperStyle={{ fontSize: 12 }}
+                formatter={(value) =>
+                  value === 'overall'
+                    ? t('triathlon.charts.overall')
+                    : t(disciplineKey(value))
+                }
+              />
+              <Line
+                connectNulls={false}
+                dataKey="swim"
+                dot={{ r: 2 }}
+                isAnimationActive={false}
+                stroke={disciplineColors.swim}
+                strokeWidth={2}
+              />
+              <Line
+                connectNulls={false}
+                dataKey="bike"
+                dot={{ r: 2 }}
+                isAnimationActive={false}
+                stroke={disciplineColors.bike}
+                strokeWidth={2}
+              />
+              <Line
+                connectNulls={false}
+                dataKey="run"
+                dot={{ r: 2 }}
+                isAnimationActive={false}
+                stroke={disciplineColors.run}
+                strokeWidth={2}
+              />
+              <Line
+                connectNulls={false}
+                dataKey="overall"
+                dot={{ r: 2 }}
+                isAnimationActive={false}
+                stroke="var(--foreground)"
+                strokeDasharray="5 4"
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
         <details className="mt-3 rounded-md border bg-background p-3">
-          <summary className="type-action cursor-pointer">{t('triathlon.charts.table')}</summary>
+          <summary className="type-action cursor-pointer">
+            {t('triathlon.charts.table')}
+          </summary>
           <Table containerClassName="mt-3">
             <TableHeader>
               <TableHead>{t('triathlon.form.date')}</TableHead>
@@ -387,9 +514,15 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
               {points.map((point) => (
                 <TableRow key={point.localDate}>
                   <TableCell>{point.localDate}</TableCell>
-                  {[point.swim, point.bike, point.run, point.overall].map((value, index) => (
-                    <TableCell key={index}>{value === null ? '–' : formatNumber(value, { maximumFractionDigits: 1 })}</TableCell>
-                  ))}
+                  {[point.swim, point.bike, point.run, point.overall].map(
+                    (value, index) => (
+                      <TableCell key={index}>
+                        {value === null
+                          ? '–'
+                          : formatNumber(value, { maximumFractionDigits: 1 })}
+                      </TableCell>
+                    ),
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -402,31 +535,36 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
 
 function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   const { formatNumber, t } = useI18n()
-  const [volumeKind, setVolumeKind] = useState<'duration' | 'distance'>('distance')
-  const hasVolume = points.some((point) =>
-    point.swimHours > 0 ||
-    point.bikeHours > 0 ||
-    point.runHours > 0 ||
-    point.swimKilometers > 0 ||
-    point.bikeKilometers > 0 ||
-    point.runKilometers > 0,
+  const [volumeKind, setVolumeKind] = useState<'duration' | 'distance'>(
+    'distance',
+  )
+  const hasVolume = points.some(
+    (point) =>
+      point.swimHours > 0 ||
+      point.bikeHours > 0 ||
+      point.runHours > 0 ||
+      point.swimKilometers > 0 ||
+      point.bikeKilometers > 0 ||
+      point.runKilometers > 0,
   )
   const isDuration = volumeKind === 'duration'
   const unit = isDuration ? 'h' : 'km'
   const series = isDuration
-    ? [
+    ? ([
         { dataKey: 'swimHours', discipline: 'swim' },
         { dataKey: 'bikeHours', discipline: 'bike' },
         { dataKey: 'runHours', discipline: 'run' },
-      ] as const
-    : [
+      ] as const)
+    : ([
         { dataKey: 'swimKilometers', discipline: 'swim' },
         { dataKey: 'bikeKilometers', discipline: 'bike' },
         { dataKey: 'runKilometers', discipline: 'run' },
-      ] as const
+      ] as const)
   return (
     <Card data-weekly-volume>
-      <CardHeader className="p-4 pb-2"><CardTitle>{t('triathlon.charts.weeklyVolume')}</CardTitle></CardHeader>
+      <CardHeader className="p-4 pb-2">
+        <CardTitle>{t('triathlon.charts.weeklyVolume')}</CardTitle>
+      </CardHeader>
       <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
         {!hasVolume ? (
           <EmptyState>{t('triathlon.charts.noVolume')}</EmptyState>
@@ -452,9 +590,22 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
             </div>
             <div className="h-56 min-w-0 sm:h-72">
               <ResponsiveContainer height="100%" width="100%">
-                <BarChart data={points} margin={{ bottom: 4, left: 4, right: 12, top: 12 }}>
-                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" minTickGap={28} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} />
+                <BarChart
+                  data={points}
+                  barCategoryGap="25%"
+                  margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
+                >
+                  <CartesianGrid
+                    stroke="var(--border)"
+                    strokeOpacity={0.6}
+                    strokeDasharray="2 6"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="label"
+                    minTickGap={28}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                  />
                   <YAxis
                     tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
                     unit={` ${unit}`}
@@ -466,17 +617,31 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                       `${formatNumber(Number(value), { maximumFractionDigits: 1 })} ${unit}`,
                       t(disciplineKey(name)),
                     ]}
-                    labelFormatter={(_, payload) => payload[0]?.payload.weekStart ?? ''}
+                    labelFormatter={(_, payload) =>
+                      payload[0]?.payload.weekStart ?? ''
+                    }
                     itemStyle={tooltipItemStyle}
                   />
-                  <Legend formatter={(value) => t(disciplineKey(value))} />
+                  <Legend
+                    verticalAlign="top"
+                    align="left"
+                    iconType="circle"
+                    iconSize={8}
+                    height={36}
+                    wrapperStyle={{ fontSize: 12 }}
+                    formatter={(value) => t(disciplineKey(value))}
+                  />
                   {series.map(({ dataKey, discipline }, index) => (
                     <Bar
                       dataKey={dataKey}
+                      maxBarSize={38}
+                      isAnimationActive={false}
                       fill={disciplineColors[discipline]}
                       key={dataKey}
                       name={dataKey}
-                      radius={index === series.length - 1 ? [3, 3, 0, 0] : undefined}
+                      radius={
+                        index === series.length - 1 ? [3, 3, 0, 0] : undefined
+                      }
                       stackId={volumeKind}
                     />
                   ))}
@@ -506,12 +671,18 @@ export default function TrainingCharts({
   const hasProgress = hasProgressData(progressPoints)
   return (
     <section className="grid gap-4">
-      <div className="flex justify-end"><RangePicker range={range} onRangeChange={onRangeChange} /></div>
-      <PerformancePlots plots={performancePlots} />
-      <div className={hasProgress ? 'grid gap-4 xl:grid-cols-2' : 'grid gap-4'}>
-        {hasProgress && <ProgressCard points={progressPoints} />}
-        <WeeklyVolumeCard points={weeklyVolume} />
+      <div className="flex justify-end">
+        <RangePicker range={range} onRangeChange={onRangeChange} />
       </div>
+      <div
+        className={
+          hasProgress ? 'grid gap-4 xl:grid-cols-[1.3fr_1fr]' : 'grid gap-4'
+        }
+      >
+        <WeeklyVolumeCard points={weeklyVolume} />
+        {hasProgress && <ProgressCard points={progressPoints} />}
+      </div>
+      <PerformancePlots plots={performancePlots} />
     </section>
   )
 }

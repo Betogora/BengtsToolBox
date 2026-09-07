@@ -43,6 +43,7 @@ export type IntervalSegment = {
 }
 
 export type ActualTraining = {
+  isBenchmark?: boolean
   id: string
   position: number
   analyticsAvailableFromLocalDate?: string
@@ -99,6 +100,7 @@ export type InsufficientPerformanceAnalysis = {
 }
 
 export type DistancePerformanceAnalysis = {
+  basis: 'benchmark' | 'training'
   status: 'ready'
   model: 'critical-speed' | 'critical-swim-speed' | 'power-law'
   anchorIds: string[]
@@ -110,6 +112,7 @@ export type DistancePerformanceAnalysis = {
 }
 
 export type BikePowerAnalysis = {
+  basis: 'benchmark' | 'training'
   status: 'ready'
   model: 'critical-power'
   anchorIds: string[]

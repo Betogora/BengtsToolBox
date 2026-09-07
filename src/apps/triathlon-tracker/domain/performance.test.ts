@@ -50,11 +50,17 @@ describe('running performance', () => {
       performance('future-6', 'run', 'road', 900, 10_000),
       {
         ...performance('interval-7', 'run', 'road', 200, 5_000),
-        intervals: [{
-          id: 'work', position: 1, kind: 'work', durationSeconds: 200,
-          distanceMeters: 5_000, averageHeartRateBpm: null,
-          averagePowerWatts: null,
-        }],
+        intervals: [
+          {
+            id: 'work',
+            position: 1,
+            kind: 'work',
+            durationSeconds: 200,
+            distanceMeters: 5_000,
+            averageHeartRateBpm: null,
+            averagePowerWatts: null,
+          },
+        ],
       },
     ]
     trainings[3].localDate = '2025-08-21'
@@ -76,11 +82,14 @@ describe('running performance', () => {
   })
 
   it('does not mix contexts or project long runs from short-only data', () => {
-    const result = analyzeRun([
-      performance('run-1', 'run', 'road', 300, 1_400),
-      performance('run-2', 'run', 'road', 600, 2_600),
-      performance('run-3', 'run', 'track', 1_200, 5_000),
-    ], { context: 'road', asOfLocalDate: '2026-08-22' })
+    const result = analyzeRun(
+      [
+        performance('run-1', 'run', 'road', 300, 1_400),
+        performance('run-2', 'run', 'road', 600, 2_600),
+        performance('run-3', 'run', 'track', 1_200, 5_000),
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
 
     expect(result).toEqual({
       status: 'insufficient-data',
@@ -100,11 +109,14 @@ describe('running performance', () => {
       averageHeartRateBpm: 145,
       context: null,
     }
-    const result = analyzeRun([
-      fastest,
-      confirmation,
-      performance('run-3', 'run', 'track', 2_500, 10_000),
-    ], { context: 'road', asOfLocalDate: '2026-08-22' })
+    const result = analyzeRun(
+      [
+        fastest,
+        confirmation,
+        performance('run-3', 'run', 'track', 2_500, 10_000),
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
 
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
@@ -126,11 +138,14 @@ describe('running performance', () => {
     backdated.localDate = '2026-08-10'
     backdated.analyticsAvailableFromLocalDate = '2026-08-23'
 
-    const result = analyzeRun([
-      performance('run-1', 'run', 'road', 300, 1_400),
-      performance('run-2', 'run', 'road', 600, 2_600),
-      backdated,
-    ], { context: 'road', asOfLocalDate: '2026-08-22' })
+    const result = analyzeRun(
+      [
+        performance('run-1', 'run', 'road', 300, 1_400),
+        performance('run-2', 'run', 'road', 600, 2_600),
+        backdated,
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
 
     expect(result).toEqual({
       status: 'insufficient-data',
@@ -143,11 +158,14 @@ describe('running performance', () => {
     const editedPower = performance('run-3', 'run', 'road', 1_200, 5_000)
     editedPower.powerAnalyticsAvailableFromLocalDate = '2026-08-23'
 
-    const result = analyzeRun([
-      performance('run-1', 'run', 'road', 300, 1_400),
-      performance('run-2', 'run', 'road', 600, 2_600),
-      editedPower,
-    ], { context: 'road', asOfLocalDate: '2026-08-22' })
+    const result = analyzeRun(
+      [
+        performance('run-1', 'run', 'road', 300, 1_400),
+        performance('run-2', 'run', 'road', 600, 2_600),
+        editedPower,
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
 
     expect(result.status).toBe('ready')
   })
@@ -175,12 +193,15 @@ describe('running performance', () => {
 
 describe('swimming performance', () => {
   it('uses CSS only for a matching pool context and keeps a third anchor', () => {
-    const result = analyzeSwim([
-      performance('swim-1', 'swim', 'pool-25', 120, 200),
-      performance('swim-2', 'swim', 'pool-25', 260, 400),
-      performance('swim-3', 'swim', 'pool-25', 520, 750),
-      performance('swim-4', 'swim', 'pool-50', 450, 750),
-    ], { context: 'pool-25', asOfLocalDate: '2026-08-22' })
+    const result = analyzeSwim(
+      [
+        performance('swim-1', 'swim', 'pool-25', 120, 200),
+        performance('swim-2', 'swim', 'pool-25', 260, 400),
+        performance('swim-3', 'swim', 'pool-25', 520, 750),
+        performance('swim-4', 'swim', 'pool-50', 450, 750),
+      ],
+      { context: 'pool-25', asOfLocalDate: '2026-08-22' },
+    )
 
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
@@ -215,30 +236,36 @@ describe('cycling performance', () => {
     expect(result.criticalPowerWatts).toBeCloseTo(250, 8)
     expect(result.workCapacityJoules).toBeCloseTo(20_000, 8)
     expect(result.criticalPowerWattsPerKg).toBeCloseTo(3.125, 8)
-    expect(getPowerActivityPerformancePoints(trainings, {
-      context: 'indoor',
-      fromLocalDate: '2026-08-01',
-      asOfLocalDate: '2026-08-22',
-    })).toHaveLength(3)
+    expect(
+      getPowerActivityPerformancePoints(trainings, {
+        context: 'indoor',
+        fromLocalDate: '2026-08-01',
+        asOfLocalDate: '2026-08-22',
+      }),
+    ).toHaveLength(3)
   })
 
   it('falls back to an individual distance-time model without power data', () => {
-    const result = analyzeBike([
-      performance('bike-1', 'bike', 'outdoor', 900, 10_000),
-      performance('bike-2', 'bike', 'outdoor', 1_880, 20_000),
-      performance('bike-3', 'bike', 'outdoor', 3_920, 40_000),
-    ], {
-      context: 'outdoor',
-      asOfLocalDate: '2026-08-22',
-      weightKg: null,
-    })
+    const result = analyzeBike(
+      [
+        performance('bike-1', 'bike', 'outdoor', 900, 10_000),
+        performance('bike-2', 'bike', 'outdoor', 1_880, 20_000),
+        performance('bike-3', 'bike', 'outdoor', 3_920, 40_000),
+      ],
+      {
+        context: 'outdoor',
+        asOfLocalDate: '2026-08-22',
+        weightKg: null,
+      },
+    )
 
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
     expect(result.model).toBe('power-law')
     if (result.model === 'power-law') {
-      expect(result.estimates.map((estimate) => estimate.targetDistanceMeters))
-        .toEqual([20_000, 40_000])
+      expect(
+        result.estimates.map((estimate) => estimate.targetDistanceMeters),
+      ).toEqual([20_000, 40_000])
     }
   })
 })
@@ -254,5 +281,92 @@ describe('progress indices', () => {
       8,
     )
     expect(calculateOverallProgressIndex({ swim, bike: null, run })).toBeNull()
+  })
+})
+
+describe('wissenschaftliche Modellgrenzen', () => {
+  it('erklärt 36 Minuten über 6 km als Trainingsäquivalent statt unbelegter Wettkampfreserve', () => {
+    const result = analyzeRun(
+      [performance('run-1', 'run', 'road', 2160, 6000)],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.basis).toBe('training')
+    expect(result.estimates[0].predictedDurationSeconds).toBeCloseTo(
+      2160 * (5 / 6) ** 1.06,
+      6,
+    )
+    expect(Math.round(result.estimates[0].predictedDurationSeconds)).toBe(1780)
+  })
+
+  it('bevorzugt bestätigte Leistungstests gegenüber ungeprüften schnellen Trainings', () => {
+    const result = analyzeRun(
+      [
+        performance('run-1', 'run', 'road', 1800, 6000),
+        {
+          ...performance('run-2', 'run', 'road', 2160, 6000),
+          isBenchmark: true,
+        },
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.basis).toBe('benchmark')
+    expect(result.anchorIds).toEqual(['run-2'])
+  })
+
+  it('erlaubt das CSS-Testpaar 200/400 m bei ausdrücklich maximaler Belastung', () => {
+    const result = analyzeSwim(
+      [
+        {
+          ...performance('swim-1', 'swim', 'pool-50', 120, 200),
+          isBenchmark: true,
+        },
+        {
+          ...performance('swim-2', 'swim', 'pool-50', 260, 400),
+          isBenchmark: true,
+        },
+      ],
+      { context: 'pool-50', asOfLocalDate: '2026-08-22' },
+    )
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.model).toBe('critical-swim-speed')
+    expect(result.basis).toBe('benchmark')
+    expect(result.estimates[0].predictedDurationSeconds).toBeCloseTo(505)
+  })
+
+  it('verwendet keine veralteten Leistungen für die aktuelle Form', () => {
+    const result = analyzeRun(
+      [
+        {
+          ...performance('run-1', 'run', 'road', 2160, 6000),
+          localDate: '2026-04-01',
+        },
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22' },
+    )
+    expect(result.status).toBe('insufficient-data')
+  })
+
+  it('leitet Critical Power nicht aus Sprints oder langen lockeren Ausfahrten ab', () => {
+    const result = analyzeBike(
+      [30, 60, 3600].map((duration, index) => ({
+        ...performance(
+          `bike-${index + 1}`,
+          'bike',
+          'indoor',
+          duration,
+          0,
+          250 + 20000 / duration,
+        ),
+        distanceMeters: null,
+        isBenchmark: true,
+      })),
+      { context: 'indoor', asOfLocalDate: '2026-08-22', weightKg: null },
+    )
+    expect(result.status).toBe('insufficient-data')
   })
 })
