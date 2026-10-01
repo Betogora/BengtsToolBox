@@ -1,9 +1,12 @@
 import {
   doc,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   setDoc,
   type DocumentData,
+  type Firestore,
+  type Transaction,
 } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -38,6 +41,7 @@ import {
 export type SyncedDocResult<T extends DocumentData> = {
   data: T
   isLoading: boolean
+  hasServerSnapshot: boolean
   isPending: boolean
   error: SyncError | null
   save: {
@@ -45,8 +49,8 @@ export type SyncedDocResult<T extends DocumentData> = {
     (nextValue: T, batch: SyncBatch): void
   }
   merge: {
-    (partialValue: Partial<T>): Promise<SyncResult<void>>
-    (partialValue: Partial<T>, batch: SyncBatch): void
+    (partialValue: Partial<T> | ((current: T) => Partial<T>)): Promise<SyncResult<void>>
+    (partialValue: Partial<T> | ((current: T) => Partial<T>), batch: SyncBatch): void
   }
   isRealtime: boolean
 }
@@ -63,6 +67,7 @@ export function useFirestoreDoc<T extends DocumentData>(
   )
   const [data, setData] = useState<T>(localValue.value)
   const [isLoading, setIsLoading] = useState(isFirebaseConfigured)
+  const [hasServerSnapshot, setHasServerSnapshot] = useState(!isFirebaseConfigured)
   const [isPending, setIsPending] = useState(false)
   const [errors, setErrors] = useState<SyncErrors>(() =>
     localValue.ok ? {} : { 'local-storage': localValue.error },
@@ -95,6 +100,7 @@ export function useFirestoreDoc<T extends DocumentData>(
 
     let isActive = true
     let unsubscribe: (() => void) | undefined
+    let initializationStarted = false
     const reference = doc(services.db, path)
 
     ensureAnonymousUser()
@@ -107,28 +113,29 @@ export function useFirestoreDoc<T extends DocumentData>(
           { includeMetadataChanges: true },
           (snapshot) => {
             const hasPendingWrites = snapshot.metadata.hasPendingWrites
+            if (!snapshot.metadata.fromCache && !hasPendingWrites) setHasServerSnapshot(true)
 
             if (snapshot.exists()) {
               const nextData = snapshot.data() as T
               optimisticState.acceptSnapshot(nextData, hasPendingWrites)
 
               if (!hasPendingWrites) {
-                const cacheResult = writeLocalValue(localKey, nextData)
+                const cacheResult = writeLocalValue(localKey, optimisticState.value)
                 setSyncError(
                   'local-storage',
                   cacheResult.ok ? null : cacheResult.error,
                 )
               }
-            } else if (!hasPendingWrites) {
-              const cacheResult = writeLocalValue(localKey, initialValueRef.current)
-              setSyncError(
-                'local-storage',
-                cacheResult.ok ? null : cacheResult.error,
-              )
-
-              void setDoc(reference, {
-                ...initialValueRef.current,
-                updatedAt: serverTimestamp(),
+            } else if (!hasPendingWrites && !snapshot.metadata.fromCache && !initializationStarted) {
+              initializationStarted = true
+              void runTransaction(services.db, async (transaction) => {
+                const current = await transaction.get(reference)
+                if (!current.exists()) {
+                  transaction.set(reference, {
+                    ...initialValueRef.current,
+                    updatedAt: serverTimestamp(),
+                  })
+                }
               }).catch((error: unknown) => {
                 setSyncError(
                   'firestore',
@@ -224,9 +231,18 @@ export function useFirestoreDoc<T extends DocumentData>(
   ) as SyncedDocResult<T>['save']
 
   const merge = useCallback(
-    (partialValue: Partial<T>, batch?: SyncBatch) => {
-      const apply = (value: T) => ({ ...value, ...partialValue }) as T
+    (partialValue: Partial<T> | ((current: T) => Partial<T>), batch?: SyncBatch) => {
+      const resolve = (value: T) => typeof partialValue === 'function' ? partialValue(value) : partialValue
+      const apply = (value: T) => ({ ...value, ...resolve(value) }) as T
       const persistLocal = (value: T) => writeLocalValue(localKey, value)
+      let remoteValue: Partial<T>
+      const readRemote = typeof partialValue === 'function'
+        ? async (transaction: Transaction, db: Firestore) => {
+            const snapshot = await transaction.get(doc(db, path))
+            if (!snapshot.exists()) throw new Error('The document no longer exists.')
+            remoteValue = partialValue(snapshot.data() as T)
+          }
+        : undefined
 
       if (batch) {
         stageSyncMutation(batch, {
@@ -239,10 +255,11 @@ export function useFirestoreDoc<T extends DocumentData>(
           restoreLocalRaw: (value) => restoreLocalRaw(localKey, value),
           publish,
           setError: setSyncError,
+          readRemote,
           stageRemote: (remoteBatch, db) => {
             remoteBatch.set(
               doc(db, path),
-              { ...partialValue, updatedAt: serverTimestamp() },
+              { ...(readRemote ? remoteValue : partialValue), updatedAt: serverTimestamp() },
               { merge: true },
             )
           },
@@ -263,11 +280,19 @@ export function useFirestoreDoc<T extends DocumentData>(
 
           await authenticate()
           try {
-            await setDoc(
-              doc(services.db, path),
-              { ...partialValue, updatedAt: serverTimestamp() },
-              { merge: true },
-            )
+            if (readRemote) {
+              await runTransaction(services.db, async (transaction) => {
+                await readRemote(transaction, services.db)
+                transaction.set(doc(services.db, path),
+                  { ...remoteValue, updatedAt: serverTimestamp() }, { merge: true })
+              })
+            } else {
+              await setDoc(
+                doc(services.db, path),
+                { ...partialValue, updatedAt: serverTimestamp() },
+                { merge: true },
+              )
+            }
           } catch (error) {
             throw createSyncError(error, 'firestore', 'merge')
           }
@@ -282,6 +307,7 @@ export function useFirestoreDoc<T extends DocumentData>(
   return {
     data,
     isLoading,
+    hasServerSnapshot,
     isPending,
     error: currentSyncError(errors),
     save,

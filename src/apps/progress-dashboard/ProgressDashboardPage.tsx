@@ -335,7 +335,7 @@ export function ProgressDashboardPage() {
                   }),
                 )
               } else {
-                toast.error(t('progress.scoreBelowZero'))
+                toast.error(t('common.syncError'))
               }
             }}
             onColorChange={(playerId, color) => updatePlayerColor(playerId, color)}
@@ -344,7 +344,7 @@ export function ProgressDashboardPage() {
             }
             onNameChange={(playerId, name) => updatePlayerName(playerId, name)}
             onRemove={async (playerId) => {
-              await removePlayer(playerId)
+              if (!(await removePlayer(playerId)).ok) return
               toast.success(t('progress.playerRemoved'))
             }}
           />
@@ -355,7 +355,7 @@ export function ProgressDashboardPage() {
               className="h-24 w-full flex-col gap-2"
               variant="outline"
               onClick={async () => {
-                await addPlayer()
+                if (!(await addPlayer()).ok) return
                 toast.success(t('progress.playerAdded'))
               }}
             >
@@ -388,7 +388,7 @@ export function ProgressDashboardPage() {
               title={t('progress.archive.restartTitle')}
               description={t('progress.archive.restartDescription')}
               onConfirm={async () => {
-                await resetAndArchiveDataset()
+                if (!(await resetAndArchiveDataset()).ok) return
                 toast.success(t('progress.archive.restartSuccess'))
               }}
             />
@@ -400,7 +400,7 @@ export function ProgressDashboardPage() {
             dataset={activeDataset}
             icons={progressEventIcons}
             onDeleteEvent={async (eventId) => {
-              await deleteEvent(eventId)
+              if (!(await deleteEvent(eventId)).ok) return
               toast.success(t('progress.eventDeleted'))
             }}
             onUpdateEvent={(eventId, partialValue) => updateEvent(eventId, partialValue)}
@@ -427,7 +427,7 @@ export function ProgressDashboardPage() {
                 key={dataset.id}
                 dataset={dataset}
                 onDelete={async (datasetId) => {
-                  await deleteDataset(datasetId)
+                  if (!(await deleteDataset(datasetId)).ok) return
                   toast.success(t('progress.datasetDeleted'))
                 }}
                 onRename={(datasetId, name) =>

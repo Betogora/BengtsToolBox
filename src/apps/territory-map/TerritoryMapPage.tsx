@@ -83,7 +83,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useI18n } from '@/lib/i18n'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
 type SushiScore = {
@@ -95,9 +95,9 @@ type SushiScore = {
 
 type AchievementDefinition = {
   id: string
-  title: string
+  title: TranslationKey
   Icon: LucideIcon
-  rule: string
+  rule: TranslationKey
   matches: (event: TerritoryVisitEvent) => boolean
 }
 
@@ -289,81 +289,81 @@ const microstateTerritoryIds = new Set(['ad', 'li', 'mc', 'mt', 'sm', 'va'])
 const achievementDefinitions: AchievementDefinition[] = [
   {
     id: 'sushi-in-afrika',
-    title: 'Sushi in Afrika',
+    title: 'territory.achievement.sushi-in-afrika.title',
     Icon: Globe2,
-    rule: 'Bereise auf der Weltkarte mindestens ein afrikanisches Territorium.',
+    rule: 'territory.achievement.sushi-in-afrika.rule',
     matches: (event) =>
       event.mapId === 'world' && africanTerritoryIds.has(event.territoryId),
   },
   {
     id: 'heimspiel',
-    title: 'Heimspiel',
+    title: 'territory.achievement.heimspiel.title',
     Icon: Home,
-    rule: 'Bereise Deutschland auf der Weltkarte oder ein Bundesland auf der Deutschlandkarte.',
+    rule: 'territory.achievement.heimspiel.rule',
     matches: (event) =>
       (event.mapId === 'world' && event.territoryId === 'de') ||
       event.mapId === 'germany',
   },
   {
     id: 'nordlicht',
-    title: 'Nordlicht',
+    title: 'territory.achievement.nordlicht.title',
     Icon: Snowflake,
-    rule: 'Bereise auf der Weltkarte ein nordisches Territorium.',
+    rule: 'territory.achievement.nordlicht.rule',
     matches: (event) =>
       event.mapId === 'world' && nordicTerritoryIds.has(event.territoryId),
   },
   {
     id: 'alpengeschmack',
-    title: 'Alpengeschmack',
+    title: 'territory.achievement.alpengeschmack.title',
     Icon: Mountain,
-    rule: 'Bereise auf der Weltkarte Österreich oder die Schweiz.',
+    rule: 'territory.achievement.alpengeschmack.rule',
     matches: (event) =>
       event.mapId === 'world' && alpineTerritoryIds.has(event.territoryId),
   },
   {
     id: 'balkan-rolle',
-    title: 'Balkan-Rolle',
+    title: 'territory.achievement.balkan-rolle.title',
     Icon: MapPinned,
-    rule: 'Bereise auf der Weltkarte ein Balkan-Territorium.',
+    rule: 'territory.achievement.balkan-rolle.rule',
     matches: (event) =>
       event.mapId === 'world' && balkanTerritoryIds.has(event.territoryId),
   },
   {
     id: 'sushi-in-amerika',
-    title: 'Sushi in Amerika',
+    title: 'territory.achievement.sushi-in-amerika.title',
     Icon: Compass,
-    rule: 'Bereise auf der Weltkarte ein Territorium in Nord-, Mittel- oder Südamerika.',
+    rule: 'territory.achievement.sushi-in-amerika.rule',
     matches: (event) =>
       event.mapId === 'world' && americaTerritoryIds.has(event.territoryId),
   },
   {
     id: 'pazifik-teller',
-    title: 'Pazifik-Teller',
+    title: 'territory.achievement.pazifik-teller.title',
     Icon: ShipWheel,
-    rule: 'Bereise auf der Weltkarte ein Territorium in Ozeanien oder im Pazifik.',
+    rule: 'territory.achievement.pazifik-teller.rule',
     matches: (event) =>
       event.mapId === 'world' && pacificTerritoryIds.has(event.territoryId),
   },
   {
     id: 'mikro-maki',
-    title: 'Mikro-Maki',
+    title: 'territory.achievement.mikro-maki.title',
     Icon: Landmark,
-    rule: 'Bereise auf der Weltkarte einen Microstate.',
+    rule: 'territory.achievement.mikro-maki.rule',
     matches: (event) =>
       event.mapId === 'world' && microstateTerritoryIds.has(event.territoryId),
   },
   {
     id: 'land-der-sushi',
-    title: 'Land der Sushis',
+    title: 'territory.achievement.land-der-sushi.title',
     Icon: UtensilsCrossed,
-    rule: 'Bereise auf der Weltkarte Japan.',
+    rule: 'territory.achievement.land-der-sushi.rule',
     matches: (event) => event.mapId === 'world' && event.territoryId === 'jp',
   },
   {
     id: 'hauptstadt-happen',
-    title: 'Hauptstadt-Happen',
+    title: 'territory.achievement.hauptstadt-happen.title',
     Icon: Building2,
-    rule: 'Bereise Berlin auf der Deutschlandkarte.',
+    rule: 'territory.achievement.hauptstadt-happen.rule',
     matches: (event) => event.mapId === 'germany' && event.territoryId === 'DE-BE',
   },
 ]
@@ -1515,7 +1515,7 @@ export function TerritoryMapPage() {
         <CollapsibleCardHeader
           icon={<Trophy className="size-5" />}
           isOpen={state.isAchievementsOpen}
-          title="Achievements"
+          title={t('territory.achievements')}
           onToggle={() =>
             void setAchievementsOpen(!state.isAchievementsOpen)
           }
@@ -1540,7 +1540,7 @@ export function TerritoryMapPage() {
                     >
                       <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                         <span className="type-label min-w-0 truncate">
-                          {achievement.title}
+                          {t(achievement.title)}
                         </span>
                         <span className="flex size-8 items-center justify-center text-primary">
                           <Icon className="size-5" />
@@ -1550,7 +1550,7 @@ export function TerritoryMapPage() {
                         </span>
                       </summary>
                       <p className="type-caption border-t bg-secondary/70 px-3 py-2 text-secondary-foreground">
-                        {achievement.rule}
+                        {t(achievement.rule)}
                       </p>
                     </details>
                   </li>

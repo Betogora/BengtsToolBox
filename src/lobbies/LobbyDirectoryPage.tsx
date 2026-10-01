@@ -58,9 +58,9 @@ export function LobbyDirectoryPage() {
       const lobbyId = await directory.createLobby({ lobbyName, deviceName })
       toast.success(t('lobby.created'))
       navigate(`/lobbies/${lobbyId}`)
-    } catch (creationError) {
+    } catch {
       toast.error(
-        creationError instanceof Error ? creationError.message : t('lobby.createError'),
+        t('lobby.createError'),
       )
     } finally {
       setIsCreating(false)

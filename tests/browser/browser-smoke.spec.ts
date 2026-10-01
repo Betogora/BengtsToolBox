@@ -5,6 +5,16 @@ const progressPlayersStorageKey =
 const progressDatasetsStorageKey =
   'app-hub:collection:apps/progress-dashboard/sessions/default/datasets'
 
+test('gespeicherte Farbe bleibt auch bei einem Standardnamen erhalten', async ({ app, page }) => {
+  await page.addInitScript(({ key }) => {
+    localStorage.setItem(key, JSON.stringify([{ id: 'person-1', name: 'Person 1', position: 1, color: '#ff0000' }]))
+  }, { key: progressPlayersStorageKey })
+  await app.open('/apps/progress-dashboard')
+  const color = page.getByRole('button', { name: 'Person 1 Farbe wählen' }).locator('span')
+  await expect(color).toHaveCSS('background-color', 'rgb(255, 0, 0)')
+  await app.expectHealthy()
+})
+
 test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
   await app.open('/')
 
@@ -252,6 +262,10 @@ test('Presenter bleibt read-only und stellt den Fokus wieder her', async ({ app,
   await expect(presenter).toBeVisible()
   await expect(exitButton).toBeFocused()
   await expect(presenter.getByRole('button')).toHaveCount(1)
+  await page.keyboard.press('Tab')
+  await expect(exitButton).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(exitButton).toBeFocused()
   await app.expectHealthy()
 
   await page.keyboard.press('Escape')
@@ -475,7 +489,7 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', async ({
   await app.open('/apps/sushi')
 
   const scoreToggle = page.getByRole('button', { name: 'Punktzahl' })
-  const achievementsToggle = page.getByRole('button', { name: 'Achievements' })
+  const achievementsToggle = page.getByRole('button', { name: 'Erfolge' })
 
   await expect(scoreToggle).toHaveAttribute('aria-expanded', 'true')
   await expect(page.getByRole('table')).toHaveCount(1)
@@ -529,7 +543,7 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', async ({
   await page.getByRole('link', { name: 'Sushi Map öffnen' }).click()
 
   await expect(
-    page.getByRole('button', { name: 'Achievements' }),
+    page.getByRole('button', { name: 'Erfolge' }),
   ).toHaveAttribute('aria-expanded', 'true')
   await expect(page.getByText('Land der Sushis').locator('xpath=ancestor::details'))
     .toContainText('Lennart')

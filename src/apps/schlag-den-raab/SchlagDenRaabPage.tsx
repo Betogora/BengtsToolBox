@@ -54,14 +54,14 @@ function outcomeVariant(status: 'open' | 'tiebreak' | 'winner') {
   return 'outline'
 }
 
-function formatDateTime(value: string) {
+function formatDateTime(value: string, locale: string) {
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
     return '-'
   }
 
-  return date.toLocaleString([], {
+  return date.toLocaleString(locale, {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
@@ -372,7 +372,7 @@ function ArchiveDatasetCard({
   onDelete: (datasetId: string) => void | Promise<unknown>
   onRename: (datasetId: string, name: string) => void | Promise<unknown>
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const summary = getSchlagDenRaabSummary(dataset)
   const playedGames =
@@ -401,7 +401,7 @@ function ArchiveDatasetCard({
               onSave={(value) => onRename(dataset.id, value)}
             />
             <div className="type-caption mt-1 text-muted-foreground">
-              {formatDateTime(dataset.archivedAtClientIso)} -{' '}
+              {formatDateTime(dataset.archivedAtClientIso, locale)} -{' '}
               {t('raab.gameCount', { count: playedGames })}
             </div>
           </div>

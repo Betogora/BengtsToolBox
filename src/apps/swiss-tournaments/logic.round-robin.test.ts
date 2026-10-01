@@ -53,6 +53,29 @@ describe('Round Robin golden cases', () => {
     )
   })
 
+  it('allows individual extra rounds and a full second cycle after the planned end', () => {
+    const initial = makeTournament('roundRobin', 4)
+    const { tournament: completed } = playRounds(initial, 3)
+    const fourth = completeNextRound(completed, 4)
+    const fifth = completeNextRound(fourth.tournament, 5)
+    const sixth = completeNextRound(fifth.tournament, 6)
+    const gamesByPair = new Map<string, Pairing[]>()
+
+    expect(initial.numberOfRounds).toBe(3)
+    expect(fourth.pairings).toHaveLength(2)
+    expect(sixth.tournament.rounds).toHaveLength(6)
+    sixth.tournament.rounds.flatMap((round) => round.pairings).forEach((pairing) => {
+      const key = pairingKey(pairing)
+      gamesByPair.set(key, [...(gamesByPair.get(key) ?? []), pairing])
+    })
+    expect(gamesByPair.size).toBe(6)
+    gamesByPair.forEach((games) => {
+      expect(games).toHaveLength(2)
+      expect(games[1].whitePlayerId).toBe(games[0].blackPlayerId)
+      expect(games[1].blackPlayerId).toBe(games[0].whitePlayerId)
+    })
+  })
+
   it('gives every player one bye in a five-player cycle', () => {
     const { rounds } = playRounds(makeTournament('roundRobin', 5), 5)
 

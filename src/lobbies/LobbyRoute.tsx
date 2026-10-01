@@ -7,8 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LobbyProvider } from '@/lobbies/LobbyProvider'
 import { useLobbyDirectory } from '@/lobbies/useLobbyDirectory'
 import { useTrackLobbyDevice } from '@/lobbies/useTrackLobbyDevice'
+import { syncErrorMessageKey } from '@/lib/firebase/syncError'
+import { useI18n } from '@/lib/i18n'
 
 export function LobbyRoute() {
+  const { t } = useI18n()
   const { lobbyId = '' } = useParams()
   const directory = useLobbyDirectory()
   const lobby = directory.lobbies.find((entry) => entry.id === lobbyId)
@@ -21,27 +24,27 @@ export function LobbyRoute() {
         <Card>
           <CardContent className="flex items-center gap-3 pt-6 text-muted-foreground">
             <LoaderCircle className="size-5 animate-spin" />
-            Lobby wird geladen...
+            {t('lobby.loading')}
           </CardContent>
         </Card>
       </AppPage>
     )
   }
 
-  if (!lobby) {
+  if (directory.error || !lobby) {
     return (
       <AppPage>
         <Card className="border-destructive/45">
           <CardHeader>
             <TriangleAlert className="mb-2 size-8 text-destructive" />
-            <CardTitle>Lobby nicht gefunden</CardTitle>
+            <CardTitle>{t(directory.error ? 'common.firebaseError' : 'lobby.notFound')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <p className="type-ui text-muted-foreground">
-              Die Lobby wurde gelöscht oder der Link ist nicht gültig.
+              {directory.error ? t(syncErrorMessageKey(directory.error)) : t('lobby.notFoundDescription')}
             </p>
             <Button asChild className="w-fit">
-              <Link to="/lobbies">Zu den Lobbys</Link>
+              <Link to="/lobbies">{t('lobby.back')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -55,10 +58,10 @@ export function LobbyRoute() {
         <Card>
           <CardHeader>
             <RadioTower className="mb-2 size-8 text-primary" />
-            <CardTitle>Firebase erforderlich</CardTitle>
+            <CardTitle>{t('lobby.firebaseRequiredTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
-            Zentrale Lobbys sind im lokalen Modus nicht verfügbar.
+            {t('lobby.firebaseRequired')}
           </CardContent>
         </Card>
       </AppPage>

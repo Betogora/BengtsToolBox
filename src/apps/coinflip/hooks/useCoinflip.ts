@@ -37,20 +37,24 @@ export function useCoinflip(lobbyId?: string) {
   })
 
   const commitFlipResult = (result: CoinflipResult) =>
-    store.merge({
-      lastFlip: result,
-      history: [result, ...store.data.history].slice(0, 10),
-      updatedBy: session.userId,
+    store.merge((current) => {
+      const history = current.history ?? []
+      if (history.some((entry) => entry.id === result.id)) return {}
+      return {
+        lastFlip: result,
+        history: [result, ...history].slice(0, 10),
+        updatedBy: session.userId,
+      }
     })
 
   const flip = () => commitFlipResult(prepareFlipResult())
 
   const clearHistory = () =>
-    store.merge({
+    store.merge(() => ({
       lastFlip: null,
       history: [],
       updatedBy: session.userId,
-    })
+    }))
 
   return {
     ...store,

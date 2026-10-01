@@ -167,10 +167,11 @@ export function SwissTournamentsPage() {
       return
     }
 
-    await app.addPlayer(
+    const result = await app.addPlayer(
       newPlayerName,
       newPlayerRating ? Number(newPlayerRating) : undefined,
     )
+    if (result?.status !== 'changed') return
     setNewPlayerName('')
     setNewPlayerRating('')
     toast.success(t('swiss.addedPlayer'))
@@ -286,6 +287,7 @@ export function SwissTournamentsPage() {
           onSetMarioKartLobbyReservation={app.setMarioKartLobbyReservation}
           onSetMarioKartResult={app.setMarioKartResult}
           onSetResult={app.setResult}
+          onSetRoundByeScore={app.setRoundByeScore}
         />
 
         <TabsContent value="standings">

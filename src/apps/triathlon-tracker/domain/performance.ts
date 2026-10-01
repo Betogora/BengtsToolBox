@@ -678,10 +678,10 @@ export function analyzeBike(
     options.asOfLocalDate,
   )
   const powerAnchors = selectPowerAnchors(
-    preferBenchmarks(powerSamples).filter(
+    preferBenchmarks(powerSamples.filter(
       (sample) =>
         sample.durationSeconds >= 120 && sample.durationSeconds <= 1200,
-    ),
+    )),
   )
   const powerResult = analyzeBikePower(powerAnchors, options.weightKg)
   if (powerResult) {

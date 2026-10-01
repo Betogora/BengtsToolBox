@@ -124,7 +124,7 @@ function getDrinkValueSelectValue(value: number) {
   return String(matchingValue ?? 1)
 }
 
-function formatDateTime(value: string | null | undefined) {
+function formatDateTime(value: string | null | undefined, locale: string) {
   if (!value) {
     return '-'
   }
@@ -135,7 +135,7 @@ function formatDateTime(value: string | null | undefined) {
     return '-'
   }
 
-  return date.toLocaleString()
+  return date.toLocaleString(locale)
 }
 
 function toDateTimeLocalValue(value: string) {
@@ -179,20 +179,21 @@ function getEventTable(events: ProgressEvent[]) {
 function formatDateRange(
   startValue: string | null | undefined,
   endValue: string | null | undefined,
+  locale: string,
 ) {
   if (!startValue && !endValue) {
     return '-'
   }
 
   if (!startValue || startValue === endValue) {
-    return formatDateTime(endValue ?? startValue)
+    return formatDateTime(endValue ?? startValue, locale)
   }
 
   if (!endValue) {
-    return formatDateTime(startValue)
+    return formatDateTime(startValue, locale)
   }
 
-  return `${formatDateTime(startValue)} - ${formatDateTime(endValue)}`
+  return `${formatDateTime(startValue, locale)} - ${formatDateTime(endValue, locale)}`
 }
 
 function getArchivePlayerName(event: ProgressEvent, position: number) {
@@ -274,7 +275,7 @@ function createStepPath(
     .join(' ')
 }
 
-function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[]) {
+function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[], locale: string) {
   const sortedEvents = getSortedEvents(dataset.events)
   const validEventTimes = sortedEvents
     .map((event) => Date.parse(event.createdAtClientIso))
@@ -351,7 +352,7 @@ function getProgressChartData(dataset: ProgressDataset, players: ProgressPlayer[
 
     return {
       time,
-      label: new Date(time).toLocaleTimeString([], {
+      label: new Date(time).toLocaleTimeString(locale, {
         hour: '2-digit',
         minute: '2-digit',
       }),
@@ -766,10 +767,10 @@ export function ProgressChart({
   mobileDefaultView?: ProgressChartMobileView
   players: ProgressPlayer[]
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const chartData = useMemo(
-    () => getProgressChartData(dataset, players),
-    [dataset, players],
+    () => getProgressChartData(dataset, players, locale),
+    [dataset, players, locale],
   )
   const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null)
   const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)
@@ -1482,7 +1483,7 @@ export function ArchiveDatasetCard({
   onDelete: (datasetId: string) => void
   onRename: (datasetId: string, name: string) => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const eventCount = dataset.events.length
 
@@ -1514,7 +1515,7 @@ export function ArchiveDatasetCard({
             />
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="type-caption text-muted-foreground">
-                {formatDateTime(dataset.archivedAtClientIso)}
+                {formatDateTime(dataset.archivedAtClientIso, locale)}
               </span>
               <Badge variant="outline">
                 {t('progress.eventCount', { count: formatNumber(eventCount) })}
@@ -1539,7 +1540,7 @@ export function ArchiveDatasetCard({
 }
 
 function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const events = useMemo(() => getSortedEvents(dataset.events), [dataset.events])
   const archivePlayers = useMemo(() => getArchivePlayers(dataset), [dataset])
   const playerSummaries = useMemo(
@@ -1579,7 +1580,7 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
             {t('progress.timeRange')}
           </div>
           <div className="type-label mt-1 truncate">
-            {formatDateRange(firstEventAt, lastEventAt)}
+            {formatDateRange(firstEventAt, lastEventAt, locale)}
           </div>
         </div>
         <div>
@@ -1629,7 +1630,7 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
                   </Badge>
                 </div>
                 <div className="type-caption mt-0.5 truncate text-muted-foreground">
-                  {formatDateRange(summary.firstEventAt, summary.lastEventAt)}
+                  {formatDateRange(summary.firstEventAt, summary.lastEventAt, locale)}
                 </div>
               </div>
               <div className="shrink-0 text-right">

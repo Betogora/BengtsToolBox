@@ -15,7 +15,7 @@ test('Turnierfluss bleibt auf allen Viewports bedienbar', async ({ app, page }) 
   await page.getByRole('tab', { name: 'Paarungen' }).click()
   await page.getByRole('button', { name: 'Neue Runde' }).click()
 
-  const resultSelect = page.locator('[role="combobox"]:visible').first()
+  const resultSelect = page.locator('[role="combobox"]:visible:not([aria-label="Punkte pro Bye"])').first()
   await resultSelect.click()
   await page.getByRole('option', { name: '1 - 0', exact: true }).click()
 

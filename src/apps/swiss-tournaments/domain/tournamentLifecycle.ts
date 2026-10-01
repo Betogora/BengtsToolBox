@@ -1,4 +1,4 @@
-import { isPairingComplete } from './pairingSupport'
+import { byeResult, isPairingComplete } from './pairingSupport'
 import {
   addPlayerAfterStart,
   canRemovePlayerFromTournament,
@@ -320,9 +320,28 @@ function transitionNormalizedTournament(
         normalizeTournament(configureTournament(tournament, command.changes)),
       )
 
-    case 'round-bye-score.set':
+    case 'round-bye-score.set': {
+      const round = tournament.rounds.find((entry) => entry.roundNumber === command.roundNumber)
+      if (!Number.isInteger(command.roundNumber) || command.roundNumber < 1) {
+        return reject(value, { code: 'invalid-input', subject: 'round' })
+      }
+      if (round?.status === 'completed') {
+        return reject(value, { code: 'invalid-state', subject: 'round' })
+      }
       return decideChange(value, {
         ...tournament,
+        rounds: tournament.rounds.map((entry) =>
+          entry.roundNumber === command.roundNumber
+            ? {
+                ...entry,
+                pairings: entry.pairings.map((pairing) =>
+                  pairing.isBye
+                    ? { ...pairing, result: byeResult(command.byeScore) }
+                    : pairing,
+                ),
+              }
+            : entry,
+        ),
         settings: {
           ...tournament.settings,
           roundByeScores: {
@@ -331,6 +350,7 @@ function transitionNormalizedTournament(
           },
         },
       })
+    }
 
     case 'tournament.reset-progress':
       return decideChange(value, resetTournamentProgress(tournament))

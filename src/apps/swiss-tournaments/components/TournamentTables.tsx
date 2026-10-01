@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useI18n, type TranslationKey } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { TournamentInspection } from '@/apps/swiss-tournaments/domain/tournamentDomain'
+import type { TournamentDecision, TournamentInspection } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 
 const resultOptions: Array<{ value: GameResult; labelKey?: TranslationKey; label: string }> = [
   { value: '1-0', label: '1 - 0' },
@@ -404,7 +404,7 @@ function ResultCorrectionBadge({
   pairing,
   shouldConfirmRegeneration,
 }: {
-  onCorrect: (pairingId: string, result?: GameResult) => unknown
+  onCorrect: (pairingId: string, result?: GameResult) => Promise<TournamentDecision | null>
   pairing: Pairing
   shouldConfirmRegeneration?: (pairingId: string, result?: GameResult) => boolean
 }) {
@@ -425,7 +425,8 @@ function ResultCorrectionBadge({
     setIsSaving(true)
 
     try {
-      await onCorrect(pairing.id, result)
+      const correction = await onCorrect(pairing.id, result)
+      if (correction?.status !== 'changed' && correction?.status !== 'unchanged') return
       toast.success(t('swiss.result.correctSuccess'))
     } finally {
       setIsSaving(false)
@@ -556,7 +557,7 @@ export function PairingsTable({
     playerId: string,
     partial: { placement?: number; event?: boolean },
   ) => void
-  onResultCorrection?: (pairingId: string, result?: GameResult) => unknown
+  onResultCorrection?: (pairingId: string, result?: GameResult) => Promise<TournamentDecision | null>
   onResultChange?: (pairingId: string, result?: GameResult) => void
   shouldConfirmResultCorrection?: (
     pairingId: string,

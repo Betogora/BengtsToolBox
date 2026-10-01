@@ -78,17 +78,17 @@ export function useDecisionWheel(lobbyId?: string) {
   )
   const data = useMemo(() => normalizeState(store.data), [store.data])
 
-  const saveEntries = (entries: DecisionWheelEntry[]) =>
-    store.merge({
-      entries: entries.map(normalizeEntryForStorage),
+  const saveEntries = (update: (entries: DecisionWheelEntry[]) => DecisionWheelEntry[]) =>
+    store.merge((current) => ({
+      entries: update(current.entries ?? []).map(normalizeEntryForStorage),
       updatedBy: session.userId,
-    })
+    }))
 
   const addEntry = () => {
     const nextIndex = data.entries.length
     const entry = createEntry(`entry-${createRandomId()}`, nextIndex)
 
-    return saveEntries([...data.entries, entry])
+    return saveEntries((entries) => entries.some((current) => current.id === entry.id) ? entries : [...entries, entry])
   }
 
   const updateEntry = (
@@ -96,7 +96,7 @@ export function useDecisionWheel(lobbyId?: string) {
     partialValue: Partial<Omit<DecisionWheelEntry, 'id'>>,
   ) =>
     saveEntries(
-      data.entries.map((entry) =>
+      (entries) => entries.map((entry) =>
         entry.id === entryId
           ? { ...entry, ...partialValue }
           : entry,
@@ -104,21 +104,21 @@ export function useDecisionWheel(lobbyId?: string) {
     )
 
   const removeEntry = (entryId: string) =>
-    saveEntries(data.entries.filter((entry) => entry.id !== entryId))
+    saveEntries((entries) => entries.filter((entry) => entry.id !== entryId))
 
   const resetToExamples = () =>
-    store.save({
+    store.merge(() => ({
       ...initialDecisionWheelState,
       entries: exampleEntries.map((entry) => ({ ...entry })),
       updatedBy: session.userId,
-    })
+    }))
 
   const clearHistory = () =>
-    store.merge({
+    store.merge(() => ({
       history: [],
       lastResult: null,
       updatedBy: session.userId,
-    })
+    }))
 
   const prepareSpinResult = (
     entriesSnapshot = data.entries,
@@ -144,10 +144,14 @@ export function useDecisionWheel(lobbyId?: string) {
   }
 
   const commitSpinResult = (result: DecisionWheelResult) =>
-    store.merge({
-      lastResult: result,
-      history: [result, ...data.history].slice(0, 5),
-      updatedBy: session.userId,
+    store.merge((current) => {
+      const history = current.history ?? []
+      if (history.some((entry) => entry.id === result.id)) return {}
+      return {
+        lastResult: result,
+        history: [result, ...history].slice(0, 5),
+        updatedBy: session.userId,
+      }
     })
 
   return {

@@ -9,6 +9,16 @@ import {
 } from '@/lib/firebase/syncError'
 
 describe('OptimisticState', () => {
+  it('preserves action order when a newer commit completes before an older one', () => {
+    const state = new OptimisticState({ count: 0 })
+    const first = state.begin(() => ({ count: 1 }))
+    const second = state.begin(() => ({ count: 2 }))
+    state.confirm(second)
+    expect(state.value.count).toBe(2)
+    state.reject(first)
+    expect(state.value.count).toBe(2)
+    expect(state.isPending).toBe(false)
+  })
   it('rebases newer mutations when an older mutation fails', () => {
     const state = new OptimisticState({ count: 0, label: 'old' })
     const first = state.begin((value) => ({ ...value, count: 1 }))
@@ -21,14 +31,28 @@ describe('OptimisticState', () => {
 
   it('uses only server-confirmed snapshots as its new basis', () => {
     const state = new OptimisticState({ count: 0 })
-    state.begin(() => ({ count: 1 }))
+    const mutation = state.begin(() => ({ count: 1 }))
 
     state.acceptSnapshot({ count: 1 }, true)
     expect(state.isPending).toBe(true)
 
     state.acceptSnapshot({ count: 1 }, false)
     expect(state.value).toEqual({ count: 1 })
+    expect(state.isPending).toBe(true)
+    state.confirm(mutation)
     expect(state.isPending).toBe(false)
+  })
+
+  it('keeps a newer write when a snapshot and acknowledgement confirm only the older write', () => {
+    const state = new OptimisticState({ count: 0, label: 'old' })
+    const first = state.begin((value) => ({ ...value, count: 1 }))
+    const second = state.begin((value) => ({ ...value, label: 'new' }))
+    state.acceptSnapshot({ count: 1, label: 'old' }, false)
+    state.confirm(first)
+    expect(state.value).toEqual({ count: 1, label: 'new' })
+    expect(state.isPending).toBe(true)
+    state.reject(second)
+    expect(state.value).toEqual({ count: 1, label: 'old' })
   })
 })
 

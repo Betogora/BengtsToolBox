@@ -275,7 +275,7 @@ export function LiveBuzzerPage() {
                   isWinner={winner?.id === selectedPlayer.id}
                   onNameChange={(name) => updatePlayerName(selectedPlayer.id, name)}
                   onRemove={async () => {
-                    await removePlayer(selectedPlayer.id)
+                    if (!(await removePlayer(selectedPlayer.id)).ok) return
                     toast.success(t('liveBuzzer.playerRemoved'))
                   }}
                   onTeamChange={(teamId) =>
@@ -305,8 +305,8 @@ export function LiveBuzzerPage() {
             <CardContent className="grid gap-3">
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  onClick={() => {
-                    openRound()
+                  onClick={async () => {
+                    if (!(await openRound()).ok) return
                     toast.success(t('liveBuzzer.roundOpened'))
                   }}
                 >
@@ -315,8 +315,8 @@ export function LiveBuzzerPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    closeRound()
+                  onClick={async () => {
+                    if (!(await closeRound()).ok) return
                     toast.success(t('liveBuzzer.roundClosed'))
                   }}
                 >
@@ -328,7 +328,7 @@ export function LiveBuzzerPage() {
                 title={t('liveBuzzer.roundResetTitle')}
                 description={t('liveBuzzer.roundResetDescription')}
                 onConfirm={async () => {
-                  await resetAndOpenRound()
+                  if (!(await resetAndOpenRound()).ok) return
                   toast.success(t('liveBuzzer.roundReset'))
                 }}
               />
@@ -356,8 +356,7 @@ export function LiveBuzzerPage() {
 
                 if (
                   isSoundEnabled &&
-                  result !== 'blocked' &&
-                  result !== 'already-buzzed'
+                  (result === 'winner' || result === 'late')
                 ) {
                   playBuzzSound()
                 }
@@ -513,7 +512,7 @@ export function LiveBuzzerPage() {
                   isWinner={isWinner}
                   onNameChange={(name) => updatePlayerName(player.id, name)}
                   onRemove={async () => {
-                    await removePlayer(player.id)
+                    if (!(await removePlayer(player.id)).ok) return
                     toast.success(
                       t('scoreboard.personRemoved', {
                         name: displayPlayerName(player),

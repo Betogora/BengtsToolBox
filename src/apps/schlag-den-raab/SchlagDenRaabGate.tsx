@@ -24,7 +24,9 @@ function isUnlocked() {
 }
 
 function unlockSession() {
-  window.sessionStorage.setItem(unlockKey, 'true')
+  try {
+    window.sessionStorage.setItem(unlockKey, 'true')
+  } catch { /* The current page can still be unlocked without storage. */ }
 }
 
 export function SchlagDenRaabGate({ children }: { children: ReactNode }) {

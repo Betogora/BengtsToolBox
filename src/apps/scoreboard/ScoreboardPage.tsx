@@ -107,7 +107,7 @@ export function ScoreboardPage() {
       toast.error(t('scoreboard.error.minimumPlayers'))
     } else if (result === 'scored') {
       toast.error(t('scoreboard.error.targetHasBookings'))
-    } else {
+    } else if (result === 'removed') {
       toast.success(t('scoreboard.playerRemoved'))
     }
   }
@@ -119,7 +119,7 @@ export function ScoreboardPage() {
       toast.error(t('scoreboard.error.minimumTeams'))
     } else if (result === 'scored') {
       toast.error(t('scoreboard.error.targetHasBookings'))
-    } else {
+    } else if (result === 'removed') {
       toast.success(t('scoreboard.teamRemoved'))
     }
   }
@@ -129,16 +129,16 @@ export function ScoreboardPage() {
     targetId: string,
     delta: number,
   ) => {
-    const didSave = await scoreboard.addScore(targetType, targetId, delta)
+    const result = await scoreboard.addScore(targetType, targetId, delta)
 
-    if (didSave) {
+    if (result === 'saved') {
       toast.success(
         t('scoreboard.scoreSaved', {
           delta: `${delta > 0 ? '+' : ''}${formatNumber(delta)}`,
         }),
       )
     } else {
-      toast.error(t('scoreboard.error.invalidDelta'))
+      toast.error(t(result === 'invalid' ? 'scoreboard.error.invalidDelta' : 'common.syncError'))
     }
   }
 
@@ -237,7 +237,7 @@ export function ScoreboardPage() {
             <AddCard
               label={t('scoreboard.addPlayer')}
               onClick={async () => {
-                await scoreboard.addPlayer()
+                if (!(await scoreboard.addPlayer()).ok) return
                 toast.success(t('scoreboard.playerAdded'))
               }}
             />
@@ -294,10 +294,10 @@ export function ScoreboardPage() {
             }
             onClick={async () => {
               if (scoreboard.activeScoring.mode === 'teams') {
-                await scoreboard.addTeam()
+                if (!(await scoreboard.addTeam()).ok) return
                 toast.success(t('scoreboard.teamAdded'))
               } else {
-                await scoreboard.addPlayer()
+                if (!(await scoreboard.addPlayer()).ok) return
                 toast.success(t('scoreboard.playerAdded'))
               }
             }}
@@ -397,7 +397,7 @@ export function ScoreboardPage() {
                   archive={archive}
                   onRename={(name) => scoreboard.updateScoringName(archive.scoring.id, name)}
                   onDelete={async () => {
-                    await scoreboard.deleteArchivedScoring(archive.scoring.id)
+                    if (!(await scoreboard.deleteArchivedScoring(archive.scoring.id)).ok) return
                     toast.success(t('scoreboard.archiveDeleted'))
                   }}
                 />

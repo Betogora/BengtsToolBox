@@ -11,6 +11,23 @@ import {
 } from '@/apps/swiss-tournaments/__tests__/fixtures'
 
 describe('Swiss tournament golden cases', () => {
+  it('finds a complete pairing when one player needs the eleventh candidate', () => {
+    const tournament = makeTournament('swiss', 12, { numberOfRounds: 11, currentRound: 10 })
+    tournament.rounds = Array.from({ length: 10 }, (_, index) => {
+      const number = index + 1
+      const opponent = `p${index + 2}`
+      const game = makeStandardPairing(`game-${number}`, number, 'p12', opponent, '0.5-0.5')
+      const byes: Pairing[] = tournament.players
+        .filter((player) => player.id !== 'p12' && player.id !== opponent)
+        .map((player) => ({ id: `bye-${number}-${player.id}`, roundNumber: number, boardNumber: 2, isManual: false, isBye: true, byePlayerId: player.id, result: 'bye-0.5' }))
+      return makeRound(number, [game, ...byes])
+    })
+    const pairings = planNextTournamentPairings(tournament)
+    expect(pairings).toHaveLength(6)
+    expect(pairings.map(pairingKey)).toContain('p1::p12')
+    expect(new Set(pairings.flatMap((pairing) => [pairing.whitePlayerId, pairing.blackPlayerId])).size).toBe(12)
+  })
+
   it('sanitizes tournament input and seeds rated players deterministically', () => {
     const tournament = tournamentDomain.create(
       {

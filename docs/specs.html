@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:fc60494c82553b161250e64b59fd718f7523a7e503f072adf7faa4eb31cddd1e">
+  <meta name="specs-source-sha256" content="sha256:00fce824e9f0b9e8d5eb144c4fd158952446a0d22af10aab529d57e9d638545d">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -533,7 +533,7 @@
               <li>Read-only Fullscreen-Overlay, normale Page bleibt Steuerfläche.</li>
               <li>View-Auswahl nur bei mehreren Ausgaben.</li>
               <li>Fallback als Overlay, wenn Fullscreen blockiert ist.</li>
-              <li>Escape/Beenden stellt Fokus wieder her.</li>
+              <li>Escape/Beenden stellt Fokus wieder her; Tastaturfokus und Bedienung bleiben im Presenter.</li>
             </ul>
           </article>
           <article class="card">
@@ -569,7 +569,8 @@
         <div class="grid-2" style="margin-top:1rem">
           <article class="card accent">
             <h3>Realtime-Modus</h3>
-            <p>Anonymous Auth, Snapshot-Abos mit Pending-Metadaten und serverseitiges <code>updatedAt</code>. Firestore übernimmt Offline-Queue, Netzwerk-Retry und Reconnect. Definitive Ablehnungen entfernen nur die betroffene Mutation und rebasen jüngere Änderungen auf dem letzten bestätigten Snapshot; die Anwendung wiederholt die fachliche Aktion nicht automatisch.</p>
+            <p>Anonymous Auth, Snapshot-Abos mit Pending-Metadaten und serverseitiges <code>updatedAt</code>. Gewöhnliche Writes verwenden Firestores Offline-Queue, Netzwerk-Retry und Reconnect. Änderungen an gemeinsam gespeicherten Listen lesen den aktuellen Serverstand in einer Transaktion und benötigen eine Verbindung. Definitive Ablehnungen entfernen nur die betroffene Mutation und rebasen jüngere Änderungen auf dem letzten bestätigten Snapshot; die Anwendung wiederholt die fachliche Aktion nicht automatisch.</p>
+            <p>Bestätigungen gelten für den jeweiligen Schreibvorgang und werden in Aktionsreihenfolge verarbeitet. Defaults entstehen erst nach einem bestätigten Server-Snapshot; Dokumente prüfen ihre Abwesenheit zusätzlich in einer Transaktion. Leere Offline-Snapshots lassen lokale Daten sichtbar; <code>hasServerSnapshot</code> gibt die automatische Einrichtung frei.</p>
           </article>
           <article class="card">
             <h3>Lokaler Modus</h3>
@@ -579,11 +580,13 @@
         <div class="grid-2" style="margin-top:1rem">
           <article class="card">
             <h3>Ergebnis- und Fehlervertrag</h3>
-            <p>Mutationen liefern <code>SyncResult&lt;void&gt;</code>; <code>SyncError</code> enthält stabile Werte für Quelle, Operation, Code und Wiederholbarkeit. Fehler bleiben pro Quelle erhalten und werden in der UI lokalisiert. <code>isPending</code> endet erst mit einem serverbestätigten Snapshot.</p>
+            <p>Mutationen liefern <code>SyncResult&lt;void&gt;</code>; <code>SyncError</code> enthält stabile Werte für Quelle, Operation, Code und Wiederholbarkeit. Fehler bleiben pro Quelle erhalten und werden in der UI lokalisiert. <code>isPending</code> bleibt aktiv, solange ein Schreibvorgang oder Pending-Snapshot aussteht.</p>
           </article>
           <article class="card">
             <h3>Gezielte Atomizität</h3>
-            <p><code>SyncBatch</code> bündelt nur erkannte Fachinvarianten. Realtime verwendet einen Firestore-<code>writeBatch</code> mit Limit-Preflight; lokal werden Serialisierung und Raw-Backup vorab geprüft, bei Fehlern kompensiert und erneut eingelesen. Ein gescheiterter Ausgleich heißt <code>rollback-failed</code>. Der Gewinner-Buzz bleibt eine Transaction.</p>
+            <p><code>merge</code>, <code>mergeItem</code> und <code>saveItems</code> akzeptieren feste Werte oder pure Updater. Updater lesen in Realtime den aktuellen Serverstand per Transaktion, lokal den lokalen Zustand. Listen-Updater verwenden stabile IDs und erkennen bereits angewendete Aktionen ohne Duplikate oder Umordnung. Updater-Merges legen fehlende Dokumente oder Collection-Elemente nicht erneut an; Pfade und gespeichertes Datenformat bleiben unverändert.</p>
+            <p><code>SyncBatch</code> bündelt nur erkannte Fachinvarianten. Realtime verwendet einen Firestore-<code>writeBatch</code> mit Limit-Preflight, bei Updatern stattdessen eine Transaktion mit allen Lesezugriffen vor den Writes; lokal werden Serialisierung und Raw-Backup vorab geprüft, bei Fehlern kompensiert und erneut eingelesen. Ein gescheiterter Ausgleich heißt <code>rollback-failed</code>. Der Gewinner-Buzz bleibt eine Transaction.</p>
+            <p>Ereignislisten im Fortschritts-Dashboard und der Sushi Map sowie Optionen und Verläufe von Glücksrad, Coinflip und Randomizer werden auf dem aktuellen Serverstand geändert. Das Fortschritts-Dashboard archiviert und leert den aktuellen Datensatz atomar mit dessen neuesten Server-Ereignissen. Diese Aktionen benötigen in Realtime Internet; Offline-Lesen und der rein lokale Modus bleiben erhalten.</p>
           </article>
         </div>
         <h3 style="margin:2rem 0 0.8rem">Kanonische Datenräume</h3>
@@ -731,6 +734,7 @@
               <li>Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate bearbeiten nur die jüngste Draft-Runde.</li>
               <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie.</li>
               <li>Automatische Turniernamen enthalten nur den lokalen Starttag; mehrere Turniere desselben Tages werden formatübergreifend römisch nummeriert.</li>
+              <li>Bye-Wertungen 1, 0,5 oder 0 sind im Kopf einer Draft-Runde überschreibbar und ändern vorhandene Byes sofort. Abgeschlossene Runden müssen zuerst wieder geöffnet werden.</li>
               <li>Eine Draft-Runde beeinflusst die Rangliste erst ab dem ersten eingetragenen Partieergebnis. Automatische Bye-Wertungen allein aktivieren sie nicht; danach wird die gesamte Runde einschließlich offener Pairings und Byes berücksichtigt.</li>
               <li>Nicht-Mario-Rangfolge: Punkte, Buchholz, SB, Siege, direkter Vergleich, Seed.</li>
               <li>Ergebniskorrektur kann eine ungewertete aktuelle Draft-Runde neu generieren.</li>
@@ -742,7 +746,7 @@
               </article>
               <article class="card">
                 <h4>Round Robin</h4>
-                <p>Berger-System mit Durchgängen, Farbinvertierung, Dummy-Bye bei ungerader Zahl und Reparatur nach Spieleränderungen.</p>
+                <p>Berger-System mit Durchgängen, Farbinvertierung, Dummy-Bye bei ungerader Zahl und Reparatur nach Spieleränderungen. Nach den geplanten Durchgängen bleiben einzelne zusätzliche Runden oder weitere vollständige Durchgänge möglich; innerhalb eines Durchgangs wird jedes Paar höchstens einmal angesetzt.</p>
               </article>
               <article class="card">
                 <h4>Hand and Brain</h4>

@@ -1,5 +1,6 @@
 import { CirclePlus, Trash2, UsersRound } from "lucide-react";
 import { toast } from "sonner";
+import type { TournamentDecision } from "@/apps/swiss-tournaments/domain/tournamentDomain";
 
 import type { PlayerStatus, Tournament } from "@/apps/swiss-tournaments/types";
 import {
@@ -42,7 +43,7 @@ type TournamentPlayersWorkflowProps = {
   ) => unknown | Promise<unknown>;
   onNewPlayerNameChange: (value: string) => void;
   onNewPlayerRatingChange: (value: string) => void;
-  onRemovePlayer: (playerId: string) => unknown | Promise<unknown>;
+  onRemovePlayer: (playerId: string) => Promise<TournamentDecision | null>;
   onUpdatePlayer: (
     playerId: string,
     changes: PlayerChanges,
@@ -217,7 +218,7 @@ export function TournamentPlayersWorkflow({
                           return;
                         }
 
-                        await onRemovePlayer(player.id);
+                        if ((await onRemovePlayer(player.id))?.status !== 'changed') return;
                         toast.success(
                           t("swiss.playerRemoved", { name: player.name }),
                         );
@@ -340,7 +341,7 @@ export function TournamentPlayersWorkflow({
                               return;
                             }
 
-                            await onRemovePlayer(player.id);
+                            if ((await onRemovePlayer(player.id))?.status !== 'changed') return;
                             toast.success(
                               t("swiss.playerRemoved", { name: player.name }),
                             );

@@ -285,6 +285,16 @@ describe('progress indices', () => {
 })
 
 describe('wissenschaftliche Modellgrenzen', () => {
+  it('keeps valid power anchors when a benchmark lies outside the CP duration range', () => {
+    const trainings = [300, 600, 1200].map((duration, index) =>
+      performance(`bike-${index + 1}`, 'bike', 'outdoor', duration, duration * 10, 250 + 18000 / duration))
+    trainings.push({ ...performance('bike-4', 'bike', 'outdoor', 1800, 18000, 270), isBenchmark: true })
+    const result = analyzeBike(trainings, { context: 'outdoor', asOfLocalDate: '2026-08-22', weightKg: null })
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.anchorIds).toEqual(['bike-1', 'bike-2', 'bike-3'])
+  })
+
   it('erklärt 36 Minuten über 6 km als Trainingsäquivalent statt unbelegter Wettkampfreserve', () => {
     const result = analyzeRun(
       [performance('run-1', 'run', 'road', 2160, 6000)],

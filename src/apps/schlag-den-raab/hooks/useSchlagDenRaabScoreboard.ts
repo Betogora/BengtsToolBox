@@ -172,7 +172,9 @@ export function useSchlagDenRaabScoreboard(lobbyId?: string) {
 
   useEffect(() => {
     if (
-      store.isLoading ||
+      store.isLoading || !store.hasServerSnapshot ||
+      store.isPending ||
+      (store.error && (!store.isRealtime || store.error.source !== 'local-storage')) ||
       !state.archivedDatasets?.some(
         (dataset, index) =>
           dataset.name !== storedState.archivedDatasets?.[index]?.name,

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { createPortal } from 'react-dom'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -171,15 +171,17 @@ export function PresenterLauncher({
         </DialogContent>
       </Dialog>
 
-      {activeView &&
-        createPortal(
-          <PresenterStage
-            appTitle={appTitle}
-            view={activeView}
-            onExit={stopPresenter}
-          />,
-          document.body,
-        )}
+      {activeView && (
+        <Dialog open onOpenChange={(open) => { if (!open) stopPresenter() }}>
+          <DialogPrimitive.Portal>
+            <PresenterStage
+              appTitle={appTitle}
+              view={activeView}
+              onExit={stopPresenter}
+            />
+          </DialogPrimitive.Portal>
+        </Dialog>
+      )}
     </>
   )
 }
@@ -200,29 +202,22 @@ function PresenterStage({
   useEffect(() => {
     const originalOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    exitButtonRef.current?.focus({ preventScroll: true })
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onExit()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.body.style.overflow = originalOverflow
-      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [onExit])
 
   return (
-    <div
+    <DialogPrimitive.Content
       aria-label={t('presenter.aria', { app: appTitle })}
-      aria-modal="true"
+      aria-labelledby={undefined}
+      aria-describedby={undefined}
       className="fixed inset-0 z-[100] overflow-auto bg-background text-foreground"
-      role="dialog"
+      onOpenAutoFocus={(event) => {
+        event.preventDefault()
+        exitButtonRef.current?.focus({ preventScroll: true })
+      }}
     >
       <div className="flex min-h-svh flex-col">
         <header className="flex min-h-16 items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
@@ -234,9 +229,11 @@ function PresenterStage({
               <div className="type-label truncate text-muted-foreground">
                 {appTitle}
               </div>
-              <h1 className="type-card-title truncate">
-                {view.label}
-              </h1>
+              <DialogPrimitive.Title asChild>
+                <h1 className="type-card-title truncate">
+                  {view.label}
+                </h1>
+              </DialogPrimitive.Title>
             </div>
           </div>
           <Button
@@ -259,6 +256,6 @@ function PresenterStage({
           {view.render()}
         </main>
       </div>
-    </div>
+    </DialogPrimitive.Content>
   )
 }

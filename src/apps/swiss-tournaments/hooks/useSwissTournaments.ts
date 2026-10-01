@@ -133,7 +133,9 @@ export function useSwissTournaments(lobbyId?: string) {
 
   useEffect(() => {
     if (
-      tournamentsStore.isLoading ||
+      tournamentsStore.isLoading || !tournamentsStore.hasServerSnapshot ||
+      tournamentsStore.isPending ||
+      (tournamentsStore.error && (!tournamentsStore.isRealtime || tournamentsStore.error.source !== 'local-storage')) ||
       !tournaments.some(
         (tournament, index) =>
           tournament.name !== storedTournaments[index]?.name,

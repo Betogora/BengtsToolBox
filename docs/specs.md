@@ -81,7 +81,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 - Der Presenter ist ein read-only Fullscreen-Overlay; die normale Page bleibt die Steuerfläche.
 - Ein einzelner View startet direkt, mehrere Views werden zuerst in einem Auswahlfenster angeboten.
 - Der Modus versucht Browser-Fullscreen, bleibt aber als Overlay nutzbar, wenn Fullscreen blockiert wird.
-- Escape beziehungsweise der sichtbare Beenden-Button schließen den Presenter und stellen den Fokus wieder her.
+- Escape beziehungsweise der sichtbare Beenden-Button schließen den Presenter und stellen den Fokus wieder her. Der Dialog hält den Tastaturfokus im Presenter und sperrt die Bedienung des Hintergrunds.
 - Presenter verwenden aktuell: Glücksrad, Coinflip, Fortschritts-Dashboard, Scoreboard, Live-Buzzer, Sushi Map, Randomizer und Turnier-App.
 
 ### 3.4 UX und Barrierefreiheit
@@ -109,9 +109,10 @@ Die Firebase-Initialisierung gilt als vollständig, wenn mindestens API-Key, Aut
 1. Der Client meldet sich anonym an.
 2. `useFirestoreDoc` oder `useFirestoreCollection` abonniert Firestore einschließlich Pending-Metadaten.
 3. Schreibaktionen werden als geordnete optimistische Reducer auf den letzten bestätigten Stand angewendet und zusätzlich im LocalStorage-Cache gesichert.
-4. Danach wird Firestore mit `updatedAt: serverTimestamp()` geschrieben. Firestore allein übernimmt Offline-Queue, Netzwerk-Retry und Reconnect.
-5. Nur ein Snapshot ohne `hasPendingWrites` ersetzt die bestätigte Basis. Pending-Snapshots halten `isPending` aktiv.
+4. Danach wird Firestore mit `updatedAt: serverTimestamp()` geschrieben. Gewöhnliche Writes verwenden Firestores Offline-Queue, Netzwerk-Retry und Reconnect. Änderungen an gemeinsam gespeicherten Listen lesen dagegen den aktuellen Serverstand in einer Transaktion und benötigen eine Verbindung.
+5. Snapshots ohne `hasPendingWrites` aktualisieren die bestätigte Basis; bestätigte Schreibvorgänge übernehmen ihre eigene Mutation in Aktionsreihenfolge. Eine Snapshot-Bestätigung entfernt keine anderen ausstehenden Mutationen. Pending-Snapshots halten `isPending` aktiv.
 6. Eine definitive Auth-, Rules- oder Schreibablehnung entfernt nur die betroffene Mutation, berechnet jüngere Mutationen auf der bestätigten Basis neu und fordert über einen sichtbaren Fehler zur erneuten fachlichen Aktion auf. Die Anwendung startet keinen automatischen Retry.
+7. Ein fehlendes Cache-Dokument belegt keine serverseitige Abwesenheit. Defaults werden erst nach einem bestätigten Server-Snapshot angelegt; Dokumente prüfen die Abwesenheit zusätzlich in einer Transaktion. Leere Offline-Snapshots lassen vorhandene lokale Daten sichtbar. `hasServerSnapshot` trennt diese Lesebereitschaft von der Freigabe automatischer Einrichtung.
 
 **Lokaler Modus:**
 
@@ -131,6 +132,8 @@ Die Firebase-Initialisierung gilt als vollständig, wenn mindestens API-Key, Aut
 | Aktive Lobby | `useActiveLobby` | Lobby aus dem Route-Kontext; außerhalb immer `default` |
 
 LocalStorage-Schlüssel beginnen mit `app-hub:doc:` beziehungsweise `app-hub:collection:` und enthalten den vollständigen kanonischen Pfad.
+
+`merge`, `mergeItem` und `saveItems` akzeptieren neben festen Werten pure Updater. Im Realtime-Modus werden diese in einer Transaktion auf den aktuellen Serverstand angewendet, im lokalen Modus auf den lokalen Zustand. Listen-Updater verwenden stabile IDs und müssen bereits angewendete Aktionen ohne Duplikate oder Umordnung erkennen. Fehlende Dokumente beziehungsweise Collection-Elemente werden durch einen Updater-Merge nicht neu angelegt. Pfade und gespeichertes Datenformat bleiben unverändert.
 
 Erwartete Persistenzfehler verwenden einen nicht werfenden Rückgabewert. Auch der Fehlerzustand im Hook enthält dieselbe `SyncError`-Instanz:
 
@@ -177,10 +180,11 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Schreibvorgänge sind lokal optimistisch. Der Mutationskoordinator hält den letzten serverbestätigten Snapshot und rebaset überlappende Mutationen deterministisch.
 - Ein fehlerhafter LocalStorage-Cache verhindert im Realtime-Modus nicht den Remote-Write, bleibt aber sichtbar. Im lokalen Modus führt derselbe Fehler zum sofortigen Rollback.
 - `SyncBatch` und `commitSyncBatch(stage)` bilden gezielte Mehrspeicher-Aktionen ab. Der Stage-Callback ist synchron; die optimistische Änderung beginnt erst nach dem Firestore-Limit- und lokalen Serialisierungs-Preflight.
-- Realtime-Batches verwenden genau einen authentifizierten Firestore-`writeBatch` und scheitern oberhalb von 500 Writes vor der optimistischen Änderung. Sie werden nicht in nichtatomare Teilbatches zerlegt.
+- Realtime-Batches verwenden genau einen authentifizierten Firestore-`writeBatch`, bei Updatern stattdessen eine Transaktion mit allen Lesezugriffen vor den Writes. Sie scheitern oberhalb von 500 Writes vor der optimistischen Änderung und werden nicht in nichtatomare Teilbatches zerlegt.
 - Im lokalen Modus werden die bisherigen Raw-Werte gesichert. Bei Teilfehlern werden sie bestmöglich kompensiert und anschließend erneut eingelesen; ein gescheiterter Ausgleich wird als `rollback-failed` sichtbar.
 - Batches werden nur für erkannte Fachinvarianten eingesetzt: Scoreboard-Lebenszyklus und abhängige Team-/Archivdaten, Turnier-Lebenszyklus samt aktivem Nachfolger, Archivieren und Zurücksetzen im Fortschritts-Dashboard, gemeinsamer Runden-/Buzz-Zustand im Live-Buzzer sowie denormalisierte Spieleränderungen der Sushi Map. Andere Schreibfolgen bleiben sequenziell und prüfen jedes `SyncResult`.
 - Der Live-Buzzer verwendet für den Gewinner-Buzz ausdrücklich eine Firestore-Transaktion.
+- Ereignislisten im Fortschritts-Dashboard und der Sushi Map sowie Optionen und Verläufe von Glücksrad, Coinflip und Randomizer werden auf dem aktuellen Serverstand geändert. Das Fortschritts-Dashboard archiviert und leert den aktuellen Datensatz atomar mit dessen neuesten Server-Ereignissen. Diese Aktionen benötigen im Realtime-Modus Internet; Offline-Lesen und der rein lokale Modus bleiben erhalten.
 - Auth-, Rules-, Netzwerk-, Snapshot- und Storagefehler werden als `SyncError` an das jeweilige Feature weitergereicht.
 - Features dürfen keine eigenen Firebase-Apps, Auth-Flows oder separaten LocalStorage-Fallbacks einführen.
 
@@ -336,7 +340,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 #### Ergebnisse und Rangfolge
 
 - Standardresultate sind `1-0`, `0-1`, `½-½` und kampflose Siege.
-- Bye-Wertungen sind `1`, `0,5` oder `0` und können pro Runde überschrieben werden.
+- Bye-Wertungen sind `1`, `0,5` oder `0`. Der Rundenkopf erlaubt eine Überschreibung für Draft-Runden und passt deren vorhandene Byes unmittelbar an. Für abgeschlossene Runden muss die Runde zuerst wieder geöffnet werden.
 - Eine Draft-Runde beeinflusst die Rangliste erst ab dem ersten eingetragenen Partieergebnis. Automatische Bye-Wertungen allein aktivieren sie nicht; danach wird die gesamte Runde einschließlich offener Pairings und Byes berücksichtigt.
 - Nicht-Mario-Kart-Rangfolge: Punkte, Buchholz, Sonneborn-Berger, Siege, direkter Vergleich, initialer Seed.
 - Mario-Kart-Rangfolge: Turnierpunkte, Siege, bessere Durchschnittsplatzierung und direkter Vergleich. Vollständig gleiche sportliche Werte teilen sich den Rang nach `1, 1, 3`; Seed und Name stabilisieren nur die Anzeige.
@@ -356,9 +360,9 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 - Der Grundplan verwendet das Berger-System; bei ungerader Spielerzahl entsteht ein Dummy-Slot mit Bye.
 - Ein oder mehrere Durchgänge sind möglich; Folgedurchgänge invertieren Farben.
-- Die Rundenzahl ergibt sich aus aktiven Spielern und Durchgängen.
+- Die geplante Rundenzahl ergibt sich aus aktiven Spielern und Durchgängen. Danach können flexibel einzelne zusätzliche Runden oder weitere vollständige Durchgänge gespielt werden.
 - Spieleränderungen werden durch Reparatur-Pairings ergänzt; bis 16 Spieler kann eine begrenzte exakte Suche verwendet werden.
-- Kein Paar darf häufiger als die Zielzahl der Durchgänge gegeneinander spielen.
+- Innerhalb eines Durchgangs wird jedes Paar höchstens einmal angesetzt; beim Weiterspielen erhöht sich die Zielzahl der Begegnungen entsprechend.
 
 #### Hand and Brain
 

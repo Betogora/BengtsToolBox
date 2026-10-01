@@ -49,19 +49,23 @@ export function useRandomizer(lobbyId?: string) {
       createdAt: new Date().toISOString(),
     }
 
-    return store.merge({
-      lastRoll: value,
-      history: [result, ...store.data.history].slice(0, 5),
-      updatedBy: session.userId,
+    return store.merge((current) => {
+      const history = current.history ?? []
+      if (history.some((entry) => entry.id === result.id)) return {}
+      return {
+        lastRoll: value,
+        history: [result, ...history].slice(0, 5),
+        updatedBy: session.userId,
+      }
     })
   }
 
   const clearHistory = () =>
-    store.merge({
+    store.merge(() => ({
       lastRoll: null,
       history: [],
       updatedBy: session.userId,
-    })
+    }))
 
   return {
     ...store,

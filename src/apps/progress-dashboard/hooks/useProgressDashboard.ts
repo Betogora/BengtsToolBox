@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import {
   createProgressPlayer,
@@ -134,10 +134,6 @@ function sanitizeName(
   return trimmedName || fallbackPlayerName(player)
 }
 
-function isDefaultPlayerName(name: string, position: number) {
-  return name === `Person ${position}`
-}
-
 function sanitizeColor(color: string, fallback: string) {
   return normalizeParticipantColor(color, fallback)
 }
@@ -203,9 +199,7 @@ function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer 
     : index + 1
   const fallbackColor = getParticipantColorByPosition(position)
   const name = sanitizeName(player.name ?? '', { id: player.id, position })
-  const color = isDefaultPlayerName(name, position)
-    ? fallbackColor
-    : sanitizeColor(player.color ?? fallbackColor, fallbackColor)
+  const color = sanitizeColor(player.color ?? fallbackColor, fallbackColor)
 
   return {
     ...player,
@@ -253,6 +247,8 @@ function normalizeDataset(
 }
 
 export function useProgressDashboard(lobbyId?: string) {
+  const playersInitializationStarted = useRef(false)
+  const datasetInitializationStarted = useRef(false)
   const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
   const statePath = useMemo(
@@ -310,9 +306,24 @@ export function useProgressDashboard(lobbyId?: string) {
   const leader = [...playerScores].sort((left, right) => right.score - left.score)[0]
 
   useEffect(() => {
-    if (datasetsStore.isLoading || datasetsStore.data.length > 0) {
+    if (
+      playersStore.isLoading || !playersStore.hasServerSnapshot ||
+      (playersStore.error && playersStore.error.source !== 'local-storage') || playersStore.data.length > 0 ||
+      playersInitializationStarted.current
+    ) return
+    playersInitializationStarted.current = true
+    void playersStore.saveItems(defaultPlayers)
+  }, [playersStore])
+
+  useEffect(() => {
+    if (
+      datasetsStore.isLoading || !datasetsStore.hasServerSnapshot ||
+      (datasetsStore.error && datasetsStore.error.source !== 'local-storage') || datasetsStore.data.length > 0 ||
+      datasetInitializationStarted.current
+    ) {
       return
     }
+    datasetInitializationStarted.current = true
 
     datasetsStore.saveItems([
       {
@@ -324,26 +335,31 @@ export function useProgressDashboard(lobbyId?: string) {
 
   useEffect(() => {
     if (
-      datasetsStore.isLoading ||
+      datasetsStore.isLoading || !datasetsStore.hasServerSnapshot || datasetsStore.isPending ||
+      (datasetsStore.error && (!datasetsStore.isRealtime || datasetsStore.error.source !== 'local-storage')) ||
       !datasets.some((dataset, index) => dataset.name !== storedDatasets[index]?.name)
     ) {
       return
     }
 
-    void datasetsStore.saveItems(
-      datasets.map((dataset, index) =>
-        dataset.name === storedDatasets[index]?.name
-          ? dataset
-          : { ...dataset, lastUpdatedBy: session.userId },
-      ),
-    )
+    const saveNames = async () => {
+      for (const [index, dataset] of datasets.entries()) {
+        if (dataset.name !== storedDatasets[index]?.name) {
+          const result = await datasetsStore.mergeItem(dataset.id, {
+            name: dataset.name,
+            lastUpdatedBy: session.userId,
+          })
+          if (!result.ok) return
+        }
+      }
+    }
+    void saveNames()
   }, [datasets, datasetsStore, session.userId, storedDatasets])
 
-  const saveActiveDataset = (partialValue: Partial<ProgressDataset>) =>
-    datasetsStore.mergeItem(activeDataset.id, {
-      ...partialValue,
-      lastUpdatedBy: session.userId,
-    })
+  const saveActiveDataset = (partialValue: Partial<ProgressDataset> | ((current: ProgressDataset) => Partial<ProgressDataset>)) =>
+    datasetsStore.mergeItem(activeDataset.id, typeof partialValue === 'function'
+      ? (current) => ({ ...partialValue(current), lastUpdatedBy: session.userId })
+      : { ...partialValue, lastUpdatedBy: session.userId })
 
   const updateActiveDatasetMeta = (
     field: 'name' | 'chartTitle' | 'unit',
@@ -426,11 +442,6 @@ export function useProgressDashboard(lobbyId?: string) {
     const eventIcon = normalizeDrinkIcon(icon)
     const valueDelta = getDrinkIconEventDelta(eventIcon)
     const now = new Date().toISOString()
-    const nextPosition =
-      activeDataset.events.reduce(
-        (max, event) => Math.max(max, event.position),
-        0,
-      ) + 1
     const event: ProgressEvent = {
       id: `event-${createRandomId()}`,
       playerId: player.id,
@@ -440,13 +451,16 @@ export function useProgressDashboard(lobbyId?: string) {
       icon: eventIcon,
       createdAtClientIso: now,
       createdAtLabel: now,
-      position: nextPosition,
+      position: 0,
       lastUpdatedBy: session.userId,
     }
 
-    return saveActiveDataset({
-      events: [...activeDataset.events, event],
-    }).then((result) => result.ok)
+    return saveActiveDataset((current) => ({
+      events: (current.events ?? []).some((entry) => entry.id === event.id) ? (current.events ?? []) : [
+        ...(current.events ?? []),
+        { ...event, position: (current.events ?? []).reduce((max, entry, index) => Math.max(max, Number.isFinite(entry.position) ? entry.position : index + 1), 0) + 1 },
+      ],
+    })).then((result) => result.ok)
   }
 
   const updateEvent = (
@@ -455,8 +469,8 @@ export function useProgressDashboard(lobbyId?: string) {
       Pick<ProgressEvent, 'createdAtClientIso' | 'icon' | 'valueDelta'>
     >,
   ) =>
-    saveActiveDataset({
-      events: activeDataset.events.map((event) =>
+    saveActiveDataset((current) => ({
+      events: (current.events ?? []).map((event) =>
         event.id === eventId
           ? {
               ...event,
@@ -467,41 +481,41 @@ export function useProgressDashboard(lobbyId?: string) {
             }
           : event,
       ),
-    })
+    }))
 
   const deleteEvent = (eventId: string) =>
-    saveActiveDataset({
-      events: activeDataset.events.filter((event) => event.id !== eventId),
-    })
+    saveActiveDataset((current) => ({
+      events: (current.events ?? []).filter((event) => event.id !== eventId),
+    }))
 
   const resetAndArchiveDataset = async () => {
     const now = new Date().toISOString()
     const archiveId = `dataset-${createRandomId()}`
     const archivePosition =
       datasets.reduce((max, dataset) => Math.max(max, dataset.position), 0) + 1
-    const archiveValue = omitDatasetId(activeDataset)
     const newDatasetValue = omitDatasetId(createDataset(1))
 
-    const nextDatasets = sequenceDatasetNames([
-      ...datasets.filter((dataset) => dataset.id !== activeDataset.id),
-      {
-        id: archiveId,
-        ...archiveValue,
-        name: formatArchiveDatasetName(now),
-        position: archivePosition,
-        status: 'archived',
-        archivedAtClientIso: now,
-        lastUpdatedBy: session.userId,
-      },
-      {
-        id: activeDatasetId,
-        ...newDatasetValue,
-        lastUpdatedBy: session.userId,
-      },
-    ])
+    const archive = (current: ProgressDataset[]) => {
+      if (current.some((dataset) => dataset.id === archiveId)) return current
+      const source = current.find((dataset) => dataset.id === activeDataset.id)
+      if (!source) throw new Error('The active dataset no longer exists.')
+      return sequenceDatasetNames([
+        ...current.filter((dataset) => dataset.id !== source.id),
+        {
+          ...source,
+          id: archiveId,
+          name: formatArchiveDatasetName(now),
+          position: archivePosition,
+          status: 'archived',
+          archivedAtClientIso: now,
+          lastUpdatedBy: session.userId,
+        },
+        { id: activeDatasetId, ...newDatasetValue, lastUpdatedBy: session.userId },
+      ])
+    }
 
     return commitSyncBatch((batch) => {
-      datasetsStore.saveItems(nextDatasets, batch)
+      datasetsStore.saveItems(archive, batch)
       stateStore.merge(
         { activeDatasetId, updatedBy: session.userId },
         batch,

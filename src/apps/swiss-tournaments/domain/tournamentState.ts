@@ -307,18 +307,15 @@ export function resetTournamentProgress(tournament: Tournament): Tournament {
   const resetTournament: Tournament = {
     ...tournament,
     currentRound: 0,
-    players: tournament.players.map((player) => ({
-      ...player,
-      status: 'active',
-      addedInRound: 1,
-      statusOverrides: undefined,
-      marioKartEligibleFromCycle:
-        tournament.format === 'marioKart' ? 1 : player.marioKartEligibleFromCycle,
-      marioKartSkippedCycleNumbers:
-        tournament.format === 'marioKart'
-          ? []
-          : player.marioKartSkippedCycleNumbers,
-    })),
+    players: tournament.players.map((player) => {
+      const next = { ...player, status: 'active' as const, addedInRound: 1 }
+      delete next.statusOverrides
+      if (tournament.format === 'marioKart') {
+        next.marioKartEligibleFromCycle = 1
+        next.marioKartSkippedCycleNumbers = []
+      }
+      return next
+    }),
     rounds: [],
   }
 

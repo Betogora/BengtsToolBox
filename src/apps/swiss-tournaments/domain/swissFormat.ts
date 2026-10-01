@@ -211,28 +211,30 @@ function findBestGlobalPairings(
   )?.pairs ?? []
 }
 
-function hasNonRepeatPerfectPairing(
+function findNonRepeatPerfectPairing(
   players: Player[],
   tournament: Tournament,
   roundNumber: number,
-): boolean {
+): PlannedPairing[] | null {
   if (players.length === 0) {
-    return true
+    return []
   }
 
   const [first, ...rest] = players
 
-  return rest.some((candidate) => {
+  for (const candidate of rest) {
     if (hasPlayedEachOtherBeforeRound(tournament, first.id, candidate.id, roundNumber)) {
-      return false
+      continue
     }
 
-    return hasNonRepeatPerfectPairing(
+    const tail = findNonRepeatPerfectPairing(
       rest.filter((player) => player.id !== candidate.id),
       tournament,
       roundNumber,
     )
-  })
+    if (tail) return [{ left: first, right: candidate }, ...tail]
+  }
+  return null
 }
 
 export function createFirstRoundPairings(players: Player[]): PlannedPairing[] {
@@ -256,7 +258,8 @@ export function createSwissBracketPairings(
   summaries: Record<string, PlayerScoreSummary>,
   roundNumber: number,
 ): PlannedPairing[] {
-  const canAvoidRepeats = hasNonRepeatPerfectPairing(players, tournament, roundNumber)
+  const completeNonRepeatPairings = findNonRepeatPerfectPairing(players, tournament, roundNumber)
+  const canAvoidRepeats = completeNonRepeatPairings !== null
   const groups = new Map<number, Player[]>()
   const pairings: PlannedPairing[] = []
   let downfloaters: Player[] = []
@@ -357,14 +360,15 @@ export function createSwissBracketPairings(
     hasPlayedEachOtherBeforeRound(tournament, pairing.left.id, pairing.right.id, roundNumber),
   )
 
-  if (hasRepeat && canAvoidRepeats) {
-    return findBestGlobalPairings(
+  if ((hasRepeat || pairings.length * 2 !== players.length) && completeNonRepeatPairings) {
+    const optimized = findBestGlobalPairings(
       players,
       tournament,
       summaries,
       roundNumber,
       false,
     )
+    return optimized.length * 2 === players.length ? optimized : completeNonRepeatPairings
   }
 
   if (pairings.length === 0 && players.length >= 2) {

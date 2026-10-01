@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { deleteApp, initializeApp } from 'firebase/app'
+import { doc, getFirestore, writeBatch } from 'firebase/firestore'
 
 import {
   makeRound,
@@ -8,6 +10,38 @@ import {
 import { tournamentDomain } from './tournamentDomain'
 
 describe('tournamentDomain decisions', () => {
+  it('resets played tournaments without values rejected by Firestore', async () => {
+    const tournament = makeTournament('swiss', 4, {
+      currentRound: 1,
+      rounds: [makeRound(1, [makeStandardPairing('game', 1, 'p1', 'p2', '1-0')])],
+    })
+    tournament.players[0].statusOverrides = { 1: 'withdrawn' }
+    const result = tournamentDomain.transition(tournament, { command: { type: 'tournament.reset-progress' } })
+    expect(result.status).toBe('changed')
+    if (result.status !== 'changed') return
+    const app = initializeApp({ projectId: 'reset-regression-test' }, 'reset-regression-test')
+    try {
+      const db = getFirestore(app)
+      expect(() => writeBatch(db).set(doc(db, 'test/reset'), result.tournament)).not.toThrow()
+      expect(result.tournament.players[0]).not.toHaveProperty('statusOverrides')
+    } finally {
+      await deleteApp(app)
+    }
+  })
+
+  it('updates existing draft byes and their score when the round override changes', () => {
+    const bye = { ...makeStandardPairing('bye', 1, 'p1', 'p2'), isBye: true, byePlayerId: 'p3', result: 'bye-1' as const }
+    const tournament = makeTournament('swiss', 3, {
+      currentRound: 1,
+      rounds: [makeRound(1, [makeStandardPairing('game', 1, 'p1', 'p2', '1-0'), bye], 'draft')],
+    })
+    const result = tournamentDomain.transition(tournament, { command: { type: 'round-bye-score.set', roundNumber: 1, byeScore: 0.5 } })
+    expect(result.status).toBe('changed')
+    if (result.status !== 'changed') return
+    expect(result.tournament.rounds[0].pairings[1].result).toBe('bye-0.5')
+    expect(tournamentDomain.inspect(result.tournament).standings.find((entry) => entry.playerId === 'p3')?.points).toBe(0.5)
+  })
+
   it('returns unchanged with the original normalized reference for an idempotent command', () => {
     const tournament = tournamentDomain.inspect(makeTournament()).tournament
     const decision = tournamentDomain.transition(tournament, {

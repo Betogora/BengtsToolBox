@@ -9,6 +9,7 @@ import {
 type Mutation<T> = {
   id: number
   apply: (value: T) => T
+  confirmed?: boolean
 }
 
 export class OptimisticState<T> {
@@ -41,6 +42,7 @@ export class OptimisticState<T> {
 
   reject(id: number) {
     this.mutations = this.mutations.filter((mutation) => mutation.id !== id)
+    this.confirmCompleted()
   }
 
   confirmLocal() {
@@ -49,12 +51,24 @@ export class OptimisticState<T> {
     this.snapshotPending = false
   }
 
+  confirm(id: number) {
+    const mutation = this.mutations.find((entry) => entry.id === id)
+    if (mutation) mutation.confirmed = true
+    this.confirmCompleted()
+  }
+
+  private confirmCompleted() {
+    while (this.mutations[0]?.confirmed) {
+      const mutation = this.mutations.shift()!
+      this.confirmed = mutation.apply(this.confirmed)
+    }
+  }
+
   acceptSnapshot(value: T, hasPendingWrites: boolean) {
     this.snapshotPending = hasPendingWrites
 
     if (!hasPendingWrites) {
       this.confirmed = value
-      this.mutations = []
     }
   }
 
@@ -112,6 +126,10 @@ export async function commitOptimisticMutation<T>({
 
   try {
     await persistRemote()
+    state.confirm(mutationId)
+    const cacheResult = persistLocal(state.value)
+    setError('local-storage', cacheResult.ok ? null : cacheResult.error)
+    publish(state.value, state.isPending)
     setError('auth', null)
     setError('firestore', null)
     return syncSuccess(undefined)

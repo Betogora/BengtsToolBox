@@ -5,12 +5,13 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   writeBatch,
   type DocumentData,
   type Firestore,
-  type WriteBatch,
+  type Transaction,
 } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -28,6 +29,7 @@ import {
 import {
   stageSyncMutation,
   type SyncBatch,
+  type SyncRemoteWriter,
 } from '@/lib/firebase/syncBatch'
 import {
   SyncError,
@@ -59,10 +61,11 @@ export type SyncedCollectionResult<T extends CollectionItem> = {
   deleteItems: SyncCollectionAction<[ids: string[]]>
   error: SyncError | null
   isLoading: boolean
+  hasServerSnapshot: boolean
   isPending: boolean
   isRealtime: boolean
-  mergeItem: SyncCollectionAction<[id: string, value: Partial<T>]>
-  saveItems: SyncCollectionAction<[items: T[]]>
+  mergeItem: SyncCollectionAction<[id: string, value: Partial<T> | ((current: T) => Partial<T>)]>
+  saveItems: SyncCollectionAction<[items: T[] | ((current: T[]) => T[])]>
   setItem: SyncCollectionAction<[id: string, value: Omit<T, 'id'>]>
 }
 
@@ -100,6 +103,7 @@ export function useFirestoreCollection<T extends CollectionItem>(
   )
   const [data, setData] = useState<T[]>(localValue.value)
   const [isLoading, setIsLoading] = useState(isFirebaseConfigured)
+  const [hasServerSnapshot, setHasServerSnapshot] = useState(!isFirebaseConfigured)
   const [isPending, setIsPending] = useState(false)
   const [errors, setErrors] = useState<SyncErrors>(() =>
     localValue.ok ? {} : { 'local-storage': localValue.error },
@@ -142,7 +146,12 @@ export function useFirestoreCollection<T extends CollectionItem>(
           query(collection(services.db, path), orderBy(orderField)),
           { includeMetadataChanges: true },
           (snapshot) => {
+            if (snapshot.empty && snapshot.metadata.fromCache) {
+              setIsLoading(false)
+              return
+            }
             const hasPendingWrites = snapshot.metadata.hasPendingWrites
+            if (!snapshot.metadata.fromCache && !hasPendingWrites) setHasServerSnapshot(true)
             const nextData = sortItems(
               snapshot.docs.map(
                 (entry) => ({ id: entry.id, ...entry.data() }) as T,
@@ -151,7 +160,7 @@ export function useFirestoreCollection<T extends CollectionItem>(
             optimisticState.acceptSnapshot(nextData, hasPendingWrites)
 
             if (!hasPendingWrites) {
-              const cacheResult = writeLocalValue(localKey, nextData)
+              const cacheResult = writeLocalValue(localKey, optimisticState.value)
               setSyncError(
                 'local-storage',
                 cacheResult.ok ? null : cacheResult.error,
@@ -212,9 +221,10 @@ export function useFirestoreCollection<T extends CollectionItem>(
     (
       apply: (value: T[]) => T[],
       persistRemote: () => Promise<void>,
-      stageRemote: (batch: WriteBatch, db: Firestore) => void,
+      stageRemote: (batch: SyncRemoteWriter, db: Firestore) => void,
       writeCount: number,
       batch?: SyncBatch,
+      readRemote?: (transaction: Transaction, db: Firestore) => Promise<void>,
     ) => {
       if (batch) {
         stageSyncMutation(batch, {
@@ -227,15 +237,28 @@ export function useFirestoreCollection<T extends CollectionItem>(
           restoreLocalRaw: (value) => restoreLocalRaw(localKey, value),
           publish,
           setError: setSyncError,
+          readRemote,
           stageRemote,
           writeCount,
         })
         return undefined
       }
 
-      return commit(apply, persistRemote)
+      return commit(apply, readRemote ? async () => {
+        const services = getFirebaseServices()
+        if (!services) return
+        await authenticate()
+        try {
+          await runTransaction(services.db, async (transaction) => {
+            await readRemote(transaction, services.db)
+            stageRemote(transaction, services.db)
+          })
+        } catch (error) {
+          throw createSyncError(error, 'firestore', 'merge-item')
+        }
+      } : persistRemote)
     },
-    [commit, localKey, optimisticState, publish, setSyncError, sortItems],
+    [authenticate, commit, localKey, optimisticState, publish, setSyncError, sortItems],
   )
 
   const rejectOversizedBatch = useCallback(() => {
@@ -277,19 +300,39 @@ export function useFirestoreCollection<T extends CollectionItem>(
   ) as SyncedCollectionResult<T>['setItem']
 
   const saveItems = useCallback(
-    (items: T[], batchToken?: SyncBatch) => {
-      const nextData = sortItems(items)
-      const nextIds = new Set(nextData.map((item) => item.id))
-      const idsToDelete = data
+    (items: T[] | ((current: T[]) => T[]), batchToken?: SyncBatch) => {
+      const resolve = (current: T[]) => typeof items === 'function' ? items(current) : items
+      const apply = (current: T[]) => {
+        try {
+          return resolve(current)
+        } catch {
+          // A changed server basis may invalidate the pending action; the transaction will report it.
+          return current
+        }
+      }
+      let nextData = resolve(optimisticState.value)
+      let nextIds = new Set(nextData.map((item) => item.id))
+      let idsToDelete = data
         .filter((item) => !nextIds.has(item.id))
         .map((item) => item.id)
       const writeCount = nextData.length + idsToDelete.length
+      const readRemote = typeof items === 'function'
+        ? async (transaction: Transaction, db: Firestore) => {
+            const ids = [...new Set([...data.map((item) => item.id), ...nextIds])]
+            const snapshots = await Promise.all(ids.map((id) => transaction.get(doc(db, path, id))))
+            const current = snapshots.flatMap((snapshot) => snapshot.exists()
+              ? [{ ...snapshot.data(), id: snapshot.id } as T] : [])
+            nextData = resolve(current)
+            nextIds = new Set(nextData.map((item) => item.id))
+            idsToDelete = current.filter((item) => !nextIds.has(item.id)).map((item) => item.id)
+          }
+        : undefined
       if (!batchToken && isFirebaseConfigured && writeCount > maxBatchWrites) {
         return rejectOversizedBatch()
       }
 
       return stageOrCommit(
-        () => nextData,
+        apply,
         async () => {
           const services = getFirebaseServices()
           if (!services) return
@@ -325,9 +368,10 @@ export function useFirestoreCollection<T extends CollectionItem>(
         },
         writeCount,
         batchToken,
+        readRemote,
       )
     },
-    [authenticate, data, path, rejectOversizedBatch, sortItems, stageOrCommit],
+    [authenticate, data, optimisticState, path, rejectOversizedBatch, stageOrCommit],
   ) as SyncedCollectionResult<T>['saveItems']
 
   const clearItems = useCallback((batchToken?: SyncBatch) => {
@@ -363,11 +407,20 @@ export function useFirestoreCollection<T extends CollectionItem>(
   }, [authenticate, data, path, rejectOversizedBatch, stageOrCommit]) as SyncedCollectionResult<T>['clearItems']
 
   const mergeItem = useCallback(
-    (id: string, value: Partial<T>, batch?: SyncBatch) =>
-      stageOrCommit(
+    (id: string, value: Partial<T> | ((current: T) => Partial<T>), batch?: SyncBatch) => {
+      const resolve = (current: T) => typeof value === 'function' ? value(current) : value
+      let remoteValue: Partial<T>
+      const readRemote = typeof value === 'function'
+        ? async (transaction: Transaction, db: Firestore) => {
+            const snapshot = await transaction.get(doc(db, path, id))
+            if (!snapshot.exists()) throw new Error('The collection item no longer exists.')
+            remoteValue = value({ ...snapshot.data(), id } as T)
+          }
+        : undefined
+      return stageOrCommit(
         (items) =>
           items.map((item) =>
-            item.id === id ? ({ ...item, ...value } as T) : item,
+            item.id === id ? ({ ...item, ...resolve(item) } as T) : item,
           ),
         async () => {
           const services = getFirebaseServices()
@@ -386,13 +439,15 @@ export function useFirestoreCollection<T extends CollectionItem>(
         (remoteBatch, db) => {
           remoteBatch.set(
             doc(db, path, id),
-            { ...value, updatedAt: serverTimestamp() },
+            { ...(readRemote ? remoteValue : value), updatedAt: serverTimestamp() },
             { merge: true },
           )
         },
         1,
         batch,
-      ),
+        readRemote,
+      )
+    },
     [authenticate, path, stageOrCommit],
   ) as SyncedCollectionResult<T>['mergeItem']
 
@@ -464,6 +519,7 @@ export function useFirestoreCollection<T extends CollectionItem>(
     deleteItems,
     error: currentSyncError(errors),
     isLoading,
+    hasServerSnapshot,
     isPending,
     isRealtime: isFirebaseConfigured,
     mergeItem,

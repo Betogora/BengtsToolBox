@@ -155,7 +155,7 @@ function normalizeScoreEvent(event: ScoreboardScoreEvent): ScoreboardScoreEvent 
 export function useScoreboard(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
-  const [isInitializing, setIsInitializing] = useState(true)
+  const [isInitializing, setIsInitializing] = useState(false)
   const [initializationError, setInitializationError] = useState<SyncError | null>(null)
   const initializedLobbyRef = useRef<string | null>(null)
   const statePath = useMemo(
@@ -198,7 +198,10 @@ export function useScoreboard(lobbyId?: string) {
     eventsStore.isLoading
 
   useEffect(() => {
-    if (storesAreLoading || initializedLobbyRef.current === activeLobbyId) {
+    if (storesAreLoading || initializedLobbyRef.current === activeLobbyId ||
+      [stateStore, playersStore, teamsStore, scoringsStore, eventsStore].some(
+        (store) => !store.hasServerSnapshot || (store.error && store.error.source !== 'local-storage'),
+      )) {
       return
     }
 
@@ -366,6 +369,8 @@ export function useScoreboard(lobbyId?: string) {
     if (
       storesAreLoading ||
       isInitializing ||
+      !scoringsStore.hasServerSnapshot || scoringsStore.isPending ||
+      (scoringsStore.error && (!scoringsStore.isRealtime || scoringsStore.error.source !== 'local-storage')) ||
       !scorings.some((scoring, index) => scoring.name !== storedScorings[index]?.name)
     ) {
       return
@@ -483,7 +488,7 @@ export function useScoreboard(lobbyId?: string) {
     )
     const normalizedDelta = Math.trunc(delta)
 
-    if (!target || !isValidScoreDelta(delta) || normalizedDelta !== delta) return false
+    if (!target || !isValidScoreDelta(delta) || normalizedDelta !== delta) return 'invalid' as const
 
     const now = new Date()
     const event: ScoreboardScoreEvent = {
@@ -504,7 +509,7 @@ export function useScoreboard(lobbyId?: string) {
     const { id, ...value } = event
 
     const result = await eventsStore.setItem(id, value)
-    return result.ok
+    return result.ok ? 'saved' as const : 'sync-error' as const
   }
 
   const undoLastScore = async () => {

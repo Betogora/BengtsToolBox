@@ -1,7 +1,11 @@
 import {
   writeBatch,
+  runTransaction,
   type Firestore,
-  type WriteBatch,
+  type Transaction,
+  type DocumentReference,
+  type DocumentData,
+  type SetOptions,
 } from 'firebase/firestore'
 
 import {
@@ -21,6 +25,11 @@ import type { OptimisticState } from '@/lib/firebase/syncMutation'
 const syncBatchBrand = Symbol('SyncBatch')
 const maxBatchWrites = 500
 
+export type SyncRemoteWriter = {
+  set: (reference: DocumentReference, data: DocumentData, options?: SetOptions) => void
+  delete: (reference: DocumentReference) => void
+}
+
 type StagedMutation<T = unknown> = {
   state: OptimisticState<T>
   apply: (value: T) => T
@@ -31,7 +40,8 @@ type StagedMutation<T = unknown> = {
   restoreLocalRaw: (value: string | null) => SyncResult<void>
   publish: (value: T, isPending: boolean) => void
   setError: (source: SyncErrorSource, error: SyncError | null) => void
-  stageRemote: (batch: WriteBatch, db: Firestore) => void
+  readRemote?: (transaction: Transaction, db: Firestore) => Promise<void>
+  stageRemote: (batch: SyncRemoteWriter, db: Firestore) => void
   writeCount: number
 }
 
@@ -235,13 +245,28 @@ export async function commitSyncBatch(
     const services = getFirebaseServices()
     if (!services) throw new Error('Firebase services are unavailable.')
 
-    const remoteBatch = writeBatch(services.db)
-    for (const operation of operations) {
-      operation.stageRemote(remoteBatch, services.db)
+    if (operations.some((operation) => operation.readRemote)) {
+      await runTransaction(services.db, async (transaction) => {
+        for (const operation of operations) {
+          await operation.readRemote?.(transaction, services.db)
+        }
+        for (const operation of operations) {
+          operation.stageRemote(transaction, services.db)
+        }
+      })
+    } else {
+      const remoteBatch = writeBatch(services.db)
+      for (const operation of operations) {
+        operation.stageRemote(remoteBatch, services.db)
+      }
+      await remoteBatch.commit()
     }
-    await remoteBatch.commit()
 
-    for (const operation of operations) {
+    for (const [index, operation] of operations.entries()) {
+      operation.state.confirm(mutationIds[index])
+      const cacheResult = operation.persistLocal(operation.state.value)
+      operation.setError('local-storage', cacheResult.ok ? null : cacheResult.error)
+      operation.publish(operation.state.value, operation.state.isPending)
       operation.setError('auth', null)
       operation.setError('firestore', null)
     }

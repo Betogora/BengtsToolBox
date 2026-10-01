@@ -196,6 +196,7 @@ type TournamentPairingsWorkflowProps = {
     typeof useSwissTournaments
   >["setMarioKartResult"];
   onSetResult: ReturnType<typeof useSwissTournaments>["setResult"];
+  onSetRoundByeScore: ReturnType<typeof useSwissTournaments>["setRoundByeScore"];
 };
 
 export function TournamentPairingsWorkflow({
@@ -216,8 +217,9 @@ export function TournamentPairingsWorkflow({
   onSetMarioKartLobbyReservation,
   onSetMarioKartResult,
   onSetResult,
+  onSetRoundByeScore,
 }: TournamentPairingsWorkflowProps) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const [manualWhite, setManualWhite] = useState("");
   const [manualBlack, setManualBlack] = useState("");
   const [manualWhiteBrain, setManualWhiteBrain] = useState("");
@@ -447,9 +449,10 @@ export function TournamentPairingsWorkflow({
                         disabled={!canSaveMarioKartReservation}
                         size="ifta"
                         onClick={async () => {
-                          await onSetMarioKartLobbyReservation(
+                          const result = await onSetMarioKartLobbyReservation(
                             selectedMarioKartReservationIds,
                           );
+                          if (result?.status !== "changed" && result?.status !== "unchanged") return;
                           setMarioKartReservationDraft(["", "", "", ""]);
                           setIsEditingMarioKartReservation(false);
                           toast.success(t("swiss.marioKartFixLobbySaved"));
@@ -587,6 +590,21 @@ export function TournamentPairingsWorkflow({
                           )}
                         </div>
                         <div className="flex w-full min-w-0 flex-col justify-end gap-2 md:w-auto md:flex-row">
+                          {!isMarioKartLobby && round.status === "draft" && (
+                            <Select
+                              value={String(tournament.settings.roundByeScores?.[round.roundNumber] ?? tournament.settings.byeScore)}
+                              onValueChange={(value) => void onSetRoundByeScore(round.roundNumber, Number(value) as 0 | 0.5 | 1)}
+                            >
+                              <IftaSelectTrigger label={t("swiss.pointsPerBye")} className="w-full md:w-40">
+                                <SelectValue />
+                              </IftaSelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">0</SelectItem>
+                                <SelectItem value="1">1</SelectItem>
+                                <SelectItem value="0.5">{formatNumber(0.5)}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                           {!isMarioKartLobby &&
                             canGoBackToRound &&
                             currentRound && (
@@ -600,7 +618,7 @@ export function TournamentPairingsWorkflow({
                                 })}
                                 confirmLabel={t("swiss.backToRound")}
                                 onConfirm={async () => {
-                                  await onGoBackToPreviousRound();
+                                  if ((await onGoBackToPreviousRound())?.status !== 'changed') return;
                                   toast.success(
                                     t("swiss.backToRoundSuccess", {
                                       number: round.roundNumber,
@@ -736,7 +754,7 @@ export function TournamentPairingsWorkflow({
                                 }
                                 confirmLabel={t("common.delete")}
                                 onConfirm={async () => {
-                                  await onDeleteLatestRound();
+                                  if ((await onDeleteLatestRound())?.status !== 'changed') return;
                                   toast.success(
                                     index + 1 < displayedRounds.length
                                       ? t(
@@ -965,7 +983,7 @@ export function TournamentPairingsWorkflow({
                                         return;
                                       }
 
-                                      await onAddManualHandBrainPairing(
+                                      const result = await onAddManualHandBrainPairing(
                                         draftRound.roundNumber,
                                         {
                                           white: {
@@ -978,6 +996,7 @@ export function TournamentPairingsWorkflow({
                                           },
                                         },
                                       );
+                                      if (result?.status !== "changed") return;
                                       setManualWhiteBrain("");
                                       setManualWhiteHand("");
                                       setManualBlackBrain("");
@@ -1059,11 +1078,12 @@ export function TournamentPairingsWorkflow({
                                     return;
                                   }
 
-                                  await onAddManualPairing(
+                                  const result = await onAddManualPairing(
                                     draftRound.roundNumber,
                                     manualWhite,
                                     manualBlack,
                                   );
+                                  if (result?.status !== "changed") return;
                                   setManualWhite("");
                                   setManualBlack("");
                                   toast.success(t("swiss.manualPairingFixed"));

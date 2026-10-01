@@ -24,6 +24,7 @@ const stores = vi.hoisted(() => {
       isLoading: true,
       isPending: false,
       isRealtime: true,
+      hasServerSnapshot: true,
       clearItems: action(),
       deleteItem: action(),
       deleteItems: action(),
@@ -37,6 +38,7 @@ const stores = vi.hoisted(() => {
       isLoading: false,
       isPending: false,
       isRealtime: true,
+      hasServerSnapshot: true,
       clearItems: action(),
       deleteItem: action(),
       deleteItems: action(),
@@ -97,6 +99,19 @@ function dataset(id = 'dataset-current'): TerritoryDataset {
 }
 
 describe('Sushi-Map-Datensatzbereitschaft', () => {
+  it('verwendet für neue Spieler keine Positions-ID eines früheren Spielers', async () => {
+    stores.dataset.data = [dataset()]
+    stores.dataset.isLoading = false
+    let map: ReturnType<typeof useTerritoryMap> | undefined
+    function Probe() { map = useTerritoryMap(); return null }
+    renderToStaticMarkup(createElement(Probe))
+    const first = await map!.addPlayer('New')
+    const second = await map!.addPlayer('Other')
+    expect(first?.id).toMatch(/^person-/)
+    expect(first?.id).not.toBe(`person-${first?.position}`)
+    expect(second?.id).not.toBe(first?.id)
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     stores.dataset.data = []

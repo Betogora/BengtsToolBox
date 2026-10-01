@@ -439,7 +439,7 @@ export function TournamentOverviewWorkflow({
               <ArchivedTournamentsList
                 entries={archivedEntries}
                 onDelete={async (archivedTournament) => {
-                  await onDeleteTournament(archivedTournament.id);
+                  if (!(await onDeleteTournament(archivedTournament.id))?.ok) return;
                   toast.success(t("swiss.tournamentDeleted"));
                 }}
                 onExportCsv={onExportStandingsCsv}

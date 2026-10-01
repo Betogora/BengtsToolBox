@@ -1,5 +1,5 @@
 import { doc, runTransaction, serverTimestamp } from 'firebase/firestore'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
   BuzzerPlayer,
@@ -141,6 +141,7 @@ export function useLiveBuzzer(lobbyId?: string) {
     initialPlayerId.ok ? null : initialPlayerId.error,
   )
   const [actionError, setActionError] = useState<SyncError | null>(null)
+  const attemptedPlayerId = useRef<string | null>(null)
   const statePath = useMemo(
     () => firebasePaths.liveBuzzerState(activeLobbyId),
     [activeLobbyId],
@@ -179,13 +180,17 @@ export function useLiveBuzzer(lobbyId?: string) {
   )
 
   useEffect(() => {
-    if (playersStore.isLoading) {
+    if (playersStore.isLoading || !playersStore.hasServerSnapshot ||
+      (playersStore.error && playersStore.error.source !== 'local-storage')) {
       return
     }
 
     if (playersStore.data.some((player) => player.id === selectedPlayerId)) {
+      if (!playersStore.isPending) attemptedPlayerId.current = null
       return
     }
+    if (attemptedPlayerId.current === selectedPlayerId) return
+    attemptedPlayerId.current = selectedPlayerId
 
     const nextPosition =
       playersStore.data.reduce(
@@ -324,9 +329,12 @@ export function useLiveBuzzer(lobbyId?: string) {
         : ('sync-error' as const)
     }
 
-    await ensureAnonymousUser()
-
     try {
+      try {
+        await ensureAnonymousUser()
+      } catch (error) {
+        throw createSyncError(error, 'auth', 'batch')
+      }
       const result = await runTransaction(services.db, async (transaction) => {
         const stateRef = doc(services.db, statePath)
         const playerRef = doc(services.db, playerDocPath(selectedPlayerId))
@@ -335,17 +343,20 @@ export function useLiveBuzzer(lobbyId?: string) {
         const remoteState = stateSnapshot.data() as
           | BuzzerSessionState
           | undefined
-        const remotePlayer =
-          (playerSnapshot.data() as BuzzerPlayer | undefined) ?? selectedPlayer
+        const playerData = playerSnapshot.data() as BuzzerPlayer | undefined
+        const remotePlayer = playerData
+          ? normalizePlayer({ ...playerData, id: selectedPlayerId }, 0)
+          : undefined
 
-        if (!remoteState?.isOpen || remotePlayer.buzzedAt) {
+        if (!remoteState?.isOpen || !remotePlayer || remotePlayer.isActive === false ||
+          remotePlayer.buzzedAt || remotePlayer.buzzedAtClientIso) {
           return 'blocked' as const
         }
 
       const isWinnerBuzz = !remoteState.winnerPlayerId
       const nextHistory = isWinnerBuzz
         ? [
-            createRoundResult(remoteState, selectedPlayer, buzzedAtClientIso),
+            createRoundResult(remoteState, remotePlayer, buzzedAtClientIso),
             ...(remoteState.history ?? []),
           ].slice(0, 5)
         : remoteState.history ?? []
@@ -353,10 +364,7 @@ export function useLiveBuzzer(lobbyId?: string) {
       transaction.set(
         playerRef,
         {
-          name,
-          teamId: selectedPlayer.teamId,
-          position: selectedPlayer.position,
-          isActive: true,
+          name: remotePlayer.name,
           buzzedAt: serverTimestamp(),
           buzzedAtClientIso,
           lastUpdatedBy: session.userId,
@@ -370,7 +378,7 @@ export function useLiveBuzzer(lobbyId?: string) {
           stateRef,
           {
             winnerPlayerId: selectedPlayerId,
-            winnerTeamId: selectedPlayer.teamId,
+            winnerTeamId: remotePlayer.teamId,
             lastBuzzedAt: serverTimestamp(),
             lastBuzzedAtClientIso: buzzedAtClientIso,
             history: nextHistory,

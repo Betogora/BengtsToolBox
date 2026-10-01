@@ -8,6 +8,7 @@ import { readDeviceName } from '@/lobbies/deviceIdentity'
 import { ensureDefaultLobbyDocument } from '@/lobbies/repository'
 
 const activityThrottleMs = 5 * 60 * 1000
+const activityTimes = new Map<string, number>()
 
 function activityKey(lobbyId: string) {
   return `bengts-toolbox:lobby-activity:${lobbyId}`
@@ -24,14 +25,20 @@ export function useTrackLobbyDevice(lobbyId?: string) {
     }
 
     const key = activityKey(lobbyId)
-    const lastTrackedAt = Number(window.sessionStorage.getItem(key) ?? 0)
+    let lastTrackedAt = activityTimes.get(key) ?? 0
+    try {
+      lastTrackedAt = Math.max(lastTrackedAt, Number(window.sessionStorage.getItem(key) ?? 0))
+    } catch { /* Tracking also works when browser storage is blocked. */ }
     const now = Date.now()
 
     if (now - lastTrackedAt < activityThrottleMs) {
       return
     }
 
-    window.sessionStorage.setItem(key, String(now))
+    activityTimes.set(key, now)
+    try {
+      window.sessionStorage.setItem(key, String(now))
+    } catch { /* The in-memory timestamp still throttles requests. */ }
     const deviceName = readDeviceName(session.user.uid).value
     const clientIso = new Date(now).toISOString()
     const reference = doc(
@@ -67,7 +74,10 @@ export function useTrackLobbyDevice(lobbyId?: string) {
     }
 
     trackDevice().catch(() => {
-      window.sessionStorage.removeItem(key)
+      activityTimes.delete(key)
+      try {
+        window.sessionStorage.removeItem(key)
+      } catch { /* Storage is optional for activity tracking. */ }
     })
   }, [lobbyId, session.isReady, session.user])
 }
