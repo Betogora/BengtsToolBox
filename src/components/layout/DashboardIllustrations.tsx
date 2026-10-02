@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react'
 
 const palette = {
-  navy: '#06344f',
   teal: '#0d8e90',
   mint: '#a9dfda',
   coral: '#fd7261',
   apricot: '#fac889',
-  fog: '#d7ddde',
+  fog: '#d7e3e5',
   paleMint: '#e8f7f4',
 }
 
@@ -25,9 +24,15 @@ function SvgShell({
       aria-hidden="true"
       className="h-full w-full"
       focusable="false"
+      fontFamily={illustrationFontFamily}
+      fontWeight={illustrationFontWeight}
+      textAnchor="middle"
+      dominantBaseline="central"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       viewBox={viewBox}
     >
-      {children}
+      <g transform="translate(148 -8) scale(1.1)">{children}</g>
     </svg>
   )
 }
@@ -35,41 +40,21 @@ function SvgShell({
 function WheelIllustration() {
   return (
     <SvgShell>
-      <g opacity="0.85">
-        <circle cx="236" cy="80" r="72" fill="#ffffff" />
-        <path d="M236 80 236 8 A72 72 0 0 1 298.4 44Z" fill={palette.apricot} />
-        <path d="M236 80 298.4 44 A72 72 0 0 1 298.4 116Z" fill="#ffc6ba" />
-        <path d="M236 80 298.4 116 A72 72 0 0 1 236 152Z" fill={palette.coral} />
-        <path d="M236 80 236 152 A72 72 0 0 1 173.6 116Z" fill="#dff4f1" />
-        <path d="M236 80 173.6 116 A72 72 0 0 1 173.6 44Z" fill="#f7fbfa" />
-        <path d="M236 80 173.6 44 A72 72 0 0 1 236 8Z" fill={palette.teal} />
-        <circle
-          cx="236"
-          cy="80"
-          r="75"
-          fill="none"
-          stroke={palette.mint}
-          strokeOpacity="0.45"
-          strokeWidth="10"
-        />
-        <circle cx="236" cy="80" r="24" fill="#ffffff" opacity="0.92" />
-        <circle cx="236" cy="80" r="13" fill={palette.mint} />
-        <path
-          d="M218 2h36l-13 38a8 8 0 0 1-10 0Z"
-          fill={palette.coral}
-          stroke="#ffffff"
-          strokeLinejoin="round"
-          strokeWidth="6"
-        />
+      <circle cx="90" cy="82" r="70" fill={palette.paleMint} />
+      <g transform="rotate(-22.5 90 82)">
+        <path d="M90 82L90 18A64 64 0 0 1 135.255 36.745Z" stroke="#fff" strokeWidth="2" fill={palette.apricot} />
+        <path d="M90 82L135.255 36.745A64 64 0 0 1 154 82Z" stroke="#fff" strokeWidth="2" fill={palette.coral} />
+        <path d="M90 82L154 82A64 64 0 0 1 135.255 127.255Z" stroke="#fff" strokeWidth="2" fill="#ffc6ba" />
+        <path d="M90 82L135.255 127.255A64 64 0 0 1 90 146Z" stroke="#fff" strokeWidth="2" fill={palette.mint} />
+        <path d="M90 82L90 146A64 64 0 0 1 44.745 127.255Z" stroke="#fff" strokeWidth="2" fill={palette.teal} />
+        <path d="M90 82L44.745 127.255A64 64 0 0 1 26 82Z" stroke="#fff" strokeWidth="2" fill={palette.paleMint} />
+        <path d="M90 82L26 82A64 64 0 0 1 44.745 36.745Z" stroke="#fff" strokeWidth="2" fill="#8ecfca" />
+        <path d="M90 82L44.745 36.745A64 64 0 0 1 90 18Z" stroke="#fff" strokeWidth="2" fill="#d9eee9" />
+        <circle cx="90" cy="82" r="64" fill="none" stroke={palette.mint} strokeWidth="3" />
       </g>
-      <g opacity="0.65">
-        <circle cx="102" cy="44" r="4" fill={palette.mint} />
-        <circle cx="126" cy="92" r="4" fill={palette.coral} />
-        <circle cx="150" cy="32" r="5" fill={palette.apricot} opacity="0.7" />
-        <circle cx="326" cy="44" r="4" fill={palette.fog} />
-        <circle cx="318" cy="118" r="3" fill={palette.mint} />
-        <path d="m128 58 5 4-5 4-4-4Z" fill={palette.apricot} />
-      </g>
+      <path d="M80 10H100L90 34Z" stroke="#fff" strokeWidth="3" fill={palette.coral} />
+      <circle cx="90" cy="82" r="18" fill="#fff" />
+      <circle cx="90" cy="82" r="8" fill={palette.teal} />
     </SvgShell>
   )
 }
@@ -77,114 +62,43 @@ function WheelIllustration() {
 function CoinflipIllustration() {
   return (
     <SvgShell>
-      <g opacity="0.9">
-        <ellipse
-          cx="244"
-          cy="132"
-          fill={palette.navy}
-          opacity="0.12"
-          rx="88"
-          ry="12"
-        />
-        <circle
-          cx="230"
-          cy="80"
-          r="54"
-          fill="#ffffff"
-          stroke={palette.apricot}
-          strokeWidth="10"
-        />
-        <circle
-          cx="230"
-          cy="80"
-          r="34"
-          fill={palette.apricot}
-          opacity="0.42"
-        />
-        <text
-          fill={palette.teal}
-          fontFamily={illustrationFontFamily}
-          fontSize="42"
-          fontWeight={illustrationFontWeight}
-          textAnchor="middle"
-          x="230"
-          y="95"
-        >
-          K
-        </text>
-        <circle
-          cx="298"
-          cy="58"
-          r="34"
-          fill="#ffffff"
-          stroke={palette.teal}
-          strokeWidth="8"
-          transform="rotate(18 298 58)"
-        />
-        <text
-          fill={palette.coral}
-          fontFamily={illustrationFontFamily}
-          fontSize="29"
-          fontWeight={illustrationFontWeight}
-          textAnchor="middle"
-          transform="rotate(18 298 58)"
-          x="298"
-          y="68"
-        >
-          Z
-        </text>
-        <path
-          d="M154 42c18-22 51-30 83-17M318 98c-18 22-51 30-83 17"
-          fill="none"
-          stroke={palette.mint}
-          strokeLinecap="round"
-          strokeWidth="5"
-        />
-        <circle cx="150" cy="96" r="5" fill={palette.coral} opacity="0.7" />
-        <circle cx="338" cy="32" r="4" fill={palette.mint} />
+      <ellipse cx="90" cy="137" rx="73" ry="8" fill={palette.paleMint} />
+      <g transform="rotate(-9 73 102)">
+        <rect x="24" y="97" width="98" height="10" rx="5" fill={palette.apricot} />
+        <ellipse cx="73" cy="97" rx="49" ry="20" fill="#fff3e3" stroke={palette.apricot} strokeWidth="4" />
+        <g transform="translate(0 40) scale(1 .59)">
+          <text x="73" y="97" fontSize="29" fill="#a97b3d">K</text>
+        </g>
+      </g>
+      <g transform="rotate(12 126 76)">
+        <circle cx="126" cy="76" r="43" fill="#fff" stroke={palette.teal} strokeWidth="4" />
+        <circle cx="126" cy="76" r="35" fill={palette.paleMint} />
+        <circle cx="126" cy="76" r="38" fill="none" stroke={palette.teal} strokeWidth="1" />
+        <text x="126" y="76" fontSize="36.55" fill={palette.teal}>Z</text>
       </g>
     </SvgShell>
   )
 }
 
 function ProgressIllustration() {
-  const bars = [
-    { x: 184, h: 34, opacity: 0.16 },
-    { x: 218, h: 42, opacity: 0.2 },
-    { x: 252, h: 58, opacity: 0.28 },
-    { x: 286, h: 76, opacity: 0.42 },
-    { x: 320, h: 96, opacity: 0.72 },
-  ]
-
   return (
     <SvgShell>
-      <g opacity="0.38" stroke={palette.mint} strokeDasharray="6 10">
-        <path d="M150 34h184" />
-        <path d="M150 70h184" />
-        <path d="M150 106h184" />
-      </g>
-      <g>
-        {bars.map((bar) => (
-          <rect
-            key={bar.x}
-            fill={palette.teal}
-            height={bar.h}
-            opacity={bar.opacity}
-            rx="8"
-            width="26"
-            x={bar.x}
-            y={132 - bar.h}
-          />
-        ))}
-      </g>
-      <path
-        d="M152 110c24-30 41-6 66-36 22-26 39-6 64-31 19-19 35-7 52-24"
-        fill="none"
-        stroke={palette.teal}
-        strokeLinecap="round"
-        strokeWidth="5"
-      />
-      <circle cx="338" cy="17" r="9" fill={palette.coral} />
+      <path d="M34 42H163" stroke={palette.fog} strokeWidth="1" fill="none" strokeDasharray="3 5" />
+      <path d="M34 76H163" stroke={palette.fog} strokeWidth="1" fill="none" strokeDasharray="3 5" />
+      <path d="M34 110H163" stroke={palette.fog} strokeWidth="1" fill="none" strokeDasharray="3 5" />
+      <path d="M34 31V126H164" stroke={palette.fog} strokeWidth="1.5" fill="none" />
+      <text x="23" y="126" fontSize="8" fontWeight="600" fill="#78939b">0</text>
+      <text x="23" y="84" fontSize="8" fontWeight="600" fill="#78939b">4</text>
+      <text x="23" y="42" fontSize="8" fontWeight="600" fill="#78939b">8</text>
+      <text x="39" y="139" fontSize="8" fontWeight="600" fill="#78939b">18:00</text>
+      <text x="98" y="139" fontSize="8" fontWeight="600" fill="#78939b">19:00</text>
+      <text x="157" y="139" fontSize="8" fontWeight="600" fill="#78939b">20:00</text>
+      <path d="M39 116H63V94H94V73H126V42H157" stroke={palette.teal} strokeWidth="3" fill="none" />
+      <path d="M39 120H79V106H111V85H144V66H157" stroke={palette.coral} strokeWidth="3" fill="none" />
+      <path d="M39 123H57V116H101V101H127V86H157" stroke={palette.apricot} strokeWidth="3" fill="none" />
+      <circle cx="157" cy="42" r="4" fill={palette.teal} />
+      <circle cx="157" cy="66" r="4" fill={palette.coral} />
+      <circle cx="157" cy="86" r="4" fill={palette.apricot} />
     </SvgShell>
   )
 }
@@ -192,103 +106,28 @@ function ProgressIllustration() {
 function TriathlonIllustration() {
   return (
     <SvgShell>
-      <ellipse
-        cx="264"
-        cy="137"
-        fill={palette.navy}
-        opacity="0.08"
-        rx="93"
-        ry="10"
-      />
-      <path
-        d="M154 111c24-52 51-77 83-62 24 11 23 49 47 58 22 8 37-15 54-47"
-        fill="none"
-        stroke={palette.mint}
-        strokeDasharray="7 9"
-        strokeLinecap="round"
-        strokeWidth="6"
-      />
-
-      <g>
-        <circle
-          cx="184"
-          cy="104"
-          fill="#ffffff"
-          r="31"
-          stroke={palette.mint}
-          strokeWidth="8"
-        />
-        <circle cx="178" cy="91" fill={palette.coral} r="4.5" />
-        <path
-          d="m182 94 11 7m-27 5c6-6 12-6 18 0s12 6 18 0m-36 11c6-6 12-6 18 0s12 6 18 0"
-          fill="none"
-          stroke={palette.teal}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="4"
-        />
+      <rect x="31" y="17" width="123" height="127" rx="9" fill="#fff" stroke={palette.mint} strokeWidth="1.5" />
+      <path d="M45 17v127" stroke={palette.mint} strokeWidth="1.5" fill="none" />
+      <path d="M66 24v-10M120 24v-10" stroke={palette.teal} strokeWidth="3" fill="none" />
+      <g color={palette.teal} transform="translate(76 48) scale(0.7)">
+        <circle cx="7" cy="-10" r="4" fill="currentColor" />
+        <path d="M-17 1-6-9 5-5 14 1" stroke="currentColor" strokeWidth="2.5" fill="none" />
+        <path d="M-20 9q5-5 10 0t10 0t10 0t10 0" stroke="currentColor" strokeWidth="2.5" fill="none" />
       </g>
-
-      <g>
-        <circle
-          cx="254"
-          cy="58"
-          fill="#ffffff"
-          r="35"
-          stroke={palette.apricot}
-          strokeWidth="8"
-        />
-        <circle
-          cx="238"
-          cy="64"
-          fill="none"
-          r="10"
-          stroke={palette.teal}
-          strokeWidth="3.5"
-        />
-        <circle
-          cx="270"
-          cy="64"
-          fill="none"
-          r="10"
-          stroke={palette.teal}
-          strokeWidth="3.5"
-        />
-        <path
-          d="m238 64 11-17 10 17h-21l8-10h15l9 10m-23-17h8m6-6 5 3"
-          fill="none"
-          stroke={palette.teal}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="3.5"
-        />
-        <circle cx="261" cy="41" fill={palette.coral} r="3.5" />
+      <path d="M106 43h32M106 52h21" stroke={palette.mint} strokeWidth="2.5" fill="none" />
+      <path d="M53 70H141" stroke={palette.fog} strokeWidth="1" fill="none" />
+      <g color="#c3904f" transform="translate(75 87) scale(0.65)">
+        <circle cx="-14" cy="6" r="10" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        <circle cx="15" cy="6" r="10" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        <path d="M-14 6-5-10 6 6h-20M-5-10H8l7 16M6 6l-11-16M5-17h7M-9-13h8" stroke="currentColor" strokeWidth="2.5" fill="none" />
       </g>
-
-      <g>
-        <circle
-          cx="321"
-          cy="105"
-          fill="#ffffff"
-          r="31"
-          stroke={palette.coral}
-          strokeWidth="8"
-        />
-        <g fill={palette.teal} transform="rotate(-24 321 105)">
-          <ellipse cx="311" cy="96" rx="5" ry="9" />
-          <circle cx="306" cy="86" r="2.5" />
-          <circle cx="311" cy="84" r="2.3" />
-          <circle cx="316" cy="86" r="2.1" />
-          <ellipse cx="329" cy="114" rx="5" ry="9" />
-          <circle cx="324" cy="104" r="2.5" />
-          <circle cx="329" cy="102" r="2.3" />
-          <circle cx="334" cy="104" r="2.1" />
-        </g>
+      <path d="M106 82h32M106 91h21" stroke={palette.apricot} strokeWidth="2.5" fill="none" />
+      <path d="M53 108H141" stroke={palette.fog} strokeWidth="1" fill="none" />
+      <g color={palette.coral} transform="translate(76 126) scale(0.65)">
+        <circle cx="7" cy="-17" r="4" fill="currentColor" />
+        <path d="M-10-5 0-11 7-7 16-6M0-11-4 4l-12 10M-4 4 8 8l3 12" stroke="currentColor" strokeWidth="2.8" fill="none" />
       </g>
-
-      <circle cx="220" cy="37" fill={palette.mint} r="4" />
-      <circle cx="292" cy="132" fill={palette.apricot} r="4" />
-      <circle cx="349" cy="48" fill={palette.coral} opacity="0.65" r="3" />
+      <path d="M106 120h32M106 129h21" stroke="#ffc6ba" strokeWidth="2.5" fill="none" />
     </SvgShell>
   )
 }
@@ -296,77 +135,16 @@ function TriathlonIllustration() {
 function ScoreboardIllustration() {
   return (
     <SvgShell>
-      <ellipse cx="236" cy="130" fill={palette.fog} opacity="0.38" rx="106" ry="14" />
-      <g>
-        <rect
-          fill="#ffffff"
-          height="96"
-          rx="8"
-          stroke={palette.mint}
-          strokeOpacity="0.42"
-          width="96"
-          x="142"
-          y="34"
-        />
-        <path d="M142 42a8 8 0 0 1 8-8h80a8 8 0 0 1 8 8v28h-96Z" fill={palette.mint} opacity="0.42" />
-        <text
-          fill={palette.teal}
-          fontFamily={illustrationFontFamily}
-          fontSize="14"
-          fontWeight={illustrationFontWeight}
-          textAnchor="middle"
-          x="190"
-          y="58"
-        >
-          TEAM A
-        </text>
-        <text
-          fill={palette.teal}
-          fontFamily={illustrationFontFamily}
-          fontSize="54"
-          fontWeight={illustrationFontWeight}
-          textAnchor="middle"
-          x="190"
-          y="112"
-        >
-          12
-        </text>
-      </g>
-      <g>
-        <rect
-          fill="#ffffff"
-          height="96"
-          rx="8"
-          stroke={palette.coral}
-          strokeOpacity="0.22"
-          width="96"
-          x="254"
-          y="34"
-        />
-        <path d="M254 42a8 8 0 0 1 8-8h80a8 8 0 0 1 8 8v28h-96Z" fill={palette.coral} opacity="0.2" />
-        <text
-          fill={palette.coral}
-          fontFamily={illustrationFontFamily}
-          fontSize="14"
-          fontWeight={illustrationFontWeight}
-          textAnchor="middle"
-          x="302"
-          y="58"
-        >
-          TEAM B
-        </text>
-        <text
-          fill={palette.coral}
-          fontFamily={illustrationFontFamily}
-          fontSize="54"
-          fontWeight={illustrationFontWeight}
-          textAnchor="middle"
-          x="302"
-          y="112"
-        >
-          09
-        </text>
-      </g>
+      <rect x="16" y="93" width="45" height="42" rx="5" fill="#ffc6ba" />
+      <rect x="67" y="62" width="46" height="73" rx="5" fill={palette.mint} />
+      <rect x="119" y="107" width="45" height="28" rx="5" fill={palette.apricot} />
+      <text x="38" y="78" fontSize="24" fill={palette.coral}>09</text>
+      <text x="90" y="44" fontSize="28" fill={palette.teal}>12</text>
+      <text x="141" y="94" fontSize="19" fill="#a97b3d">06</text>
+      <text x="38" y="115" fontSize="16" fill="#fff">2</text>
+      <text x="90" y="99" fontSize="22" fill={palette.teal}>1</text>
+      <text x="141" y="122" fontSize="14" fill="#fff">3</text>
+      <path d="M9 136H171" stroke={palette.fog} strokeWidth="1.5" fill="none" />
     </SvgShell>
   )
 }
@@ -374,17 +152,43 @@ function ScoreboardIllustration() {
 function BuzzerIllustration() {
   return (
     <SvgShell>
-      <g fill="none" stroke={palette.mint} strokeLinecap="round" strokeWidth="4">
-        <path d="M136 38c-26 42-26 82 0 124" opacity="0.45" />
-        <path d="M170 52c-20 32-20 64 0 96" opacity="0.6" />
-        <path d="M338 38c26 42 26 82 0 124" opacity="0.45" />
-        <path d="M304 52c20 32 20 64 0 96" opacity="0.6" />
+      <g transform="rotate(9 132 51)">
+        <g transform="translate(132 51) scale(0.78)">
+          <rect x="-22" y="-40" width="44" height="80" rx="7" fill="#fff" stroke={palette.mint} strokeWidth="1.5" />
+          <path d="M-6-32H6" stroke={palette.fog} strokeWidth="2" fill="none" />
+          <circle cx="0" cy="32" r="2" fill={palette.mint} />
+          <g transform="translate(0 2) scale(0.34)">
+            <ellipse cx="0" cy="28" rx="55" ry="16" fill={palette.fog} />
+            <ellipse cx="0" cy="21" rx="53" ry="18" fill="#fff" stroke={palette.mint} strokeWidth="2" />
+            <path d="M-39-3v16c0 23 78 23 78 0V-3" fill="#e55749" />
+            <ellipse cx="0" cy="-3" rx="39" ry="26" fill={palette.coral} />
+            <path d="M-25-13Q-8-24 17-18" stroke="#ffb4a9" strokeWidth="3.5" fill="none" />
+          </g>
+        </g>
       </g>
-      <circle cx="237" cy="102" r="58" fill="#ffffff" stroke={palette.fog} strokeWidth="4" />
-      <circle cx="237" cy="102" r="48" fill={palette.fog} opacity="0.45" />
-      <circle cx="237" cy="102" r="42" fill={palette.coral} />
-      <path d="M206 78c17-21 46-22 64-2" fill="none" stroke="#ff9b8d" strokeLinecap="round" strokeWidth="8" />
-      <ellipse cx="237" cy="151" fill={palette.navy} opacity="0.16" rx="55" ry="9" />
+      <g transform="rotate(-10 47 53)">
+        <g transform="translate(47 53) scale(0.67)">
+          <rect x="-22" y="-40" width="44" height="80" rx="7" fill="#fff" stroke={palette.mint} strokeWidth="1.5" />
+          <path d="M-6-32H6" stroke={palette.fog} strokeWidth="2" fill="none" />
+          <circle cx="0" cy="32" r="2" fill={palette.mint} />
+          <g transform="translate(0 2) scale(0.34)">
+            <ellipse cx="0" cy="28" rx="55" ry="16" fill={palette.fog} />
+            <ellipse cx="0" cy="21" rx="53" ry="18" fill="#fff" stroke={palette.mint} strokeWidth="2" />
+            <path d="M-39-3v16c0 23 78 23 78 0V-3" fill="#e55749" />
+            <ellipse cx="0" cy="-3" rx="39" ry="26" fill={palette.coral} />
+            <path d="M-25-13Q-8-24 17-18" stroke="#ffb4a9" strokeWidth="3.5" fill="none" />
+          </g>
+        </g>
+      </g>
+      <path d="M52 87 76 105H124L136 88" stroke={palette.mint} strokeWidth="2.5" fill="none" strokeDasharray="3 6" />
+      <g transform="translate(93 91) scale(1)">
+        <ellipse cx="0" cy="28" rx="55" ry="16" fill={palette.fog} />
+        <ellipse cx="0" cy="21" rx="53" ry="18" fill="#fff" stroke={palette.mint} strokeWidth="2" />
+        <path d="M-39-3v16c0 23 78 23 78 0V-3" fill="#e55749" />
+        <ellipse cx="0" cy="-3" rx="39" ry="26" fill={palette.coral} />
+        <path d="M-25-13Q-8-24 17-18" stroke="#ffb4a9" strokeWidth="3.5" fill="none" />
+      </g>
+      <path d="M86 33v-9M113 36l5-9" stroke={palette.mint} strokeWidth="2.5" fill="none" />
     </SvgShell>
   )
 }
@@ -392,91 +196,41 @@ function BuzzerIllustration() {
 function SushiMapIllustration() {
   return (
     <SvgShell>
-      <g opacity="0.9">
-        <path d="M92 30 346 2l-38 148H58Z" fill={palette.paleMint} />
-        <path
-          d="M112 24 82 150M170 16 138 150M234 10 200 150M298 6 266 150M72 54h258M66 88h248M58 122h238"
-          fill="none"
-          stroke="#ffffff"
-          strokeLinecap="round"
-          strokeWidth="5"
-        />
-        <path
-          d="M132 84c42-28 73 28 114-6 28-23 45-5 70-34"
-          fill="none"
-          stroke={palette.teal}
-          strokeDasharray="7 10"
-          strokeLinecap="round"
-          strokeWidth="4"
-        />
-        <g>
-          <circle cx="150" cy="82" r="21" fill="#ffffff" opacity="0.92" />
-          <ellipse cx="150" cy="82" fill={palette.fog} opacity="0.42" rx="18" ry="8" />
-          <rect fill={palette.coral} height="14" rx="4" width="26" x="137" y="73" />
-          <path d="M139 76c7 5 15 5 22 0" fill="none" stroke="#ffffff" strokeWidth="3" />
-        </g>
-        <g>
-          <circle cx="236" cy="104" r="23" fill="#ffffff" opacity="0.94" />
-          <rect fill={palette.apricot} height="24" rx="6" width="28" x="222" y="92" />
-          <rect fill="#ffffff" height="10" rx="3" width="16" x="228" y="99" />
-          <path d="M225 95h22M225 113h22" stroke="#f49b43" strokeWidth="3" />
-        </g>
-        <g>
-          <circle cx="316" cy="52" r="22" fill="#ffffff" opacity="0.94" />
-          <path d="m302 45 14-7 15 7-15 8Z" fill={palette.navy} opacity="0.78" />
-          <path d="m302 45 14 8v14l-14-8Z" fill={palette.fog} />
-          <path d="m331 45-15 8v14l15-8Z" fill={palette.teal} opacity="0.75" />
-        </g>
-        <path d="M348 98c0 19-17 22-17 35 0-13-17-16-17-35a17 17 0 0 1 34 0Z" fill={palette.teal} opacity="0.62" />
-        <circle cx="331" cy="98" r="6" fill="#ffffff" />
-        <path d="M78 86c-19 5-25 21-20 42m10-25c19-6 31 4 35 22m-19-61c9 14 4 28-10 41" fill="none" stroke={palette.teal} strokeLinecap="round" strokeWidth="3" opacity="0.38" />
-        <path d="M72 58c-4-16 30-18 34-2 11-4 25 1 26 13H80c-9 0-14-5-8-11Z" fill={palette.mint} opacity="0.6" />
+      <circle cx="89" cy="77" r="63" fill={palette.paleMint} />
+      <g transform="translate(4 3) scale(.95)">
+        <path d="M22 41 38 32 58 36 69 49 58 61 49 62 43 74 30 63 27 52Z" fill={palette.mint} />
+        <path d="M48 80 65 81 71 95 64 105 60 123 52 115 48 98Z" fill={palette.mint} />
+        <path d="M88 43 105 33 124 38 129 31 154 43 161 58 148 68 136 62 128 72 116 64 106 68 102 57 90 57Z" fill={palette.mint} />
+        <path d="M89 66 108 64 119 79 109 99 99 109 91 91 85 77Z" fill={palette.mint} />
+        <path d="M137 102 154 97 164 110 155 119 138 116Z" fill={palette.mint} />
+      </g>
+      <g transform="translate(98 66)">
+        <path d="M0 12C-5 4-12-1-12-10a12 12 0 0 1 24 0C12-1 5 4 0 12Z" stroke="#fff" strokeWidth="2" fill={palette.teal} />
+        <circle cx="0" cy="-10" r="4" fill="#fff" />
+      </g>
+      <g transform="translate(135 87)">
+        <path d="M0 12C-5 4-12-1-12-10a12 12 0 0 1 24 0C12-1 5 4 0 12Z" stroke="#fff" strokeWidth="2" fill={palette.coral} />
+        <circle cx="0" cy="-10" r="4" fill="#fff" />
+      </g>
+      <g transform="translate(66 123) scale(1.05)">
+        <rect x="-18" y="-8" width="36" height="23" rx="7" fill="#fff" stroke={palette.fog} strokeWidth="1.5" />
+        <rect x="-19" y="-12" width="38" height="14" rx="6" fill={palette.coral} />
+        <path d="M-10-8l-4 5M0-8l-4 5M10-8l-4 5" stroke="#ffc6ba" strokeWidth="2" fill="none" />
+        <path d="M-11 9H11" stroke={palette.fog} strokeWidth="1.5" fill="none" />
       </g>
     </SvgShell>
   )
 }
 
 function RandomizerIllustration() {
-  const tiles = [
-    { value: '3', x: 162, y: 24, color: '#65717a' },
-    { value: '8', x: 262, y: 24, color: palette.coral },
-    { value: '1', x: 162, y: 94, color: '#65717a' },
-    { value: '6', x: 262, y: 94, color: palette.teal },
-  ]
-
   return (
     <SvgShell>
-      <g opacity="0.72">
-        <rect fill={palette.mint} height="8" rx="2" transform="rotate(-38 134 36)" width="8" x="130" y="32" />
-        <rect fill={palette.coral} height="8" rx="2" transform="rotate(-38 340 38)" width="8" x="336" y="34" />
-        <rect fill={palette.coral} height="8" rx="2" transform="rotate(-38 130 116)" width="8" x="126" y="112" />
-        <rect fill={palette.mint} height="8" rx="2" transform="rotate(-38 348 128)" width="8" x="344" y="124" />
-      </g>
-      {tiles.map((tile) => (
-        <g key={tile.value + tile.x}>
-          <rect
-            fill="#ffffff"
-            height="56"
-            rx="8"
-            stroke={tile.color}
-            strokeOpacity="0.14"
-            width="82"
-            x={tile.x}
-            y={tile.y}
-          />
-          <text
-            fill={tile.color}
-            fontFamily={illustrationFontFamily}
-            fontSize="38"
-            fontWeight={illustrationFontWeight}
-            textAnchor="middle"
-            x={tile.x + 41}
-            y={tile.y + 41}
-          >
-            {tile.value}
-          </text>
-        </g>
-      ))}
+      <rect x="46" y="17" width="88" height="129" rx="15" fill={palette.paleMint} stroke={palette.mint} strokeWidth="1.5" />
+      <text x="90" y="38" fontSize="24" fill="#93bcb8">41</text>
+      <text x="90" y="126" fontSize="24" fill="#93bcb8">43</text>
+      <rect x="36" y="55" width="108" height="55" rx="9" fill="#fff" stroke={palette.teal} strokeWidth="1.5" />
+      <text x="90" y="83" fontSize="45" fill={palette.teal}>42</text>
+      <path d="M149 77l-8 6 8 6" stroke={palette.coral} strokeWidth="3" fill="none" />
     </SvgShell>
   )
 }
@@ -484,57 +238,18 @@ function RandomizerIllustration() {
 function NextQuestionIllustration() {
   return (
     <SvgShell>
-      <ellipse cx="240" cy="134" fill={palette.navy} opacity="0.12" rx="108" ry="12" />
-      <g opacity="0.86">
-        <rect
-          fill={palette.paleMint}
-          height="94"
-          rx="12"
-          stroke={palette.mint}
-          strokeOpacity="0.38"
-          transform="rotate(10 252 78)"
-          width="170"
-          x="168"
-          y="31"
-        />
-        <rect
-          fill="#f7fbfa"
-          height="98"
-          rx="12"
-          stroke={palette.mint}
-          strokeOpacity="0.46"
-          transform="rotate(5 238 78)"
-          width="184"
-          x="140"
-          y="29"
-        />
-        <rect
-          fill="#ffffff"
-          height="104"
-          rx="12"
-          stroke={palette.fog}
-          strokeWidth="2"
-          width="198"
-          x="108"
-          y="28"
-        />
-        <text
-          fill={palette.navy}
-          fontFamily={illustrationFontFamily}
-          fontSize="58"
-          fontWeight={illustrationFontWeight}
-          opacity="0.62"
-          textAnchor="middle"
-          x="207"
-          y="98"
-        >
-          ?
-        </text>
-        <g opacity="0.72">
-          <circle cx="148" cy="116" r="4" fill={palette.mint} />
-          <circle cx="164" cy="116" r="4" fill={palette.fog} />
-          <circle cx="180" cy="116" r="4" fill={palette.fog} />
-        </g>
+      <g transform="rotate(-10 87 81)">
+        <rect x="35" y="35" width="104" height="91" rx="9" fill={palette.paleMint} stroke={palette.mint} strokeWidth="1.5" />
+      </g>
+      <g transform="rotate(-4 89 76)">
+        <rect x="37" y="30" width="104" height="91" rx="9" fill="#fff" stroke={palette.fog} strokeWidth="1.5" />
+      </g>
+      <g transform="rotate(6 95 72)">
+        <rect x="43" y="27" width="104" height="91" rx="9" fill="#fff" stroke={palette.mint} strokeWidth="1.5" />
+        <text x="95" y="71" fontSize="43" fill={palette.teal}>?</text>
+        <circle cx="79" cy="102" r="2.5" fill={palette.teal} />
+        <circle cx="94" cy="102" r="2.5" fill={palette.mint} />
+        <circle cx="109" cy="102" r="2.5" fill={palette.mint} />
       </g>
     </SvgShell>
   )
