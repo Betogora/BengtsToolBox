@@ -5,16 +5,6 @@ const progressPlayersStorageKey =
 const progressDatasetsStorageKey =
   'app-hub:collection:apps/progress-dashboard/sessions/default/datasets'
 
-test('gespeicherte Farbe bleibt auch bei einem Standardnamen erhalten', async ({ app, page }) => {
-  await page.addInitScript(({ key }) => {
-    localStorage.setItem(key, JSON.stringify([{ id: 'person-1', name: 'Person 1', position: 1, color: '#ff0000' }]))
-  }, { key: progressPlayersStorageKey })
-  await app.open('/apps/progress-dashboard')
-  const color = page.getByRole('button', { name: 'Person 1 Farbe wählen' }).locator('span')
-  await expect(color).toHaveCSS('background-color', 'rgb(255, 0, 0)')
-  await app.expectHealthy()
-})
-
 test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
   await app.open('/')
 
@@ -43,21 +33,21 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
   page,
 }) => {
   const players = [
-    { id: 'person-1', name: 'Damian', position: 1, color: '#facc15' },
+    { id: 'person-1', name: 'Person 1', position: 1, color: '#facc15' },
     { id: 'person-2', name: 'Jan', position: 2, color: '#0d8e90' },
     { id: 'person-3', name: 'Niggy', position: 3, color: '#fac889' },
     { id: 'person-4', name: 'Eddy', position: 4, color: '#fd7261' },
     { id: 'person-5', name: 'Bengt', position: 5, color: '#385d73' },
   ]
   const eventValues = [
-    ['person-1', 'Damian', '#facc15', 4, '2026-08-10T18:00:00.000Z'],
+    ['person-1', 'Person 1', '#facc15', 4, '2026-08-10T18:00:00.000Z'],
     ['person-2', 'Jan', '#0d8e90', 5, '2026-08-10T18:10:00.000Z'],
     ['person-3', 'Niggy', '#fac889', 2, '2026-08-10T18:20:00.000Z'],
     ['person-4', 'Eddy', '#fd7261', 4, '2026-08-10T18:30:00.000Z'],
     ['person-5', 'Bengt', '#385d73', 3.5, '2026-08-10T18:40:00.000Z'],
     ['person-3', 'Niggy', '#fac889', 4, '2026-08-10T18:50:00.000Z'],
     ['person-2', 'Jan', '#0d8e90', 4.5, '2026-08-10T19:00:00.000Z'],
-    ['person-1', 'Damian', '#facc15', 6.5, '2026-08-10T19:10:00.000Z'],
+    ['person-1', 'Person 1', '#facc15', 6.5, '2026-08-10T19:10:00.000Z'],
   ]
   const events = eventValues.map(
     ([playerId, playerName, playerColor, valueDelta, createdAtClientIso], index) => ({
@@ -110,7 +100,7 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
   await expect(chart).toBeVisible()
   await expect(progressList).toBeVisible()
   await expect(progressItems).toHaveCount(5)
-  await expect(progressItems.nth(0)).toContainText('Damian')
+  await expect(progressItems.nth(0)).toContainText('Person 1')
   await expect(progressItems.nth(1)).toContainText('Jan')
   await expect(progressItems.nth(2)).toContainText('Niggy')
   await expect(progressItems.nth(3)).toContainText('Eddy')
@@ -119,8 +109,8 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
   await expect(progressList.locator('[data-progress-variant="compact"]')).toHaveCount(2)
   await expect(progressList.getByRole('img')).toHaveCount(5)
   await expect(progressList.getByRole('button')).toHaveCount(0)
-  await expect(page.getByRole('tab', { name: 'Stand' })).toHaveCount(0)
-  await expect(page.getByRole('tab', { name: 'Verlauf' })).toHaveCount(0)
+  const storedColor = page.getByRole('button', { name: 'Person 1 Farbe wählen' }).locator('span')
+  await expect(storedColor).toHaveCSS('background-color', 'rgb(250, 204, 21)')
   await expect(progressItems.nth(0).locator('path')).toHaveAttribute('stroke', /#facc15/i)
   await expect(progressItems.nth(3).locator('path')).toHaveAttribute('stroke', /#fd7261/i)
 
@@ -436,7 +426,7 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await app.expectHealthy()
 })
 
-test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', async ({
+test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', { tag: '@desktop' }, async ({
   app,
   page,
 }) => {
@@ -555,7 +545,7 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', async ({
   await app.expectHealthy()
 })
 
-test('Sushi Map folgt Touch-Panning nach einem Animationsframe', async ({
+test('Sushi Map folgt Touch-Panning nach einem Animationsframe', { tag: '@touch' }, async ({
   app,
   page,
 }) => {
@@ -672,7 +662,6 @@ test('Globaler Farbkreis zeigt live an und speichert direkte Änderungen', async
       await page.getByRole('button', { name: 'Sushi-Tourist' }).click()
     }
 
-    await expect(page.locator('input[type="color"]')).toHaveCount(0)
     const scoreboardPickers = page.locator('button[aria-label^="Farbe für"]')
 
     if (picker.route === scoreboardRoute) {
@@ -686,10 +675,6 @@ test('Globaler Farbkreis zeigt live an und speichert direkte Änderungen', async
     await expect(trigger).toBeVisible()
     await trigger.click()
     await expect(page.getByRole('slider')).toBeVisible()
-    await expect(page.getByText('Farbe auswählen', { exact: true })).toHaveCount(0)
-    await expect(page.getByText(/^#[0-9A-F]{6}$/i)).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Abbrechen' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Übernehmen' })).toHaveCount(0)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('slider')).toBeHidden()
   }
@@ -865,7 +850,7 @@ test('Sushi Map zeigt alle Owner kleiner Territorien mit adaptiven Streifen', as
   await app.expectHealthy()
 })
 
-test('Sushi Map migriert UK-Altbesuche lobbyweise zu England', async ({
+test('Sushi Map migriert UK-Altbesuche lobbyweise zu England', { tag: '@desktop' }, async ({
   app,
   page,
 }) => {

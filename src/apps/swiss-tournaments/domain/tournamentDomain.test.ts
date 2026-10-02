@@ -10,20 +10,38 @@ import {
 import { tournamentDomain } from './tournamentDomain'
 
 describe('tournamentDomain decisions', () => {
-  it('resets played tournaments without values rejected by Firestore', async () => {
+  it('resets progress and scheduling metadata without values rejected by Firestore', async () => {
     const tournament = makeTournament('swiss', 4, {
-      currentRound: 1,
-      rounds: [makeRound(1, [makeStandardPairing('game', 1, 'p1', 'p2', '1-0')])],
+      currentRound: 2,
+      rounds: [
+        makeRound(1, [makeStandardPairing('game', 1, 'p1', 'p2', '1-0')]),
+        makeRound(2, [makeStandardPairing('draft', 2, 'p3', 'p4')], 'draft'),
+      ],
     })
-    tournament.players[0].statusOverrides = { 1: 'withdrawn' }
+    tournament.marioKartLobbyReservation = { playerIds: ['p1', 'p2'] }
+    tournament.players = tournament.players.map((player, index) => ({
+      ...player,
+      status: index === 0 ? 'withdrawn' : player.status,
+      addedInRound: index + 1,
+      statusOverrides: { 3: 'inactive' },
+    }))
     const result = tournamentDomain.transition(tournament, { command: { type: 'tournament.reset-progress' } })
     expect(result.status).toBe('changed')
-    if (result.status !== 'changed') return
+    if (result.status !== 'changed') throw new Error('Zurücksetzen erwartet')
+    const reset = result.tournament
+    expect(reset.currentRound).toBe(0)
+    expect(reset.rounds).toEqual([])
+    expect(reset.marioKartLobbyReservation).toBeUndefined()
+    expect(reset.players.every((player) =>
+      player.status === 'active' && player.addedInRound === 1,
+    )).toBe(true)
+    for (const player of reset.players) {
+      expect(player).not.toHaveProperty('statusOverrides')
+    }
     const app = initializeApp({ projectId: 'reset-regression-test' }, 'reset-regression-test')
     try {
       const db = getFirestore(app)
       expect(() => writeBatch(db).set(doc(db, 'test/reset'), result.tournament)).not.toThrow()
-      expect(result.tournament.players[0]).not.toHaveProperty('statusOverrides')
     } finally {
       await deleteApp(app)
     }
@@ -68,42 +86,6 @@ describe('tournamentDomain decisions', () => {
       expect(decision.tournament.players).toContainEqual(
         expect.objectContaining({ name: 'Neu', rating: 1500 }),
       )
-    }
-  })
-
-  it('requires confirmation before a historical correction regenerates the draft', () => {
-    const completedRound = makeRound(1, [
-      makeStandardPairing('completed-game', 1, 'p1', 'p2', '1-0'),
-    ])
-    const emptyDraft = makeRound(
-      2,
-      [makeStandardPairing('draft-game', 2, 'p3', 'p4')],
-      'draft',
-    )
-    const tournament = makeTournament('swiss', 4, {
-      currentRound: 2,
-      rounds: [completedRound, emptyDraft],
-    })
-    const command = {
-      type: 'result.correct' as const,
-      roundNumber: 1,
-      pairingId: 'completed-game',
-      result: '0-1' as const,
-    }
-    const preview = tournamentDomain.transition(tournament, { command })
-
-    expect(preview.status).toBe('confirmation-required')
-    if (preview.status !== 'confirmation-required') {
-      throw new Error('Bestätigung erwartet')
-    }
-
-    const applied = tournamentDomain.transition(tournament, preview.retry)
-    expect(applied.status).toBe('changed')
-    if (applied.status === 'changed') {
-      expect(applied.effects).toContain('current-draft-regenerated')
-      expect(
-        applied.tournament.rounds[0].pairings[0].result,
-      ).toBe('0-1')
     }
   })
 

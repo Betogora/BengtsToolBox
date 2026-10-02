@@ -547,7 +547,7 @@ src/apps/<app-id>/
 
 ### 7.4 Testsystem
 
-Vitest läuft in einer Node-Umgebung und prüft pure Fachlogik ohne DOM, React-Renderer oder Firebase-Emulator. Tests liegen feature-nah als `*.test.ts`; ausschließlich gemeinsam genutzte feste Turnier-Fixtures liegen unter `src/apps/swiss-tournaments/__tests__`. Produktion und Tests verwenden dieselben öffentlichen Interfaces. Ein Registry-Vertragstest prüft zusätzlich eindeutige IDs und Routen, die Ableitung von `href` und `routePath` sowie den Gleichstand der dokumentierten App-Routen in beiden Spezifikationsfassungen.
+Vitest läuft in einer Node-Umgebung mit isolierten Workerthreads und prüft pure Fachlogik sowie Hook-Verträge mit React-Serverrendering und gemockter Infrastruktur, ohne Browser-DOM oder Firebase-Emulator. Tests liegen feature-nah als `*.test.ts`; ausschließlich gemeinsam genutzte feste Turnier-Fixtures liegen unter `src/apps/swiss-tournaments/__tests__`. Produktion und Tests verwenden dieselben öffentlichen Interfaces. Ein Registry-Vertragstest prüft zusätzlich eindeutige IDs und Routen, die Ableitung von `href` und `routePath` sowie den Gleichstand der dokumentierten App-Routen in beiden Spezifikationsfassungen.
 
 Der P0-Testschnitt umfasst:
 
@@ -569,6 +569,14 @@ npm run test:browser
 `npm test` läuft einmalig und ist der Befehl für die schnellen Kern-Tests in CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. `npm run test:firebase` prüft Rules und die atomare Ablehnung eines Firestore-Batches im lokalen Emulator.
 
 `npm run test:browser` startet Vite ohne Firebase-Konfiguration auf `127.0.0.1:5180` und führt eine kleine Playwright-Chromium-Suite bei 320, 390, 768 und 1440 Pixel Breite aus. Sie prüft Dashboard und responsive Navigation, eine verschachtelte Scoreboard-Route mit Tastatur und Bestätigungsdialog, Presenter und Fokuswiederherstellung sowie Karten- und Tabelleninteraktion der Sushi Map. Ein gemeinsamer Checkpoint lässt Browser- und Konsolenfehler, äußeren Horizontal-Overflow sowie Axe-Verstöße gegen WCAG 2.0 bis 2.2 A/AA fehlschlagen. Playwright-Bericht, Screenshots und Traces liegen ausschließlich in den nicht versionierten Verzeichnissen `playwright-report/` und `test-results/`.
+
+Für Erweiterungen gilt:
+
+- Vor einem neuen Fall nach derselben Verhaltensprüfung suchen und vorhandene Szenarien um fehlende Assertions oder fachlich andere Eingaben erweitern. Unabhängige Fehlerursachen bleiben getrennt diagnostizierbar.
+- Die günstigste aussagekräftige Schicht wählen: Fachlogik in Vitest, Store-Aufrufverträge in gemockten Hooks, tatsächliche Rules und konkurrierende Clients im Emulator, Bedienung und Barrierefreiheit im Browser. Dieselbe Fachrechnung nicht in jeder Schicht erneut vollständig prüfen; unterschiedliche Systemgrenzen sind keine Redundanz.
+- Größenspezifische Browserabläufe bleiben unmarkiert auf allen vier Viewports. `@desktop` beschränkt größenunabhängige Fehler-, Zustands- und Migrationsfälle auf Desktop; `@touch` läuft auf den drei Touch-Projekten. Screenshot-Vorschauen ohne zusätzlichen Prüfzweck gehören nicht in die reguläre Suite.
+- Erledigte Datei-/Codeentfernungen und einmalige Datenreparaturen nicht durch dauerhafte Abwesenheitsprüfungen oder Assertions auf die selbst erzeugte Fixture festschreiben. Laufende Löschaktionen und Schutz vor Datenverlust behalten Tests; Migrationen bleiben abgesichert, solange entsprechende Speicherstände vorkommen können.
+- Testisolation erhalten. Laufzeitänderungen bei gleicher Node-Version, Reporterwahl und Workerzahl messen, Vitest nach einem Warmup mindestens dreimal. Während Browsermessungen keine Quelldateien ändern und bei paralleler Entwicklung für beide Stände denselben Server ohne Dateiwatcher verwenden. Timeouts, Wiederholungen und abgebrochene Läufe separat ausweisen.
 
 Der Produktions-Build erzeugt zusätzlich einen nicht versionierten Bundle-Bericht unter `dist/performance/`. Die versionierte Referenz liegt in `benchmarks/bundle-baseline.json` und umfasst Einstieg-JavaScript, globale Styles, Firebase-Chunks, alle App-Chunks sowie die großen Fragen- und Gebietsdaten. `npm run build` vergleicht Roh- und gzip-Größen mit dieser Referenz. Pro Messwert gilt ein Regressionsbudget von 20 Prozent, mindestens aber 16 KiB roh beziehungsweise 4 KiB gzip. Neue oder verschwundene Kategorien gelten ebenfalls als bewusste Baseline-Änderung.
 

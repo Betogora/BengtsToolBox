@@ -101,13 +101,16 @@ describe('tournament lifecycle', () => {
       },
     })
     expect(preview.status).toBe('confirmation-required')
-
-    const corrected = applyTournamentCommand(tournament, {
-      type: 'result.correct',
-      roundNumber: 1,
-      pairingId: 'completed-game',
-      result: '0-1',
-    })
+    if (preview.status !== 'confirmation-required') {
+      throw new Error('Bestätigung erwartet')
+    }
+    const applied = tournamentDomain.transition(tournament, preview.retry)
+    expect(applied.status).toBe('changed')
+    if (applied.status !== 'changed') {
+      throw new Error('Korrektur erwartet')
+    }
+    expect(applied.effects).toContain('current-draft-regenerated')
+    const corrected = applied.tournament
     const currentDraft = tournamentDomain.inspect(corrected).currentDraftRound
 
     expect(corrected.rounds[0].pairings[0].result).toBe('0-1')
@@ -182,33 +185,6 @@ describe('tournament lifecycle', () => {
     }).players.map((player) => player.id)).not.toContain(
       'p4',
     )
-  })
-
-  it('resets all progress and player scheduling metadata', () => {
-    const tournament = tournamentWithUnscoredDraft()
-    const changed = {
-      ...tournament,
-      marioKartLobbyReservation: { playerIds: ['p1', 'p2'] },
-      players: tournament.players.map((player, index) => ({
-        ...player,
-        status: index === 0 ? ('withdrawn' as const) : player.status,
-        addedInRound: index + 1,
-        statusOverrides: { 3: 'inactive' as const },
-      })),
-    }
-    const reset = applyTournamentCommand(changed, { type: 'tournament.reset-progress' })
-
-    expect(reset.currentRound).toBe(0)
-    expect(reset.rounds).toEqual([])
-    expect(reset.marioKartLobbyReservation).toBeUndefined()
-    expect(
-      reset.players.every(
-        (player) =>
-          player.status === 'active' &&
-          player.addedInRound === 1 &&
-          player.statusOverrides === undefined,
-      ),
-    ).toBe(true)
   })
 
   it('reopens the previous round or deletes the latest round predictably', () => {

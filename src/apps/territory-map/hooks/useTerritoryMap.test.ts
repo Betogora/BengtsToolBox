@@ -240,13 +240,26 @@ describe('Sushi-Map-Migration des Vereinigten Königreichs', () => {
     lastUpdatedBy: 'legacy-user',
   }
 
-  it('ordnet Altbesuche England zu und erhält alle übrigen Felder', () => {
-    const [migrated] = migrateLegacyUnitedKingdomEvents([legacyEvent])
-
-    expect(migrated).toEqual({
+  it('ordnet Altbesuche England zu und erhält Metadaten und Claims beider Karten', () => {
+    const germanyEvent: TerritoryVisitEvent = {
       ...legacyEvent,
-      territoryId: 'gb-eng',
-      territoryName: 'England',
+      id: 'event-germany',
+      mapId: 'germany',
+      territoryId: 'DE-NI',
+      territoryName: 'Niedersachsen',
+      playerId: 'person-1',
+      playerName: 'Bengt',
+      position: 8,
+    }
+    const migrated = migrateLegacyUnitedKingdomEvents([legacyEvent, germanyEvent])
+
+    expect(migrated).toEqual([
+      { ...legacyEvent, territoryId: 'gb-eng', territoryName: 'England' },
+      germanyEvent,
+    ])
+    expect(getCurrentClaims(migrated)).toEqual({
+      world: { 'gb-eng': expect.objectContaining({ playerId: 'person-2' }) },
+      germany: { 'DE-NI': expect.objectContaining({ playerId: 'person-1' }) },
     })
   })
 
@@ -259,63 +272,5 @@ describe('Sushi-Map-Migration des Vereinigten Königreichs', () => {
     const events = [canonical]
 
     expect(migrateLegacyUnitedKingdomEvents(events)).toBe(events)
-  })
-})
-
-describe('Sushi-Map-Projektion der reparierten Events', () => {
-  it('erhält Karten-, Personen-, Zeit- und Positionssummen', () => {
-    const recovered = [
-      ['germany', 'DE-HB', 'person-1', 'Bengt', '2026-06-03T15:33:11.470Z'],
-      ['germany', 'DE-NI', 'person-1', 'Bengt', '2026-06-03T15:33:18.888Z'],
-      ['germany', 'DE-HH', 'person-1', 'Bengt', '2026-06-03T15:33:21.529Z'],
-      ['germany', 'DE-BY', 'person-1', 'Bengt', '2026-06-03T15:33:25.136Z'],
-      ['germany', 'DE-BW', 'person-2', 'Paul', '2026-06-03T15:59:09.628Z'],
-      ['world', 'za', 'person-2', 'Paul', '2026-06-03T16:01:14.794Z'],
-      ['world', 'us', 'person-2', 'Paul', '2026-06-03T16:11:44.930Z'],
-      ['world', 'gb', 'person-2', 'Paul', '2026-06-04T14:46:48.421Z'],
-      ['world', 'es', 'person-2', 'Paul', '2026-06-04T14:47:00.199Z'],
-      ['world', 'md', 'person-2', 'Paul', '2026-06-04T14:47:29.873Z'],
-      ['world', 'pt', 'person-2', 'Paul', '2026-06-04T14:47:39.297Z'],
-      ['world', 'ch', 'person-2', 'Paul', '2026-06-04T14:48:08.883Z'],
-      ['germany', 'DE-NW', 'person-2', 'Paul', '2026-06-04T14:48:21.876Z'],
-      ['world', 'de', 'person-2', 'Paul', '2026-06-04T15:02:16.600Z'],
-    ].map(
-      ([mapId, territoryId, playerId, playerName, createdAtClientIso], index) =>
-        ({
-          id: `event-${index + 1}`,
-          mapId,
-          territoryId,
-          territoryName: territoryId,
-          playerId,
-          playerName,
-          playerColor: playerId === 'person-1' ? '#063852' : '#a24a02',
-          createdAtClientIso,
-          createdAtLabel: createdAtClientIso,
-          position: index + 1,
-        }) as TerritoryVisitEvent,
-    )
-
-    const claims = getCurrentClaims(
-      migrateLegacyUnitedKingdomEvents(recovered),
-    )
-    const allClaims = [
-      ...Object.values(claims.germany),
-      ...Object.values(claims.world),
-    ]
-
-    expect(Object.keys(claims.germany)).toHaveLength(6)
-    expect(Object.keys(claims.world)).toHaveLength(8)
-    expect(
-      allClaims.filter((claim) => claim.playerId === 'person-1'),
-    ).toHaveLength(4)
-    expect(
-      allClaims.filter((claim) => claim.playerId === 'person-2'),
-    ).toHaveLength(10)
-    expect(recovered.map((event) => event.position)).toEqual(
-      Array.from({ length: 14 }, (_, index) => index + 1),
-    )
-    expect(recovered.map((event) => event.createdAtLabel)).toEqual(
-      recovered.map((event) => event.createdAtClientIso),
-    )
   })
 })

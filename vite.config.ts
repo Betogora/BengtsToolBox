@@ -17,6 +17,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    pool: 'threads',
     include: [
       'src/**/*.test.ts',
       'benchmarks/**/*.test.ts',

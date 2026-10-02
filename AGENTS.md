@@ -64,6 +64,13 @@ Bei breiten, projektübergreifenden Änderungen die Lektüre auf alle betroffene
 
 ## Verifikation
 
+### Tests gezielt pflegen
+
+- Vor neuen Tests bestehende Abdeckung suchen. Dasselbe Verhalten im bestehenden Szenario erweitern oder mit fachlich unterschiedlichen Eingaben parametrisieren; unabhängige Fehlerfälle getrennt lassen.
+- Einmalige Datei-/Codeentfernungen und erledigte Datenreparaturen brauchen keine dauerhaften Abwesenheits- oder Fixture-Selbsttests. Laufende Löschfunktionen, Schutz vor Datenverlust und Migrationen noch möglicher Speicherstände bleiben Regressionstests.
+- Browserfälle ohne Größenabhängigkeit mit `@desktop` einmal ausführen; responsive Abläufe bleiben unmarkiert auf allen vier Viewports, reine Touchfälle erhalten `@touch`. Keine Screenshot-Vorschauen ohne eigenen Prüfzweck hinzufügen.
+- Testschichten und Messregeln stehen in [Abschnitt 7.4 der Spezifikation](docs/specs.md#74-testsystem); die Suite-Prüfung mit Vorher-/Nachherwerten steht im [Testbericht](docs/test-suite-review.md).
+
 Mindestens für Codeänderungen:
 
 ```powershell

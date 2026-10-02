@@ -35,6 +35,7 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-320',
+      grepInvert: /@desktop/,
       use: {
         viewport: { width: 320, height: 720 },
         hasTouch: true,
@@ -43,6 +44,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-390',
+      grepInvert: /@desktop/,
       use: {
         viewport: { width: 390, height: 844 },
         hasTouch: true,
@@ -51,6 +53,7 @@ export default defineConfig({
     },
     {
       name: 'tablet',
+      grepInvert: /@desktop/,
       use: {
         viewport: { width: 768, height: 1024 },
         hasTouch: true,
@@ -58,6 +61,7 @@ export default defineConfig({
     },
     {
       name: 'desktop',
+      grepInvert: /@touch/,
       use: {
         viewport: { width: 1440, height: 900 },
       },

@@ -317,7 +317,7 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await app.expectHealthy()
 })
 
-test('Tagebuch erschließt ältere Trainings durch Filter, Sortierung und Seiten', async ({
+test('Tagebuch erschließt ältere Trainings durch Filter, Sortierung und Seiten', { tag: '@desktop' }, async ({
   app,
   page,
 }) => {
@@ -373,7 +373,7 @@ test('Tagebuch erschließt ältere Trainings durch Filter, Sortierung und Seiten
   await app.expectHealthy()
 })
 
-test('Pace und Dauer berechnen Distanz und Leistungstests bleiben gespeichert', async ({
+test('Pace und Dauer berechnen Distanz und Leistungstests bleiben gespeichert', { tag: '@desktop' }, async ({
   app,
   page,
 }) => {
@@ -406,150 +406,4 @@ test('Pace und Dauer berechnen Distanz und Leistungstests bleiben gespeichert', 
     edit.getByLabel('Maximaler Leistungstest / Wettkampf'),
   ).toBeChecked()
   await expect(edit.getByLabel('Distanz (km)')).toHaveValue('6')
-})
-
-test('visuelle Vorschau mit Beispieldaten', async ({ app, page }, testInfo) => {
-  test.skip(
-    testInfo.project.name !== 'desktop',
-    'Screenshots werden einmal in drei Größen aufgenommen.',
-  )
-  await page.addInitScript(() => {
-    const date = (offset: number) => {
-      const value = new Date()
-      value.setDate(value.getDate() + offset)
-      const p = Object.fromEntries(
-        new Intl.DateTimeFormat('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          timeZone: 'Europe/Berlin',
-        })
-          .formatToParts(value)
-          .map((part) => [part.type, part.value]),
-      )
-      return `${p.year}-${p.month}-${p.day}`
-    }
-    const today = date(0)
-    const mondayOffset = -(new Date(today + 'T12:00:00').getDay() + 6) % 7
-    const activity = (
-      id: string,
-      offset: number,
-      discipline: string,
-      durationSeconds: number,
-      distanceMeters: number,
-      isBenchmark = false,
-      averagePowerWatts: number | null = null,
-    ) => ({
-      id,
-      position: offset + 100,
-      localDate: date(offset),
-      startMinutes: null,
-      discipline,
-      context:
-        discipline === 'run'
-          ? 'road'
-          : discipline === 'swim'
-            ? 'pool-50'
-            : 'outdoor',
-      durationSeconds,
-      distanceMeters,
-      averageHeartRateBpm: null,
-      averagePowerWatts,
-      rpe: null,
-      intervals: [],
-      isBenchmark,
-    })
-    const actual = Array.from({ length: 8 }, (_, week) => [
-      activity(`run-${week}`, -week * 7 - 2, 'run', 3000 + week * 30, 8000),
-      activity(`bike-${week}`, -week * 7 - 3, 'bike', 5400 + week * 120, 38000),
-      activity(`swim-${week}`, -week * 7 - 4, 'swim', 2100 + week * 25, 1400),
-    ]).flat()
-    actual.push(activity('race-before', -35, 'run', 1980, 5000, true))
-    actual.push(activity('race-example', -1, 'run', 2160, 6000, true))
-    actual.push(
-      activity('css-200', -5, 'swim', 230, 200, true),
-      activity('css-400', -4, 'swim', 490, 400, true),
-    )
-    for (const [index, seconds] of [180, 600, 1200].entries())
-      actual.push(
-        activity(
-          `cp-${index}`,
-          -index - 1,
-          'bike',
-          seconds,
-          seconds * 9,
-          true,
-          230 + 18000 / seconds,
-        ),
-      )
-    localStorage.setItem(
-      'app-hub:collection:apps/triathlon-tracker/sessions/default/actual-trainings',
-      JSON.stringify(actual),
-    )
-    localStorage.setItem(
-      'app-hub:doc:apps/triathlon-tracker/sessions/default/state/default',
-      JSON.stringify({ schemaVersion: 1, weightKg: 75 }),
-    )
-    const labels = [
-      'Technik & Wassergefühl',
-      'Grundlagenausfahrt',
-      'Lockerer Dauerlauf',
-      'Schwimmintervalle',
-      'Tempo & Trittfrequenz',
-      'Langer Lauf',
-      'Regenerative Ausfahrt',
-    ]
-    const sports = ['swim', 'bike', 'run', 'swim', 'bike', 'run', 'bike']
-    localStorage.setItem(
-      'app-hub:collection:apps/triathlon-tracker/sessions/default/planned-trainings',
-      JSON.stringify(
-        labels.map((label, index) => ({
-          id: `plan-${index}`,
-          position: index,
-          localDate: date(mondayOffset + index),
-          startMinutes: 1080,
-          discipline: sports[index],
-          durationSeconds: [2700, 5400, 2160, 3000, 4500, 4200, 3600][index],
-          distanceMeters: [1800, 45000, 6000, 2000, 35000, 11000, 25000][index],
-          label,
-        })),
-      ),
-    )
-  })
-  await app.open('/apps/triathlon-tracker')
-  await page.getByRole('tab', { name: 'Statistik', exact: true }).click()
-  await expect(page.locator('[data-performance-card="run"]')).toContainText(
-    '29:40',
-  )
-  await expect(
-    page.locator('[data-performance-plot="run"] svg').first(),
-  ).toBeVisible()
-  await app.expectHealthy()
-  await page.screenshot({
-    path: 'logs/triathlon-statistics-desktop.png',
-    fullPage: true,
-    animations: 'disabled',
-  })
-  await page.getByRole('tab', { name: 'Kalender', exact: true }).click()
-  await page.getByRole('button', { name: 'Woche', exact: true }).click()
-  await page.setViewportSize({ width: 768, height: 1024 })
-  await app.expectHealthy()
-  await page.screenshot({
-    path: 'logs/triathlon-week-tablet.png',
-    fullPage: true,
-    animations: 'disabled',
-  })
-  await page.setViewportSize({ width: 1100, height: 1000 })
-  await page
-    .getByRole('button', { name: 'Training eintragen', exact: true })
-    .click()
-  const form = page.getByRole('dialog', { name: 'Training eintragen' })
-  await form.getByLabel('Ø Pace (min/km)').fill('6:00')
-  await form.getByLabel('Dauer (min)').fill('36')
-  await expect(form.getByLabel('Distanz (km)')).toHaveValue('6')
-  await app.expectHealthy()
-  await form.screenshot({
-    path: 'logs/triathlon-pace-form.png',
-    animations: 'disabled',
-  })
 })

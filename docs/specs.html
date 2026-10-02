@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:00fce824e9f0b9e8d5eb144c4fd158952446a0d22af10aab529d57e9d638545d">
+  <meta name="specs-source-sha256" content="sha256:1da2f1f0f8d92de84e35711e080b410720dfd45e02e134b99006e76387bd445d">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -896,7 +896,7 @@
           <article class="card accent">
             <h3>P0-Testoberfläche</h3>
             <ul>
-              <li>Vitest in einer schnellen Node-Umgebung.</li>
+              <li>Vitest in einer Node-Umgebung mit isolierten Workerthreads; Fachlogik und gemockte Hook-Verträge mit React-Serverrendering.</li>
               <li>Feature-nahe <code>*.test.ts</code>-Dateien.</li>
               <li>Öffentliche Fachinterfaces statt interner Details.</li>
               <li>Registry-Vertrag für eindeutige und dokumentierte App-Routen.</li>
@@ -922,6 +922,13 @@ npm run test:firebase</code></pre>
         <div class="card note" style="margin-top:1rem">
           <h3>Browser-Smoke-Suite</h3>
           <p><code>npm run test:browser</code> startet Vite ohne Firebase auf Port <code>5180</code>. Dashboard, verschachteltes Scoreboard, Presenter, Sushi Map und der sichtbare Rollback bei voller LocalStorage-Quota werden mit Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA abgedeckt. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
+          <ul>
+            <li>Vor neuen Tests vorhandene Verhaltensprüfungen erweitern oder mit fachlich anderen Eingaben parametrisieren; unabhängige Fehlerursachen getrennt lassen.</li>
+            <li>Fachlogik in Vitest, Store-Aufrufe in gemockten Hooks, Rules und konkurrierende Clients im Emulator, Bedienung und Barrierefreiheit im Browser prüfen. Unterschiedliche Systemgrenzen sind keine Redundanz.</li>
+            <li>Responsive Browserabläufe laufen unmarkiert auf allen vier Viewports. <code>@desktop</code> führt größenunabhängige Fälle einmal auf Desktop aus; <code>@touch</code> läuft auf den drei Touch-Projekten. Keine Screenshot-Vorschauen ohne zusätzlichen Prüfzweck.</li>
+            <li>Keine dauerhaften Abwesenheitsprüfungen für erledigte Datei-/Codeentfernungen oder Selbsttests einmaliger Reparatur-Fixtures. Laufende Löschaktionen, Datenverlustschutz und Migrationen noch möglicher Speicherstände bleiben abgesichert.</li>
+            <li>Testisolation erhalten. Gleiche Node-Version, Reporterwahl und Workerzahl verwenden; Vitest nach einem Warmup mindestens dreimal messen. Bei Browsermessungen keine Quelldateien ändern oder für beide Stände denselben Server ohne Dateiwatcher nutzen. Timeouts, Wiederholungen und abgebrochene Läufe separat ausweisen.</li>
+          </ul>
         </div>
         <div class="card note" style="margin-top:1rem">
           <h3>Performance-Baseline</h3>

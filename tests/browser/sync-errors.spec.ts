@@ -1,6 +1,6 @@
 import { expect, test } from './browserApp'
 
-test('abgelehnte automatische Namenskorrektur bleibt ohne Endlosschleife', async ({ app, page }) => {
+test('abgelehnte automatische Namenskorrektur bleibt ohne Endlosschleife', { tag: '@desktop' }, async ({ app, page }) => {
   await page.addInitScript(() => {
     const originalSetItem = Storage.prototype.setItem
     const key = 'app-hub:collection:apps/progress-dashboard/sessions/default/datasets'
@@ -19,7 +19,7 @@ test('abgelehnte automatische Namenskorrektur bleibt ohne Endlosschleife', async
   await app.expectHealthy()
 })
 
-test('blockierter SessionStorage verhindert das Freischalten nicht', async ({ app, page }) => {
+test('blockierter SessionStorage verhindert das Freischalten nicht', { tag: '@desktop' }, async ({ app, page }) => {
   await page.addInitScript(() => {
     const originalSetItem = Storage.prototype.setItem
     Storage.prototype.setItem = function (key, value) {
@@ -34,7 +34,7 @@ test('blockierter SessionStorage verhindert das Freischalten nicht', async ({ ap
   await app.expectHealthy()
 })
 
-test('fehlgeschlagenes Hinzufügen zeigt keine Erfolgsmeldung', async ({ app, page }) => {
+test('fehlgeschlagenes Hinzufügen zeigt keine Erfolgsmeldung', { tag: '@desktop' }, async ({ app, page }) => {
   await page.addInitScript(() => {
     const originalSetItem = Storage.prototype.setItem
     Storage.prototype.setItem = function (key, value) {
@@ -51,7 +51,7 @@ test('fehlgeschlagenes Hinzufügen zeigt keine Erfolgsmeldung', async ({ app, pa
   await app.expectHealthy()
 })
 
-test('LocalStorage-Quota-Fehler wird angezeigt und die Aktion zurückgerollt', async ({
+test('LocalStorage-Quota-Fehler wird angezeigt und die Aktion zurückgerollt', { tag: '@desktop' }, async ({
   app,
   page,
 }) => {

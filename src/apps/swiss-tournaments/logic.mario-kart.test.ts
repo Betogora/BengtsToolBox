@@ -550,7 +550,7 @@ describe('Mario-Kart-Wertung und Extras', () => {
 
 describe('Mario-Kart-Lebenszyklus', () => {
   it('schließt bei vier eindeutigen Plätzen bis 24 und wertet sie relativ', () => {
-    let tournament = createLobby(makeTournament('marioKart', 4))
+    let tournament = createLobby(makeTournament('marioKart', 4, { numberOfRounds: 1 }))
     const ids = racerIds(tournament, 1)
 
     tournament = updateMarioKartRacer(tournament, 1, ids[0], {
@@ -563,7 +563,7 @@ describe('Mario-Kart-Lebenszyklus', () => {
       placement: 25,
     })
     tournament = updateMarioKartRacer(tournament, 1, ids[3], {
-      placement: 10,
+      placement: 24,
     })
 
     expect(tournament.rounds[0].status).toBe('draft')
@@ -588,7 +588,13 @@ describe('Mario-Kart-Lebenszyklus', () => {
       ids.map(
         (id) => standings.find((row) => row.playerId === id)?.marioKartAveragePlacement,
       ),
-    ).toEqual([1, 2, 5, 10])
+    ).toEqual([1, 2, 5, 24])
+    expect(getTournamentProgress(tournament)).toMatchObject({
+      completedUnitCount: 1,
+      completionRoundNumber: 1,
+      isComplete: true,
+    })
+    expect(standings.every((row) => row.marioKartScoringRaces === 1)).toBe(true)
   })
 
   it('lässt nur die jüngste vollständig leere aktive Lobby neu auslosen oder löschen', () => {
@@ -675,35 +681,6 @@ describe('Mario-Kart-Lebenszyklus', () => {
 
     tournament = updateMarioKartRacer(tournament, 1, playerId, { event: false })
     expect(getMarioKartRacers(tournament.rounds[0].pairings[0])[0].event).toBeUndefined()
-  })
-
-  it('akzeptiert Platz 24, lehnt 25 ab und schließt mit der letzten gültigen Eingabe ab', () => {
-    let tournament = createLobby(
-      makeTournament('marioKart', 4, { numberOfRounds: 1 }),
-    )
-    const ids = racerIds(tournament, 1)
-    const placements = [1, 7, 13, 24]
-
-    tournament = updateMarioKartRacer(tournament, 1, ids[3], { placement: 25 })
-    expect(tournament.rounds[0].status).toBe('draft')
-
-    tournament = placements.reduce(
-      (current, placement, index) =>
-        updateMarioKartRacer(current, 1, ids[index], { placement }),
-      tournament,
-    )
-
-    expect(tournament.rounds[0].status).toBe('completed')
-    expect(getTournamentProgress(tournament)).toMatchObject({
-      completedUnitCount: 1,
-      completionRoundNumber: 1,
-      isComplete: true,
-    })
-    expect(
-      recalculateStandings(tournament).every(
-        (row) => row.marioKartScoringRaces === 1,
-      ),
-    ).toBe(true)
   })
 
   it.each([
