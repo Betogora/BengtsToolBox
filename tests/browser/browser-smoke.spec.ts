@@ -636,7 +636,17 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', { tag: '@touch'
   await page.evaluate(() =>
     (window as MapPanTestWindow).__territoryMapRafTest?.restore(),
   )
+  await expect.poll(() => mapLayer.evaluate(
+    (layer) => (layer as SVGGElement).style.transform,
+  )).toBe(transformAfter)
   await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await page.getByRole('group', { name: 'Karte' })
+    .getByRole('button', { name: 'Deutschland', exact: true }).click()
+  await expect(zoomOut).toBeDisabled()
+  await expect.poll(() => mapLayer.evaluate(
+    (layer) => (layer as SVGGElement).style.transform,
+  )).toBe('translate(0px, 0px) scale(1)')
 
   await app.expectHealthy()
 })
