@@ -1,0 +1,98 @@
+{
+  "rules": {
+    "live-buzzer": {
+      "lobbies": {
+        "$lobbyId": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.exists()",
+          ".validate": "newData.hasChild('state') && (!data.hasChild('hostUid') || newData.hasChild('hostUid')) && (!data.hasChild('players') || newData.hasChild('players'))",
+          "hostUid": {
+            ".validate": "newData.isString() && ((!data.exists() && newData.val() == auth.uid) || newData.val() == data.val())"
+          },
+          "state": {
+            ".validate": "newData.hasChildren(['isOpen','roundNumber']) && newData.child('isOpen').isBoolean() && newData.child('roundNumber').isNumber() && newData.child('roundNumber').val() >= 0 && (!data.hasChild('roundId') || newData.hasChild('roundId')) && (!data.hasChild('clockSyncId') || newData.hasChild('clockSyncId')) && (!data.hasChild('firstReceivedAtMs') || newData.hasChild('firstReceivedAtMs') || auth.uid == newData.parent().child('hostUid').val()) && (!data.hasChild('winnerPlayerId') || newData.hasChild('winnerPlayerId') || (auth.uid == newData.parent().child('hostUid').val() && newData.child('roundId').val() != data.child('roundId').val())) && (!data.hasChild('clockSyncRequestedAtMs') || newData.hasChild('clockSyncRequestedAtMs')) && (!data.hasChild('buzzes') || newData.hasChild('buzzes') || (auth.uid == newData.parent().child('hostUid').val() && newData.child('roundId').val() != data.child('roundId').val()))",
+            "isOpen": {
+              ".validate": "newData.val() == data.val() || auth.uid == newData.parent().parent().child('hostUid').val() || (!data.exists() && !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists())"
+            },
+            "roundNumber": {
+              ".validate": "newData.val() == data.val() || auth.uid == newData.parent().parent().child('hostUid').val() || (!data.exists() && !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists())"
+            },
+            "roundId": {
+              ".validate": "newData.val() == data.val() || auth.uid == newData.parent().parent().child('hostUid').val() || (!data.exists() && !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists())"
+            },
+            "clockSyncId": {
+              ".validate": "newData.val() == data.val() || auth.uid == newData.parent().parent().child('hostUid').val() || (!data.exists() && !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists())"
+            },
+            "clockSyncRequestedAtMs": {
+              ".validate": "newData.val() == data.val() || auth.uid == newData.parent().parent().child('hostUid').val() || (!data.exists() && !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists())"
+            },
+            "firstReceivedAtMs": {
+              ".validate": "newData.val() == data.val() || (!data.exists() && newData.isNumber() && newData.val() <= now && newData.val() >= now - 60000 && newData.parent().child('isOpen').val() == true) || (auth.uid == newData.parent().parent().child('hostUid').val() && newData.parent().child('roundId').val() != data.parent().child('roundId').val()) || !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists()"
+            },
+            "winnerPlayerId": {
+              ".validate": "newData.val() == data.val() || (auth.uid == newData.parent().parent().child('hostUid').val() && newData.parent().child('roundId').val() != data.parent().child('roundId').val()) || (data.parent().child('winnerPlayerId').val() == null && data.parent().child('firstReceivedAtMs').isNumber() && now >= data.parent().child('firstReceivedAtMs').val() + 800 && (newData.parent().child('winnerPlayerId').isString())) || !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists()"
+            },
+            "winnerTeamId": {
+              ".validate": "newData.val() == data.val() || (auth.uid == newData.parent().parent().child('hostUid').val() && newData.parent().child('roundId').val() != data.parent().child('roundId').val()) || (data.parent().child('winnerPlayerId').val() == null && data.parent().child('firstReceivedAtMs').isNumber() && now >= data.parent().child('firstReceivedAtMs').val() + 800 && (newData.parent().child('winnerPlayerId').isString())) || !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists()"
+            },
+            "lastBuzzedAtClientIso": {
+              ".validate": "newData.val() == data.val() || (auth.uid == newData.parent().parent().child('hostUid').val() && newData.parent().child('roundId').val() != data.parent().child('roundId').val()) || (data.parent().child('winnerPlayerId').val() == null && data.parent().child('firstReceivedAtMs').isNumber() && now >= data.parent().child('firstReceivedAtMs').val() + 800 && (newData.parent().child('winnerPlayerId').isString())) || !root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists()"
+            },
+            "buzzes": {
+              "$index": {
+                ".validate": "!root.child('live-buzzer/lobbies/'+$lobbyId+'/state').exists() || (newData.hasChildren(['playerId','playerName','pressedAtMs','receivedAtMs','uncertaintyMs']) && newData.child('pressedAtMs').isNumber() && newData.child('uncertaintyMs').isNumber() && newData.child('receivedAtMs').isNumber() && ((!data.exists() && newData.child('playerId').val() == $index && newData.child('receivedAtMs').val() == now && newData.child('roundId').val() == newData.parent().parent().child('roundId').val() && root.child('live-buzzer/lobbies/'+$lobbyId+'/players/'+newData.child('playerId').val()+'/isActive').val() == true && root.child('live-buzzer/lobbies/'+$lobbyId+'/players/'+newData.child('playerId').val()+'/clockSyncId').val() == newData.parent().parent().child('clockSyncId').val() && newData.parent().parent().child('isOpen').val() == true && root.child('live-buzzer/lobbies/'+$lobbyId+'/players/'+newData.child('playerId').val()+'/ownerUid').val() == auth.uid) || (auth.uid == root.child('live-buzzer/lobbies/'+$lobbyId+'/hostUid').val() && newData.parent().parent().child('roundId').val() != data.parent().parent().child('roundId').val()) || (data.exists() && newData.child('playerId').val() == data.child('playerId').val() && newData.child('pressedAtMs').val() == data.child('pressedAtMs').val() && newData.child('receivedAtMs').val() == data.child('receivedAtMs').val() && newData.child('playerName').val() == data.child('playerName').val() && newData.child('teamId').val() == data.child('teamId').val() && newData.child('uncertaintyMs').val() == data.child('uncertaintyMs').val())))"
+              }
+            }
+          },
+          "players": {
+            "$playerId": {
+              ".validate": "newData.hasChildren(['id','name','position','isActive']) && newData.child('id').val() == $playerId && newData.child('name').isString() && newData.child('name').val().length <= 40 && newData.child('position').isNumber() && newData.child('isActive').isBoolean() && (!data.hasChild('ownerUid') || newData.hasChild('ownerUid')) && (!data.hasChild('clockSyncId') || newData.hasChild('clockSyncId') || data.child('ownerUid').val() == auth.uid) && (!data.hasChild('clockSyncedAtMs') || newData.hasChild('clockSyncedAtMs') || data.child('ownerUid').val() == auth.uid)",
+              "ownerUid": {
+                ".validate": "newData.isString() && ((!data.exists() && newData.val() == auth.uid) || newData.val() == data.val())"
+              },
+              "id": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              },
+              "name": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              },
+              "position": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              },
+              "isActive": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              },
+              "joinedAtMs": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              },
+              "clockSyncId": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              },
+              "clockSyncedAtMs": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid')) && (newData.val() == data.val() || newData.val() == now)"
+              },
+              "teamId": {
+                ".validate": "newData.val() == data.val() || newData.parent().child('ownerUid').val() == auth.uid || (!data.parent().exists() && !newData.parent().hasChild('ownerUid'))"
+              }
+            }
+          }
+        }
+      },
+      "clock": {
+        "$uid": {
+          "$connectionId": {
+            ".read": "auth != null && auth.uid == $uid",
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "newData.hasChildren(['serverAt']) && newData.child('serverAt').val() == now",
+            "serverAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

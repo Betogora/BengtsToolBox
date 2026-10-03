@@ -69,6 +69,8 @@ Bei breiten, projektübergreifenden Änderungen die Lektüre auf alle betroffene
 - Vor neuen Tests bestehende Abdeckung suchen. Dasselbe Verhalten im bestehenden Szenario erweitern oder mit fachlich unterschiedlichen Eingaben parametrisieren; unabhängige Fehlerfälle getrennt lassen.
 - Einmalige Datei-/Codeentfernungen und erledigte Datenreparaturen brauchen keine dauerhaften Abwesenheits- oder Fixture-Selbsttests. Laufende Löschfunktionen, Schutz vor Datenverlust und Migrationen noch möglicher Speicherstände bleiben Regressionstests.
 - Browserfälle ohne Größenabhängigkeit mit `@desktop` einmal ausführen; responsive Abläufe bleiben unmarkiert auf allen vier Viewports, reine Touchfälle erhalten `@touch`. Keine Screenshot-Vorschauen ohne eigenen Prüfzweck hinzufügen.
+- Für angeforderte UI-/Screenshot-Reviews eine Prüfmatrix in CSS-Pixeln verwenden: Smartphone 320, 360, 375, 390, 393, 412, 430 und 440; Tablet 768, 820 und 1024; Desktop 1280, 1440 und 1920. Betroffene Layoutwechsel zusätzlich unmittelbar unter und über dem Breakpoint prüfen. Das erweitert nicht automatisch die reguläre Browser-Test-Suite.
+- In solchen Vorschauen relevante Zustände und getrennte Ansichten (zum Beispiel Spieler, Spielleitung und Presenter) zeigen; Ist-Stand, Beispieldaten und Layoutentwürfe ausdrücklich kennzeichnen. Seitliches Überlaufen, lange Namen, Fehlerzustände und Lesbarkeit prüfen.
 - Testschichten und Messregeln stehen in [Abschnitt 7.4 der Spezifikation](docs/specs.md#74-testsystem); die Suite-Prüfung mit Vorher-/Nachherwerten steht im [Testbericht](docs/test-suite-review.md).
 
 Mindestens für Codeänderungen:

@@ -23,7 +23,7 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 
 ### 1.2 Bewusste Grenzen
 
-- Es gibt keinen Application Server und keine Cloud Functions; Hosting, Anonymous Auth und Firestore bleiben im Spark-Tarif nutzbar.
+- Es gibt keinen Application Server und keine Cloud Functions; Hosting, Anonymous Auth, Firestore und die Realtime Database des Live-Buzzers bleiben im Spark-Tarif nutzbar. Ein Abrechnungskonto darf nicht verknüpft werden.
 - Es gibt keine persönlichen Konten, Rollen oder Mandanten.
 - Anonymous Auth identifiziert eine Browsersitzung, autorisiert aber keine fachlichen Rollen.
 - LocalStorage ist Fallback und Cache, keine vollständige Offline-Synchronisation oder Konfliktauflösung.
@@ -147,6 +147,8 @@ type SyncResult<T = void> =
 
 ### 4.3 Kanonische Firestore-Pfade
 
+Nur Live-Buzzer nutzt zusätzlich Realtime Database: `live-buzzer/lobbies/{lobbyId}` enthält Zustand und Spieler, `live-buzzer/clock/{uid}/{connectionId}` private Uhrmessungen. Die Pfade stehen ebenfalls in `src/lib/firebase/paths.ts`, der Transport in `useRealtimeDatabaseDoc`. Es gibt keine eigene Firebase-Initialisierung oder Anmeldung. Ein noch leerer Buzzer-Bereich übernimmt bestehende Firestore-Daten einmalig, ohne die Originale zu löschen; danach gibt es keine parallelen Firestore-Writes. Die übrigen Apps und ihre Firestore-Struktur bleiben unverändert. Fehlende Realtime-Konfiguration und Zugriffsfehler werden angezeigt und lösen keinen stillen lokalen Fallback aus.
+
 Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 
 | App | Dokumente | Collections |
@@ -182,8 +184,8 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - `SyncBatch` und `commitSyncBatch(stage)` bilden gezielte Mehrspeicher-Aktionen ab. Der Stage-Callback ist synchron; die optimistische Änderung beginnt erst nach dem Firestore-Limit- und lokalen Serialisierungs-Preflight.
 - Realtime-Batches verwenden genau einen authentifizierten Firestore-`writeBatch`, bei Updatern stattdessen eine Transaktion mit allen Lesezugriffen vor den Writes. Sie scheitern oberhalb von 500 Writes vor der optimistischen Änderung und werden nicht in nichtatomare Teilbatches zerlegt.
 - Im lokalen Modus werden die bisherigen Raw-Werte gesichert. Bei Teilfehlern werden sie bestmöglich kompensiert und anschließend erneut eingelesen; ein gescheiterter Ausgleich wird als `rollback-failed` sichtbar.
-- Batches werden nur für erkannte Fachinvarianten eingesetzt: Scoreboard-Lebenszyklus und abhängige Team-/Archivdaten, Turnier-Lebenszyklus samt aktivem Nachfolger, Archivieren und Zurücksetzen im Fortschritts-Dashboard, gemeinsamer Runden-/Buzz-Zustand im Live-Buzzer sowie denormalisierte Spieleränderungen der Sushi Map. Andere Schreibfolgen bleiben sequenziell und prüfen jedes `SyncResult`.
-- Der Live-Buzzer verwendet für den Gewinner-Buzz ausdrücklich eine Firestore-Transaktion.
+- Batches werden nur für erkannte Fachinvarianten eingesetzt: Scoreboard-Lebenszyklus und abhängige Team-/Archivdaten, Turnier-Lebenszyklus samt aktivem Nachfolger, Archivieren und Zurücksetzen im Fortschritts-Dashboard sowie denormalisierte Spieleränderungen der Sushi Map. Andere Schreibfolgen bleiben sequenziell und prüfen jedes `SyncResult`.
+- Der Live-Buzzer erfasst Buzzes parallel je Spieler in Realtime Database und entscheidet das Endergebnis transaktional. Rundenwechsel verwenden einen Updater auf dem aktuellen Serverstand.
 - Ereignislisten im Fortschritts-Dashboard und der Sushi Map sowie Optionen und Verläufe von Glücksrad, Coinflip und Randomizer werden auf dem aktuellen Serverstand geändert. Das Fortschritts-Dashboard archiviert und leert den aktuellen Datensatz atomar mit dessen neuesten Server-Ereignissen. Diese Aktionen benötigen im Realtime-Modus Internet; Offline-Lesen und der rein lokale Modus bleiben erhalten.
 - Auth-, Rules-, Netzwerk-, Snapshot- und Storagefehler werden als `SyncError` an das jeweilige Feature weitergereicht.
 - Features dürfen keine eigenen Firebase-Apps, Auth-Flows oder separaten LocalStorage-Fallbacks einführen.
@@ -262,20 +264,20 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 ### 5.6 Live-Buzzer
 
-**Zweck:** mehrere Geräte als Quiz-Buzzer mit eindeutiger Gewinnerermittlung verwenden.
+**Zweck:** mehrere Geräte als Quiz-Buzzer mit eindeutiger automatischer Gewinnerermittlung verwenden.
 
-- Jeder Browser erhält eine dauerhafte lokale Player-ID und automatisch eine Spielerkarte.
-- Spieler besitzen Name, Position, optional Team Blau/Gelb und Buzz-Zeitpunkt.
-- Eine Runde kann geöffnet, gesperrt oder zurückgesetzt und unmittelbar wieder geöffnet werden.
-- Beim Öffnen werden sichtbare Buzzes gelöscht, die Rundennummer erhöht und der Gewinner zurückgesetzt.
-- Nur aktive Spieler dürfen in einer offenen Runde buzzern; jeder Spieler höchstens einmal.
-- Im Firebase-Modus entscheidet eine Firestore-Transaktion, welcher Buzz zuerst den noch freien Gewinner setzt.
-- Spätere gültige Buzzes bleiben für die Reihenfolge sichtbar, ändern aber den Gewinner nicht.
-- Im lokalen Modus wird dieselbe Gewinnerregel ohne geräteübergreifende Atomarität ausgeführt.
-- Die Buzzreihenfolge wird aus Server-Timestamp beziehungsweise Client-ISO-Zeit abgeleitet.
-- Maximal fünf Rundengewinner bleiben im Verlauf.
-- Entfernt ein Browser seine eigene Spielerkarte, erhält er automatisch eine neue Identität.
-- Optionaler Sound und Presenter-Liveansicht sind reine UI-Zustände.
+- Nur Live-Buzzer nutzt zusätzlich Realtime Database unter `live-buzzer/lobbies/{lobbyId}`. Bestehende Firestore-Buzzer-Daten werden einmalig kopiert; Originale und andere Apps bleiben unverändert. Kein allgemeiner Cutover.
+- Der Einstieg fragt Namen, optional Team Blau/Gelb/Rot und Spielen oder Spielleitung ab. Danach erscheinen Rollenauswahl und Namensfeld nur noch über das Profil; das Rundenboard zeigt Ergebnis, kompakte Teamspalten und eigenen Buzzer. Der Verlauf ist einklappbar.
+- Genau ein ausdrücklich gewähltes Gerät beansprucht die freie Spielleitung atomar über seine anonyme Firebase-Auth-UID, unabhängig von der Beitrittsreihenfolge. Realtime-Regeln verhindern Übernahme oder Löschen der belegten Host-UID und beschränken Rundenfreigabe, Sperre und globalen Uhrabgleich auf diese UID. Die Rolle bleibt bei Reload im selben Browser erhalten; es gibt keinen PIN oder Gerätewechsel.
+- Die Spielleitung spielt zunächst nicht mit. „Auch mitspielen“ aktiviert ihren eigenen Spieler und erfordert einen neuen globalen Uhrabgleich. Andere Teilnehmer spielen; solange die Leitung noch frei ist, können sie diese auch nach dem Einstieg über ihr Profil beanspruchen.
+- Vor der ersten Freigabe startet die Spielleitung den gemeinsamen Uhrabgleich. Aktive Geräte messen drei Server-Timestamps; die kürzeste Messung verankert ihre monotone Zeit an der geschätzten Serverzeit. Alle aktiven Teilnehmer müssen den aktuellen Abgleich bestätigen, bevor eine neue Runde freigegeben wird. Neue Spieler und Rückkehrer ohne Messung innerhalb der letzten 90 Sekunden warten auf einen neuen, ausdrücklich gestarteten globalen Abgleich. Innerhalb einer freigegebenen Abgleichgeneration erfolgen regelmäßige Messungen und Erneuerung nach Verbindungswechsel.
+- Jede neue Runde besitzt eine eindeutige Kennung und eine erhöhte Rundennummer. Touch/Maus erfasst den Buzz beim Drücken, Tastatur bei Enter/Leertaste. Pro aktivem Spieler wird höchstens ein Buzz gespeichert. Der eigene Button sperrt während des Sendens und nach erfolgreicher Registrierung; bei Speicher- oder Netzwerkfehler kann erneut gedrückt werden.
+- Im Firebase-Modus schreibt jeder Spieler seinen Buzz transaktional in einen eigenen Eintrag unter `state/buzzes/{playerId}`. Serverregeln prüfen Auth-UID, aktive Teilnahme, Rundenkennung, Abgleichgeneration und Server-Eingangszeit. Alte Rundenzustände und Einträge bleiben nach Reload lesbar.
+- Ab dem ersten Server-Eingang gilt ein festes Sammelfenster von 800 ms. Verbundene Clients legen den Startzeitpunkt gemeinsam fest und entscheiden anschließend transaktional einmalig anhand der frühesten geschätzten Druckzeit unter den rechtzeitig eingegangenen Buzzes. Exakt gleiche Schätzungen entscheidet die Player-ID deterministisch. Der Sieger wird ohne vorläufigen Sieger, Unsicherheitswarnung oder manuelle Bestätigung angezeigt und nicht mehr geändert.
+- Der Wettbewerb ist nach Ablauf des Sammelfensters gesperrt; die Anzeige folgt beim Empfang des Endergebnisses. Noch nicht erfasste Spieler können anschließend nachbuzzern. Nach dem Fenster eingegangene Buzzes stehen unter einer einzigen Trennlinie „Nach Sperre“ und können nicht gewinnen, auch wenn die Ergebnisübermittlung selbst verzögert ist. Nur Rang 1 erhält „Sieger“.
+- Unterschiedliche Mobilfunklatenzen und asymmetrische Verbindungen verhindern eine garantierte physische Reihenfolge bei knappen Buzzes. Das Verfahren entscheidet automatisch mit geschätzten Druckzeiten und vertraut den Clients; es ist keine manipulationssichere Wettkampfwertung.
+- Lokal wird der globale Abgleichschritt zur Freigabe ebenfalls durchlaufen, aber keine Serveruhr gemessen und kein zweites Gerät synchronisiert. Ein deutlicher Hinweis bleibt sichtbar. Maximal fünf entschiedene Runden bleiben im Verlauf; Leeren erhält das aktuelle Ergebnis und die Rundennummer. Sound und Presenter sind reine UI-Zustände.
+- Spark erlaubt insgesamt 100 gleichzeitige Realtime-Database-Verbindungen inklusive Tabs, Zuschauern und Spielleitung. Vier Lobbys mit jeweils 20 Spielern plus Spielleitung passen in dieses Verbindungslimit; Speicher- und Übertragungskontingente gelten zusätzlich. Kontingentüberschreitung aktiviert keine kostenpflichtige Subscription.
 
 ### 5.7 Fortschritts-Dashboard
 
@@ -449,11 +451,12 @@ flowchart TB
   B["Browser"] --> SPA["React-SPA auf Firebase Hosting"]
   SPA --> AUTH["Firebase Anonymous Auth"]
   SPA --> DB[("Cloud Firestore")]
+  SPA -->|"nur Live-Buzzer"| RTDB[("Realtime Database")]
   SPA --> LS[("LocalStorage")]
   GH["GitHub Actions"] -->|"Build und Hosting-Deploy"| SPA
 ```
 
-Vite baut statische Dateien, Firebase Hosting liefert sie aus. Die gesamte Online-Persistenz einschließlich der bewusst einfachen Lobby-Verwaltung läuft direkt über Firestore-Clientzugriffe und bleibt Spark-kompatibel.
+Vite baut statische Dateien, Firebase Hosting liefert sie aus. Online-Persistenz und Lobby-Verwaltung laufen direkt über Firestore-Clientzugriffe; ausschließlich Live-Buzzer verwendet zusätzlich Realtime Database. Beide verwenden dieselbe Anonymous-Auth-Sitzung und bleiben Spark-kompatibel. Ein allgemeiner Datenbank-Cutover ist damit nicht verbunden.
 
 ### 6.2 Schichten und Verantwortungen
 
@@ -649,6 +652,7 @@ Lobby-Infrastruktur ergänzt `npm run test:firebase`. Die Emulator-Suite benöti
 | `VITE_FIREBASE_STORAGE_BUCKET` | Firebase Web-App-Konfiguration |
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Web-App-Konfiguration |
 | `VITE_FIREBASE_APP_ID` | Firebase Web-App-Konfiguration |
+| `VITE_FIREBASE_DATABASE_URL` | Realtime Database nur für Live-Buzzer; lokal `.env.local`, in Actions Repository Variable |
 
 Lokal stehen Werte in der nicht versionierten `.env.local`; GitHub Actions liest sie aus Repository Secrets. In ein Secret gehört nur der Wert, nicht `NAME=value`.
 
@@ -657,7 +661,7 @@ Zusätzlich benötigt GitHub:
 - Secret `FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX` für Hosting,
 - Repository Variable `FIREBASE_PROJECT_ID=bengtstoolbox`.
 
-Das Projekt kann vollständig im Spark-Tarif bleiben. Der Verwaltungs-PIN `5340` ist bewusst im Web-Bundle enthalten und stellt nur eine Bedienbarriere, keine Sicherheitsgrenze dar.
+Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Mehr Benutzer oder ausgeschöpfte Kontingente aktivieren keine Abrechnung; die betroffenen Dienste werden stattdessen begrenzt. Alle drei Deploy-Pipelines führen `scripts/checkFirebaseSpark.mjs` mit einem kurzlebigen Google-Token aus und brechen bei aktivierter Abrechnung, verknüpftem Konto oder fehlender Prüfbarkeit ab. Die Prüfung verhindert keine nachträgliche manuelle Tarifänderung durch Projektadministratoren. Der Verwaltungs-PIN `5340` ist bewusst im Web-Bundle enthalten und stellt nur eine Bedienbarriere, keine Sicherheitsgrenze dar.
 
 ### 9.2 Deploy-Pfade
 
@@ -674,16 +678,20 @@ Das aktive Repository-Ruleset `main quality gate` verlangt für `main` einen zum
 Das Backend kann manuell gemeinsam ausgerollt werden:
 
 ```powershell
-npx firebase-tools deploy --only firestore:rules,firestore:indexes --project bengtstoolbox
+node scripts/checkFirebaseSpark.mjs
+npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --project bengtstoolbox
 ```
 
 Hosting kann manuell mit folgendem Befehl ausgerollt werden:
 
 ```powershell
+node scripts/checkFirebaseSpark.mjs
 npx firebase-tools deploy --only hosting
 ```
 
 ### 9.3 Erstverknüpfung
+
+Für Live-Buzzer existiert `bengtstoolbox-default-rtdb` in `europe-west1` (Belgien), ohne Tarifupgrade. `VITE_FIREBASE_DATABASE_URL=https://bengtstoolbox-default-rtdb.europe-west1.firebasedatabase.app` wird als Repository Variable gesetzt; lokal ist derselbe Wert erforderlich. Regeln stehen in `firebase/database.rules.json`. Die Kostenprüfung benötigt `GOOGLE_ACCESS_TOKEN`, `FIREBASE_PROJECT_ID` sowie eine aktivierte Cloud Billing API und Leserechte dafür. Die Pipelines beziehen den kurzlebigen Token über die Google Cloud CLI mit dem bestehenden Deployment-Servicekonto; zusätzliche Token-Creator-Rechte sind nicht erforderlich. Die Prüfung aktiviert selbst weder Abrechnung noch APIs. Manuelle Deploys müssen diese Prüfung ebenfalls ausführen.
 
 Nur bei einer neuen Firebase-/GitHub-Einrichtung:
 
@@ -720,6 +728,8 @@ Erwartete Werte: Repository `Betogora/BengtsToolBox`, Build `npm ci && npm run b
 | Rules-Emulator startet nicht | Java-Laufzeit älter als 21 | `java -version` und JDK aktualisieren |
 
 ## 10. Sicherheitsgrenze
+
+Der Live-Buzzer-Bereich in Realtime Database ist gemeinsam für authentifizierte Clients lesbar. Rundensteuerung und globaler Uhrabgleich sind an eine unveränderliche Host-UID gebunden; neue Buzzes prüfen die eigene Spieler-UID. Die Datenpfade trennen die Lobbys logisch, ohne vertrauliche Mitgliederräume. Uhrmessungen sind dagegen auf die eigene Auth-UID beschränkt. Archivierte Lobbys werden durch das bestehende Firestore-Lobby-Verzeichnis aus der App entfernt; Realtime-Regeln können den Firestore-Löschmarker nicht direkt prüfen.
 
 Die globalen Legacy-Pfade unter `apps/{appId}/...` bleiben für jeden authentifizierten Client offen. Lobby-Pfade sind enger: Metadaten sind lesbar, App-Zustände einer aktiven Lobby gemeinsam bearbeitbar, und Geräte dürfen nur den eigenen UID-Datensatz schreiben. Gerätehistorien und der Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich.
 

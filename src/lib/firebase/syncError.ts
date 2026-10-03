@@ -5,6 +5,7 @@ export type SyncErrorSource =
   | 'auth'
   | 'snapshot'
   | 'firestore'
+  | 'realtime-database'
 
 export type SyncOperation =
   | 'read'
@@ -77,6 +78,7 @@ export function syncFailure<T>(value: T, error: SyncError): SyncResult<T> {
 export type SyncErrors = Partial<Record<SyncErrorSource, SyncError>>
 
 const errorPriority: SyncErrorSource[] = [
+  'realtime-database',
   'firestore',
   'auth',
   'snapshot',
@@ -143,13 +145,13 @@ export function createSyncError(
   const code: SyncErrorCode =
     source === 'snapshot'
       ? 'snapshot-failed'
-      : nativeCode.includes('permission-denied')
+      : /permission[-_]denied/i.test(nativeCode)
         ? 'permission-denied'
         : source === 'auth' || nativeCode.includes('unauthenticated')
           ? 'authentication'
           : nativeCode.includes('unavailable') || nativeCode.includes('network')
             ? 'network'
-            : source === 'firestore'
+            : source === 'firestore' || source === 'realtime-database'
               ? 'write-rejected'
               : 'unknown'
 

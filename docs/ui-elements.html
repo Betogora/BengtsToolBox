@@ -686,7 +686,7 @@
           <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
             <div class="catalog-card__header"><div><h3>Shared PlayerCard</h3><p class="catalog-card__purpose">Spielername, Team, Score-Aktionen und optionaler Buzz-Status.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
             <div class="preview preview--center"><div class="demo-card"><div style="height:4px;background:var(--brand-primary)"></div><div class="demo-card__header"><div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem"><div class="demo-card__title">Paul</div><button class="demo-button demo-button--destructive demo-button--icon" type="button" aria-label="Paul entfernen"><svg class="icon"><use href="#i-trash"/></svg></button></div></div><div class="demo-card__content"><div style="display:flex;align-items:end;justify-content:space-between;gap:1rem"><div><strong style="font-size:2rem">12</strong><div style="color:var(--muted-foreground);font-size:.7rem">Punkte</div></div><div style="display:flex;gap:.35rem"><button class="demo-button demo-button--outline demo-button--icon" type="button">−</button><button class="demo-button demo-button--icon" type="button">+</button></div></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>3 Instanzen: zwei im Live-Buzzer, eine im Fortschritts-Dashboard</dd><dt>Fähigkeiten</dt><dd>Name, Entfernen, Teamwahl, Score ±1/+5, Buzz-Zeit und Rang</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/PlayerCard.tsx</code></dd></dl><p class="note">Scoreboard und Fortschritt besitzen zusätzlich fachlich reichere Player Cards. Vor Zusammenführung erst die Unterschiede im Zustandsmodell prüfen.</p></div>
+            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>Eine Instanz im Fortschritts-Dashboard; Live-Buzzer nutzt kompakte eigene Teilnehmerzeilen.</dd><dt>Fähigkeiten</dt><dd>Name, Entfernen, Teamwahl, Score ±1/+5, Buzz-Zeit und Rang</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/PlayerCard.tsx</code></dd></dl><p class="note">Scoreboard und Fortschritt besitzen zusätzlich fachlich reichere Player Cards. Vor Zusammenführung erst die Unterschiede im Zustandsmodell prüfen.</p></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
@@ -800,12 +800,12 @@
             <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="buzzer" aria-label="Statische Buzzer-Vorschau"></div></div><div class="feature-panel"><span class="demo-badge demo-badge--outline">Bereit</span><strong>Wer ist zuerst?</strong><button class="demo-button demo-button--destructive" type="button">BUZZ!</button><small style="color:var(--muted-foreground)">Audio · Lock · Reihenfolge</small></div></div></div>
             <div class="catalog-card__body">
               <ul class="component-map">
-                <li><code>LiveBuzzerPage</code><span>Setup, Spielerkarten, Buzz-Control, Reset und Status</span></li>
-                <li><code>LiveBuzzerPresenter</code><span>read-only Rangfolge und Gewinnerstatus</span></li>
-                <li><code>Shared PlayerCard</code><span>Teamwahl und Buzz-Rang/-Zeit</span></li>
+                <li><code>LiveBuzzerPage</code><span>Rundenboard mit kompakten Teamspalten, eigenem Buzz-Trigger und Profil-Dialog</span></li>
+                <li><code>BuzzerResult</code><span>Gemeinsame Ergebnis-/Presenter-Anzeige mit Sieger und getrennten Nachbuzzes</span></li>
+                <li><code>useLiveBuzzer</code><span>Geschützte Spielleitung, gemeinsamer Uhrabgleich und automatische Entscheidung nach 800 ms</span></li>
               </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, AppResetButton, EmptyState, PlayerCard, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/live-buzzer/LiveBuzzerPage.tsx</code></dd></dl>
-              <p class="note">Buzzer und Audio-/Sperrlogik sind fachliche Sonderinteraktionen. Status-Badges und Player Cards nutzen bereits Shared-Bausteine.</p>
+              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, Dialog, IftaInput</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, AppResetButton, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/live-buzzer/LiveBuzzerPage.tsx</code></dd></dl>
+              <p class="note">Buzzer und Audio-/Sperrlogik sind fachliche Sonderinteraktionen. Layout, Felder, Dialoge und Status verwenden vorhandene UI-Bausteine. Der Sieger wird automatisch ohne Bestätigung angezeigt.</p>
             </div>
           </article>
 

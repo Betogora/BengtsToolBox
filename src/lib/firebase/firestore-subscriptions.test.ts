@@ -70,7 +70,6 @@ vi.mock('@/lobbies/LobbyContext', () => ({ useActiveLobbyId: () => 'default' }))
 
 import { useFirestoreDoc } from './useFirestoreDoc'
 import { useFirestoreCollection } from './useFirestoreCollection'
-import { useLiveBuzzer } from '@/apps/live-buzzer/hooks/useLiveBuzzer'
 import { useCoinflip } from '@/apps/coinflip/hooks/useCoinflip'
 import { useDecisionWheel } from '@/apps/decision-wheel/hooks/useDecisionWheel'
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
@@ -289,40 +288,6 @@ describe('Firestore document initialization', () => {
     mock.listeners[0](missing)
     await Promise.resolve()
     expect(mock.writes).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('Live-Buzzer remote checks', () => {
-  function buzzer() {
-    mock.cache.set('app-hub:live-buzzer:player-id', 'test-player')
-    mock.cache.set('app-hub:doc:apps/live-buzzer/sessions/default/state/default', { isOpen: true, history: [], roundNumber: 1 })
-    mock.cache.set('app-hub:collection:apps/live-buzzer/sessions/default/players', [{ id: 'test-player', name: 'Cached', position: 1, teamId: 'blue' }])
-    mock.remote.set('apps/live-buzzer/sessions/default/state/default', { isOpen: true, history: [], roundNumber: 1 })
-    let app!: ReturnType<typeof useLiveBuzzer>
-    function Probe() { app = useLiveBuzzer(); return null }
-    renderToStaticMarkup(createElement(Probe))
-    return app
-  }
-
-  it('returns a handled error when authentication fails', async () => {
-    const app = buzzer()
-    mock.auth.mockRejectedValueOnce(new Error('auth denied'))
-    await expect(app.buzz()).resolves.toBe('sync-error')
-    expect(mock.writes).not.toHaveBeenCalled()
-  })
-
-  it.each([undefined, { isActive: false }])('does not restore a missing or inactive remote player: %s', async (player) => {
-    const app = buzzer()
-    if (player) mock.remote.set('apps/live-buzzer/sessions/default/players/test-player', player)
-    await expect(app.buzz()).resolves.toBe('blocked')
-    expect(mock.writes).not.toHaveBeenCalled()
-  })
-
-  it('normalizes incomplete remote player data before recording a winner', async () => {
-    const app = buzzer()
-    mock.remote.set('apps/live-buzzer/sessions/default/players/test-player', { position: 1 })
-    await expect(app.buzz()).resolves.toBe('winner')
-    expect(mock.writes).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ winnerTeamId: null }), { merge: true })
   })
 })
 

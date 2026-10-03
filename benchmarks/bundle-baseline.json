@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-28T20:25:33.693Z",
+  "generatedAt": "2026-10-02T11:53:32.391Z",
   "toolchain": {
     "node": "v24.15.0",
     "vite": "8.1.4",
@@ -72,8 +72,8 @@
       "gzipBytes": 143043
     },
     "firebase": {
-      "rawBytes": 358987,
-      "gzipBytes": 107487
+      "rawBytes": 493686,
+      "gzipBytes": 147552
     }
   }
 }

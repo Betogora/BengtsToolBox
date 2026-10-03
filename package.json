@@ -24,7 +24,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "test:firebase": "npx firebase-tools@15.22.1 emulators:exec --only firestore \"npm run test:firebase:rules\"",
+    "test:firebase": "npx firebase-tools@15.22.1 emulators:exec --only firestore,database \"npm run test:firebase:rules\"",
     "test:firebase:rules": "vitest --config firebase/vitest.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

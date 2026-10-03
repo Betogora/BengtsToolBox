@@ -35,9 +35,15 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX }}
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+      - name: Require Spark without billing
+        run: GOOGLE_ACCESS_TOKEN="$(gcloud auth print-access-token)" node scripts/checkFirebaseSpark.mjs
+        env:
+          FIREBASE_PROJECT_ID: bengtstoolbox
       - name: Deploy rules and indexes
         run: >-
           npx firebase-tools@15.22.1 deploy
-          --only firestore:rules,firestore:indexes
+          --only firestore:rules,firestore:indexes,database
           --project bengtstoolbox
           --non-interactive

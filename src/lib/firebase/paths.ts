@@ -16,6 +16,9 @@ function scopedOrLegacy(
 }
 
 export const firebasePaths = {
+  liveBuzzerRealtime: (lobbyId = 'default') => `live-buzzer/lobbies/${lobbyId}`,
+  liveBuzzerBuzz: (lobbyId: string, playerId: string) => `live-buzzer/lobbies/${lobbyId}/state/buzzes/${playerId}`,
+  liveBuzzerClock: (uid: string, connectionId: string) => `live-buzzer/clock/${uid}/${connectionId}`,
   lobbies: () => 'lobbies',
   lobby: (lobbyId: string) => `lobbies/${lobbyId}`,
   lobbyDevices: (lobbyId: string) => `lobbies/${lobbyId}/devices`,
