@@ -41,6 +41,17 @@ Diese kompakte Repository-Anleitung immer zuerst lesen. Danach nur die Quellen u
 
 Bei breiten, projektübergreifenden Änderungen die Lektüre auf alle betroffenen Abschnitte und nur nötigenfalls auf vollständige Dokumente erweitern. Nicht vorsorglich alle Apps, Datensätze oder Guides laden. Der aktuelle Code ist für Implementierungsdetails maßgeblich; Markdown beschreibt stabile Grenzen und Arbeitsabläufe.
 
+## Projektbezogene Skills
+
+Für dieses Repository sind die versionierten Fassungen unter `.agents/skills` maßgeblich, auch wenn gleichnamige Skills im privaten Codex-Ordner vorhanden sind. Änderungen für das Projekt werden hier gepflegt; eine automatische Synchronisierung mit privaten Kopien findet nicht statt.
+
+- [Visual A/B Review](.agents/skills/visual-ab-review/SKILL.md): sichtbare Varianten oder vollständige Abläufe als temporäre HTML-Vergleichsseite mit Auswahl und Ergebnis-Prompt vorlegen. Die Werkzeuge und Formatbeispiele liegen im selben Skill-Ordner. Die aktuelle Fassung legt die Bedeutung von A/B und die Verwendung getrennter Stände nach dem Auftrag fest.
+- [Audit Last Change](.agents/skills/audit-last-change/SKILL.md): auf Wunsch den fertigen, zum Auftrag gehörenden Diff vor Commit oder Push auf sichere Vereinfachungen und belegbare Performance-Verbesserungen prüfen.
+
+Die [Projektkonfiguration](visual-review.config.mjs) enthält Triathlon-Beispieldaten und Aufnahmeszenen. Für andere Apps werden die benötigten Szenen im selben Einstieg ergänzt. `mobile` und `desktop` sind Vergleichsansichten; die weiteren Ansichten decken die Prüfmatrix unter „Verifikation“ und die Triathlon-Layoutwechsel ab. Für einen vollständigen Review die erforderlichen Ansichten ausdrücklich mit `--views` auswählen und weitere betroffene Breakpoints ergänzen; ohne diese Option nimmt `scenes.mjs` nur `defaultView` auf.
+
+Die Projektregeln zu Port, Prüfbreiten, Zuständen und Kennzeichnung gelten zusätzlich zum Skill. Aufnahmen, Vergleichsseiten und temporäre Stände bleiben außerhalb des Repositorys. Die Werkzeuge werden aus der Projektwurzel über `.agents/skills/visual-ab-review/scenes.mjs` beziehungsweise `.agents/skills/visual-ab-review/build.py` aufgerufen. `scenes.mjs` verwendet das vorhandene Playwright aus den Projektabhängigkeiten; `build.py` benötigt Python, für Pixelranking und Bildkomprimierung optional Pillow.
+
 ## Architekturregeln
 
 - Reguläre Dashboard-Apps genau einmal in `src/apps/registry.ts` registrieren. Dashboard, Standardroute und Lazy Loading entstehen daraus.

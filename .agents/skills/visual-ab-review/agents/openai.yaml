@@ -1,0 +1,7 @@
+interface:
+  display_name: "Visual A/B Review"
+  short_description: "Varianten und Journeys als klickbare HTML vergleichen"
+  default_prompt: "Nutze $visual-ab-review, um die gewünschten Varianten oder Journeys als Vergleichsseite mit Auswahl und Ergebnis-Prompt vorzulegen."
+
+policy:
+  allow_implicit_invocation: true

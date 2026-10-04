@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit Last Change"
+  short_description: "Prüft letzte Änderungen auf sichere Optimierungen"
+  default_prompt: "Nutze $audit-last-change, um den aktuellen Diff vor Commit oder Push sicher zu vereinfachen und zu optimieren."

@@ -1,0 +1,33 @@
+{
+  "title": "Visueller Variantenvergleich",
+  "intro": "Neutrales Formatbeispiel. Inhalte, Varianten und Ansichten entsprechend dem Auftrag anpassen.",
+  "shots": "shots",
+  "view": "mobile",
+  "cases": [
+    {
+      "id": "K1",
+      "title": "Einstieg vergleichen",
+      "lead": "Zwei Darstellungen desselben Einstiegs vergleichen.",
+      "kind": "Einzelansicht",
+      "points": {
+        "A": ["Variante A"],
+        "B": ["Variante B"]
+      },
+      "scenes": [
+        { "scene": "start", "title": "Einstieg", "note": "Bildquelle und relevante Unterschiede benennen." }
+      ]
+    },
+    {
+      "id": "J1",
+      "title": "Ablauf vergleichen",
+      "lead": "Jede Variante zeigt einen vollständigen Durchlauf; die Wahl gilt für alle Schritte.",
+      "kind": "Journey",
+      "layout": "journey",
+      "scenes": [
+        { "scene": "step-01", "title": "Ablauf öffnen" },
+        { "scene": "step-02", "title": "Eingabe abschließen" },
+        { "scene": "step-03", "title": "Ergebnis prüfen" }
+      ]
+    }
+  ]
+}
