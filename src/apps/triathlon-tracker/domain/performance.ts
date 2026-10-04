@@ -2,6 +2,7 @@ import type {
   ActualTraining,
   BikeDistanceAnalysis,
   BikePerformanceAnalysis,
+  BikePowerAnalysis,
   CyclingContext,
   Discipline,
   DistancePerformanceAnalysis,
@@ -42,6 +43,7 @@ type DistanceModel = {
 export type DistanceAnalysisOptions<Context> = {
   context: Context
   asOfLocalDate: string
+  targetDistancesMeters?: readonly number[]
 }
 
 export type BikeAnalysisOptions = DistanceAnalysisOptions<CyclingContext> & {
@@ -100,7 +102,7 @@ function linearRegression(
   return { slope, intercept: meanY - slope * meanX }
 }
 
-function isComparableContinuousTraining(
+export function isComparableContinuousTraining(
   training: ActualTraining,
   discipline: Discipline,
   context: TrainingContext,
@@ -145,8 +147,10 @@ export function getDistanceActivityPerformancePoints(
       ) ||
       training.localDate < options.fromLocalDate ||
       training.durationSeconds === null ||
+      !Number.isFinite(training.durationSeconds) ||
       training.durationSeconds <= 0 ||
       training.distanceMeters === null ||
+      !Number.isFinite(training.distanceMeters) ||
       training.distanceMeters <= 0
     ) {
       return []
@@ -181,8 +185,10 @@ export function getPowerActivityPerformancePoints(
       ) ||
       training.localDate < options.fromLocalDate ||
       training.durationSeconds === null ||
+      !Number.isFinite(training.durationSeconds) ||
       training.durationSeconds <= 0 ||
       training.averagePowerWatts === null ||
+      !Number.isFinite(training.averagePowerWatts) ||
       training.averagePowerWatts <= 0
     ) {
       return []
@@ -218,8 +224,10 @@ function eligibleDistanceSamples(
         performanceWindowMonths,
       ) ||
       training.durationSeconds === null ||
+      !Number.isFinite(training.durationSeconds) ||
       training.durationSeconds <= 0 ||
       training.distanceMeters === null ||
+      !Number.isFinite(training.distanceMeters) ||
       training.distanceMeters <= 0
     ) {
       return []
@@ -336,21 +344,43 @@ function buildDistanceResult(
   anchors: readonly DistanceSample[],
   targetDistances: readonly number[],
   supportingTrainingCount = anchors.length,
+  allowPartialEstimates = false,
 ): DistancePerformanceAnalysis | null {
+  const distances = anchors.map((anchor) => anchor.distanceMeters)
+  const minimumDistance = Math.min(...distances)
+  const maximumDistance = Math.max(...distances)
   const estimates = targetDistances.flatMap<PerformanceEstimate>(
     (targetDistance) => {
+      // The CSS test pair can support the requested 1,500 m extrapolation,
+      // but does not justify unlimited projection beyond its anchor range.
+      if (allowPartialEstimates && (
+        !Number.isFinite(targetDistance) || targetDistance <= 0 ||
+        targetDistance > maximumDistance * 4
+      )) return []
       const predictedDuration = model.predict(targetDistance)
-      return predictedDuration === null
+      return predictedDuration === null ||
+        !Number.isFinite(predictedDuration) ||
+        predictedDuration <= 0
         ? []
         : [
             {
               targetDistanceMeters: targetDistance,
               predictedDurationSeconds: predictedDuration,
+              ...(allowPartialEstimates
+                ? {
+                    extrapolated:
+                      targetDistance < minimumDistance ||
+                      targetDistance > maximumDistance,
+                  }
+                : {}),
             },
           ]
     },
   )
-  if (estimates.length !== targetDistances.length) {
+  if (
+    estimates.length === 0 ||
+    (!allowPartialEstimates && estimates.length !== targetDistances.length)
+  ) {
     return null
   }
 
@@ -370,6 +400,29 @@ function buildDistanceResult(
 }
 
 const provisionalRunExponent = 1.06
+
+function supportedRunTargets(
+  model: DistanceModel,
+  anchors: readonly DistanceSample[],
+  requestedTargets: readonly number[] | undefined,
+): readonly number[] {
+  if (!requestedTargets) return [5_000, 10_000]
+  const distances = anchors.map((anchor) => anchor.distanceMeters)
+  const minimumDistance = Math.min(...distances)
+  const maximumDistance = Math.max(...distances)
+  return requestedTargets.filter(
+    (distance) =>
+      Number.isFinite(distance) &&
+      distance > 0 &&
+      (distance >= 5_000 || distance >= minimumDistance / 2) &&
+      distance <= maximumDistance * 2 &&
+      // The factor-two limit for longer targets is a conservative product guard.
+      // Short CS trials do not establish half-marathon endurance. Riegel alone
+      // systematically underestimates recreational runners' marathon times.
+      (distance <= 10_000 || model.kind === 'power-law') &&
+      (distance < 42_195 || distance <= maximumDistance),
+  )
+}
 
 function fitProvisionalRunModel(samples: readonly DistanceSample[]): {
   anchor: DistanceSample
@@ -421,7 +474,11 @@ export function analyzeRun(
   )
   const anchors = selectDistanceAnchors(samples)
   if (hasDistanceDiversity(anchors)) {
-    const criticalSpeed = fitCriticalSpeed(anchors)
+    const criticalSpeed = anchors.every(
+      (anchor) => anchor.durationSeconds >= 120 && anchor.durationSeconds <= 1_200,
+    )
+      ? fitCriticalSpeed(anchors)
+      : null
     const powerLaw = fitPowerLaw(anchors)
     const criticalSpeedError = criticalSpeed
       ? crossValidationError(anchors, (subset) => fitCriticalSpeed(subset))
@@ -436,7 +493,13 @@ export function analyzeRun(
           ? criticalSpeed
           : powerLaw
     const result = model
-      ? buildDistanceResult(model, anchors, [5_000, 10_000], samples.length)
+      ? buildDistanceResult(
+          model,
+          anchors,
+          supportedRunTargets(model, anchors, options.targetDistancesMeters),
+          samples.length,
+          options.targetDistancesMeters !== undefined,
+        )
       : null
     if (result) return result
   }
@@ -446,8 +509,9 @@ export function analyzeRun(
     ? (buildDistanceResult(
         provisional.model,
         [provisional.anchor],
-        [5_000, 10_000],
+        supportedRunTargets(provisional.model, [provisional.anchor], options.targetDistancesMeters),
         provisional.supportingTrainingCount,
+        options.targetDistancesMeters !== undefined,
       ) ?? insufficient(0, 1))
     : insufficient(0, 1)
 }
@@ -543,7 +607,13 @@ export function analyzeSwim(
       samples.some((sample) => sample.training.isBenchmark) ? 2 : 3,
     )
   return (
-    buildDistanceResult(model, modelAnchors, [750, 1_500], samples.length) ??
+    buildDistanceResult(
+      model,
+      modelAnchors,
+      options.targetDistancesMeters ?? [750, 1_500],
+      samples.length,
+      options.targetDistancesMeters !== undefined,
+    ) ??
     insufficient(modelAnchors.length)
   )
 }
@@ -568,8 +638,10 @@ function eligiblePowerSamples(
         performanceWindowMonths,
       ) ||
       training.durationSeconds === null ||
+      !Number.isFinite(training.durationSeconds) ||
       training.durationSeconds <= 0 ||
       training.averagePowerWatts === null ||
+      !Number.isFinite(training.averagePowerWatts) ||
       training.averagePowerWatts <= 0
     ) {
       return []
@@ -601,7 +673,7 @@ function selectPowerAnchors(samples: readonly PowerSample[]): PowerSample[] {
 function analyzeBikePower(
   anchors: readonly PowerSample[],
   weightKg: number | null,
-): BikePerformanceAnalysis | null {
+): BikePowerAnalysis | null {
   if (
     anchors.length < 3 ||
     anchors.at(-1)!.durationSeconds / anchors[0].durationSeconds < 2
@@ -647,6 +719,7 @@ function analyzeBikePower(
 
 function analyzeBikeDistance(
   samples: readonly DistanceSample[],
+  targetDistancesMeters: readonly number[] | undefined,
 ): BikeDistanceAnalysis | null {
   const anchors = selectDistanceAnchors(samples)
   if (!hasDistanceDiversity(anchors)) {
@@ -662,8 +735,11 @@ function analyzeBikeDistance(
   const result = buildDistanceResult(
     model,
     anchors,
-    [20_000, 40_000],
+    targetDistancesMeters?.filter((distance) =>
+      distance <= Math.max(...anchors.map((anchor) => anchor.distanceMeters)) * 2,
+    ) ?? [20_000, 40_000],
     samples.length,
+    targetDistancesMeters !== undefined,
   )
   return result?.model === 'power-law' ? (result as BikeDistanceAnalysis) : null
 }
@@ -684,17 +760,21 @@ export function analyzeBike(
     )),
   )
   const powerResult = analyzeBikePower(powerAnchors, options.weightKg)
-  if (powerResult) {
-    return powerResult
-  }
-
   const distanceSamples = eligibleDistanceSamples(
     trainings,
     'bike',
     options.context,
     options.asOfLocalDate,
   )
-  const distanceResult = analyzeBikeDistance(preferBenchmarks(distanceSamples))
+  const distanceResult = analyzeBikeDistance(
+    preferBenchmarks(distanceSamples),
+    options.targetDistancesMeters,
+  )
+  if (powerResult) {
+    return options.targetDistancesMeters && distanceResult
+      ? { ...powerResult, distanceAnalysis: distanceResult }
+      : powerResult
+  }
   return (
     distanceResult ??
     insufficient(

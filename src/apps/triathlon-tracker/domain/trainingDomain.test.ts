@@ -98,6 +98,21 @@ describe('tracker validation', () => {
     ]))
   })
 
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    'rejects non-finite training metrics and weight: %s',
+    (value) => {
+      expect(validateSettings({ ...settings, weightKg: value })).toContainEqual({
+        field: 'weightKg', code: 'out-of-range', severity: 'error',
+      })
+      expect(validatePlannedTraining({ ...plan, durationSeconds: value })).toContainEqual({
+        field: 'durationSeconds', code: 'out-of-range', severity: 'error',
+      })
+      expect(validateActualTraining(actual({ distanceMeters: value }))).toContainEqual({
+        field: 'distanceMeters', code: 'out-of-range', severity: 'error',
+      })
+    },
+  )
+
   it('warns instead of rewriting mismatching interval totals', () => {
     const training = actual({
       intervals: [{

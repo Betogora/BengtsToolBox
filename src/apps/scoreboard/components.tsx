@@ -19,7 +19,6 @@ import type {
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
-import { getColorWithAlpha } from '@/apps/shared/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -33,7 +32,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 
 export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) {
   const { formatNumber } = useI18n()
@@ -125,7 +123,7 @@ export function ScoreTargetCard({
   }
 
   return (
-    <Card style={{ backgroundColor: getColorWithAlpha(target.color, '80') }}>
+    <Card style={{ backgroundColor: `color-mix(in srgb, ${target.color} 12%, var(--card))` }}>
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
@@ -259,7 +257,7 @@ export function RosterPlayerCard({
   return (
     <Card
       className="self-start"
-      style={teamColor ? { backgroundColor: getColorWithAlpha(teamColor, '80') } : undefined}
+      style={teamColor ? { backgroundColor: `color-mix(in srgb, ${teamColor} 12%, var(--card))` } : undefined}
     >
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
@@ -352,6 +350,7 @@ export function HistoryList({ history }: { history: ScoreboardHistoryEntry[] }) 
         <div
           key={event.id}
           className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
+          style={{ backgroundColor: `color-mix(in srgb, ${event.targetColor} 12%, var(--card))` }}
         >
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
@@ -492,41 +491,5 @@ export function AddCard({
         </Button>
       </CardContent>
     </Card>
-  )
-}
-
-export function ModeToggle({
-  disabled,
-  mode,
-  onChange,
-}: {
-  disabled: boolean
-  mode: 'individual' | 'teams'
-  onChange: (mode: 'individual' | 'teams') => void | Promise<unknown>
-}) {
-  const { t } = useI18n()
-
-  return (
-    <div
-      className="grid grid-cols-2 rounded-lg bg-muted p-[3px]"
-      aria-label={t('scoreboard.modeAria')}
-    >
-      {(['individual', 'teams'] as const).map((value) => (
-        <Button
-          key={value}
-          type="button"
-          variant="ghost"
-          className={cn(
-            'h-8 rounded-md px-3 shadow-none',
-            mode === value && 'bg-background text-foreground shadow-sm hover:bg-background',
-          )}
-          disabled={disabled}
-          aria-pressed={mode === value}
-          onClick={() => void onChange(value)}
-        >
-          {value === 'individual' ? t('scoreboard.modeIndividual') : t('scoreboard.modeTeams')}
-        </Button>
-      ))}
-    </div>
   )
 }

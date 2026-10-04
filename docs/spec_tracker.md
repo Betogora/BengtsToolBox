@@ -1,15 +1,15 @@
 # Triathlon-Tracker
 
-**Stand:** 6. September 2026
+**Stand:** 3. Oktober 2026
 
 **Route:** `/apps/triathlon-tracker`
 **Status:** Live
 
 ## Ziel
 
-Der Triathlon-Tracker ist eine reguläre App der BengtsToolBox. Er hält geplante und absolvierte Einheiten für Schwimmen, Radfahren und Laufen fest, zeigt Wochenvolumen und schätzt die aktuelle Leistungsfähigkeit aus vergleichbaren Trainingsdaten.
+Der Triathlon-Tracker ist eine reguläre App der BengtsToolBox. Er verwaltet Bestleistungen und Trainingsplanung für Schwimmen, Radfahren und Laufen. Gemessene Bestleistungen aus der gesamten Historie stehen neben begrenzten Hochrechnungen der aktuellen Leistungsfähigkeit; Trainingsvolumen und Verläufe ergänzen diese beiden Kernaufgaben.
 
-Die App dokumentiert und visualisiert. Sie erstellt keine Trainingspläne, gibt keine Coaching- oder Gesundheitsempfehlungen und bewertet keine Planerfüllung.
+Trainingspläne werden manuell angelegt. Die App generiert keine Pläne, gibt keine Coaching- oder Gesundheitsempfehlungen und bewertet keine Planerfüllung.
 
 ## Betriebsmodell
 
@@ -23,10 +23,20 @@ Die App dokumentiert und visualisiert. Sie erstellt keine Trainingspläne, gibt 
 
 ### Leistungsoptionen
 
-- Optionales aktuelles Gewicht in Kilogramm wird direkt neben den Kontextfiltern der Leistungsentwicklung gepflegt und für die Anzeige von Radleistung in W/kg verwendet.
-- Schwimmen wird dort nach 25-m-Becken, 50-m-Becken oder Freiwasser, Radfahren nach Indoor oder Outdoor und Laufen nach Straße, Bahn oder Laufband getrennt betrachtet. Vorausgewählt sind 50-m-Becken, Outdoor und Straße; neue absolvierte Einheiten übernehmen den jeweils aktiven Kontext als Eingabestandard. Beim Bearbeiten eines älteren Eintrags ohne Kontext wird dieser Standard ebenfalls vorausgewählt und erst mit dem Speichern übernommen.
+- Optionales aktuelles Gewicht in Kilogramm wird in der Rekordansicht gepflegt und für die Anzeige von Critical Power in W/kg verwendet.
+- Schwimmen wird dort nach 25-m-Becken, 50-m-Becken oder Freiwasser, Radfahren nach Indoor oder Outdoor und Laufen nach Straße, Bahn oder Laufband getrennt betrachtet. Vorausgewählt sind 50-m-Becken, Outdoor und Straße. Die zielbezogene Testeingabe übernimmt den aktiven Rekordkontext; die allgemeine Trainingseingabe startet mit dem Standardkontext. Beim Bearbeiten eines älteren Eintrags ohne Kontext wird dieser Standard ebenfalls vorausgewählt und erst mit dem Speichern übernommen.
 - Es gibt keinen separaten Einstellungsdialog.
 - Keine Gewichtshistorie und keine weiteren Körper- oder Wearable-Messwerte.
+
+### Bestleistungen
+
+- `Rekorde` ist die Einstiegsansicht. Jede Disziplin zeigt ihre eigenen Kontextfilter, gemessene Rekorde mit Datum und daneben aktuelle Hochrechnungen mit Modell und Datenbasis.
+- Rekorde beziehen sich auf die gesamte bisherige Historie im gewählten Kontext. Standardmäßig zählen nur als maximaler Leistungstest oder Wettkampf markierte Einheiten; die Rekordbasis ist auf alle Trainings umschaltbar. Diese Auswahl ändert die gemessenen Rekorde, nicht die automatische Modellwahl.
+- Gemessene Zeitrekorde erfordern eine positive Dauer und exakt die Zieldistanz: Schwimmen 200, 400, 750 und 1.500 m; Radfahren 20 und 40 km; Laufen 1, 5 und 10 km, Halbmarathon (21.097,5 m) und Marathon (42.195 m).
+- Radleistungsrekorde erfassen die höchste positive Durchschnittsleistung über exakt 5 beziehungsweise 20 Minuten. Eine höhere Leistung über eine kürzere Einheit ersetzt keinen längeren Rekord.
+- Ganze Einheiten liefern keine Bestzeiten beliebiger Teilstrecken. Intervalle zählen weder als Rekord noch als Modellanker. Fehlende Messungen werden als `—` angezeigt.
+- Die Aktion `+` an einer Zielstrecke beziehungsweise Leistungsdauer öffnet den Trainingseintrag mit vorausgewählter Disziplin, Kontext, Distanz oder Dauer und Testmarkierung. Bestehende Rekorde öffnen ihren ursprünglichen Eintrag zur Bearbeitung.
+- Hochrechnungen verwenden weiterhin höchstens die letzten drei Monate. Werte außerhalb der Ankerdistanzen tragen eine Extrapolationsmarkierung; nicht gestützte Ziele bleiben leer.
 
 ### Geplante Einheiten
 
@@ -48,6 +58,7 @@ Eine absolvierte Einheit benötigt Datum, Disziplin und mindestens Dauer oder Di
 - durchschnittliche Herzfrequenz,
 - durchschnittliche Leistung,
 - RPE von 1 bis 10,
+- Markierung als maximaler Leistungstest oder Wettkampf,
 - disziplinspezifischer Kontext:
   - Schwimmen: 25-m-Becken, 50-m-Becken oder Freiwasser,
   - Radfahren: Indoor oder Outdoor,
@@ -56,21 +67,21 @@ Eine absolvierte Einheit benötigt Datum, Disziplin und mindestens Dauer oder Di
 
 Intervalle werden ausschließlich über Eingabefelder aufgebaut. Es gibt keinen Textparser. Einheiten lassen sich nachträglich bearbeiten und löschen.
 
-Je zwei positive Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe. Maßgeblich sind die beiden zuletzt manuell bearbeiteten Felder; unvollständige Eingaben leeren die daraus berechnete Größe. Gespeichert werden weiterhin Dauer und Distanz; die Pace bleibt ein daraus abgeleiteter Wert.
+Je zwei positive Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe. Maßgeblich sind die beiden zuletzt manuell bearbeiteten Felder; unvollständige Eingaben leeren die daraus berechnete Größe. Dauer lässt sich sekundengenau als `m:ss` oder `h:mm:ss` sowie als Dezimalminuten eingeben, auch für Planungen und Intervallabschnitte. Bearbeiten und Speichern erhalten die Sekunden. Gespeichert werden weiterhin Dauer und Distanz; die Pace bleibt ein daraus abgeleiteter Wert.
 
-### Kalender, Tagebuch und Statistik
+### Planung, Tagebuch und Verlauf
 
-- Drei Tabs nach dem Navigationsmuster der Turnier-App trennen Trainingsplan, absolvierte Trainings und Statistik.
+- Vier Tabs trennen `Rekorde`, `Planung`, `Tagebuch` und `Verlauf`.
 - Der Kalender zeigt ausschließlich geplante Einheiten; absolvierte Einheiten erscheinen dort nicht.
-- Monats- und Wochenansicht beginnen montags. Desktop: sieben Tagesspalten mit mehreren Trainingskarten und einer zusätzlichen Wochensumme für Dauer und Anzahl sowie Dauer je Disziplin.
+- Monats- und Wochenansicht beginnen montags; die Woche ist vorausgewählt. Ab 768 Pixeln zeigt die Woche sieben gleich breite Tagesspalten mit mehreren Trainingskarten und darunter die Wochensumme für Dauer und Anzahl sowie Dauer je Disziplin. Im Desktop-Monat steht die Wochensumme neben jeder Woche.
 - Mobil und auf Tablets: kompaktes Monatsgitter mit ausgewählter Tagesagenda; die Wochenansicht zeigt sieben Tage untereinander.
 - Der heutige Tag wird markiert. Navigation über Heute, Vor/Zurück und eine direkte Datumsauswahl.
 - Tagesaktionen öffnen den Planeditor. Eine einzelne Einheit lässt sich als bearbeitbare Kopie übernehmen; ganze Wochen werden weiterhin nach Vorschau kopiert.
 - Drag-and-drop verschiebt Planungen zwischen sichtbaren Tagen. Das Datumsfeld im Editor erlaubt dieselbe Änderung auf Touch-Geräten und per Tastatur.
-- Das Tagebuch zeigt sämtliche absolvierten Einheiten in einer horizontal scrollbar zugänglichen Tabelle: Datum, Disziplin, Dauer, Distanz, Pace, Puls, Leistung, RPE, Kontext und Aktionen. Intervalleinheiten tragen eine Angabe zur Zahl ihrer Abschnitte.
-- Filter für Disziplin und Datumsbereich, umkehrbare Datumssortierung und Seiten zu 20 Einträgen erschließen auch ältere Datensätze.
-- Die Erfassungsmaske gruppiert Training, Messwerte und optionale Detailangaben einschließlich Intervallen. Nach dem Speichern öffnet sich das Tagebuch. Bearbeiten und Löschen bleiben möglich.
-- Disziplinfarben bleiben über Kalender, Tagebuch und Statistik konsistent. Leistungsmodelle und bestehende Speicherpfade bleiben erhalten.
+- Das Tagebuch zeigt auf Desktop eine verdichtete Tabelle mit Datum, Disziplin/Kontext, Dauer, Distanz, Pace, optionalen Messwerten und Aktionen. Mobil verwendet dasselbe Markup Karten mit drei nebeneinanderstehenden Hauptmesswerten. Puls, Leistung, RPE, Kontext und Zahl der Intervallabschnitte bleiben sichtbar. Maximaltests tragen eine eigene Markierung.
+- Filter für Disziplin, Datumsbereich und Maximaltests, umkehrbare Datumssortierung und Seiten zu 20 Einträgen erschließen auch ältere Datensätze. Die Gesamtsumme zeigt Anzahl und Zeit; eine Summendistanz erscheint nur bei gewählter Disziplin.
+- Die kompakte Erfassungsmaske zeigt Datum, Zeit, Disziplin, Kontext, Dauer, Distanz, Pace, Herzfrequenz, Leistung, RPE und Testmarkierung direkt. Intervalle liegen in einem aufklappbaren Bereich. Normale Trainingseinträge öffnen nach dem Speichern das Tagebuch; zielbezogene Rekordeingaben und Rekordbearbeitungen kehren zur Rekordansicht zurück. Ihr gewählter Kontext bleibt beim Tabwechsel erhalten. Bearbeiten und Löschen bleiben möglich.
+- Disziplinfarben bleiben über Rekorde, Planung, Tagebuch und Verlauf konsistent. Die vorhandenen Leistungsmodelle und Speicherpfade bilden weiterhin die kanonischen Implementierungen.
 
 ### Wochenstatistik
 
@@ -79,7 +90,7 @@ Für die aktuelle Woche zeigt die App:
 - gesamte Trainingszeit,
 - Zeit, Distanz und Anzahl je Disziplin.
 
-Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen verwenden disziplinspezifische Farben aus dem Toolbox-Farbraum. Ein Verlauf visualisiert standardmäßig die Wochendistanz und umschaltbar die Wochenzeit je Disziplin; `Distanz pro Woche` steht dabei links von `Zeit pro Woche`. Dieses Wochenvolumen besitzt keine zusätzliche Tabellenansicht. Das Wochenvolumen und der Fortschrittsindex stehen auf großen Bildschirmen nebeneinander. Darunter wählt ein Disziplin-Tab ein breites Leistungsdiagramm. Zeitachsen bilden tatsächliche Datumsabstände ab; Laufen und Schwimmen zeigen Pace statt Geschwindigkeit. Eine Planerfüllungsquote oder Belastungsmetrik wird nicht berechnet.
+Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen verwenden disziplinspezifische Farben aus dem Toolbox-Farbraum. Sie stehen bei vorhandenen Trainings über den App-Tabs. Die Ansicht `Verlauf` fasst zusätzlich den gewählten Zeitraum zusammen. Ihr gestapeltes Wochenvolumen zeigt standardmäßig Trainingszeit und ist auf Distanz umschaltbar; es besitzt keine zusätzliche Tabellenansicht. Darunter stehen Leistungsdiagramme mit einzelnen Trainingspunkten und Modellkurven. Zeitachsen bilden tatsächliche Datumsabstände ab; Laufen und Schwimmen zeigen Pace statt Geschwindigkeit. Der normalisierte Fortschrittsindex liegt im aufklappbaren Bereich. Eine Planerfüllungsquote oder Belastungsmetrik wird nicht berechnet.
 
 ## Leistungsmodelle
 
@@ -99,22 +110,24 @@ Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen v
 
 ### Laufen
 
-- Zielzeiten: 5 km und 10 km.
-- Bei mindestens drei ausreichend unterschiedlichen Ankern sind ein Critical-Speed-Modell und ein individuell angepasstes Potenzgesetz die Kandidaten; gewählt wird das gültige Modell mit dem kleineren Leave-one-out-Fehler, sofern dieser höchstens 10 % beträgt.
+- Die Rekordansicht fragt 1, 5 und 10 km, Halbmarathon und Marathon an; der Verlauf verwendet weiterhin 5 und 10 km als vergleichbare Hauptkennzahlen.
+- Bei mindestens drei ausreichend unterschiedlichen Ankern wird ein individuell angepasstes Potenzgesetz geprüft. Critical Speed ist nur bei Ankerdauern von 2 bis 20 Minuten ein zusätzlicher Kandidat; gewählt wird das gültige Modell mit dem kleineren Leave-one-out-Fehler, sofern dieser höchstens 10 % beträgt.
 - Fehlt diese Streuung, reicht ein kontinuierlicher Lauf zwischen 5 km und 21,1 km für eine Hochrechnung mit dem festen Riegel-Exponent 1,06. Unter mehreren passenden Läufen liefert die stärkste auf 5 km normierte Leistung den Modellanker; alle passenden Läufe werden als bestätigende Datenbasis ausgewiesen.
 - Die durchschnittliche Herzfrequenz bleibt als Trainingskontext erhalten, korrigiert die Hochrechnung aber nicht. Ohne Maximalpuls oder individuelle Zonen lässt sich aus einem niedrigeren oder höheren Durchschnittspuls keine belastbare Wettkampfleistung ableiten.
+- Zusätzliche Zielstrecken dürfen höchstens doppelt so lang sein wie der längste Modellanker. Kürzere Ziele unter 5 km benötigen einen Anker von höchstens der doppelten Zieldistanz. Critical Speed erzeugt keine Ziele über 10 km. Ein Marathon wird aus kürzeren Distanzen nicht extrapoliert. Diese Grenzen sind konservative Produktregeln und keine wissenschaftlichen Unsicherheitsintervalle.
 
 ### Schwimmen
 
-- Zielzeiten: 750 m und 1.500 m.
+- Die Rekordansicht fragt 200, 400, 750 und 1.500 m an; der Verlauf verwendet 750 und 1.500 m als Hauptkennzahlen.
 - Bevorzugt wird Critical Swim Speed aus passenden starken 200-m- und 400-m-Leistungen aus zwei markierten maximalen Tests. Ohne Testmarkierung ist mindestens eine weitere Stützeinheit erforderlich. Alle Stützwerte müssen innerhalb von 10 % zur CSS-Schätzung liegen.
 - Falls CSS nicht anwendbar ist, wird bei mindestens drei unterschiedlichen Distanzen ein individuelles Potenzgesetz mit höchstens 10 % Leave-one-out-Fehler verwendet.
+- Zielstrecken dürfen höchstens viermal so lang sein wie der längste Anker. Damit bleibt die bewusst markierte CSS-Extrapolation von 400 auf 1.500 m möglich; sie ist keine gemessene Bestzeit.
 
 ### Radfahren
 
 - Bei mindestens drei geeigneten Leistungs-Dauer-Ankern zwischen 2 und 20 Minuten wird Critical Power mit W′ berechnet. Stützwerte dürfen höchstens 10 % vom Modell abweichen.
-- Angezeigt wird Critical Power in Watt und, falls Gewicht gesetzt ist, in W/kg. Critical Power wird nicht in eine Distanzzeit umgerechnet.
-- Ohne ausreichende Leistungsdaten werden 20-km- und 40-km-Zeiten aus vergleichbaren Distanz-Zeit-Ankern per Potenzgesetz mit höchstens 10 % Leave-one-out-Fehler geschätzt; die 20-km-Zeit ist die Hauptkennzahl.
+- Angezeigt wird Critical Power in Watt und, falls Gewicht gesetzt ist, in W/kg. Die Rekordansicht ergänzt modellierte 5-/20-Minuten-Leistung aus CP und W′. Critical Power wird nicht in eine Distanzzeit umgerechnet.
+- Unabhängig davon werden 20-km- und 40-km-Zeiten aus vergleichbaren Distanz-Zeit-Ankern per Potenzgesetz mit höchstens 10 % Leave-one-out-Fehler geschätzt, sofern die Daten ausreichen. In der Rekordansicht dürfen sie höchstens doppelt so lang sein wie der längste Anker. Der Verlauf verwendet CP oder, ohne ausreichende Leistungsdaten, die 20-km-Zeit als Hauptkennzahl.
 
 ### Fortschrittsanzeige
 
@@ -126,16 +139,16 @@ Die vier gleich breiten Kennzahlen für Woche, Schwimmen, Radfahren und Laufen v
 
 ## Seitenaufbau
 
-Die Tracker-Seite besitzt die Tabs Kalender, Tagebuch und Statistik sowie die Hauptaktion `Training eintragen`. Der Wochenkalender zeigt ab 768 Pixeln alle sieben Tage nebeneinander; auf Tablet-Breiten steht die Wochensumme darunter. Die Statistik bündelt Wochenkennzahlen, Hochrechnungen, Modellhinweise und Diagramme.
+Die Tracker-Seite startet mit `Rekorde` und bietet außerdem `Planung`, `Tagebuch` und `Verlauf`. Die Hauptaktionen öffnen manuelle Planung und Trainingseintrag. Die Rekordansicht bündelt Rekorde, aktuelle Hochrechnungen, Kontextfilter, Gewicht und aufklappbare wissenschaftliche Quellen; die Verlaufsansicht bündelt Zeitraumkennzahlen und Diagramme.
 
-Formulare öffnen in vorhandenen Dialogen. Die Trainingseingabe zeigt zuerst Datum, Disziplin, Kontext, Dauer, Distanz, Pace und durchschnittliche Herzfrequenz. Leistung, RPE und Intervalle liegen im aufklappbaren Bereich `Weitere Angaben`. Die Seite funktioniert kompakt auf Desktop, Tablet und Mobilgeräten, unterstützt Tastatur und Dark Mode und erzeugt keine horizontale Seiten-Scrollleiste.
+Formulare öffnen in vorhandenen Dialogen und verwenden zwei kompakte Feldspalten. Die Trainingseingabe zeigt alle Hauptmesswerte direkt; nur Intervalle werden aufgeklappt. Die Seite funktioniert kompakt auf Desktop, Tablet und Mobilgeräten, unterstützt Tastaturbedienung, verwendet die gemeinsamen Design-Tokens und erzeugt keine horizontale Seiten-Scrollleiste.
 
 ### Wissenschaftliche Grundlage
 
 - [Vickers & Vertosick (2016): Laufzeitprognosen](https://pubmed.ncbi.nlm.nih.gov/27570626/): Riegel als begrenzte Distanzübertragung. 36 Minuten über 6 km ergeben mit Exponent 1,06 rund 29:40 über 5 km; eine zusätzliche Leistungsreserve eines lockeren Trainings ist daraus nicht ableitbar.
 - [Systematischer Review zu Critical Speed (2025)](https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2025.1520914/full): maximale Tests und vergleichbare Bedingungen sind wesentlich.
-- [Stroke-Specific Swimming Critical Speed Testing (2024)](https://pubmed.ncbi.nlm.nih.gov/38380294/): 200-/400-m-Testverfahren; längere Zielzeiten bleiben Extrapolationen.
-- [Power-duration relationship (2021)](https://pubmed.ncbi.nlm.nih.gov/34708276/): Critical Power und W′ statt einer universellen Watt-zu-Geschwindigkeit-Umrechnung. Distanzbasierte Radschätzungen setzen vergleichbare Strecke, Wind und Fahrbedingungen voraus.
+- [Scott et al. (2024): Stroke-Specific Swimming Critical Speed Testing](https://pmc.ncbi.nlm.nih.gov/articles/PMC10875687/): 200-/400-m-Testverfahren; längere Zielzeiten bleiben Extrapolationen.
+- [Karsten et al. (2021): Validity and Reliability of Critical Power Field Testing](https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.613151/full): Critical Power und W′ statt einer universellen Watt-zu-Geschwindigkeit-Umrechnung. Distanzbasierte Radschätzungen setzen vergleichbare Strecke, Wind und Fahrbedingungen voraus.
 
 ## Technische Einordnung
 
@@ -151,7 +164,7 @@ Formulare öffnen in vorhandenen Dialogen. Die Trainingseingabe zeigt zuerst Dat
 ## Bewusst nicht enthalten
 
 - Datei-, Wearable-, Strava- oder sonstige Importe,
-- wiederkehrende Termine und Duplizieren einzelner Einheiten,
+- wiederkehrende Termine,
 - Plan-Ist-Verknüpfung oder Planerfüllung,
 - Krafttraining, Mobility oder weitere Disziplinen,
 - VO₂max, Ruhepuls, HRV, Pulszonen, Höhenmeter, Routen und Maximalwerte,
@@ -166,5 +179,6 @@ Formulare öffnen in vorhandenen Dialogen. Die Trainingseingabe zeigt zuerst Dat
 - Die App erscheint genau einmal im Dashboard und ist global sowie innerhalb einer Lobby erreichbar.
 - Planungen, Trainings und Gewicht synchronisieren über die bestehenden Datenhooks und funktionieren im lokalen Fallback.
 - Alle beschriebenen Eingabe-, Berechnungs-, Bearbeitungs-, Lösch- und Wochenkopieabläufe funktionieren ohne Import- oder Exportoption.
+- Rekorde bleiben von Modellschätzungen getrennt, benötigen exakte Zielstrecken beziehungsweise -dauern und erhalten beim Bearbeiten die Sekundengenauigkeit.
 - Unzureichende oder nicht vergleichbare Daten erzeugen keine scheinpräzise Hochrechnung.
 - Fachlogik ist durch Unit-Tests, Firestore-Pfade und Regeln durch fokussierte Tests sowie die Oberfläche durch gerenderte Desktop- und Mobile-Prüfungen abgesichert.

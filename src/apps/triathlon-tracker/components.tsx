@@ -1,6 +1,8 @@
 import { ChevronDown, Clock3, Copy, Plus, Trash2 } from 'lucide-react'
-import type { FormEvent, ReactNode } from 'react'
+import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { TimePicker } from '@/components/ui/TimePicker'
 
 import type {
   ActualTraining,
@@ -27,14 +29,12 @@ import type {
   PlannedWeekCopyPreview,
 } from '@/apps/triathlon-tracker/hooks/useTriathlonTracker'
 import {
-  disciplineColors,
   disciplineIcons,
   formatTrainingDuration as formatDuration,
 } from '@/apps/triathlon-tracker/presentation'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogClose,
@@ -55,6 +55,8 @@ import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
   updateTrainingMetrics,
+  parseTrainingDuration,
+  formatTrainingDurationInput,
   type TrainingMetricDraft,
   type TrainingMetricField,
 } from './domain/units'
@@ -67,10 +69,6 @@ export type {
 
 function isoDateAtNoon(localDate: string) {
   return new Date(`${localDate}T12:00:00`)
-}
-
-function secondsToMinutes(seconds: number | null) {
-  return seconds === null ? '' : `${seconds / 60}`
 }
 
 function metersToKilometers(meters: number | null) {
@@ -160,10 +158,13 @@ function DisciplineSelect({
       value={value}
       onValueChange={(next) => onValueChange(next as Discipline)}
     >
-      <IftaSelectTrigger label={t('triathlon.form.discipline')}>
+      <IftaSelectTrigger
+        className="min-w-0 gap-1 [&_[data-slot=select-value]]:truncate"
+        label={t('triathlon.form.discipline')}
+      >
         <SelectValue />
       </IftaSelectTrigger>
-      <SelectContent>
+      <SelectContent className="triathlon-tracker">
         {(['swim', 'bike', 'run'] as const).map((discipline) => (
           <SelectItem key={discipline} value={discipline}>
             {getDisciplineLabel(discipline, t)}
@@ -216,7 +217,9 @@ function PlannedTrainingDialogContent({
     (training ?? template)?.discipline ?? 'run',
   )
   const [durationMinutes, setDurationMinutes] = useState(
-    secondsToMinutes((training ?? template)?.durationSeconds ?? null),
+    formatTrainingDurationInput(
+      (training ?? template)?.durationSeconds ?? null,
+    ),
   )
   const [distanceKilometers, setDistanceKilometers] = useState(
     metersToKilometers((training ?? template)?.distanceMeters ?? null),
@@ -227,11 +230,12 @@ function PlannedTrainingDialogContent({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    const parsedDuration = optionalNumber(durationMinutes)
+    const parsedDuration = parseTrainingDuration(durationMinutes)
     const parsedDistance = optionalNumber(distanceKilometers)
 
     if (
       !isValidLocalDate(localDate) ||
+      (durationMinutes.trim() !== '' && parsedDuration === null) ||
       (parsedDuration !== null && parsedDuration < 0) ||
       (parsedDistance !== null && parsedDistance < 0)
     ) {
@@ -246,8 +250,7 @@ function PlannedTrainingDialogContent({
         localDate,
         startMinutes: timeToMinutes(startTime),
         discipline,
-        durationSeconds:
-          parsedDuration === null ? null : Math.round(parsedDuration * 60),
+        durationSeconds: parsedDuration,
         distanceMeters:
           parsedDistance === null ? null : Math.round(parsedDistance * 1000),
         label: label.trim().slice(0, 40),
@@ -261,7 +264,10 @@ function PlannedTrainingDialogContent({
   }
 
   return (
-    <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-xl">
+    <DialogContent
+      aria-describedby={undefined}
+      className="triathlon-tracker max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:max-w-xl sm:p-5"
+    >
       <form
         className="grid gap-4"
         onSubmit={(event) => void handleSubmit(event)}
@@ -270,39 +276,29 @@ function PlannedTrainingDialogContent({
           <DialogTitle>
             {training ? t('triathlon.plan.edit') : t('triathlon.plan.add')}
           </DialogTitle>
-          <DialogDescription>
-            {t('triathlon.plan.description')}
-          </DialogDescription>
         </DialogHeader>
-        <fieldset className="grid gap-3 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
-          <legend className="type-action px-2">
-            {t('triathlon.form.schedule')}
-          </legend>
-          <IftaInput
+        <fieldset className="grid grid-cols-2 gap-2">
+          <legend className="sr-only">{t('triathlon.form.schedule')}</legend>
+          <DatePicker
             required
             label={t('triathlon.form.date')}
-            type="date"
             value={localDate}
-            onChange={(event) => setLocalDate(event.currentTarget.value)}
+            onValueChange={setLocalDate}
           />
-          <IftaInput
+          <TimePicker
             label={t('triathlon.form.timeOptional')}
-            type="time"
             value={startTime}
-            onChange={(event) => setStartTime(event.currentTarget.value)}
+            onValueChange={setStartTime}
           />
         </fieldset>
-        <fieldset className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
-          <legend className="type-action px-2">
-            {t('triathlon.form.targets')}
-          </legend>
+        <fieldset className="grid grid-cols-2 gap-2">
+          <legend className="sr-only">{t('triathlon.form.targets')}</legend>
           <DisciplineSelect value={discipline} onValueChange={setDiscipline} />
           <IftaInput
-            inputMode="decimal"
-            label={t('triathlon.form.durationMinutes')}
-            min="0"
-            step="1"
-            type="number"
+            label={t('triathlon.journal.duration')}
+            aria-label={t('triathlon.form.durationClock')}
+            title={t('triathlon.form.durationClock')}
+            placeholder="45:00"
             value={durationMinutes}
             onChange={(event) => setDurationMinutes(event.currentTarget.value)}
           />
@@ -353,7 +349,7 @@ function PlannedTrainingDialogContent({
               />
             )}
           </div>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <div className="flex gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 {t('common.cancel')}
@@ -382,7 +378,7 @@ function intervalToDraft(interval: IntervalSegment): IntervalDraft {
   return {
     id: interval.id,
     kind: interval.kind,
-    durationMinutes: secondsToMinutes(interval.durationSeconds),
+    durationMinutes: formatTrainingDurationInput(interval.durationSeconds),
     distanceMeters:
       interval.distanceMeters === null ? '' : `${interval.distanceMeters}`,
     averageHeartRateBpm:
@@ -428,9 +424,6 @@ function IntervalEditor({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="type-action">{t('triathlon.intervals.title')}</h3>
-          <p className="type-caption text-muted-foreground">
-            {t('triathlon.intervals.description')}
-          </p>
         </div>
         <Button
           disabled={intervals.length >= 100}
@@ -486,7 +479,7 @@ function IntervalEditor({
                   <IftaSelectTrigger label={t('triathlon.intervals.kind')}>
                     <SelectValue />
                   </IftaSelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="triathlon-tracker">
                     <SelectItem value="work">
                       {t('triathlon.intervals.work')}
                     </SelectItem>
@@ -496,10 +489,10 @@ function IntervalEditor({
                   </SelectContent>
                 </Select>
                 <IftaInput
-                  label={t('triathlon.form.durationMinutes')}
-                  min="0"
-                  step="0.1"
-                  type="number"
+                  label={t('triathlon.journal.duration')}
+                  aria-label={t('triathlon.form.durationClock')}
+                  title={t('triathlon.form.durationClock')}
+                  placeholder="2:30"
                   value={interval.durationMinutes}
                   onChange={(event) =>
                     update(interval.id, {
@@ -556,6 +549,7 @@ type ActualTrainingDialogProps = {
   initialDate: string
   open: boolean
   training: ActualTraining | null
+  template?: Partial<ActualTrainingInput>
   onDelete?: (id: string) => Promise<unknown> | unknown
   onOpenChange: (open: boolean) => void
   onSave: (value: ActualTrainingInput) => Promise<unknown> | unknown
@@ -578,28 +572,30 @@ function ActualTrainingDialogContent({
   defaultContexts,
   initialDate,
   training,
+  template,
   onDelete,
   onOpenChange,
   onSave,
 }: Omit<ActualTrainingDialogProps, 'open'>) {
   const { t } = useI18n()
-  const initialDiscipline = training?.discipline ?? 'run'
-  const [localDate, setLocalDate] = useState(training?.localDate ?? initialDate)
+  const initial = training ?? template
+  const initialDiscipline = initial?.discipline ?? 'run'
+  const [localDate, setLocalDate] = useState(initial?.localDate ?? initialDate)
   const [startTime, setStartTime] = useState(
-    minutesToTime(training?.startMinutes ?? null),
+    minutesToTime(initial?.startMinutes ?? null),
   )
   const [discipline, setDiscipline] = useState<Discipline>(initialDiscipline)
   const [context, setContext] = useState<TrainingContext | null>(
-    training?.context ?? defaultContext(initialDiscipline, defaultContexts),
+    initial?.context ?? defaultContext(initialDiscipline, defaultContexts),
   )
   const [metrics, setMetrics] = useState<TrainingMetricDraft>(() => ({
-    duration: secondsToMinutes(training?.durationSeconds ?? null),
-    distance: metersToKilometers(training?.distanceMeters ?? null),
+    duration: formatTrainingDurationInput(initial?.durationSeconds ?? null),
+    distance: metersToKilometers(initial?.distanceMeters ?? null),
     pace: formatPace(
-      training?.durationSeconds && training.distanceMeters
+      initial?.durationSeconds && initial.distanceMeters
         ? averagePaceSeconds(
-            training.durationSeconds,
-            training.distanceMeters,
+            initial.durationSeconds,
+            initial.distanceMeters,
             initialDiscipline,
           )
         : null,
@@ -611,30 +607,21 @@ function ActualTrainingDialogContent({
     distance: distanceKilometers,
     pace: averagePace,
   } = metrics
-  const [isBenchmark, setIsBenchmark] = useState(training?.isBenchmark ?? false)
+  const [isBenchmark, setIsBenchmark] = useState(initial?.isBenchmark ?? false)
   const [averageHeartRateBpm, setAverageHeartRateBpm] = useState(
-    training?.averageHeartRateBpm === null || !training
+    initial?.averageHeartRateBpm == null
       ? ''
-      : `${training.averageHeartRateBpm}`,
+      : `${initial.averageHeartRateBpm}`,
   )
   const [averagePowerWatts, setAveragePowerWatts] = useState(
-    training?.averagePowerWatts === null || !training
-      ? ''
-      : `${training.averagePowerWatts}`,
+    initial?.averagePowerWatts == null ? '' : `${initial.averagePowerWatts}`,
   )
-  const [rpe, setRpe] = useState(
-    training?.rpe === null || !training ? '' : `${training.rpe}`,
-  )
+  const [rpe, setRpe] = useState(initial?.rpe == null ? '' : `${initial.rpe}`)
   const [intervals, setIntervals] = useState<IntervalDraft[]>(
-    (training?.intervals ?? []).map(intervalToDraft),
+    (initial?.intervals ?? []).map(intervalToDraft),
   )
   const [showDetails, setShowDetails] = useState(
-    Boolean(
-      training &&
-        (training.averagePowerWatts !== null ||
-          training.rpe !== null ||
-          training.intervals.length > 0),
-    ),
+    Boolean(initial?.intervals?.length),
   )
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -649,7 +636,7 @@ function ActualTrainingDialogContent({
       inputs: ['duration', 'distance'],
       pace: formatPace(
         averagePaceSeconds(
-          Number(current.duration) * 60,
+          parseTrainingDuration(current.duration) ?? 0,
           Number(current.distance) * 1000,
           nextDiscipline,
         ),
@@ -664,7 +651,7 @@ function ActualTrainingDialogContent({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    const parsedDuration = optionalNumber(durationMinutes)
+    const parsedDuration = parseTrainingDuration(durationMinutes)
     const parsedDistance = optionalNumber(distanceKilometers)
     const parsedAveragePace = averagePace ? parsePace(averagePace) : null
     const parsedHr = optionalNumber(averageHeartRateBpm)
@@ -673,6 +660,7 @@ function ActualTrainingDialogContent({
 
     if (
       !localDate ||
+      (durationMinutes.trim() !== '' && parsedDuration === null) ||
       ((parsedDuration === null || parsedDuration <= 0) &&
         (parsedDistance === null || parsedDistance <= 0)) ||
       (parsedDuration !== null && parsedDuration < 0) ||
@@ -682,7 +670,12 @@ function ActualTrainingDialogContent({
         (parsedDistance === null || parsedDistance <= 0)) ||
       (parsedHr !== null && (parsedHr < 30 || parsedHr > 250)) ||
       (parsedPower !== null && parsedPower < 0) ||
-      (parsedRpe !== null && (parsedRpe < 1 || parsedRpe > 10))
+      (parsedRpe !== null && (parsedRpe < 1 || parsedRpe > 10)) ||
+      intervals.some(
+        (interval) =>
+          interval.durationMinutes.trim() !== '' &&
+          parseTrainingDuration(interval.durationMinutes) === null,
+      )
     ) {
       setError(t('triathlon.form.actualInvalid'))
       return
@@ -693,12 +686,7 @@ function ActualTrainingDialogContent({
         id: interval.id,
         position: index + 1,
         kind: interval.kind,
-        durationSeconds:
-          optionalNumber(interval.durationMinutes) === null
-            ? null
-            : Math.round(
-                Number(interval.durationMinutes.replace(',', '.')) * 60,
-              ),
+        durationSeconds: parseTrainingDuration(interval.durationMinutes),
         distanceMeters: optionalNumber(interval.distanceMeters),
         averageHeartRateBpm: optionalNumber(interval.averageHeartRateBpm),
         averagePowerWatts: optionalNumber(interval.averagePowerWatts),
@@ -710,8 +698,7 @@ function ActualTrainingDialogContent({
       startMinutes: timeToMinutes(startTime),
       discipline,
       context,
-      durationSeconds:
-        parsedDuration === null ? null : Math.round(parsedDuration * 60),
+      durationSeconds: parsedDuration,
       distanceMeters:
         parsedDistance === null ? null : Math.round(parsedDistance * 1000),
       averageHeartRateBpm: parsedHr,
@@ -750,35 +737,31 @@ function ActualTrainingDialogContent({
   }
 
   return (
-    <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
+    <DialogContent
+      aria-describedby={undefined}
+      className="triathlon-tracker max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:max-w-2xl sm:p-5"
+    >
       <form
-        className="grid gap-5"
+        className="grid gap-4"
         onSubmit={(event) => void handleSubmit(event)}
       >
         <DialogHeader>
           <DialogTitle>
             {training ? t('triathlon.actual.edit') : t('triathlon.actual.add')}
           </DialogTitle>
-          <DialogDescription>
-            {t('triathlon.actual.description')}
-          </DialogDescription>
         </DialogHeader>
-        <fieldset className="grid gap-3 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
-          <legend className="type-action px-2">
-            {t('triathlon.form.session')}
-          </legend>
-          <IftaInput
+        <fieldset className="grid grid-cols-2 gap-2">
+          <legend className="sr-only">{t('triathlon.form.session')}</legend>
+          <DatePicker
             required
             label={t('triathlon.form.date')}
-            type="date"
             value={localDate}
-            onChange={(event) => setLocalDate(event.currentTarget.value)}
+            onValueChange={setLocalDate}
           />
-          <IftaInput
+          <TimePicker
             label={t('triathlon.form.timeOptional')}
-            type="time"
             value={startTime}
-            onChange={(event) => setStartTime(event.currentTarget.value)}
+            onValueChange={setStartTime}
           />
           <DisciplineSelect
             value={discipline}
@@ -791,10 +774,13 @@ function ActualTrainingDialogContent({
               setContext(value === 'none' ? null : (value as TrainingContext))
             }
           >
-            <IftaSelectTrigger label={t('triathlon.form.context')}>
+            <IftaSelectTrigger
+              className="min-w-0 gap-1 [&_[data-slot=select-value]]:truncate"
+              label={t('triathlon.form.context')}
+            >
               <SelectValue />
             </IftaSelectTrigger>
-            <SelectContent>
+            <SelectContent className="triathlon-tracker">
               <SelectItem value="none">
                 {t('triathlon.context.none')}
               </SelectItem>
@@ -806,15 +792,13 @@ function ActualTrainingDialogContent({
             </SelectContent>
           </Select>
         </fieldset>
-        <fieldset className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
-          <legend className="type-action px-2">
-            {t('triathlon.form.metrics')}
-          </legend>
+        <fieldset className="grid grid-cols-2 gap-2">
+          <legend className="sr-only">{t('triathlon.form.metrics')}</legend>
           <IftaInput
-            label={t('triathlon.form.durationMinutes')}
-            min="0"
-            step="0.01"
-            type="number"
+            label={t('triathlon.journal.duration')}
+            aria-label={t('triathlon.form.durationClock')}
+            title={t('triathlon.form.durationClock')}
+            placeholder="20:35"
             value={durationMinutes}
             onChange={(event) =>
               updateMetric('duration', event.currentTarget.value)
@@ -831,7 +815,7 @@ function ActualTrainingDialogContent({
             }
           />
           <IftaInput
-            inputMode="numeric"
+            inputMode="text"
             label={averagePaceLabel(discipline, t)}
             placeholder="5:30"
             value={averagePace}
@@ -849,7 +833,28 @@ function ActualTrainingDialogContent({
               setAverageHeartRateBpm(event.currentTarget.value)
             }
           />
-          <label className="type-ui flex items-center gap-3 rounded-md bg-muted/40 p-3 sm:col-span-2">
+          <p className="type-caption col-span-2 text-muted-foreground">
+            {t('triathlon.form.metricsDerived')}
+          </p>
+          <IftaInput
+            label={t('triathlon.form.averagePower')}
+            min="0"
+            max="3000"
+            type="number"
+            value={averagePowerWatts}
+            onChange={(event) =>
+              setAveragePowerWatts(event.currentTarget.value)
+            }
+          />
+          <IftaInput
+            label={t('triathlon.form.rpe')}
+            min="1"
+            max="10"
+            type="number"
+            value={rpe}
+            onChange={(event) => setRpe(event.currentTarget.value)}
+          />
+          <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted/40 p-3">
             <input
               type="checkbox"
               className="size-4 accent-primary"
@@ -869,7 +874,7 @@ function ActualTrainingDialogContent({
             variant="ghost"
             onClick={() => setShowDetails((current) => !current)}
           >
-            {t('triathlon.form.moreDetails')}
+            {t('triathlon.intervals.title')}
             <ChevronDown
               aria-hidden="true"
               className={cn(
@@ -883,25 +888,6 @@ function ActualTrainingDialogContent({
               className="grid gap-4 border-t p-3"
               id="actual-training-details"
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <IftaInput
-                  label={t('triathlon.form.averagePower')}
-                  min="0"
-                  type="number"
-                  value={averagePowerWatts}
-                  onChange={(event) =>
-                    setAveragePowerWatts(event.currentTarget.value)
-                  }
-                />
-                <IftaInput
-                  label={t('triathlon.form.rpe')}
-                  min="1"
-                  max="10"
-                  type="number"
-                  value={rpe}
-                  onChange={(event) => setRpe(event.currentTarget.value)}
-                />
-              </div>
               <IntervalEditor intervals={intervals} onChange={setIntervals} />
             </div>
           )}
@@ -943,7 +929,7 @@ function ActualTrainingDialogContent({
               />
             )}
           </div>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <div className="flex gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 {t('common.cancel')}
@@ -1005,7 +991,7 @@ function WeekCopyDialogContent({
   )
 
   return (
-    <DialogContent>
+    <DialogContent className="triathlon-tracker">
       <DialogHeader>
         <DialogTitle>{t('triathlon.copyWeek.title')}</DialogTitle>
         <DialogDescription>
@@ -1013,19 +999,17 @@ function WeekCopyDialogContent({
         </DialogDescription>
       </DialogHeader>
       <div className="grid gap-3 sm:grid-cols-2">
-        <IftaInput
+        <DatePicker
           required
           label={t('triathlon.copyWeek.source')}
-          type="date"
           value={source}
-          onChange={(event) => setSource(event.currentTarget.value)}
+          onValueChange={setSource}
         />
-        <IftaInput
+        <DatePicker
           required
           label={t('triathlon.copyWeek.target')}
-          type="date"
           value={target}
-          onChange={(event) => setTarget(event.currentTarget.value)}
+          onValueChange={setTarget}
         />
       </div>
       {preview ? (
@@ -1149,121 +1133,50 @@ export function CurrentWeekSummary({
       : t('triathlon.summary.trainingCount', { count })
 
   return (
-    <section aria-labelledby="current-week-title">
-      <Card>
-        <CardContent className="grid grid-cols-2 gap-px bg-border p-0 sm:grid-cols-4">
-          <div className="min-w-0 bg-card p-3 sm:p-4" data-week-summary-item>
-            <h2
-              id="current-week-title"
-              className="type-label text-muted-foreground"
-            >
-              {t('triathlon.summary.thisWeek')}
-            </h2>
-            <p className="type-card-title mt-1 tabular-nums sm:text-2xl">
-              {formatDuration(totalDurationSeconds)}
+    <section
+      className="tri-week-summary grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
+      aria-labelledby="current-week-title"
+    >
+      <div
+        className="tri-week-total min-w-0 rounded-xl bg-muted p-3 sm:p-4"
+        data-week-summary-item
+      >
+        <h2
+          id="current-week-title"
+          className="type-caption font-medium text-muted-foreground"
+        >
+          {t('triathlon.summary.thisWeek')}
+        </h2>
+        <p className="mt-2 text-xl font-semibold leading-tight tabular-nums sm:text-3xl">
+          {formatDuration(totalDurationSeconds)}
+        </p>
+        <p className="type-caption mt-2 text-muted-foreground">
+          {trainingCountLabel(actualCount)}
+        </p>
+      </div>
+
+      {disciplines.map(({ discipline, duration, distance, count }) => {
+        const Icon = disciplineIcons[discipline]
+        return (
+          <div
+            className="min-w-0 rounded-xl bg-[var(--sport-wash)] p-3 text-[var(--sport-ink)] sm:p-4"
+            data-discipline={discipline}
+            data-discipline-summary={discipline}
+            data-week-summary-item
+            key={discipline}
+          >
+            <p className="type-caption flex items-center gap-2 font-medium">
+              <Icon aria-hidden="true" className="size-4 shrink-0" />
+              {getDisciplineLabel(discipline, t)}
             </p>
-            <p className="type-caption mt-1 text-muted-foreground">
-              {trainingCountLabel(actualCount)}
+            <p className="mt-2 text-xl font-semibold leading-tight tabular-nums sm:text-3xl">
+              {formatDuration(duration)}
+            </p>
+            <p className="type-caption mt-2 flex flex-wrap gap-x-1">
+              <span>{formatDistance(distance, locale)}</span>
+              <span>· {trainingCountLabel(count)}</span>
             </p>
           </div>
-
-          {disciplines.map(({ discipline, duration, distance, count }) => {
-            const Icon = disciplineIcons[discipline]
-            const disciplineColor = disciplineColors[discipline]
-            return (
-              <div
-                className="min-w-0 bg-card p-3 sm:p-4"
-                data-discipline-summary={discipline}
-                data-week-summary-item
-                key={discipline}
-                style={{ boxShadow: `inset 0 3px 0 ${disciplineColor}` }}
-              >
-                <p className="type-label flex items-center gap-2 text-muted-foreground">
-                  <Icon
-                    aria-hidden="true"
-                    className="size-4 shrink-0"
-                    style={{ color: disciplineColor }}
-                  />
-                  {getDisciplineLabel(discipline, t)}
-                </p>
-                <p className="type-card-title mt-1 tabular-nums sm:text-2xl">
-                  {formatDuration(duration)}
-                </p>
-                <p className="type-caption mt-1 truncate text-muted-foreground">
-                  {formatDistance(distance, locale)} ·{' '}
-                  {trainingCountLabel(count)}
-                </p>
-              </div>
-            )
-          })}
-        </CardContent>
-      </Card>
-    </section>
-  )
-}
-
-export function PerformanceCards({
-  cards,
-}: {
-  cards: Array<{
-    discipline: Discipline
-    label: string
-    value: string | null
-    detail?: string | null
-    method?: string | null
-  }>
-}) {
-  const { t } = useI18n()
-  return (
-    <section className="grid gap-3 md:grid-cols-3">
-      {cards.map((card) => {
-        const Icon = disciplineIcons[card.discipline]
-        const disciplineColor = disciplineColors[card.discipline]
-        return (
-          <Card
-            data-performance-card={card.discipline}
-            key={`${card.discipline}-${card.label}`}
-            style={{ boxShadow: `inset 0 3px 0 ${disciplineColor}` }}
-          >
-            <CardHeader className="p-3 pb-1 sm:p-4 sm:pb-2">
-              <CardTitle className="type-label flex items-center gap-2 text-muted-foreground">
-                <Icon
-                  aria-hidden="true"
-                  className="size-4"
-                  style={{ color: disciplineColor }}
-                />
-                {card.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-              {card.method && (
-                <p className="type-caption mb-2 text-muted-foreground">
-                  {card.method}
-                </p>
-              )}
-              {card.value ? (
-                <>
-                  <p className="type-metric-lg tabular-nums">{card.value}</p>
-                  {card.detail && (
-                    <p className="type-caption mt-1 text-muted-foreground">
-                      {card.detail}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="type-ui text-muted-foreground">
-                    {t('triathlon.performance.notEnough')}
-                  </p>
-                  {card.detail && (
-                    <p className="type-caption mt-1 text-muted-foreground">
-                      {card.detail}
-                    </p>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
         )
       })}
     </section>
@@ -1288,20 +1201,5 @@ export function SyncStatus() {
       <Clock3 aria-hidden="true" />
       {t('common.syncing')}
     </Badge>
-  )
-}
-
-export function SectionHeading({
-  children,
-  icon,
-}: {
-  children: ReactNode
-  icon?: ReactNode
-}) {
-  return (
-    <h2 className="type-section-title flex items-center gap-2">
-      {icon}
-      {children}
-    </h2>
   )
 }

@@ -262,40 +262,45 @@ export function ProgressDashboardPage() {
         </Card>
       )}
 
-      <Card style={chartAccentStyle}>
-        <CardHeader className="gap-4">
-          <div className="flex flex-col gap-3 rounded-lg border bg-secondary/60 p-3 md:flex-row md:items-center md:justify-between">
-            <div className="type-ui flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Trophy className="size-4 text-[var(--progress-accent)]" />
-                {t('progress.leader')}
-              </div>
-              <div className="type-action min-w-0 truncate">
-                {leader ? leader.player.name : '-'}
-              </div>
-              <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                <span className="type-action tabular-nums">
-                  {formatNumber(leader?.score ?? 0)}
-                </span>
-                <span>
-                  {t('progress.ofTotal', { total: formatNumber(totalScore) })}
-                  {unitLabel ? ` ${unitLabel}` : ''}
-                </span>
-              </div>
+      <Card
+        className="min-[900px]:grid min-[900px]:grid-cols-[minmax(12rem,0.32fr)_minmax(0,1fr)] min-[900px]:gap-6"
+        style={chartAccentStyle}
+      >
+        <CardHeader className="min-w-0 gap-3 min-[900px]:pr-0">
+          <div
+            className="grid min-w-0 gap-2 rounded-md border p-3"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--progress-accent) 12%, var(--card))' }}
+          >
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Trophy className="size-4 text-[var(--progress-accent)]" />
+              {t('progress.leader')}
             </div>
-            <div className="w-full md:w-64">
-              <IftaInput
-                aria-label={t('progress.unitAria')}
-                label={t('progress.unitAria')}
-                value={activeDataset.unit}
-                onChange={(event) =>
-                  updateActiveDatasetMeta('unit', event.currentTarget.value)
-                }
-              />
+            <div className="type-action min-w-0 break-words">
+              {leader ? leader.player.name : '-'}
+            </div>
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="type-metric-lg tabular-nums">
+                {formatNumber(leader?.score ?? 0)}
+              </span>
+              {unitLabel && <span className="type-ui break-all text-muted-foreground">{unitLabel}</span>}
             </div>
           </div>
+          <div className="rounded-md border bg-muted/40 px-3 py-2">
+            <div className="type-caption text-muted-foreground">{t('progress.totalScore')}</div>
+            <div className="type-action tabular-nums">
+              {formatNumber(totalScore)}{unitLabel ? ` ${unitLabel}` : ''}
+            </div>
+          </div>
+          <IftaInput
+            aria-label={t('progress.unitAria')}
+            label={t('progress.unitAria')}
+            value={activeDataset.unit}
+            onChange={(event) =>
+              updateActiveDatasetMeta('unit', event.currentTarget.value)
+            }
+          />
         </CardHeader>
-        <CardContent className="px-3 pb-4 sm:px-6 sm:pb-6">
+        <CardContent className="min-w-0 px-3 pb-4 sm:px-6 sm:pb-6 min-[900px]:pl-0 min-[900px]:pt-6">
           <ProgressChart
             dataset={activeDataset}
             mode="dashboard"

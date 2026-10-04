@@ -224,23 +224,11 @@ export function SwissTournamentsPage() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
-        <TabsList className="swiss-print-hidden grid h-auto w-full grid-cols-2 sm:grid-cols-4">
-          <TabsTrigger value="overview" className="min-w-0">
-            <LayoutDashboard className="size-5 text-primary" />
-            {t('swiss.overview')}
-          </TabsTrigger>
-          <TabsTrigger value="players" className="min-w-0">
-            <UsersRound className="size-5 text-primary" />
-            {t('swiss.players')}
-          </TabsTrigger>
-          <TabsTrigger value="pairings" className="min-w-0">
-            <Swords className="size-5 text-primary" />
-            {t('swiss.pairings')}
-          </TabsTrigger>
-          <TabsTrigger value="standings" className="min-w-0">
-            <Trophy className="size-5 text-primary" />
-            {t('swiss.ranking')}
-          </TabsTrigger>
+        <TabsList variant="icon-tabs" className="swiss-print-hidden max-w-full w-full sm:w-fit" aria-label={t('app.swissTournaments.title')}>
+          <TabsTrigger value="overview" icon={LayoutDashboard} label={t('swiss.overview')} />
+          <TabsTrigger value="players" icon={UsersRound} label={t('swiss.players')} />
+          <TabsTrigger value="pairings" icon={Swords} label={t('swiss.pairings')} />
+          <TabsTrigger value="standings" icon={Trophy} label={t('swiss.ranking')} />
         </TabsList>
 
         <TournamentOverviewWorkflow

@@ -212,6 +212,34 @@ describe('swimming performance', () => {
 })
 
 describe('cycling performance', () => {
+  it('keeps independent distance-time estimates alongside CP without a power-to-speed conversion', () => {
+    const trainings = [180, 600, 1_200].map((duration, index) =>
+      performance(`bike-${index + 1}`, 'bike', 'outdoor', duration, duration * 10, 250 + 20_000 / duration),
+    )
+    trainings.push(
+      performance('bike-4', 'bike', 'outdoor', 900, 10_000),
+      performance('bike-5', 'bike', 'outdoor', 1_880, 20_000),
+      performance('bike-6', 'bike', 'outdoor', 3_920, 40_000),
+    )
+    // The power trials contain no route-distance measurements.
+    trainings.slice(0, 3).forEach((training) => {
+      training.distanceMeters = null
+      training.isBenchmark = true
+    })
+    const result = analyzeBike(trainings, {
+      context: 'outdoor', asOfLocalDate: '2026-08-22', weightKg: null,
+      targetDistancesMeters: [20_000, 40_000],
+    })
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready' || result.model !== 'critical-power') return
+    expect(result.criticalPowerWatts).toBeCloseTo(250)
+    expect(result.basis).toBe('benchmark')
+    expect(result.distanceAnalysis?.estimates.map((estimate) => estimate.targetDistanceMeters)).toEqual([20_000, 40_000])
+    expect(result.distanceAnalysis?.estimates.every((estimate) => estimate.extrapolated === false)).toBe(true)
+    expect(result.distanceAnalysis?.basis).toBe('training')
+    expect(result.distanceAnalysis?.anchorIds).toEqual(['bike-4', 'bike-5', 'bike-6'])
+  })
+
   it('fits CP and W-prime and derives W/kg only with a weight', () => {
     const cp = 250
     const workCapacity = 20_000
@@ -285,6 +313,51 @@ describe('progress indices', () => {
 })
 
 describe('wissenschaftliche Modellgrenzen', () => {
+  it('returns supported PR-distance estimates and labels extrapolation without predicting a marathon', () => {
+    const result = analyzeRun(
+      [performance('run-1', 'run', 'road', 4_050, 15_000)],
+      {
+        context: 'road', asOfLocalDate: '2026-08-22',
+        targetDistancesMeters: [1_000, 5_000, 10_000, 21_097.5, 42_195],
+      },
+    )
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.estimates.map((estimate) => estimate.targetDistanceMeters)).toEqual([5_000, 10_000, 21_097.5])
+    expect(result.estimates.every((estimate) => estimate.extrapolated)).toBe(true)
+    expect(result.estimates[2].predictedDurationSeconds).toBeCloseTo(4_050 * (21_097.5 / 15_000) ** 1.06)
+  })
+
+  it('does not use the short-duration CS asymptote to predict half-marathon endurance', () => {
+    const result = analyzeRun(
+      [
+        performance('run-1', 'run', 'road', 300, 1_400),
+        performance('run-2', 'run', 'road', 600, 2_600),
+        performance('run-3', 'run', 'road', 1_200, 5_000),
+      ],
+      { context: 'road', asOfLocalDate: '2026-08-22', targetDistancesMeters: [1_000, 5_000, 10_000, 21_097.5] },
+    )
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.model).toBe('critical-speed')
+    expect(result.estimates.map((estimate) => [estimate.targetDistanceMeters, estimate.extrapolated])).toEqual([
+      [1_000, true], [5_000, false], [10_000, true],
+    ])
+  })
+
+  it('labels CSS target distances beyond its tests as extrapolations', () => {
+    const result = analyzeSwim(
+      [
+        { ...performance('swim-1', 'swim', 'pool-50', 120, 200), isBenchmark: true },
+        { ...performance('swim-2', 'swim', 'pool-50', 260, 400), isBenchmark: true },
+      ],
+      { context: 'pool-50', asOfLocalDate: '2026-08-22', targetDistancesMeters: [200, 400, 750, 1_500, 10_000] },
+    )
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(result.estimates.map((estimate) => estimate.extrapolated)).toEqual([false, false, true, true])
+  })
+
   it('keeps valid power anchors when a benchmark lies outside the CP duration range', () => {
     const trainings = [300, 600, 1200].map((duration, index) =>
       performance(`bike-${index + 1}`, 'bike', 'outdoor', duration, duration * 10, 250 + 18000 / duration))

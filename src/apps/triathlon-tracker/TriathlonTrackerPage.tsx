@@ -1,15 +1,19 @@
+import './triathlon-tracker.css'
+
 import {
   Activity,
   BarChart3,
   CalendarDays,
   NotebookPen,
   Plus,
+  Trophy,
 } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
   ActualTrainingDialog,
+  CurrentWeekSummary,
   LoadingState,
   PlannedTrainingDialog,
   SyncStatus,
@@ -17,8 +21,13 @@ import {
 } from './components'
 import { getCurrentLocalDate, getWeekStartLocalDate } from './domain/dates'
 import { useTriathlonTracker } from './hooks/useTriathlonTracker'
-import type { PlannedTrainingInput } from './hooks/useTriathlonTracker'
+import type {
+  ActualTrainingInput,
+  PlannedTrainingInput,
+} from './hooks/useTriathlonTracker'
 import { PlanCalendar } from './PlanCalendar'
+import { PersonalBestsPanel } from './PersonalBestsPanel'
+import { summarizeWeek } from './domain/weeklyStats'
 import { TrainingJournal } from './TrainingJournal'
 import { defaultTrainingContexts } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
@@ -43,7 +52,7 @@ export function TriathlonTrackerPage() {
   const { t } = useI18n()
   const tracker = useTriathlonTracker()
   const today = getCurrentLocalDate()
-  const [activeTab, setActiveTab] = useState('calendar')
+  const [activeTab, setActiveTab] = useState('records')
   const [activeLocalDate, setActiveLocalDate] = useState(today)
   const [selectedDate, setSelectedDate] = useState(today)
   const [plannedDialogOpen, setPlannedDialogOpen] = useState(false)
@@ -58,6 +67,13 @@ export function TriathlonTrackerPage() {
   const [editingActual, setEditingActual] = useState<ActualTraining | null>(
     null,
   )
+  const [actualTemplate, setActualTemplate] =
+    useState<Partial<ActualTrainingInput>>()
+  const [actualReturnTab, setActualReturnTab] = useState('journal')
+  const week = summarizeWeek(
+    tracker.actualTrainings,
+    getWeekStartLocalDate(today),
+  )
 
   const openPlan = (date: string, training: PlannedTraining | null = null) => {
     setSelectedDate(date)
@@ -68,6 +84,8 @@ export function TriathlonTrackerPage() {
   const openActual = (training: ActualTraining | null = null) => {
     setSelectedDate(training?.localDate ?? today)
     setEditingActual(training)
+    setActualTemplate(undefined)
+    setActualReturnTab('journal')
     setActualDialogOpen(true)
   }
   const deleteActual = async (id: string) => {
@@ -76,15 +94,25 @@ export function TriathlonTrackerPage() {
   }
 
   return (
-    <AppPage className="gap-4 py-5 sm:gap-5 sm:py-8" width="wide">
+    <AppPage
+      className="triathlon-tracker gap-4 py-5 sm:gap-5 sm:py-8"
+      width="wide"
+    >
       <header className="flex flex-wrap items-center justify-between gap-3">
         <AppPageTitle Icon={Activity} title={t('app.triathlonTracker.title')} />
         <div className="flex flex-wrap items-center gap-2">
           {tracker.isPending && <SyncStatus />}
           <Button
-            variant={activeTab === 'calendar' ? 'outline' : 'default'}
-            onClick={() => openActual()}
+            variant="outline"
+            aria-label={t('triathlon.calendar.plan')}
+            onClick={() => openPlan(today)}
           >
+            <CalendarDays aria-hidden="true" />
+            <span className="hidden sm:inline">
+              {t('triathlon.calendar.plan')}
+            </span>
+          </Button>
+          <Button onClick={() => openActual()}>
             <Plus aria-hidden="true" />
             {t('triathlon.actual.add')}
           </Button>
@@ -101,85 +129,127 @@ export function TriathlonTrackerPage() {
       {tracker.isLoading ? (
         <LoadingState />
       ) : (
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="min-w-0 gap-5"
-        >
-          <TabsList
-            aria-label={t('app.triathlonTracker.title')}
-            className="grid h-auto w-full grid-cols-3 p-1"
+        <>
+          {tracker.actualTrainings.length > 0 && (
+            <CurrentWeekSummary
+              actualCount={week.totalTrainingCount}
+              totalDurationSeconds={week.totalDurationSeconds}
+              swimDistanceMeters={week.byDiscipline.swim.distanceMeters}
+              swimDurationSeconds={week.byDiscipline.swim.durationSeconds}
+              swimTrainingCount={week.byDiscipline.swim.trainingCount}
+              bikeDistanceMeters={week.byDiscipline.bike.distanceMeters}
+              bikeDurationSeconds={week.byDiscipline.bike.durationSeconds}
+              bikeTrainingCount={week.byDiscipline.bike.trainingCount}
+              runDistanceMeters={week.byDiscipline.run.distanceMeters}
+              runDurationSeconds={week.byDiscipline.run.durationSeconds}
+              runTrainingCount={week.byDiscipline.run.trainingCount}
+            />
+          )}
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="min-w-0 gap-5"
           >
-            <TabsTrigger value="calendar" className="min-w-0 gap-2 px-1 py-2.5">
-              <CalendarDays
-                aria-hidden="true"
-                className="hidden size-4 sm:block"
-              />
-              {t('triathlon.tabs.calendar')}
-            </TabsTrigger>
-            <TabsTrigger value="journal" className="min-w-0 gap-2 px-1 py-2.5">
-              <NotebookPen
-                aria-hidden="true"
-                className="hidden size-4 sm:block"
-              />
-              {t('triathlon.tabs.journal')}
-            </TabsTrigger>
-            <TabsTrigger
-              value="statistics"
-              className="min-w-0 gap-2 px-1 py-2.5"
+            <TabsList
+              aria-label={t('app.triathlonTracker.title')}
+              variant="icon-tabs"
+              className="max-w-full w-full sm:w-fit"
             >
-              <BarChart3
-                aria-hidden="true"
-                className="hidden size-4 sm:block"
+              <TabsTrigger
+                value="records"
+                icon={Trophy}
+                label={t('triathlon.tabs.records')}
               />
-              {t('triathlon.tabs.statistics')}
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="calendar" forceMount className="data-[state=inactive]:hidden">
-            <PlanCalendar
-              activeLocalDate={activeLocalDate}
-              onDateChange={setActiveLocalDate}
-              plannedTrainings={tracker.plannedTrainings}
-              today={today}
-              onAdd={openPlan}
-              onEdit={(training) => openPlan(training.localDate, training)}
-              onCopy={(training) => {
-                openPlan(training.localDate)
-                setPlanTemplate(training)
-              }}
-              onCopyWeek={() => setCopyDialogOpen(true)}
-              onMove={async (training, localDate) => {
-                try {
-                  await requireSuccessfulSync(
-                    tracker.updatePlannedTraining(training.id, { localDate }),
-                  )
-                  toast.success(t('triathlon.plan.saved'))
-                } catch {
-                  toast.error(t('triathlon.form.saveFailed'))
-                }
-              }}
-            />
-          </TabsContent>
-          <TabsContent value="journal" forceMount className="data-[state=inactive]:hidden">
-            <TrainingJournal
-              actualTrainings={tracker.actualTrainings}
-              onEdit={openActual}
-              onDelete={deleteActual}
-              onAdd={() => openActual()}
-            />
-          </TabsContent>
-          <TabsContent value="statistics">
-            <Suspense fallback={<LoadingState />}>
-              <TrainingStatistics
+              <TabsTrigger
+                value="calendar"
+                icon={CalendarDays}
+                label={t('triathlon.tabs.calendar')}
+              />
+              <TabsTrigger
+                value="journal"
+                icon={NotebookPen}
+                label={t('triathlon.tabs.journal')}
+              />
+              <TabsTrigger
+                value="statistics"
+                icon={BarChart3}
+                label={t('triathlon.tabs.statistics')}
+              />
+            </TabsList>
+            <TabsContent
+              value="records"
+              forceMount
+              className="data-[state=inactive]:hidden"
+            >
+              <PersonalBestsPanel
                 actualTrainings={tracker.actualTrainings}
                 settings={tracker.settings}
+                today={today}
+                onEdit={(training) => {
+                  openActual(training)
+                  setActualReturnTab('records')
+                }}
+                onAdd={(template) => {
+                  openActual()
+                  setActualTemplate(template)
+                  setActualReturnTab('records')
+                }}
                 onUpdateWeight={(weightKg) =>
                   requireSuccessfulSync(tracker.updateSettings({ weightKg }))
                 }
               />
-            </Suspense>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+            <TabsContent
+              value="calendar"
+              forceMount
+              className="data-[state=inactive]:hidden"
+            >
+              <PlanCalendar
+                activeLocalDate={activeLocalDate}
+                onDateChange={setActiveLocalDate}
+                plannedTrainings={tracker.plannedTrainings}
+                today={today}
+                onAdd={openPlan}
+                onEdit={(training) => openPlan(training.localDate, training)}
+                onCopy={(training) => {
+                  openPlan(training.localDate)
+                  setPlanTemplate(training)
+                }}
+                onCopyWeek={() => setCopyDialogOpen(true)}
+                onMove={async (training, localDate) => {
+                  try {
+                    await requireSuccessfulSync(
+                      tracker.updatePlannedTraining(training.id, { localDate }),
+                    )
+                    toast.success(t('triathlon.plan.saved'))
+                  } catch {
+                    toast.error(t('triathlon.form.saveFailed'))
+                  }
+                }}
+              />
+            </TabsContent>
+            <TabsContent
+              value="journal"
+              forceMount
+              className="data-[state=inactive]:hidden"
+            >
+              <TrainingJournal
+                actualTrainings={tracker.actualTrainings}
+                onEdit={openActual}
+                onDelete={deleteActual}
+                onAdd={() => openActual()}
+              />
+            </TabsContent>
+            <TabsContent value="statistics">
+              <Suspense fallback={<LoadingState />}>
+                <TrainingStatistics
+                  actualTrainings={tracker.actualTrainings}
+                  settings={tracker.settings}
+                />
+              </Suspense>
+            </TabsContent>
+          </Tabs>
+        </>
       )}
       <PlannedTrainingDialog
         initialDate={selectedDate}
@@ -205,6 +275,7 @@ export function TriathlonTrackerPage() {
         initialDate={selectedDate}
         open={actualDialogOpen}
         training={editingActual}
+        template={actualTemplate}
         onOpenChange={setActualDialogOpen}
         onDelete={deleteActual}
         onSave={async (value) => {
@@ -213,7 +284,7 @@ export function TriathlonTrackerPage() {
               ? tracker.updateActualTraining(editingActual.id, value)
               : tracker.addActualTraining(value),
           )
-          setActiveTab('journal')
+          setActiveTab(actualReturnTab)
           toast.success(t('triathlon.actual.saved'))
         }}
       />

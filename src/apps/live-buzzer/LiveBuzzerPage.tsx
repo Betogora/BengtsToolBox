@@ -10,6 +10,7 @@ import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { IftaInput } from '@/components/ui/ifta-field'
@@ -46,7 +47,7 @@ function BuzzerResult({ app, large = false }: { app: BuzzerApp; large?: boolean 
   const late = buzzes.filter((buzz) => isLateBuzz(sessionState, buzz))
   const rows = [...early, ...late]
   const status = winner ? null : sessionState.isOpen ? 'liveBuzzer.waiting' : app.allClocksReady ? 'liveBuzzer.awaitRelease' : 'liveBuzzer.awaitSync'
-  return <Card className={cn('gap-3 py-4', winner && 'border-primary/40 bg-primary/5')}>
+  return <Card className={cn('gap-3 py-4', winner && winnerTeam?.className)}>
     <CardHeader className="px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2"><Trophy className="size-4" />{t('liveBuzzer.result')}</CardTitle>
@@ -147,10 +148,15 @@ export function LiveBuzzerPage() {
     {!selectedPlayer ? <Card className="mx-auto w-full max-w-md gap-4 py-4">
       <CardHeader className="px-4"><CardTitle>{t('liveBuzzer.joinTitle')}</CardTitle></CardHeader>
       <CardContent className="grid gap-3 px-4">
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant={!asHost ? 'default' : 'outline'} aria-pressed={!asHost} onClick={() => setAsHost(false)}>{t('liveBuzzer.play')}</Button>
-          <Button variant={asHost ? 'default' : 'outline'} aria-pressed={asHost} disabled={app.hostTaken} onClick={() => setAsHost(true)}>{t('liveBuzzer.host')}</Button>
-        </div>
+        <SegmentedControl
+          aria-label={t('liveBuzzer.joinTitle')}
+          value={asHost ? 'host' : 'player'}
+          onValueChange={(value) => setAsHost(value === 'host')}
+          options={[
+            { value: 'player', label: t('liveBuzzer.play') },
+            { value: 'host', label: t('liveBuzzer.host'), disabled: app.hostTaken },
+          ]}
+        />
         {app.hostTaken && <p className="type-caption text-muted-foreground">{t('liveBuzzer.hostTaken')}</p>}
         <IftaInput label={t('liveBuzzer.playerName')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} />
         {!asHost && <TeamChoice app={app} value={team} onChange={setTeam} />}

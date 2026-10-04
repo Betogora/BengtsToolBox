@@ -1,6 +1,6 @@
 import type { Language } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
+import { useSlidingIndicator } from '@/components/ui/useSlidingIndicator'
 
 const languageOptions: {
   flag: 'de' | 'gb'
@@ -42,13 +42,16 @@ function FlagIcon({ flag }: { flag: 'de' | 'gb' }) {
 
 export function LanguageSelector() {
   const { language, setLanguage, t } = useI18n()
+  const { listRef, indicatorRef } = useSlidingIndicator()
 
   return (
     <div
+      ref={listRef}
       aria-label={t('language.selectorLabel')}
-      className="inline-flex h-11 w-fit items-center justify-center rounded-lg border border-border bg-secondary/70 p-[3px] text-muted-foreground"
+      className="selection-track h-11 gap-0 p-[3px]"
       role="radiogroup"
     >
+      <span ref={indicatorRef} className="selection-indicator" aria-hidden="true" />
       {languageOptions.map((option) => {
         const label = t(option.labelKey)
         const isActive = language === option.value
@@ -58,10 +61,7 @@ export function LanguageSelector() {
             key={option.value}
             aria-checked={isActive}
             aria-label={t('language.switchTo', { language: label })}
-            className={cn(
-              'inline-flex size-9 items-center justify-center rounded-md border border-transparent leading-none transition-[background-color,box-shadow,transform] outline-none hover:bg-background/80 focus-visible:ring-[3px] focus-visible:ring-ring/45',
-              isActive && 'bg-background text-foreground shadow-sm',
-            )}
+            className="selection-item size-9 flex-none px-1 py-0 leading-none"
             role="radio"
             title={label}
             type="button"

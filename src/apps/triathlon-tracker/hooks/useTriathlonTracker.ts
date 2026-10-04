@@ -7,6 +7,7 @@ import {
 } from '@/apps/triathlon-tracker/domain/dates'
 import {
   validateActualTraining,
+  validatePlannedTraining,
   validateSettings,
 } from '@/apps/triathlon-tracker/domain/validation'
 import type {
@@ -212,6 +213,9 @@ export function useTriathlonTracker(lobbyId?: string) {
   }
 
   const addPlannedTraining = (input: PlannedTrainingInput) => {
+    if (validatePlannedTraining({ ...input, id: 'validation', position: 0 }).some(
+      (issue) => issue.severity === 'error',
+    )) return rejectedWrite('The planned training is invalid.')
     const position =
       plannedTrainingsStore.data.reduce(
         (maximum, training) => Math.max(maximum, training.position),
@@ -233,6 +237,9 @@ export function useTriathlonTracker(lobbyId?: string) {
     if (!training) {
       return rejectedWrite('The planned training no longer exists.')
     }
+    if (validatePlannedTraining({ ...training, ...partial }).some(
+      (issue) => issue.severity === 'error',
+    )) return rejectedWrite('The planned training is invalid.')
     const { id: ignoredId, ...storedTraining } = training
     void ignoredId
     return plannedTrainingsStore.setItem(id, {
@@ -326,6 +333,11 @@ export function useTriathlonTracker(lobbyId?: string) {
     )
 
   const copyPlannedWeek = (preview: PlannedWeekCopyPreview) => {
+    if (preview.copies.some((copy) => validatePlannedTraining({
+      ...copy, id: 'validation', position: 0,
+    }).some((issue) => issue.severity === 'error'))) {
+      return rejectedWrite('The planned week contains invalid training.')
+    }
     const nextPosition =
       plannedTrainingsStore.data.reduce(
         (maximum, training) => Math.max(maximum, training.position),

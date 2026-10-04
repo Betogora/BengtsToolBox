@@ -34,7 +34,7 @@ test('Zwei Geräte synchronisieren Buzz, Reload und Mobilfunk-Reconnect @desktop
       await page.goto('/apps/live-buzzer')
       await expect(page.getByRole('button', { name: 'Beitreten', exact: true })).toBeVisible({ timeout: 30_000 })
       await page.getByLabel('Dein Spielername').fill(i ? 'Handy' : 'Spielleitung')
-      if (i === 0) await page.getByRole('button', { name: 'Spielleitung', exact: true }).click()
+      if (i === 0) await page.getByRole('radio', { name: 'Spielleitung', exact: true }).click()
       await page.getByRole('button', { name: 'Beitreten', exact: true }).click()
     }
     const [host, phone, latePhone] = pages
@@ -69,7 +69,7 @@ test('Zwei Geräte synchronisieren Buzz, Reload und Mobilfunk-Reconnect @desktop
     await expect(host.getByRole('list', { name: 'Buzz-Reihenfolge' })).toContainText('Spielleitung')
     await expect(phone.getByRole('list', { name: 'Buzz-Reihenfolge' })).toContainText('Spielleitung')
     await latePhone.goto('/apps/live-buzzer')
-    await expect(latePhone.getByRole('button', { name: 'Spielleitung', exact: true })).toBeDisabled()
+    await expect(latePhone.getByRole('radio', { name: 'Spielleitung', exact: true })).toBeDisabled()
     await latePhone.getByLabel('Dein Spielername').fill('Nachzügler')
     await latePhone.getByRole('button', { name: 'Beitreten', exact: true }).click()
     await expect(latePhone.getByRole('button', { name: 'Gesperrt', exact: true })).toBeDisabled()

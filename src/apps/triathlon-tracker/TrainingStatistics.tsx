@@ -1,11 +1,4 @@
-import { Activity, BarChart3 } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
-import { toast } from 'sonner'
-import {
-  CurrentWeekSummary,
-  PerformanceCards,
-  SectionHeading,
-} from './components'
 import {
   addDaysToLocalDate,
   addMonthsToLocalDate,
@@ -17,7 +10,6 @@ import {
   getCurrentLocalDate,
   getDistanceActivityPerformancePoints,
   getPowerActivityPerformancePoints,
-  summarizeWeek,
   summarizeWeeks,
 } from './domain'
 import type {
@@ -37,7 +29,7 @@ import type {
   ProgressChartPoint,
   WeeklyVolumeChartPoint,
 } from './TrainingCharts'
-import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
+import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
   Select,
   SelectContent,
@@ -45,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
+import { formatTrainingDuration } from './presentation'
 const TrainingCharts = lazy(() => import('./TrainingCharts'))
 type HistoricalAnalysis = {
   localDate: string
@@ -84,20 +77,6 @@ function estimateAt(
   )
 }
 
-function formatRaceTime(seconds: number) {
-  const rounded = Math.round(seconds)
-  const hours = Math.floor(rounded / 3600)
-  const minutes = Math.floor((rounded % 3600) / 60)
-  const remainingSeconds = rounded % 60
-  return hours > 0
-    ? `${hours}:${`${minutes}`.padStart(2, '0')}:${`${remainingSeconds}`.padStart(2, '0')}`
-    : `${minutes}:${`${remainingSeconds}`.padStart(2, '0')}`
-}
-
-function asDistanceAnalysis(analysis: ReturnType<typeof analyzeRun>) {
-  return analysis.status === 'ready' ? analysis : null
-}
-
 function bikeMetric(analysis: BikePerformanceAnalysis) {
   if (analysis.status !== 'ready') return null
   if (analysis.model === 'critical-power') {
@@ -123,71 +102,14 @@ function speedAtDistance(
     : (distanceMeters / durationSeconds) * 3.6
 }
 
-function WeightInput({
-  weightKg,
-  onSave,
-}: {
-  weightKg: number | null
-  onSave: (weightKg: number | null) => Promise<unknown>
-}) {
-  const { t } = useI18n()
-  const [value, setValue] = useState(weightKg === null ? '' : `${weightKg}`)
-  const [invalid, setInvalid] = useState(false)
-
-  const handleSave = async () => {
-    const normalized = value.trim().replace(',', '.')
-    const weight = normalized === '' ? null : Number(normalized)
-    if (
-      (weight !== null && !Number.isFinite(weight)) ||
-      (weight !== null && (weight < 20 || weight > 300))
-    ) {
-      setInvalid(true)
-      toast.error(t('triathlon.settings.invalidWeight'))
-      return
-    }
-    setInvalid(false)
-    if (weight === weightKg) return
-
-    try {
-      await onSave(weight)
-      toast.success(t('triathlon.settings.weightSaved'))
-    } catch {
-      toast.error(t('triathlon.form.saveFailed'))
-    }
-  }
-
-  return (
-    <IftaInput
-      aria-invalid={invalid}
-      inputMode="decimal"
-      label={t('triathlon.settings.weight')}
-      max="300"
-      min="20"
-      step="0.1"
-      type="number"
-      value={value}
-      onBlur={() => void handleSave()}
-      onChange={(event) => {
-        setValue(event.currentTarget.value)
-        setInvalid(false)
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') event.currentTarget.blur()
-      }}
-    />
-  )
-}
-
 export default function TrainingStatistics({
   actualTrainings,
   settings,
-  onUpdateWeight,
 }: {
   actualTrainings: ActualTraining[]
   settings: TrackerSettings
-  onUpdateWeight: (weightKg: number | null) => Promise<unknown>
 }) {
-  const { formatDateTime, formatNumber, t } = useI18n()
+  const { formatDateTime, t } = useI18n()
   const today = getCurrentLocalDate()
   const [chartRange, setChartRange] = useState<ChartRange>('12w')
   const [runContext, setRunContext] = useState<RunningContext>(
@@ -199,26 +121,6 @@ export default function TrainingStatistics({
   const [bikeContext, setBikeContext] = useState<CyclingContext>(
     defaultTrainingContexts.bike,
   )
-  const currentWeek = useMemo(
-    () => summarizeWeek(actualTrainings, today),
-    [actualTrainings, today],
-  )
-  const currentRun = useMemo(
-    () =>
-      analyzeRun(actualTrainings, {
-        asOfLocalDate: today,
-        context: runContext,
-      }),
-    [actualTrainings, runContext, today],
-  )
-  const currentSwim = useMemo(
-    () =>
-      analyzeSwim(actualTrainings, {
-        asOfLocalDate: today,
-        context: swimContext,
-      }),
-    [actualTrainings, swimContext, today],
-  )
   const currentBike = useMemo(
     () =>
       analyzeBike(actualTrainings, {
@@ -228,9 +130,6 @@ export default function TrainingStatistics({
       }),
     [actualTrainings, bikeContext, settings.weightKg, today],
   )
-  const currentRunReady = asDistanceAnalysis(currentRun)
-  const currentSwimReady = asDistanceAnalysis(currentSwim)
-  const currentBikeMetric = bikeMetric(currentBike)
   const startLocalDate = useMemo(
     () => rangeStart(chartRange, today, actualTrainings),
     [actualTrainings, chartRange, today],
@@ -240,15 +139,25 @@ export default function TrainingStatistics({
     [actualTrainings, today],
   )
   const allWeeklyStats = useMemo(
-    () => summarizeWeeks(actualTrainings, firstTrainingLocalDate, today),
+    () =>
+      summarizeWeeks(
+        actualTrainings.filter((training) => training.localDate <= today),
+        firstTrainingLocalDate,
+        today,
+      ),
     [actualTrainings, firstTrainingLocalDate, today],
   )
   const weeklyStats = useMemo(
     () =>
-      allWeeklyStats.filter(
-        (week) => addDaysToLocalDate(week.weekStart, 6) >= startLocalDate,
+      summarizeWeeks(
+        actualTrainings.filter(
+          (training) =>
+            training.localDate >= startLocalDate && training.localDate <= today,
+        ),
+        startLocalDate,
+        today,
       ),
-    [allWeeklyStats, startLocalDate],
+    [actualTrainings, startLocalDate, today],
   )
   const allHistory = useMemo<HistoricalAnalysis[]>(
     () =>
@@ -288,6 +197,9 @@ export default function TrainingStatistics({
     () =>
       allHistory.map((point) => ({
         localDate: point.localDate,
+        runBasis: point.run.status === 'ready' ? point.run.basis : null,
+        swimBasis: point.swim.status === 'ready' ? point.swim.basis : null,
+        bikeBasis: point.bike.status === 'ready' ? point.bike.basis : null,
         run5k:
           point.run.status === 'ready' ? estimateAt(point.run, 5_000) : null,
         run10k:
@@ -305,7 +217,10 @@ export default function TrainingStatistics({
       allHistoricalMetrics.filter((point) => point.localDate >= startLocalDate),
     [allHistoricalMetrics, startLocalDate],
   )
-  const bikeMetricKind = bikeMetric(currentBike)?.kind ?? null
+  const bikeMetricKind =
+    bikeMetric(currentBike)?.kind ??
+    allHistoricalMetrics.findLast((point) => point.bike !== null)?.bike?.kind ??
+    null
   const bikeBaseline =
     allHistoricalMetrics.find((point) => point.bike?.kind === bikeMetricKind)
       ?.bike?.primary ?? null
@@ -416,8 +331,8 @@ export default function TrainingStatistics({
       {
         id: 'run',
         title: t('triathlon.discipline.run'),
-        primaryLabel: t('triathlon.performance.run5k'),
-        secondaryLabel: t('triathlon.performance.run10k'),
+        primaryLabel: '5 km',
+        secondaryLabel: '10 km',
         activityLabel: t('triathlon.charts.trainingPace'),
         modelUnit: 'seconds',
         unit: 'kilometers-per-hour',
@@ -425,6 +340,7 @@ export default function TrainingStatistics({
         points: historicalMetrics.map((point) => ({
           localDate: point.localDate,
           label: formatPointLabel(point.localDate),
+          basis: point.runBasis,
           primaryValue: speedAtDistance(5_000, point.run5k),
           secondaryValue: speedAtDistance(10_000, point.run10k),
           primaryDisplayValue: point.run5k,
@@ -434,8 +350,8 @@ export default function TrainingStatistics({
       {
         id: 'swim',
         title: t('triathlon.discipline.swim'),
-        primaryLabel: t('triathlon.performance.swim750'),
-        secondaryLabel: t('triathlon.performance.swim1500'),
+        primaryLabel: '750 m',
+        secondaryLabel: '1500 m',
         activityLabel: t('triathlon.charts.trainingPace'),
         modelUnit: 'seconds',
         unit: 'kilometers-per-hour',
@@ -443,6 +359,7 @@ export default function TrainingStatistics({
         points: historicalMetrics.map((point) => ({
           localDate: point.localDate,
           label: formatPointLabel(point.localDate),
+          basis: point.swimBasis,
           primaryValue: speedAtDistance(750, point.swim750),
           secondaryValue: speedAtDistance(1_500, point.swim1500),
           primaryDisplayValue: point.swim750,
@@ -455,9 +372,8 @@ export default function TrainingStatistics({
         primaryLabel:
           bikePlotKind === 'power'
             ? t('triathlon.performance.bikeCp')
-            : t('triathlon.performance.bike20k'),
-        secondaryLabel:
-          bikePlotKind === 'time' ? t('triathlon.performance.bike40k') : null,
+            : '20 km',
+        secondaryLabel: bikePlotKind === 'time' ? '40 km' : null,
         activityLabel:
           bikePlotKind === 'power'
             ? t('triathlon.charts.trainingPower')
@@ -471,6 +387,7 @@ export default function TrainingStatistics({
         points: historicalMetrics.map((point) => ({
           localDate: point.localDate,
           label: formatPointLabel(point.localDate),
+          basis: point.bikeBasis,
           primaryValue:
             point.bike?.kind !== bikePlotKind
               ? null
@@ -521,262 +438,102 @@ export default function TrainingStatistics({
     [formatDateTime, weeklyStats],
   )
 
-  const currentRun5k = currentRunReady
-    ? estimateAt(currentRunReady, 5_000)
-    : null
-  const currentRun10k = currentRunReady
-    ? estimateAt(currentRunReady, 10_000)
-    : null
-  const currentSwim750 = currentSwimReady
-    ? estimateAt(currentSwimReady, 750)
-    : null
-  const currentSwim1500 = currentSwimReady
-    ? estimateAt(currentSwimReady, 1_500)
-    : null
-  const performanceCards = [
-    {
-      discipline: 'swim' as const,
-      label: t('triathlon.performance.swim750'),
-      value: currentSwim750 === null ? null : formatRaceTime(currentSwim750),
-      detail:
-        currentSwimReady && currentSwim1500 !== null
-          ? `${t('triathlon.performance.swim1500')}: ${formatRaceTime(currentSwim1500)} · ${t('triathlon.performance.anchors', { count: currentSwimReady.anchorIds.length })}`
-          : currentSwim.status === 'insufficient-data'
-            ? t('triathlon.performance.dataProgress', {
-                available: currentSwim.availableAnchors,
-                required: currentSwim.requiredAnchors,
-              })
-            : null,
-    },
-    {
-      discipline: 'bike' as const,
-      label:
-        currentBikeMetric?.kind === 'power'
-          ? t('triathlon.performance.bikeCp')
-          : t('triathlon.performance.bike20k'),
-      value:
-        currentBikeMetric?.primary === null || currentBikeMetric === null
-          ? null
-          : currentBikeMetric.kind === 'power'
-            ? `${formatNumber(currentBikeMetric.primary, { maximumFractionDigits: 0 })} W${currentBikeMetric.secondary === null ? '' : ` · ${formatNumber(currentBikeMetric.secondary, { maximumFractionDigits: 2 })} W/kg`}`
-            : formatRaceTime(currentBikeMetric.primary),
-      detail:
-        currentBike.status === 'ready'
-          ? [
-              currentBikeMetric?.kind === 'time' &&
-              currentBikeMetric.secondary !== null
-                ? `${t('triathlon.performance.bike40k')}: ${formatRaceTime(currentBikeMetric.secondary)}`
-                : null,
-              t('triathlon.performance.anchors', {
-                count: currentBike.anchorIds.length,
-              }),
-            ]
-              .filter(Boolean)
-              .join(' · ')
-          : t('triathlon.performance.dataProgress', {
-              available: currentBike.availableAnchors,
-              required: currentBike.requiredAnchors,
-            }),
-    },
-    {
-      discipline: 'run' as const,
-      label: t('triathlon.performance.run5k'),
-      value: currentRun5k === null ? null : formatRaceTime(currentRun5k),
-      detail:
-        currentRunReady && currentRun10k !== null
-          ? [
-              `${t('triathlon.performance.run10k')}: ${formatRaceTime(currentRun10k)}`,
-              currentRunReady.supportingTrainingCount === 1
-                ? t('triathlon.performance.oneSuitableTraining')
-                : t('triathlon.performance.suitableTrainingCount', {
-                    count: currentRunReady.supportingTrainingCount,
-                  }),
-            ].join(' · ')
-          : currentRun.status === 'insufficient-data'
-            ? t('triathlon.performance.dataProgress', {
-                available: currentRun.availableAnchors,
-                required: currentRun.requiredAnchors,
-              })
-            : null,
-    },
-  ]
+  const visibleTrainings = actualTrainings.filter(
+    (training) =>
+      training.localDate >= startLocalDate && training.localDate <= today,
+  )
+  const totalDuration = visibleTrainings.reduce(
+    (sum, training) => sum + (training.durationSeconds ?? 0),
+    0,
+  )
 
-  const explainedCards = performanceCards.map((card) => {
-    const analysis =
-      card.discipline === 'run'
-        ? currentRun
-        : card.discipline === 'swim'
-          ? currentSwim
-          : currentBike
-    const method =
-      analysis.status !== 'ready'
-        ? null
-        : analysis.model === 'power-law' && analysis.anchorIds.length === 1
-          ? t('triathlon.performance.method.riegel')
-          : t(`triathlon.performance.method.${analysis.model}`)
-    return {
-      ...card,
-      method:
-        analysis.status === 'ready'
-          ? `${t(`triathlon.performance.basis.${analysis.basis}`)} · ${method}`
-          : null,
-    }
-  })
+  const rangeSummary = (
+    <dl className="grid grid-cols-3 divide-x rounded-lg border bg-card py-3">
+      {[
+        [
+          t('triathlon.charts.totalTime'),
+          formatTrainingDuration(totalDuration),
+        ],
+        [t('triathlon.charts.sessions'), visibleTrainings.length],
+        [
+          t('triathlon.charts.activeWeeks'),
+          weeklyStats.filter((week) => week.totalTrainingCount > 0).length,
+        ],
+      ].map(([label, value]) => (
+        <div className="min-w-0 px-3 sm:px-4" key={label}>
+          <dt className="type-caption text-muted-foreground">{label}</dt>
+          <dd className="mt-1 font-semibold tabular-nums">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+  const performanceControls = (
+    <div className="grid gap-2 sm:grid-cols-3">
+      <Select
+        value={swimContext}
+        onValueChange={(value) => setSwimContext(value as SwimmingContext)}
+      >
+        <IftaSelectTrigger label={t('triathlon.discipline.swim')}>
+          <SelectValue />
+        </IftaSelectTrigger>
+        <SelectContent className="triathlon-tracker">
+          {(['pool-25', 'pool-50', 'open-water'] as const).map((context) => (
+            <SelectItem key={context} value={context}>
+              {t(`triathlon.context.${context}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={bikeContext}
+        onValueChange={(value) => setBikeContext(value as CyclingContext)}
+      >
+        <IftaSelectTrigger label={t('triathlon.discipline.bike')}>
+          <SelectValue />
+        </IftaSelectTrigger>
+        <SelectContent className="triathlon-tracker">
+          {(['indoor', 'outdoor'] as const).map((context) => (
+            <SelectItem key={context} value={context}>
+              {t(`triathlon.context.${context}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={runContext}
+        onValueChange={(value) => setRunContext(value as RunningContext)}
+      >
+        <IftaSelectTrigger label={t('triathlon.discipline.run')}>
+          <SelectValue />
+        </IftaSelectTrigger>
+        <SelectContent className="triathlon-tracker">
+          {(['road', 'track', 'treadmill'] as const).map((context) => (
+            <SelectItem key={context} value={context}>
+              {t(`triathlon.context.${context}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
 
   return (
-    <div className="grid gap-6">
-      <CurrentWeekSummary
-        actualCount={currentWeek.totalTrainingCount}
-        bikeDistanceMeters={currentWeek.byDiscipline.bike.distanceMeters}
-        bikeDurationSeconds={currentWeek.byDiscipline.bike.durationSeconds}
-        bikeTrainingCount={currentWeek.byDiscipline.bike.trainingCount}
-        runDistanceMeters={currentWeek.byDiscipline.run.distanceMeters}
-        runDurationSeconds={currentWeek.byDiscipline.run.durationSeconds}
-        runTrainingCount={currentWeek.byDiscipline.run.trainingCount}
-        swimDistanceMeters={currentWeek.byDiscipline.swim.distanceMeters}
-        swimDurationSeconds={currentWeek.byDiscipline.swim.durationSeconds}
-        swimTrainingCount={currentWeek.byDiscipline.swim.trainingCount}
-        totalDurationSeconds={currentWeek.totalDurationSeconds}
-      />
-
-      <section className="grid gap-3">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <SectionHeading
-            icon={
-              <BarChart3 aria-hidden="true" className="size-5 text-primary" />
-            }
-          >
-            {t('triathlon.section.performance')}
-          </SectionHeading>
-          <span className="type-caption text-muted-foreground">
-            {t('triathlon.performance.window')}
-          </span>
-          <div className="grid grid-cols-2 gap-2 xl:w-[48rem] xl:grid-cols-4">
-            <Select
-              value={swimContext}
-              onValueChange={(value) =>
-                setSwimContext(value as SwimmingContext)
-              }
-            >
-              <IftaSelectTrigger label={t('triathlon.discipline.swim')}>
-                <SelectValue />
-              </IftaSelectTrigger>
-              <SelectContent>
-                {(['pool-25', 'pool-50', 'open-water'] as const).map(
-                  (context) => (
-                    <SelectItem key={context} value={context}>
-                      {t(`triathlon.context.${context}`)}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-            <Select
-              value={bikeContext}
-              onValueChange={(value) => setBikeContext(value as CyclingContext)}
-            >
-              <IftaSelectTrigger label={t('triathlon.discipline.bike')}>
-                <SelectValue />
-              </IftaSelectTrigger>
-              <SelectContent>
-                {(['indoor', 'outdoor'] as const).map((context) => (
-                  <SelectItem key={context} value={context}>
-                    {t(`triathlon.context.${context}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={runContext}
-              onValueChange={(value) => setRunContext(value as RunningContext)}
-            >
-              <IftaSelectTrigger label={t('triathlon.discipline.run')}>
-                <SelectValue />
-              </IftaSelectTrigger>
-              <SelectContent>
-                {(['road', 'track', 'treadmill'] as const).map((context) => (
-                  <SelectItem key={context} value={context}>
-                    {t(`triathlon.context.${context}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <WeightInput
-              key={settings.weightKg ?? 'empty'}
-              weightKg={settings.weightKg}
-              onSave={(weightKg) => onUpdateWeight(weightKg)}
-            />
-          </div>
+    <Suspense
+      fallback={
+        <div className="h-64 animate-pulse rounded-lg bg-muted" role="status">
+          <span className="sr-only">{t('common.loading')}</span>
         </div>
-        <PerformanceCards cards={explainedCards} />
-        <details className="rounded-lg border bg-card p-4">
-          <summary className="type-action cursor-pointer">
-            {t('triathlon.performance.methodology')}
-          </summary>
-          <div className="type-ui mt-4 grid gap-3 text-muted-foreground">
-            <p>{t('triathlon.performance.explanation.data')}</p>
-            <p>
-              {t('triathlon.performance.explanation.run')}{' '}
-              <a
-                className="underline"
-                href="https://pubmed.ncbi.nlm.nih.gov/27570626/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Vickers &amp; Vertosick, 2016
-              </a>
-            </p>
-            <p>
-              {t('triathlon.performance.explanation.swim')}{' '}
-              <a
-                className="underline"
-                href="https://pubmed.ncbi.nlm.nih.gov/38380294/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Stroke-Specific Swimming Critical Speed Testing, 2024
-              </a>
-            </p>
-            <p>
-              {t('triathlon.performance.explanation.bike')}{' '}
-              <a
-                className="underline"
-                href="https://pubmed.ncbi.nlm.nih.gov/34708276/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Power profiling and the power-duration relationship, 2021
-              </a>
-            </p>
-          </div>
-        </details>
-      </section>
-
-      <section className="grid gap-3">
-        <SectionHeading
-          icon={<Activity aria-hidden="true" className="size-5 text-primary" />}
-        >
-          {t('triathlon.section.charts')}
-        </SectionHeading>
-        <Suspense
-          fallback={
-            <div
-              className="h-72 animate-pulse rounded-lg bg-muted"
-              role="status"
-            >
-              <span className="sr-only">{t('common.loading')}</span>
-            </div>
-          }
-        >
-          <TrainingCharts
-            performancePlots={performancePlots}
-            progressPoints={progressPoints}
-            range={chartRange}
-            weeklyVolume={weeklyVolume}
-            onRangeChange={setChartRange}
-          />
-        </Suspense>
-      </section>
-    </div>
+      }
+    >
+      <TrainingCharts
+        performancePlots={performancePlots}
+        progressPoints={progressPoints}
+        range={chartRange}
+        rangeSummary={rangeSummary}
+        performanceControls={performanceControls}
+        weeklyVolume={weeklyVolume}
+        onRangeChange={setChartRange}
+      />
+    </Suspense>
   )
 }

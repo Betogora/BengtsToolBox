@@ -25,7 +25,6 @@ import { formatNumber } from '@/apps/progress-dashboard/format'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
-import { getColorWithAlpha } from '@/apps/shared/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,7 +33,8 @@ import {
   CardHeader,
 } from '@/components/ui/card'
 import { ColorPicker } from '@/components/ui/ColorPicker'
-import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { TimePicker } from '@/components/ui/TimePicker'
 import {
   Select,
   SelectContent,
@@ -54,6 +54,7 @@ import {
 import { getReadableTextColor } from '@/lib/theme'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { isValidLocalDate } from '@/lib/localDates'
 
 const chartWidth = 1040
 const chartHeight = 420
@@ -61,10 +62,10 @@ const chartPadding = {
   top: 38,
   right: 36,
   bottom: 96,
-  left: 104,
+  left: 128,
 }
-const dashboardChartTickClassName = 'text-[28px] md:text-[20px] lg:text-[12px]'
-const dashboardChartAxisClassName = 'text-[32px] md:text-[24px] lg:text-[17px]'
+const dashboardChartTickClassName = 'text-[48px] md:text-[28px] lg:text-[18px]'
+const dashboardChartAxisClassName = 'text-[40px] md:text-[30px] lg:text-[22px]'
 const mobileSparklineWidth = 240
 const mobileSparklineHeight = 56
 const mobileSparklinePadding = {
@@ -505,6 +506,7 @@ function MobileScoreBars({
           <div
             key={player.id}
             className="rounded-md border bg-background p-3"
+            style={{ backgroundColor: `color-mix(in srgb, ${player.color} 12%, var(--card))` }}
             aria-label={`${player.name}: ${formatNumber(score)} ${unit}`.trim()}
           >
             <div className="flex min-w-0 items-center justify-between gap-3">
@@ -567,7 +569,11 @@ function MobilePlayerTimelines({
   return (
     <div className="grid gap-2">
       {chartData.rankedSeries.map(({ player, score, segments }) => (
-        <div key={player.id} className="rounded-md border bg-background p-3">
+        <div
+          key={player.id}
+          className="rounded-md border bg-background p-3"
+          style={{ backgroundColor: `color-mix(in srgb, ${player.color} 12%, var(--card))` }}
+        >
           <div className="flex min-w-0 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <span
@@ -636,15 +642,15 @@ function DashboardPlayerProgress({
                   data-progress-variant="detailed"
                   className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)] overflow-hidden rounded-lg border"
                   style={{
-                    backgroundColor: getColorWithAlpha(player.color, '12'),
-                    borderColor: getColorWithAlpha(player.color, '70'),
+                    backgroundColor: `color-mix(in srgb, ${player.color} 12%, var(--card))`,
+                    borderColor: `color-mix(in srgb, ${player.color} 25%, var(--border))`,
                   }}
                 >
                   <div
                     className="type-section-title grid place-items-center border-r tabular-nums"
                     style={{
-                      backgroundColor: getColorWithAlpha(player.color, '24'),
-                      borderColor: getColorWithAlpha(player.color, '70'),
+                      backgroundColor: `color-mix(in srgb, ${player.color} 18%, var(--card))`,
+                      borderColor: `color-mix(in srgb, ${player.color} 25%, var(--border))`,
                     }}
                   >
                     {rank}
@@ -686,6 +692,7 @@ function DashboardPlayerProgress({
                 key={player.id}
                 data-progress-variant="compact"
                 className="grid min-w-0 grid-cols-[1.75rem_minmax(4.5rem,0.9fr)_minmax(4rem,1.1fr)_auto] items-center gap-2 rounded-md border bg-background p-2 sm:grid-cols-[2rem_minmax(7rem,0.8fr)_minmax(8rem,1fr)_auto] sm:px-3"
+                style={{ backgroundColor: `color-mix(in srgb, ${player.color} 12%, var(--card))` }}
               >
                 <span className="type-action tabular-nums text-muted-foreground">
                   {rank}
@@ -887,7 +894,7 @@ export function ProgressChart({
             <text
               x={chartData.xScale(tick.time)}
               y={chartHeight - 60}
-              textAnchor="middle"
+              textAnchor={index === 0 ? 'start' : index === chartData.xTicks.length - 1 ? 'end' : 'middle'}
               className={isDashboard ? dashboardChartTickClassName : undefined}
               fontSize="12"
               fill="var(--muted-foreground)"
@@ -1084,7 +1091,7 @@ export function PlayerCard({
     drinkIcons.find((icon) => icon.id === selectedIcon)?.label ?? 'Bier'
 
   return (
-    <Card style={{ backgroundColor: getColorWithAlpha(player.color, '80') }}>
+    <Card style={{ backgroundColor: `color-mix(in srgb, ${player.color} 12%, var(--card))` }}>
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
@@ -1182,6 +1189,48 @@ export function PlayerCard({
   )
 }
 
+function ProgressEventDateTime({
+  value,
+  onValueChange,
+}: {
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  const { t } = useI18n()
+  const [draft, setDraft] = useState(toDateTimeLocalValue(value))
+  const [previousValue, setPreviousValue] = useState(value)
+  if (previousValue !== value) {
+    setPreviousValue(value)
+    setDraft(toDateTimeLocalValue(value))
+  }
+  const date = draft.split('T')[0]
+  const time = draft.split('T')[1] ?? ''
+  const update = (nextDate: string, nextTime: string) => {
+    const next = `${nextDate}T${nextTime}`
+    setDraft(next)
+    if (isValidLocalDate(nextDate) && /^([01]\d|2[0-3]):[0-5]\d$/.test(nextTime)) {
+      onValueChange(fromDateTimeLocalValue(next, value))
+    }
+  }
+
+  return (
+    <div className="grid min-w-0 gap-2 min-[24rem]:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] md:min-w-[16.5rem]">
+      <DatePicker
+        required
+        label={t('ui.picker.date')}
+        value={date}
+        onValueChange={(next) => update(next, time)}
+      />
+      <TimePicker
+        required
+        label={t('ui.picker.time')}
+        value={time}
+        onValueChange={(next) => update(date, next)}
+      />
+    </div>
+  )
+}
+
 export function EventTable({
   dataset,
   icons,
@@ -1210,16 +1259,11 @@ export function EventTable({
   }
 
   const renderDateInput = (event: ProgressEvent) => (
-    <Input
-      type="datetime-local"
-      className="h-9"
-      value={toDateTimeLocalValue(event.createdAtClientIso)}
-      onChange={(inputEvent) =>
+    <ProgressEventDateTime
+      value={event.createdAtClientIso}
+      onValueChange={(value) =>
         onUpdateEvent(event.id, {
-          createdAtClientIso: fromDateTimeLocalValue(
-            inputEvent.currentTarget.value,
-            event.createdAtClientIso,
-          ),
+          createdAtClientIso: value,
         })
       }
     />
@@ -1244,7 +1288,10 @@ export function EventTable({
           })
         }
       >
-        <SelectTrigger className="w-20">
+        <SelectTrigger
+          aria-label={`${t('progress.eventSign')}: ${event.playerName}`}
+          className="w-20"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -1261,7 +1308,10 @@ export function EventTable({
           })
         }
       >
-        <SelectTrigger className="w-28">
+        <SelectTrigger
+          aria-label={`${t('progress.eventValue')}: ${event.playerName}`}
+          className="w-28"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -1283,7 +1333,7 @@ export function EventTable({
         })
       }
     >
-      <SelectTrigger className="w-32">
+      <SelectTrigger aria-label={`Icon: ${event.playerName}`} className="w-32">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -1319,16 +1369,17 @@ export function EventTable({
     <>
       <div className="grid gap-2 md:hidden">
         {events.map((event) => (
-          <div key={event.id} className="type-ui rounded-md border bg-card p-3">
+          <div
+            key={event.id}
+            className="type-ui rounded-md border bg-card p-3"
+            style={{ backgroundColor: `color-mix(in srgb, ${event.playerColor} 12%, var(--card))` }}
+          >
             <div className="flex items-start justify-between gap-3">
               {renderPlayerLabel(event)}
               {renderDeleteButton(event)}
             </div>
             <div className="mt-3 grid gap-3">
               <div>
-                <div className="type-caption mb-1.5 text-muted-foreground">
-                  {t('progress.time')}
-                </div>
                 {renderDateInput(event)}
               </div>
               <div className="grid gap-3 min-[26rem]:grid-cols-2">
@@ -1362,19 +1413,7 @@ export function EventTable({
           {events.map((event) => (
             <TableRow key={event.id}>
               <TableCell>
-                <Input
-                  type="datetime-local"
-                  className="h-9"
-                  value={toDateTimeLocalValue(event.createdAtClientIso)}
-                  onChange={(inputEvent) =>
-                    onUpdateEvent(event.id, {
-                      createdAtClientIso: fromDateTimeLocalValue(
-                        inputEvent.currentTarget.value,
-                        event.createdAtClientIso,
-                      ),
-                    })
-                  }
-                />
+                {renderDateInput(event)}
               </TableCell>
               <TableCell>
                 <div className="type-label flex items-center gap-2">
@@ -1396,7 +1435,10 @@ export function EventTable({
                       })
                     }
                   >
-                    <SelectTrigger className="w-20">
+                    <SelectTrigger
+                      aria-label={`${t('progress.eventSign')}: ${event.playerName}`}
+                      className="w-20"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1413,7 +1455,10 @@ export function EventTable({
                       })
                     }
                   >
-                    <SelectTrigger className="w-28">
+                    <SelectTrigger
+                      aria-label={`${t('progress.eventValue')}: ${event.playerName}`}
+                      className="w-28"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1435,7 +1480,7 @@ export function EventTable({
                     })
                   }
                 >
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger aria-label={`Icon: ${event.playerName}`} className="w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

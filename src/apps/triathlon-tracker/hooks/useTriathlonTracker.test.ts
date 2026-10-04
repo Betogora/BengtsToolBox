@@ -285,6 +285,22 @@ describe('useTriathlonTracker', () => {
     expect(stores.settings.merge).not.toHaveBeenCalled()
   })
 
+  it('validiert Pläne vor Anlegen, Verschieben und Wochenkopie', async () => {
+    stores.planned.data = [plannedTraining('plan', '2026-08-17', 1)]
+    const tracker = renderHook()
+    const { id, position, ...input } = stores.planned.data[0]
+    void id
+    void position
+    expect((await tracker.addPlannedTraining({ ...input, durationSeconds: -1 })).ok).toBe(false)
+    expect((await tracker.updatePlannedTraining('plan', { localDate: '2026-02-30' })).ok).toBe(false)
+    const preview = tracker.previewPlannedWeekCopy('2026-08-17', '2026-08-24')
+    preview.copies[0].startMinutes = 1440
+    expect((await tracker.copyPlannedWeek(preview)).ok).toBe(false)
+    expect(stores.planned.setItem).not.toHaveBeenCalled()
+    expect((await tracker.addPlannedTraining({ ...input, durationSeconds: 1235 })).ok).toBe(true)
+    expect(stores.planned.setItem).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ durationSeconds: 1235 }))
+  })
+
   it('legt ein parallel gelöschtes Training beim Speichern nicht neu an', async () => {
     const tracker = renderHook()
 

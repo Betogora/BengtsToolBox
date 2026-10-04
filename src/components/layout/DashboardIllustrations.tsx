@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 
 const palette = {
-  teal: '#0d8e90',
-  mint: '#a9dfda',
-  coral: '#fd7261',
-  apricot: '#fac889',
-  fog: '#d7e3e5',
-  paleMint: '#e8f7f4',
+  teal: 'var(--brand-primary)',
+  mint: 'var(--brand-secondary)',
+  coral: 'var(--brand-accent)',
+  apricot: 'var(--brand-surface)',
+  fog: 'var(--brand-fog)',
+  paleMint: 'var(--secondary)',
 }
 
 const illustrationFontFamily = 'Manrope Variable, Manrope, ui-sans-serif, system-ui'

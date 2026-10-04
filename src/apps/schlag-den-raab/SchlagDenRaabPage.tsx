@@ -86,9 +86,12 @@ function PlayerScoreSummary({
   return (
     <div
       className={cn(
-        'rounded-md border bg-background/75 p-3',
-        isWinner && 'border-primary/45 bg-primary/10',
+        'rounded-md border p-3',
+        isWinner && 'border-primary/45',
       )}
+      style={{
+        backgroundColor: `color-mix(in srgb, var(${player.id === 'player-1' ? '--brand-primary' : '--brand-accent'}) 12%, var(--card))`,
+      }}
     >
       <div className="flex min-w-0 items-center justify-between gap-3">
         <div className="min-w-0">

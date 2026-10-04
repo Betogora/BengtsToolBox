@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  formatTrainingDurationInput,
+  parseTrainingDuration,
   updateTrainingMetrics,
   type TrainingMetricDraft,
   type TrainingMetricField,
@@ -31,7 +33,7 @@ describe('Pace, Dauer und Distanz', () => {
         }
         for (const field of order)
           draft = updateTrainingMetrics(draft, field, values[field], discipline)
-        expect(draft.duration).toBe(values.duration)
+        expect(parseTrainingDuration(draft.duration)).toBe(2160)
         expect(draft.distance).toBe(values.distance)
         expect(draft.pace).toBe(values.pace)
       })
@@ -45,11 +47,28 @@ describe('Pace, Dauer und Distanz', () => {
       inputs: ['duration', 'distance'],
     }
     draft = updateTrainingMetrics(draft, 'pace', '5:00', 'run')
-    expect(draft.duration).toBe('30')
+    expect(draft.duration).toBe('30:00')
     draft = updateTrainingMetrics(draft, 'duration', '40', 'run')
     expect(draft.distance).toBe('8')
     draft = updateTrainingMetrics(draft, 'pace', '5:', 'run')
     expect(draft.distance).toBe('')
     expect(draft.duration).toBe('40')
+  })
+  it.each([
+    ['20:35', 1235], ['1:02:03', 3723], ['20.5', 1230], ['20,5', 1230],
+    ['0:01', 1], ['', null], ['20:60', null], ['1:99:00', null],
+    ['-2', null], ['Infinity', null],
+  ])('liest Dauer %s sekundengenau', (value, expected) => {
+    expect(parseTrainingDuration(value)).toBe(expected)
+  })
+  it('erhält Sekunden beim Bearbeiten und berechnet Dauer aus Pace und Distanz', () => {
+    expect(formatTrainingDurationInput(1235)).toBe('20:35')
+    expect(formatTrainingDurationInput(3723)).toBe('1:02:03')
+    const draft: TrainingMetricDraft = {
+      duration: '20:35', distance: '5', pace: '4:07', inputs: ['duration', 'distance'],
+    }
+    expect(updateTrainingMetrics(draft, 'duration', '20:35', 'run').pace).toBe('4:07')
+    expect(updateTrainingMetrics(draft, 'pace', '4:01', 'run').duration).toBe('20:05')
+    expect(updateTrainingMetrics(draft, 'duration', '20:', 'run').pace).toBe('')
   })
 })

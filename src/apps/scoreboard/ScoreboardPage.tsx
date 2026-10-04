@@ -16,13 +16,12 @@ import {
   AddCard,
   ArchiveCard,
   HistoryList,
-  ModeToggle,
   RankingBars,
   RosterPlayerCard,
   ScoreTargetCard,
 } from '@/apps/scoreboard/components'
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
-import type { ScoreboardStanding, ScoreTargetType } from '@/apps/scoreboard/types'
+import type { ScoreboardMode, ScoreboardStanding, ScoreTargetType } from '@/apps/scoreboard/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
@@ -30,6 +29,7 @@ import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
   Card,
   CardContent,
@@ -64,7 +64,7 @@ function ScoreboardPresenter({ standings }: { standings: ScoreboardStanding[] })
         <section
           key={standing.target.id}
           className="flex min-h-64 flex-col justify-between rounded-lg border bg-card p-6 shadow-sm"
-          style={{ borderTopColor: standing.target.color, borderTopWidth: '0.35rem' }}
+          style={{ backgroundColor: `color-mix(in srgb, ${standing.target.color} 12%, var(--card))` }}
         >
           <div className="flex items-center justify-between gap-4">
             <h2 className="type-page-title min-w-0 truncate">{standing.target.name}</h2>
@@ -186,11 +186,16 @@ export function ScoreboardPage() {
             {(scoreboard.isLoading || scoreboard.isPending) && (
               <Badge variant="outline">{t('common.syncing')}</Badge>
             )}
-            <ModeToggle
-              disabled={scoreboard.activeEvents.length > 0}
-              mode={scoreboard.activeScoring.mode}
-              onChange={async (mode) => {
-                const didChange = await scoreboard.changeMode(mode)
+            <SegmentedControl
+              aria-label={t('scoreboard.modeAria')}
+              value={scoreboard.activeScoring.mode}
+              options={(['individual', 'teams'] as const).map((value) => ({
+                value,
+                label: value === 'individual' ? t('scoreboard.modeIndividual') : t('scoreboard.modeTeams'),
+                disabled: scoreboard.activeEvents.length > 0,
+              }))}
+              onValueChange={async (mode) => {
+                const didChange = await scoreboard.changeMode(mode as ScoreboardMode)
                 if (!didChange) toast.error(t('scoreboard.error.modeLocked'))
               }}
             />

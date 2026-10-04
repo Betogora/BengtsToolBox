@@ -1,7 +1,9 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import type * as React from 'react'
+import type { LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useSlidingIndicator } from './useSlidingIndicator'
 
 function Tabs({
   className,
@@ -18,33 +20,53 @@ function Tabs({
 
 function TabsList({
   className,
+  children,
+  variant = 'default',
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) {
+}: React.ComponentProps<typeof TabsPrimitive.List> & {
+  variant?: 'default' | 'icon-tabs'
+}) {
+  const { listRef, indicatorRef } = useSlidingIndicator()
   return (
     <TabsPrimitive.List
+      ref={listRef}
       data-slot="tabs-list"
+      data-variant={variant}
       className={cn(
-        'inline-flex h-9 w-fit items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground',
+        'selection-track',
         className,
       )}
       {...props}
-    />
+    >
+      <span ref={indicatorRef} className="selection-indicator" aria-hidden="true" />
+      {children}
+    </TabsPrimitive.List>
   )
 }
 
 function TabsTrigger({
   className,
+  children,
+  icon: Icon,
+  label,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<typeof TabsPrimitive.Trigger> & {
+  icon?: LucideIcon
+  label?: string
+}) {
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
+      aria-label={label}
       className={cn(
-        'type-action inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1 whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+        'selection-item type-action',
         className,
       )}
       {...props}
-    />
+    >
+      {Icon && <Icon aria-hidden="true" className="size-4 shrink-0" />}
+      {Icon ? <span className="selection-label"><span>{label ?? children}</span></span> : children}
+    </TabsPrimitive.Trigger>
   )
 }
 

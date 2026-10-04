@@ -16,6 +16,35 @@ import type { PlannedTraining } from './types'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+
+function CalendarDateJump({
+  value,
+  onValueChange,
+}: {
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  const { t } = useI18n()
+  const [draft, setDraft] = useState(value)
+  const [previousValue, setPreviousValue] = useState(value)
+  if (previousValue !== value) {
+    setPreviousValue(value)
+    setDraft(value)
+  }
+  return (
+    <DatePicker
+      required
+      label={t('triathlon.calendar.jumpTo')}
+      value={draft}
+      onValueChange={(date) => {
+        setDraft(date)
+        if (isValidLocalDate(date)) onValueChange(date)
+      }}
+    />
+  )
+}
 
 type PlanCalendarProps = {
   activeLocalDate: string
@@ -41,7 +70,7 @@ export function PlanCalendar({
   onMove,
 }: PlanCalendarProps) {
   const { t, formatDateTime, formatNumber } = useI18n()
-  const [view, setView] = useState<'month' | 'week'>('month')
+  const [view, setView] = useState<'month' | 'week'>('week')
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dropDate, setDropDate] = useState<string | null>(null)
   const [moving, setMoving] = useState(false)
@@ -88,15 +117,12 @@ export function PlanCalendar({
 
   return (
     <section
-      className="grid min-w-0 gap-4"
+      className="tri-calendar grid min-w-0 gap-4"
       aria-label={t('triathlon.tabs.calendar')}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="min-w-0">
           <h2 className="type-section-title">{title}</h2>
-          <span className="type-caption rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">
-            {t('triathlon.calendar.plannedOnly')}
-          </span>
         </div>
         <Button onClick={() => onAdd(activeLocalDate)}>
           <Plus aria-hidden="true" />
@@ -150,19 +176,15 @@ export function PlanCalendar({
               {t('triathlon.copyWeek.action')}
             </span>
           </Button>
-          <div className="inline-flex rounded-md bg-muted p-1">
-            {(['month', 'week'] as const).map((mode) => (
-              <Button
-                key={mode}
-                size="sm"
-                variant={mode === view ? 'outline' : 'ghost'}
-                aria-pressed={mode === view}
-                onClick={() => setView(mode)}
-              >
-                {t(`triathlon.calendar.${mode}`)}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            aria-label={t('triathlon.tabs.calendar')}
+            value={view}
+            onValueChange={(value) => setView(value as 'week' | 'month')}
+            options={(['week', 'month'] as const).map((value) => ({
+              value,
+              label: t(`triathlon.calendar.${value}`),
+            }))}
+          />
         </div>
       </div>
       {view === 'month' && (
@@ -211,20 +233,16 @@ export function PlanCalendar({
             ))}
         </div>
       )}
-      <div
-        className="overflow-hidden rounded-lg border bg-card shadow-sm"
-        aria-busy={moving}
-      >
+      <div className="overflow-hidden rounded-xl bg-card" aria-busy={moving}>
         <div
           className={cn(
-            'hidden grid-cols-[repeat(7,minmax(0,1fr))_9rem] border-b bg-muted/50 lg:grid',
-            view === 'week' &&
-              'md:grid md:grid-cols-7 lg:grid-cols-[repeat(7,minmax(0,1fr))_9rem]',
+            'hidden grid-cols-[repeat(7,minmax(0,1fr))_9rem] border-b border-border/50 lg:grid',
+            view === 'week' && 'md:grid md:grid-cols-7 lg:grid-cols-7',
           )}
         >
           {Array.from({ length: 7 }, (_, day) => (
             <div
-              className="type-caption px-3 py-3 font-semibold text-muted-foreground"
+              className="type-caption px-3 py-2 font-medium text-muted-foreground"
               key={day}
             >
               {dateLabel(addDaysToLocalDate(firstDay, day), {
@@ -232,7 +250,12 @@ export function PlanCalendar({
               })}
             </div>
           ))}
-          <div className="type-caption hidden border-l px-3 py-3 font-semibold text-muted-foreground lg:block">
+          <div
+            className={cn(
+              'type-caption hidden border-l px-3 py-3 font-semibold text-muted-foreground lg:block',
+              view === 'week' && 'lg:hidden',
+            )}
+          >
             {t('triathlon.calendar.weekSummary')}
           </div>
         </div>
@@ -249,10 +272,9 @@ export function PlanCalendar({
             <div
               key={weekStart}
               className={cn(
-                'border-b last:border-b-0 lg:grid lg:grid-cols-[repeat(7,minmax(0,1fr))_9rem]',
+                'border-b border-border/50 last:border-b-0 lg:grid lg:grid-cols-[repeat(7,minmax(0,1fr))_9rem]',
                 view === 'month' && !days.includes(activeLocalDate) && 'hidden',
-                view === 'week' &&
-                  'md:grid md:grid-cols-7 lg:grid-cols-[repeat(7,minmax(0,1fr))_9rem]',
+                view === 'week' && 'md:grid md:grid-cols-7 lg:grid-cols-7',
               )}
             >
               {days.map((date) => {
@@ -263,10 +285,10 @@ export function PlanCalendar({
                     key={date}
                     data-calendar-date={date}
                     className={cn(
-                      'min-w-0 border-b p-2.5 last:border-b-0 lg:block lg:min-h-40 lg:border-b-0 lg:border-r',
+                      'tri-calendar-day min-w-0 border-b border-border/50 px-3 py-3 last:border-b-0 lg:block lg:min-h-40 lg:border-b-0 lg:border-r',
                       view === 'month' && date !== activeLocalDate && 'hidden',
                       view === 'week' &&
-                        'md:min-h-72 md:border-b-0 md:border-r lg:min-h-96',
+                        'md:min-h-56 md:border-b-0 md:border-r lg:min-h-64',
                       date.slice(0, 7) !== activeLocalDate.slice(0, 7) &&
                         view === 'month' &&
                         'bg-muted/40',
@@ -302,13 +324,13 @@ export function PlanCalendar({
                       }
                     }}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-1">
+                    <div className="mb-3 flex items-center justify-between gap-1">
                       <time
                         dateTime={date}
                         aria-current={isToday ? 'date' : undefined}
                         className={cn(
-                          'type-caption flex items-center gap-2 font-semibold',
-                          isToday ? 'text-primary' : 'text-muted-foreground',
+                          'type-ui flex items-center gap-2 font-semibold',
+                          isToday ? 'text-primary' : 'text-foreground',
                         )}
                       >
                         <span
@@ -325,7 +347,7 @@ export function PlanCalendar({
                         </span>
                         <span
                           className={cn(
-                            'hidden size-7 items-center justify-center rounded-full lg:flex',
+                            'hidden size-8 items-center justify-center rounded-lg text-lg lg:flex',
                             view === 'week' && 'md:flex',
                             isToday && 'bg-primary text-primary-foreground',
                           )}
@@ -336,7 +358,7 @@ export function PlanCalendar({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-7"
+                        className="size-8 text-muted-foreground"
                         aria-label={t('triathlon.calendar.addOnDate', {
                           date: dateLabel(date, { dateStyle: 'full' }),
                         })}
@@ -345,7 +367,7 @@ export function PlanCalendar({
                         <Plus aria-hidden="true" className="size-3.5" />
                       </Button>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2.5">
                       {trainings.map((training) => {
                         const Icon = disciplineIcons[training.discipline]
                         const label =
@@ -354,6 +376,7 @@ export function PlanCalendar({
                         return (
                           <article
                             key={training.id}
+                            data-discipline={training.discipline}
                             data-planned-training={training.id}
                             draggable={!moving}
                             onDragStart={(event) => {
@@ -369,17 +392,13 @@ export function PlanCalendar({
                               setDropDate(null)
                             }}
                             className={cn(
-                              'group overflow-hidden rounded-md border border-l-[3px] bg-background shadow-sm transition-shadow hover:shadow-md',
+                              'tri-plan-entry group overflow-hidden rounded-lg bg-[var(--sport-wash)] text-[var(--sport-ink)] transition-colors',
                               draggedId === training.id && 'opacity-50',
                             )}
-                            style={{
-                              borderLeftColor:
-                                disciplineColors[training.discipline],
-                            }}
                           >
                             <button
                               type="button"
-                              className="grid w-full gap-2 p-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                              className="grid w-full gap-2 p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                               onClick={() => onEdit(training)}
                               aria-label={`${label} · ${t('common.edit')}`}
                             >
@@ -387,12 +406,8 @@ export function PlanCalendar({
                                 <Icon
                                   aria-hidden="true"
                                   className="size-4 shrink-0"
-                                  style={{
-                                    color:
-                                      disciplineColors[training.discipline],
-                                  }}
                                 />
-                                <span className="type-caption text-muted-foreground">
+                                <span className="type-caption">
                                   {training.startMinutes === null
                                     ? t(
                                         `triathlon.discipline.${training.discipline}`,
@@ -408,10 +423,10 @@ export function PlanCalendar({
                                       )}
                                 </span>
                               </span>
-                              <span className="type-action break-words leading-snug">
+                              <span className="type-ui break-words font-semibold leading-snug">
                                 {label}
                               </span>
-                              <span className="type-caption flex flex-wrap gap-x-2 gap-y-1 tabular-nums text-muted-foreground">
+                              <span className="type-caption flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
                                 {training.durationSeconds !== null && (
                                   <span>
                                     {formatTrainingDuration(
@@ -430,11 +445,11 @@ export function PlanCalendar({
                                 )}
                               </span>
                             </button>
-                            <div className="flex justify-end border-t border-border/50 px-1">
+                            <div className="flex justify-end px-1 pb-1">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-7 text-muted-foreground"
+                                className="size-7 text-inherit"
                                 aria-label={`${t('triathlon.calendar.duplicate')}: ${label}`}
                                 onClick={() => onCopy(training)}
                               >
@@ -448,7 +463,7 @@ export function PlanCalendar({
                         <button
                           type="button"
                           onClick={() => onAdd(date)}
-                          className="type-caption hidden min-h-16 items-center justify-center rounded-md border border-dashed text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-ring lg:flex"
+                          className="type-caption hidden min-h-16 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-ring lg:flex"
                           aria-label={t('triathlon.calendar.addOnDate', {
                             date: dateLabel(date, { dateStyle: 'full' }),
                           })}
@@ -465,11 +480,16 @@ export function PlanCalendar({
                 className={cn(
                   'bg-muted/40 p-3',
                   view === 'week' &&
-                    'md:col-span-7 md:border-t lg:col-span-1 lg:border-t-0',
+                    'flex flex-wrap items-center justify-between gap-3 md:col-span-7 md:border-t lg:col-span-7 lg:border-t',
                 )}
                 aria-label={`${t('triathlon.calendar.weekSummary')} ${weekStart}`}
               >
-                <div className="flex items-center justify-between gap-2 lg:block">
+                <div
+                  className={cn(
+                    'flex items-center justify-between gap-2 lg:block',
+                    view === 'week' && 'lg:flex',
+                  )}
+                >
                   <p className="type-caption mb-2 font-semibold text-muted-foreground lg:hidden">
                     {t('triathlon.calendar.weekSummary')} ·{' '}
                     {dateLabel(weekStart, { day: 'numeric', month: 'short' })}
@@ -486,7 +506,12 @@ export function PlanCalendar({
                         count: entries.length,
                       })}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-3 lg:grid lg:gap-2">
+                <div
+                  className={cn(
+                    'mt-3 flex flex-wrap gap-3 lg:grid lg:gap-2',
+                    view === 'week' && 'mt-0 lg:flex lg:gap-4',
+                  )}
+                >
                   {disciplines.map((discipline) => {
                     const Icon = disciplineIcons[discipline]
                     const matching = entries.filter(
@@ -537,19 +562,12 @@ export function PlanCalendar({
             )
           })}
         </div>
-        <label className="type-caption flex items-center gap-2 text-muted-foreground">
-          {t('triathlon.calendar.jumpTo')}
-          <input
-            aria-label={t('triathlon.calendar.jumpTo')}
-            type="date"
-            className="min-w-0 rounded-md border bg-background px-2 py-1 text-foreground"
+        <div className="w-full sm:w-52">
+          <CalendarDateJump
             value={activeLocalDate}
-            onChange={(event) => {
-              if (isValidLocalDate(event.target.value))
-                onDateChange(event.target.value)
-            }}
+            onValueChange={onDateChange}
           />
-        </label>
+        </div>
       </div>
     </section>
   )

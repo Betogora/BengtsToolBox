@@ -165,12 +165,12 @@ function TournamentFormatCard({ format }: { format: TournamentFormat }) {
   const label = t(tournamentFormatLabelKey(format));
 
   return (
-    <Card>
+    <Card className="bg-primary/10">
       <CardHeader className="grid grid-cols-1 items-center gap-3 p-4">
         <CardDescription className="sr-only">
           {t("swiss.format.label")}
         </CardDescription>
-        <div className="flex min-h-10 min-w-0 items-center gap-2 rounded-md border border-primary bg-primary/10 px-3 py-2 text-primary">
+        <div className="flex min-h-10 min-w-0 items-center gap-2">
           {renderTournamentFormatIcon(format)}
           <CardTitle className="min-w-0 truncate text-lg sm:text-xl">
             {label}
@@ -234,7 +234,7 @@ export function TournamentOverviewWorkflow({
               <CardDescription>
                 {t(currentProgressUnitLabelKey(tournament.format))}
               </CardDescription>
-              <CardTitle className="type-section-title">
+              <CardTitle className="type-metric-md tabular-nums">
                 {currentUnitProgress}/{tournament.numberOfRounds}
               </CardTitle>
             </div>

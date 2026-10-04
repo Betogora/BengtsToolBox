@@ -91,6 +91,7 @@ export type WeekStats = {
 export type PerformanceEstimate = {
   targetDistanceMeters: number
   predictedDurationSeconds: number
+  extrapolated?: boolean
 }
 
 export type InsufficientPerformanceAnalysis = {
@@ -119,6 +120,7 @@ export type BikePowerAnalysis = {
   criticalPowerWatts: number
   criticalPowerWattsPerKg: number | null
   workCapacityJoules: number
+  distanceAnalysis?: BikeDistanceAnalysis
 }
 
 export type BikeDistanceAnalysis = DistancePerformanceAnalysis & {

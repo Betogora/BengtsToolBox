@@ -10,7 +10,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 async function joinHost(page: Page) {
-  await page.getByRole('button', { name: 'Spielleitung', exact: true }).click()
+  await page.getByRole('radio', { name: 'Spielleitung', exact: true }).click()
   await page.getByLabel('Dein Spielername').fill('Bengt')
   await page.getByRole('button', { name: 'Beitreten', exact: true }).click()
   await page.getByRole('switch', { name: 'Auch mitspielen' }).click()

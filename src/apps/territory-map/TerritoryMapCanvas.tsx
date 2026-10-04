@@ -11,6 +11,7 @@ import type {
   TerritoryPlayer,
 } from '@/apps/territory-map/types'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useI18n } from '@/lib/i18n'
 
@@ -315,32 +316,16 @@ export function TerritoryMapCanvas({
     <Card className="overflow-hidden bg-secondary">
       <CardHeader className="p-3 sm:p-4">
         <div className="flex min-w-0 items-center justify-between gap-2">
-          <div
+          <SegmentedControl
             aria-label={t('territory.map')}
-            className="flex h-10 min-w-0 flex-1 items-center gap-1 rounded-md border bg-muted/65 p-0.5 shadow-sm backdrop-blur sm:h-9"
-            role="group"
-          >
-            <Button
-              aria-pressed={mapId === 'world'}
-              className="h-full min-w-0 flex-1 px-3"
-              size="sm"
-              type="button"
-              variant={mapId === 'world' ? 'secondary' : 'ghost'}
-              onClick={() => handleMapChange('world')}
-            >
-              {t('territory.world')}
-            </Button>
-            <Button
-              aria-pressed={mapId === 'germany'}
-              className="h-full min-w-0 flex-1 px-3"
-              size="sm"
-              type="button"
-              variant={mapId === 'germany' ? 'secondary' : 'ghost'}
-              onClick={() => handleMapChange('germany')}
-            >
-              {t('territory.map.germany')}
-            </Button>
-          </div>
+            className="h-10 min-w-0 flex-1 sm:h-9"
+            value={mapId}
+            onValueChange={(value) => handleMapChange(value as TerritoryMapId)}
+            options={[
+              { value: 'world', label: t('territory.world') },
+              { value: 'germany', label: t('territory.map.germany') },
+            ]}
+          />
 
           <Button
             variant="outline"

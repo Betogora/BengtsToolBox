@@ -20,7 +20,7 @@ function rangeIssue(
   minimum: number,
   maximum = Number.POSITIVE_INFINITY,
 ): ValidationIssue[] {
-  if (value === null || (value >= minimum && value <= maximum)) {
+  if (value === null || (Number.isFinite(value) && value >= minimum && value <= maximum)) {
     return []
   }
   return [{ field, code: 'out-of-range', severity: 'error' }]
@@ -52,7 +52,7 @@ export function validateSettings(settings: TrackerSettings): ValidationIssue[] {
   const issues: ValidationIssue[] = []
   if (
     settings.weightKg !== null &&
-    (settings.weightKg < 20 || settings.weightKg > 300)
+    (!Number.isFinite(settings.weightKg) || settings.weightKg < 20 || settings.weightKg > 300)
   ) {
     issues.push({ field: 'weightKg', code: 'out-of-range', severity: 'error' })
   }

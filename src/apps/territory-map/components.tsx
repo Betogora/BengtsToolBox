@@ -29,6 +29,7 @@ import type { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/DatePicker'
 import {
   Dialog,
   DialogContent,
@@ -36,13 +37,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 import {
@@ -383,6 +382,50 @@ export function AddEaterCard({
   )
 }
 
+function TerritoryEventDate({
+  event,
+  disabled,
+  onUpdateEvent,
+}: {
+  event: TerritoryVisitEvent
+  disabled: boolean
+  onUpdateEvent: ReturnType<typeof useTerritoryMap>['updateEvent']
+}) {
+  const { t } = useI18n()
+  const originalDate = toDateInputValue(event.createdAtClientIso)
+  const [draft, setDraft] = useState(originalDate)
+  const [previousDate, setPreviousDate] = useState(originalDate)
+  if (previousDate !== originalDate) {
+    setPreviousDate(originalDate)
+    setDraft(originalDate)
+  }
+
+  return (
+    <DatePicker
+      label={t('territory.date')}
+      value={draft}
+      disabled={disabled}
+      required
+      onValueChange={setDraft}
+      onValueCommit={(date) => {
+        if (date !== originalDate) {
+          void onUpdateEvent(event.id, {
+            createdAtClientIso: fromDateInputValue(date, event.createdAtClientIso),
+          })
+        }
+      }}
+      onKeyDown={(inputEvent) => {
+        if (inputEvent.key === 'Enter') inputEvent.currentTarget.blur()
+        if (inputEvent.key === 'Escape') {
+          setDraft(originalDate)
+          inputEvent.currentTarget.value = originalDate
+          inputEvent.currentTarget.blur()
+        }
+      }}
+    />
+  )
+}
+
 export function TerritoryEventTable({
   dataset,
   disabled,
@@ -408,39 +451,10 @@ export function TerritoryEventTable({
   }
 
   const renderDateInput = (event: TerritoryVisitEvent) => (
-    <Input
-      key={event.createdAtClientIso}
-      type="date"
+    <TerritoryEventDate
+      event={event}
       disabled={disabled}
-      aria-label={t('territory.date')}
-      className="h-9 px-2 md:px-3"
-      defaultValue={toDateInputValue(event.createdAtClientIso)}
-      onBlur={(inputEvent) => {
-        const nextValue = inputEvent.currentTarget.value
-
-        if (nextValue === toDateInputValue(event.createdAtClientIso)) {
-          return
-        }
-
-        void onUpdateEvent(event.id, {
-          createdAtClientIso: fromDateInputValue(
-            nextValue,
-            event.createdAtClientIso,
-          ),
-        })
-      }}
-      onKeyDown={(inputEvent) => {
-        if (inputEvent.key === 'Enter') {
-          inputEvent.currentTarget.blur()
-        }
-
-        if (inputEvent.key === 'Escape') {
-          inputEvent.currentTarget.value = toDateInputValue(
-            event.createdAtClientIso,
-          )
-          inputEvent.currentTarget.blur()
-        }
-      }}
+      onUpdateEvent={onUpdateEvent}
     />
   )
   const renderPlayerSelect = (event: TerritoryVisitEvent) => (
@@ -453,14 +467,15 @@ export function TerritoryEventTable({
         })
       }
     >
-      <SelectTrigger
+      <IftaSelectTrigger
+        label={t('territory.player')}
         aria-label={t('territory.tourist')}
         className="w-full min-w-0 md:w-48"
       >
         <span className="min-w-0 truncate">
           <SelectValue />
         </span>
-      </SelectTrigger>
+      </IftaSelectTrigger>
       <SelectContent>
         {players.map((player) => (
           <SelectItem key={player.id} value={player.id}>
@@ -486,14 +501,15 @@ export function TerritoryEventTable({
         })
       }
     >
-      <SelectTrigger
+      <IftaSelectTrigger
+        label={t('territory.territory')}
         aria-label={t('territory.territory')}
         className="w-full min-w-0 md:w-64"
       >
         <span className="min-w-0 truncate">
           <SelectValue />
         </span>
-      </SelectTrigger>
+      </IftaSelectTrigger>
       <SelectContent>
         {territoryOptionsByMap[event.mapId].map((territory) => (
           <SelectItem key={territory.id} value={territory.id}>
@@ -528,22 +544,13 @@ export function TerritoryEventTable({
           <div key={event.id} className="type-ui rounded-md border bg-card p-3">
             <div className="grid grid-cols-1 gap-3 min-[23rem]:grid-cols-2">
               <div className="min-w-0">
-                <div className="type-caption mb-1.5 text-muted-foreground">
-                  {t('territory.date')}
-                </div>
                 {renderDateInput(event)}
               </div>
               <div className="min-w-0">
-                <div className="type-caption mb-1.5 text-muted-foreground">
-                  {t('territory.player')}
-                </div>
                 {renderPlayerSelect(event)}
               </div>
               <div className="grid grid-cols-[minmax(0,1fr)_2.25rem] items-end gap-3 min-[23rem]:col-span-2">
                 <div className="min-w-0">
-                  <div className="type-caption mb-1.5 text-muted-foreground">
-                    {t('territory.territory')}
-                  </div>
                   {renderTerritorySelect(event)}
                 </div>
                 {renderDeleteButton(event)}

@@ -78,6 +78,32 @@ export function parsePace(value: string): number | null {
   return seconds > 0 ? seconds : null
 }
 
+export function parseTrainingDuration(value: string): number | null {
+  const input = value.trim()
+  if (!input) return null
+  if (!input.includes(':')) {
+    const minutes = Number(input.replace(',', '.'))
+    return Number.isFinite(minutes) && minutes >= 0
+      ? Math.round(minutes * 60)
+      : null
+  }
+  const match = /^(?:(\d+):([0-5]\d):([0-5]\d)|(\d+):([0-5]\d))$/.exec(input)
+  if (!match) return null
+  return match[1] !== undefined
+    ? Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3])
+    : Number(match[4]) * 60 + Number(match[5])
+}
+
+export function formatTrainingDurationInput(seconds: number | null): string {
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return ''
+  const rounded = Math.round(seconds)
+  const minutes = Math.floor(rounded / 60)
+  const remainder = String(rounded % 60).padStart(2, '0')
+  return minutes >= 60
+    ? `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${remainder}`
+    : `${minutes}:${remainder}`
+}
+
 export type TrainingMetricField = 'duration' | 'distance' | 'pace'
 export type TrainingMetricDraft = Record<TrainingMetricField, string> & {
   inputs: [TrainingMetricField, TrainingMetricField]
@@ -97,7 +123,7 @@ export function updateTrainingMetrics(
   const derived = (['duration', 'distance', 'pace'] as const).find(
     (input) => !inputs.includes(input),
   )!
-  const duration = Number(next.duration.replace(',', '.')) * 60
+  const duration = parseTrainingDuration(next.duration) ?? 0
   const distance = Number(next.distance.replace(',', '.')) * 1000
   const pace = parsePace(next.pace)
   const positive = (number: number) => Number.isFinite(number) && number > 0
@@ -109,14 +135,8 @@ export function updateTrainingMetrics(
   } else if (derived === 'duration') {
     next.duration =
       pace && positive(distance)
-        ? String(
-            Number(
-              (
-                (pace * distance) /
-                averagePaceReferenceMeters(discipline) /
-                60
-              ).toFixed(6),
-            ),
+        ? formatTrainingDurationInput(
+            (pace * distance) / averagePaceReferenceMeters(discipline),
           )
         : ''
   } else {

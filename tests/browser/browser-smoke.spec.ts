@@ -121,6 +121,31 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
     (chartBounds?.y ?? 0) + (chartBounds?.height ?? 0),
   )
   await app.expectHealthy()
+
+  await page.getByRole('button', { name: 'Datensatz', exact: false }).click()
+  const dateInput = page.locator('input[aria-label="Datum"]:visible').first()
+  const timeInput = page.locator('input[aria-label="Uhrzeit"]:visible').first()
+  const readTimestamp = () => page.evaluate((key) => {
+    const datasets = JSON.parse(window.localStorage.getItem(key) ?? '[]')
+    return datasets[0]?.events.find((event: { id: string }) => event.id === 'event-8')?.createdAtClientIso
+  }, progressDatasetsStorageKey)
+  const timestamp = await readTimestamp()
+
+  await dateInput.fill('2026-02-29')
+  await dateInput.press('Tab')
+  expect(await readTimestamp()).toBe(timestamp)
+  await dateInput.fill('2026-08-11')
+  await dateInput.press('Tab')
+  await expect(dateInput).toHaveValue('11.08.2026')
+  await timeInput.fill('23:07')
+  const expectedTimestamp = await page.evaluate(() =>
+    new Date('2026-08-11T23:07').toISOString(),
+  )
+  await expect.poll(readTimestamp).toBe(expectedTimestamp)
+  await page.getByRole('button', { name: 'Uhrzeit wählen: Uhrzeit' }).filter({ visible: true }).first().click()
+  await expect(page.locator('[data-time-picker]')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await app.expectHealthy()
 })
 
 test('Fortschritts-Dashboard zeigt Spieler-Verläufe auch ohne Ereignisse', async ({
@@ -306,7 +331,7 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
 
   const zoomIn = page.getByRole('button', { name: 'Reinzoomen' })
   const zoomOut = page.getByRole('button', { name: 'Rauszoomen' })
-  const mapSelector = page.getByRole('group', { name: 'Karte' })
+  const mapSelector = page.getByRole('radiogroup', { name: 'Karte' })
   const selectorBounds = await mapSelector.boundingBox()
   const zoomBounds = await zoomIn.boundingBox()
 
@@ -369,15 +394,15 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     page.locator('[data-dataset-warmed="true"]'),
   ).toHaveCount(1)
 
-  const preparedDateInputs = page.locator('input[type="date"]')
+  const preparedDateInputs = page.locator('input[aria-label="Datum"]')
   await expect.poll(() => preparedDateInputs.count()).toBeGreaterThan(0)
-  await expect(page.locator('input[type="date"]:visible')).toHaveCount(0)
+  await expect(page.locator('input[aria-label="Datum"]:visible')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Datensatz' }).click()
   const expectedVisibleTables = viewportWidth >= 768 ? 2 : 1
   await expect(page.getByRole('table')).toHaveCount(expectedVisibleTables)
 
-  const dateInput = page.locator('input[type="date"]:visible')
+  const dateInput = page.locator('input[aria-label="Datum"]:visible')
 
   if (viewportWidth < 768) {
     const playerSelect = page.getByRole('combobox', { name: 'Sushi-Tourist' })
@@ -419,8 +444,21 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   expect(await storedDatasets()).toBe(storedBeforeDateEdit)
 
   await dateInput.press('Enter')
+  await expect(dateInput).toHaveValue('02.01.2024')
   await expect(dateInput).not.toBeFocused()
   await expect.poll(storedDatasets).not.toBe(storedBeforeDateEdit)
+
+  const committedDataset = await storedDatasets()
+  await dateInput.fill('2026-02-29')
+  await dateInput.press('Tab')
+  expect(await storedDatasets()).toBe(committedDataset)
+  await dateInput.fill('2025-01-01')
+  await dateInput.press('Escape')
+  await expect(dateInput).toHaveValue('02.01.2024')
+  expect(await storedDatasets()).toBe(committedDataset)
+  await page.getByRole('button', { name: 'Kalender öffnen: Datum' }).filter({ visible: true }).click()
+  await page.locator('[data-date-picker]').getByRole('button', { name: 'Heute', exact: true }).click()
+  await expect.poll(storedDatasets).not.toBe(committedDataset)
 
   await page.evaluate(() => window.scrollTo({ top: 0 }))
   await app.expectHealthy()
@@ -641,8 +679,8 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', { tag: '@touch'
   )).toBe(transformAfter)
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await page.getByRole('group', { name: 'Karte' })
-    .getByRole('button', { name: 'Deutschland', exact: true }).click()
+  await page.getByRole('radiogroup', { name: 'Karte' })
+    .getByRole('radio', { name: 'Deutschland', exact: true }).click()
   await expect(zoomOut).toBeDisabled()
   await expect.poll(() => mapLayer.evaluate(
     (layer) => (layer as SVGGElement).style.transform,
