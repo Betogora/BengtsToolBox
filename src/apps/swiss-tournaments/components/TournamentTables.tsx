@@ -1,4 +1,4 @@
-import { Brain, Check, Hand, Trophy, X } from 'lucide-react';
+import { Brain, Check, Hand, Pencil, Trophy, X } from 'lucide-react';
 import { Fragment, useId, useRef, useState, type CSSProperties } from 'react';
 import { toast } from 'sonner';
 import { formatPoints } from '@/apps/swiss-tournaments/components/tournamentUiPresentation'
@@ -357,7 +357,7 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeDefinition> = {
   },
 }
 
-const pairingHintBadgeClassName = 'type-action uppercase'
+const pairingHintBadgeClassName = 'type-action align-middle uppercase'
 
 const fixedPairingHintClassName = cn(
   pairingHintBadgeClassName,
@@ -480,14 +480,17 @@ function ResultCorrectionBadge({
             result: resultLabel(pairing.result, t),
           })}
           className={cn(
-            'type-caption inline-flex h-auto w-auto min-w-0 justify-center rounded-md px-2.5 py-0.5 shadow-none',
+            'inline-flex h-[26px] w-auto min-w-0 max-w-full justify-center gap-2 overflow-hidden rounded-md py-0 pl-2.5 pr-0 align-middle shadow-none',
             'border-border bg-background text-foreground hover:bg-accent focus:ring-ring/40',
-            '[&>span]:truncate [&>svg]:hidden',
+            '[&>svg]:hidden',
             !pairing.result && 'bg-muted text-muted-foreground',
           )}
           title={t('swiss.result.correctTitle')}
         >
-          <SelectValue placeholder={t('swiss.result.open')} />
+          <SelectValue className="min-w-0 truncate" placeholder={t('swiss.result.open')} />
+          <span aria-hidden="true" className="inline-flex h-full w-7 shrink-0 items-center justify-center border-l border-border text-primary">
+            <Pencil className="size-3.5" />
+          </span>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
@@ -676,7 +679,7 @@ export function PairingsTable({
 
   const renderMobileResult = (pairing: Pairing) => {
     if (pairing.isBye) {
-      return <Badge variant="secondary">{resultLabel(pairing.result, t)}</Badge>
+      return <Badge className="type-ui align-middle" variant="secondary">{resultLabel(pairing.result, t)}</Badge>
     }
 
     if (editable && onResultChange) {
@@ -713,7 +716,7 @@ export function PairingsTable({
     }
 
     return (
-      <Badge variant={pairing.result ? 'outline' : 'secondary'}>
+      <Badge className="type-ui align-middle" variant={pairing.result ? 'outline' : 'secondary'}>
         {resultLabel(pairing.result, t)}
       </Badge>
     )
@@ -833,7 +836,7 @@ export function PairingsTable({
       }
 
       return (
-        <Badge variant={racer.placement ? 'outline' : 'secondary'}>
+        <Badge className="type-ui align-middle" variant={racer.placement ? 'outline' : 'secondary'}>
           {racer.placement ?? t('swiss.result.open')}
         </Badge>
       )
@@ -990,7 +993,7 @@ export function PairingsTable({
               racersFor(pairing).map((racer, index) => (
                     <TableRow
                       key={`${pairing.id}-${racer.playerId || 'bye'}-${index}`}
-                      className="align-top transition-colors"
+                      className="transition-colors"
                     >
                       <TableCell className={eventCellClass(racer)}>
                         <span className="min-w-0 truncate">
@@ -1039,7 +1042,7 @@ export function PairingsTable({
                 <div className="type-action tabular-nums whitespace-nowrap">
                   {t('swiss.board')} {pairing.boardNumber}
                   {pairing.kind === 'single' && (
-                    <Badge className="ml-2 align-middle" variant="secondary">
+                    <Badge className="type-ui ml-2 align-middle" variant="secondary">
                       {t('swiss.singleGame')}
                     </Badge>
                   )}
@@ -1098,16 +1101,13 @@ export function PairingsTable({
             return (
               <TableRow
                 key={pairing.id}
-                className={cn(
-                  'align-top',
-                  pairing.isManual && 'bg-primary/5',
-                )}
+                className={pairing.isManual ? 'bg-primary/5' : undefined}
               >
               <TableCell className="tabular-nums">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span>{pairing.boardNumber}</span>
                   {pairing.kind === 'single' && (
-                    <Badge variant="secondary">{t('swiss.singleGame')}</Badge>
+                    <Badge className="type-ui align-middle" variant="secondary">{t('swiss.singleGame')}</Badge>
                   )}
                 </div>
               </TableCell>
@@ -1119,7 +1119,7 @@ export function PairingsTable({
               </TableCell>
               <TableCell>
                 {pairing.isBye ? (
-                  <Badge variant="secondary">{resultLabel(pairing.result, t)}</Badge>
+                  <Badge className="type-ui align-middle" variant="secondary">{resultLabel(pairing.result, t)}</Badge>
                 ) : editable && onResultChange ? (
                   <Select
                     value={pairing.result ?? openResultValue}
@@ -1146,7 +1146,7 @@ export function PairingsTable({
                     shouldConfirmRegeneration={shouldConfirmResultCorrection}
                   />
                 ) : (
-                  <Badge variant={pairing.result ? 'outline' : 'secondary'}>
+                  <Badge className="type-ui align-middle" variant={pairing.result ? 'outline' : 'secondary'}>
                     {resultLabel(pairing.result, t)}
                   </Badge>
                 )}

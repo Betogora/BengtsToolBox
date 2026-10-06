@@ -880,7 +880,7 @@ select {
   }
 
   body {
-    background: #f6fbfa !important;
+    background: var(--background) !important;
   }
 
   body::before {
@@ -888,6 +888,7 @@ select {
   }
 
   .app-shell-header,
+  [data-sonner-toaster],
   .swiss-tournaments-page::before,
   .swiss-print-hidden,
   .swiss-tournaments-page > section {
@@ -930,8 +931,8 @@ select {
     width: 15mm;
     height: 15mm;
     padding: 1mm;
-    border: 1px solid #d6e7e5;
-    border-radius: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     background: #ffffff;
   }
 
@@ -942,10 +943,14 @@ select {
   }
 
   .swiss-standings-card {
+    --btb-text-ui: 10px;
+    --btb-leading-ui-text: 14px;
+    --btb-text-caption: 10px;
+    --btb-leading-caption: 14px;
     position: relative;
     overflow: hidden;
     border: 1px solid var(--border) !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-lg) !important;
     box-shadow: none !important;
     background: #ffffff !important;
   }
@@ -965,7 +970,7 @@ select {
   .swiss-standings-table-wrap {
     overflow: visible !important;
     border: 1px solid var(--border) !important;
-    border-radius: 6px !important;
+    border-radius: var(--radius-md) !important;
   }
 
   .swiss-standings-desktop {
@@ -987,13 +992,20 @@ select {
   }
 
   .swiss-standings-card thead {
-    background: #e8f2f1 !important;
+    background: var(--muted) !important;
   }
 
   .swiss-standings-card th,
   .swiss-standings-card td {
     padding: 7px 8px !important;
-    border-color: #d6e7e5 !important;
+    border-color: var(--border) !important;
+    vertical-align: middle;
+  }
+
+  .swiss-standings-card td:nth-child(2) > span {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .swiss-standings-card th {
@@ -1119,26 +1131,12 @@ select {
     gap: 4px 6px;
   }
 
-  .swiss-podium-first {
-    background: #f7e8b6 !important;
-  }
-
-  .swiss-podium-second {
-    background: #e9edf2 !important;
-  }
-
-  .swiss-podium-third {
-    background: #efd5bf !important;
-  }
-
   .swiss-round-cell {
     width: 100% !important;
-    height: 22px !important;
+    height: 26px !important;
     min-width: 0 !important;
     padding: 0 6px !important;
     overflow: hidden;
-    border-radius: 5px !important;
-    font-size: 9px !important;
     text-overflow: ellipsis;
   }
 

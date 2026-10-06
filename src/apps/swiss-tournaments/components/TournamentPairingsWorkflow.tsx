@@ -112,7 +112,7 @@ function RoundStatusBadge({ status }: { status: Round["status"] }) {
   const { t } = useI18n();
 
   return (
-    <Badge variant={status === "draft" ? "default" : "secondary"}>
+    <Badge className="type-ui align-middle" variant={status === "draft" ? "default" : "secondary"}>
       {t(
         status === "draft"
           ? "swiss.unitStatus.active"
@@ -582,7 +582,7 @@ export function TournamentPairingsWorkflow({
                           <CardTitle>{roundLabel}</CardTitle>
                           <RoundStatusBadge status={round.status} />
                           {shouldShowPairingCountBadge(tournament.format) && (
-                            <Badge variant="outline">
+                            <Badge className="type-ui align-middle" variant="outline">
                               {t("swiss.boardCount", {
                                 count: round.pairings.length,
                               })}

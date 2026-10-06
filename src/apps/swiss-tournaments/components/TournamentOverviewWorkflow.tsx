@@ -105,7 +105,7 @@ function RoundStatusBadge({ status }: { status: Round["status"] }) {
   const { t } = useI18n();
 
   return (
-    <Badge variant={status === "draft" ? "default" : "secondary"}>
+    <Badge className="type-ui align-middle" variant={status === "draft" ? "default" : "secondary"}>
       {t(
         status === "draft"
           ? "swiss.unitStatus.active"
@@ -272,7 +272,7 @@ export function TournamentOverviewWorkflow({
           {currentRound ? (
             <div className="grid gap-3">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">
+                <Badge className="type-ui align-middle" variant="outline">
                   {isMarioKartTournament
                     ? inspection?.rounds.get(currentRound.roundNumber)
                         ?.displayLabel
@@ -280,7 +280,7 @@ export function TournamentOverviewWorkflow({
                 </Badge>
                 <RoundStatusBadge status={currentRound.status} />
                 {shouldShowPairingCountBadge(tournament.format) && (
-                  <Badge variant="secondary">
+                  <Badge className="type-ui align-middle" variant="secondary">
                     {t("swiss.boardCount", {
                       count: currentRound.pairings.length,
                     })}
