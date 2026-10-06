@@ -73,7 +73,7 @@ export function WheelGraphic({
       </svg>
       <svg
         viewBox={`0 0 ${wheelSize} ${wheelSize}`}
-        className="relative z-[1] size-full"
+        className="pointer-events-none relative z-[1] size-full"
         role="img"
         aria-label={t('decisionWheel.wheel.label')}
         style={
