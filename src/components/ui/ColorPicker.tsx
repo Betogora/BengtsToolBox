@@ -158,7 +158,7 @@ export function ColorPicker({
           disabled={disabled}
         >
           {variant === 'field' && (
-            <span className="type-field-label absolute mt-[-1.1rem] text-muted-foreground">
+            <span className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-muted-foreground">
               {label}
             </span>
           )}
