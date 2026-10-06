@@ -20,6 +20,7 @@ import {
   Activity,
   startTransition,
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -625,6 +626,7 @@ export function TerritoryMapPage() {
     updatePlayerName,
   } = useTerritoryMap()
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
+  const isDatasetVisible = useDeferredValue(isDatasetOpen)
   const [isDatasetPrepared, setIsDatasetPrepared] = useState(false)
   const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
@@ -1064,13 +1066,20 @@ export function TerritoryMapPage() {
           title={t('territory.datasetTitle')}
           onToggle={() => {
             if (!isDatasetOpen) {
-              setIsDatasetPrepared(true)
+              startTransition(() => setIsDatasetPrepared(true))
             }
             setIsDatasetOpen((current) => !current)
           }}
         />
+        {isDatasetOpen && (!isDatasetPrepared || !isDatasetVisible) && (
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <p className="type-ui text-muted-foreground" role="status">
+              {t('common.loading')}
+            </p>
+          </CardContent>
+        )}
         {isDatasetPrepared && (
-          <Activity mode={isDatasetOpen ? 'visible' : 'hidden'}>
+          <Activity mode={isDatasetOpen && isDatasetVisible ? 'visible' : 'hidden'}>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               {!isDatasetReady ? (
                 <p className="type-ui text-muted-foreground" role="status">

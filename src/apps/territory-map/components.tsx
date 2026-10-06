@@ -426,6 +426,69 @@ function TerritoryEventDate({
   )
 }
 
+function TerritoryEventSelect({
+  ariaLabel,
+  className,
+  disabled,
+  label,
+  onValueChange,
+  options,
+  value,
+}: {
+  ariaLabel?: string
+  className: string
+  disabled: boolean
+  label: string
+  onValueChange: (value: string) => void
+  options: readonly { id: string; name: string; color?: string }[]
+  value: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const selected = options.find((option) => option.id === value)
+  const renderOption = (option: (typeof options)[number]) =>
+    option.color ? (
+      <span className="flex items-center gap-2">
+        <span
+          className="size-3 shrink-0 rounded-full"
+          style={{ backgroundColor: option.color }}
+        />
+        {option.name}
+      </span>
+    ) : option.name
+
+  return (
+    <Select
+      disabled={disabled}
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      value={value}
+      onValueChange={onValueChange}
+    >
+      <IftaSelectTrigger
+        label={label}
+        aria-label={ariaLabel ?? label}
+        className={className}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      >
+        <span className="min-w-0 truncate">
+          <SelectValue>{selected ? renderOption(selected) : null}</SelectValue>
+        </span>
+      </IftaSelectTrigger>
+      {(isOpen || isFocused) && (
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {renderOption(option)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      )}
+    </Select>
+  )
+}
+
 export function TerritoryEventTable({
   dataset,
   disabled,
@@ -458,66 +521,33 @@ export function TerritoryEventTable({
     />
   )
   const renderPlayerSelect = (event: TerritoryVisitEvent) => (
-    <Select
+    <TerritoryEventSelect
+      label={t('territory.player')}
+      ariaLabel={t('territory.tourist')}
+      className="w-full min-w-0 md:w-48"
       disabled={disabled}
       value={event.playerId}
+      options={players}
       onValueChange={(value) =>
         onUpdateEvent(event.id, {
           playerId: value,
         })
       }
-    >
-      <IftaSelectTrigger
-        label={t('territory.player')}
-        aria-label={t('territory.tourist')}
-        className="w-full min-w-0 md:w-48"
-      >
-        <span className="min-w-0 truncate">
-          <SelectValue />
-        </span>
-      </IftaSelectTrigger>
-      <SelectContent>
-        {players.map((player) => (
-          <SelectItem key={player.id} value={player.id}>
-            <span className="flex items-center gap-2">
-              <span
-                className="size-3 rounded-full"
-                style={{ backgroundColor: player.color }}
-              />
-              {player.name}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    />
   )
   const renderTerritorySelect = (event: TerritoryVisitEvent) => (
-    <Select
+    <TerritoryEventSelect
+      label={t('territory.territory')}
+      className="w-full min-w-0 md:w-64"
       disabled={disabled}
       value={event.territoryId}
+      options={territoryOptionsByMap[event.mapId]}
       onValueChange={(value) =>
         onUpdateEvent(event.id, {
           territoryId: value,
         })
       }
-    >
-      <IftaSelectTrigger
-        label={t('territory.territory')}
-        aria-label={t('territory.territory')}
-        className="w-full min-w-0 md:w-64"
-      >
-        <span className="min-w-0 truncate">
-          <SelectValue />
-        </span>
-      </IftaSelectTrigger>
-      <SelectContent>
-        {territoryOptionsByMap[event.mapId].map((territory) => (
-          <SelectItem key={territory.id} value={territory.id}>
-            {territory.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    />
   )
   const renderDeleteButton = (event: TerritoryVisitEvent) => (
     <ConfirmButton

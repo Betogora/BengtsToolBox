@@ -419,7 +419,17 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
 
   await expect(page.locator('input[aria-label="Datum"]')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Datensatz' }).click()
+  const historyOpening = await page.getByRole('button', { name: 'Datensatz' }).evaluate(async (button) => {
+    button.click()
+    await Promise.resolve()
+    const card = button.closest('[data-slot="card"]')
+    return {
+      isExpanded: button.getAttribute('aria-expanded'),
+      isLoading: Boolean(card?.querySelector('[role="status"]')),
+      dateInputs: card?.querySelectorAll('input[aria-label="Datum"]').length,
+    }
+  })
+  expect(historyOpening).toEqual({ isExpanded: 'true', isLoading: true, dateInputs: 0 })
   const expectedVisibleTables = viewportWidth >= 768 ? 2 : 1
   await expect(page.getByRole('table')).toHaveCount(expectedVisibleTables)
 
@@ -480,6 +490,22 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await page.getByRole('button', { name: 'Kalender öffnen: Datum' }).filter({ visible: true }).click()
   await page.locator('[data-date-picker]').getByRole('button', { name: 'Heute', exact: true }).click()
   await expect.poll(storedDatasets).not.toBe(committedDataset)
+
+  const historyPlayer = page.getByRole('combobox', { name: 'Sushi-Tourist', exact: true })
+  await expect(historyPlayer).toContainText('Bengt')
+  await historyPlayer.focus()
+  await historyPlayer.press('p')
+  await expect(historyPlayer).toContainText('Paul')
+  await historyPlayer.click()
+  await page.getByRole('option', { name: 'Bengt', exact: true }).click()
+  await expect(historyPlayer).toContainText('Bengt')
+
+  const historyTerritory = page.getByRole('combobox', { name: 'Territorium', exact: true })
+  await expect(historyTerritory).toContainText('Deutschland')
+  await historyTerritory.click()
+  await page.getByRole('option', { name: 'Japan', exact: true }).click()
+  await expect(historyTerritory).toContainText('Japan')
+  await expect.poll(storedDatasets).toContain('"territoryId":"jp"')
 
   const retainedDateInput = await dateInput.elementHandle()
   const savedDate = await dateInput.inputValue()
