@@ -1,9 +1,8 @@
 <!doctype html>
-<html lang="de">
-<head>
+<html lang="de"><head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Visueller Katalog der UI-Elemente und Vereinheitlichungschancen in BengtsToolBox.">
+  <meta name="description" content="Interaktiver Katalog der UI-Elemente von BengtsToolBox.">
   <title>BengtsToolBox – UI-Elemente-Katalog</title>
   <style>
     @font-face {
@@ -16,49 +15,43 @@
 
     :root {
       color-scheme: light;
-      --radius: .5rem;
+      --radius: 0.85rem;
       --font: "Manrope Variable", Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --regular: 400;
       --medium: 500;
       --strong: 650;
       --display: 750;
-      --brand-primary: #067276;
-      --brand-secondary: #a9dfda;
-      --brand-accent: #fd7261;
-      --brand-surface: #fac889;
-      --brand-fog: #d7ddde;
-      --brand-ink: #06344f;
-      --background: #f6fbfa;
+      --brand-primary: #236492;
+      --brand-secondary: #c3d9e8;
+      --brand-accent: #b55b43;
+      --brand-surface: #fcf1d7;
+      --brand-fog: #dce3e7;
+      --brand-ink: #1b2d3b;
+      --background: #f6f9fa;
       --foreground: var(--brand-ink);
-      --card: #fff;
-      --muted: #e8f2f1;
-      --muted-foreground: #4d6870;
-      --secondary: #d9f0ed;
+      --card: #ffffff;
+      --muted: #edf1f3;
+      --muted-foreground: #53616d;
+      --secondary: #e6f0f7;
       --destructive: #c83e35;
-      --border: #d6e7e5;
-      --input: #cbdedc;
+      --border: #dce3e7;
+      --input: #dce3e7;
       --ring: var(--brand-primary);
-      --high: #b42318;
-      --high-soft: #fef3f2;
-      --medium-priority: #9a6700;
-      --medium-soft: #fffaeb;
-      --low: #175cd3;
-      --low-soft: #eff8ff;
-      --shadow: 0 14px 38px -30px rgba(6, 52, 79, .55);
+      --shadow: 0 1px 2px rgb(27 45 59 / 5%);
       --shadow-lg: 0 24px 70px -42px rgba(6, 52, 79, .62);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
     html { min-width: 320px; overflow-x: clip; scroll-behavior: smooth; background: var(--background); }
-    body {
+    body.ui-catalog {
       min-width: 320px;
       min-height: 100vh;
       overflow-x: clip;
       margin: 0;
       color: var(--foreground);
       background:
-        radial-gradient(circle at 7% 7%, rgba(13, 142, 144, .13) 0 1.25px, transparent 1.4px) 0 0 / 16px 16px,
-        linear-gradient(180deg, #fff 0%, var(--background) 38%, #eef8f6 100%);
+        radial-gradient(circle at 7% 7%, rgba(35, 100, 146, .10) 0 1.25px, transparent 1.4px) 0 0 / 16px 16px,
+        linear-gradient(180deg, #fff 0%, var(--background) 38%, #eef3f6 100%);
       font: 400 1rem/1.5 var(--font);
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
@@ -75,113 +68,75 @@
 
     .hero { padding: clamp(2rem, 6vw, 5rem) 1rem 2rem; }
     .hero__inner { width: min(1180px, 100%); margin: 0 auto; }
-    .eyebrow { display: flex; align-items: center; gap: .55rem; color: var(--brand-primary); font-size: .76rem; font-weight: var(--strong); letter-spacing: .08em; text-transform: uppercase; }
-    .eyebrow::before { width: 2.25rem; height: 3px; content: ""; border-radius: 999px; background: currentColor; }
-    h1 { max-width: 15ch; margin: .55rem 0 .9rem; font-size: clamp(2.55rem, 7vw, 5.6rem); font-weight: var(--display); line-height: .98; letter-spacing: -.045em; }
+    h1 { max-width: 15ch; margin: .55rem 0 .9rem; font-size: clamp(2.4rem, 6vw, 4.5rem); font-weight: var(--display); line-height: .98; letter-spacing: -.045em; }
     .lede { max-width: 72ch; margin: 0; color: var(--muted-foreground); font-size: clamp(1rem, 2vw, 1.18rem); }
-    .snapshot { display: inline-flex; margin-top: 1rem; padding: .3rem .65rem; border: 1px solid var(--border); border-radius: 999px; background: rgba(255,255,255,.8); color: var(--muted-foreground); font-size: .76rem; }
-    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin-top: 2rem; }
-    .stat { min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: .65rem; background: rgba(255,255,255,.84); box-shadow: var(--shadow); }
-    .stat strong { display: block; color: var(--brand-primary); font-size: 1.7rem; line-height: 1; font-variant-numeric: tabular-nums; }
-    .stat span { display: block; margin-top: .4rem; color: var(--muted-foreground); font-size: .76rem; }
 
     .catalog-shell { display: grid; width: min(1440px, 100%); margin: 0 auto; padding: 0 1rem 5rem; grid-template-columns: 15rem minmax(0, 1fr); gap: 1.5rem; }
-    .catalog-nav { position: sticky; top: 1rem; align-self: start; max-height: calc(100vh - 2rem); overflow: auto; padding: .85rem; border: 1px solid var(--border); border-radius: .75rem; background: rgba(255,255,255,.94); box-shadow: var(--shadow); backdrop-filter: blur(12px); }
+    .catalog-nav { position: sticky; top: 1rem; align-self: start; max-height: calc(100vh - 2rem); overflow: auto; padding: .85rem; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255,255,255,.94); box-shadow: var(--shadow); backdrop-filter: blur(12px); }
     .catalog-nav strong { display: block; padding: .45rem .55rem .7rem; font-size: .8rem; }
     .catalog-nav a { display: block; padding: .43rem .55rem; border-radius: .4rem; color: var(--muted-foreground); font-size: .82rem; text-decoration: none; }
+    .catalog-nav a[aria-current="location"] { color: var(--brand-primary); background: var(--secondary); font-weight: var(--strong); }
     .catalog-nav a:hover { color: var(--brand-primary); background: var(--secondary); }
     .catalog-main { min-width: 0; }
 
-    .toolbar { position: sticky; top: 1rem; z-index: 20; display: grid; gap: .75rem; margin-bottom: 1.5rem; padding: 1rem; border: 1px solid var(--border); border-radius: .75rem; background: rgba(255,255,255,.95); box-shadow: var(--shadow-lg); backdrop-filter: blur(14px); }
-    .toolbar__top { display: grid; grid-template-columns: minmax(14rem, 1fr) auto auto; gap: .65rem; }
-    .search { position: relative; min-width: 0; }
-    .search svg { position: absolute; top: 50%; left: .8rem; width: 1rem; height: 1rem; transform: translateY(-50%); color: var(--muted-foreground); }
-    .search input { width: 100%; height: 2.65rem; padding: .55rem .8rem .55rem 2.4rem; border: 1px solid var(--input); border-radius: .5rem; color: var(--foreground); background: #fff; }
-    .toolbar__button, .filter-button { display: inline-flex; min-height: 2.35rem; align-items: center; justify-content: center; gap: .45rem; padding: .5rem .8rem; border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); background: #fff; font-size: .8rem; font-weight: var(--strong); cursor: pointer; }
-    .toolbar__button:hover, .filter-button:hover { color: var(--brand-primary); background: var(--secondary); }
-    .toolbar__filters { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
-    .filter-label { margin-right: .1rem; color: var(--muted-foreground); font-size: .75rem; }
-    .filter-button[aria-pressed="true"] { border-color: var(--brand-primary); color: #fff; background: var(--brand-primary); }
-    .filter-divider { width: 1px; height: 1.6rem; margin: 0 .25rem; background: var(--border); }
-    .result-count { color: var(--muted-foreground); font-size: .76rem; }
+    .toolbar { position: sticky; top: 1rem; z-index: 20; margin-bottom: 1.5rem; padding: .4rem; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255,255,255,.94); box-shadow: 0 4px 18px rgb(27 45 59 / 7%); backdrop-filter: blur(14px); }
+    .search { position: relative; display: block; min-width: 0; }
+    .search svg { position: absolute; top: 50%; left: .75rem; width: 1rem; height: 1rem; transform: translateY(-50%); color: var(--muted-foreground); }
+    .search input { width: 100%; height: 2.75rem; padding: 1.2rem .75rem .3rem 2.4rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); color: var(--foreground); background: var(--card); font-size: .875rem; }
+    .search__label { position: absolute; z-index: 1; top: .3rem; left: 2.4rem; max-width: calc(100% - 3rem); color: var(--muted-foreground); font-size: .6875rem; line-height: .875rem; pointer-events: none; }
 
-    .catalog-section { scroll-margin-top: 9rem; margin: 0 0 2.5rem; }
+    .catalog-section { scroll-margin-top: 6.5rem; margin: 0 0 2.5rem; }
     .section-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem; margin: 0 0 1rem; padding: 0 .1rem .85rem; border-bottom: 2px solid var(--border); }
-    .section-heading h2 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.3rem); line-height: 1.1; letter-spacing: -.025em; }
+    .section-heading h2 { margin: 0; font-size: 1.5rem; line-height: 1.5rem; font-weight: var(--strong); }
     .section-heading p { max-width: 67ch; margin: .35rem 0 0; color: var(--muted-foreground); font-size: .88rem; }
     .section-count { color: var(--brand-primary); font-size: .78rem; font-weight: var(--strong); white-space: nowrap; }
     .catalog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
     .catalog-grid--wide { grid-template-columns: 1fr; }
-    .catalog-card { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: .75rem; background: rgba(255,255,255,.96); box-shadow: var(--shadow); }
-    .catalog-card__header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; padding: 1rem 1rem .75rem; }
+    .catalog-card { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255,255,255,.96); box-shadow: var(--shadow); }
+    .catalog-card__header { display: grid; padding: 1rem; }
     .catalog-card h3 { margin: 0; font-size: 1.08rem; line-height: 1.25; }
-    .catalog-card__purpose { margin: .3rem 0 0; color: var(--muted-foreground); font-size: .82rem; }
-    .tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; }
-    .tag { display: inline-flex; width: fit-content; align-items: center; padding: .22rem .48rem; border: 1px solid var(--border); border-radius: .32rem; color: var(--muted-foreground); background: #fff; font-size: .66rem; font-weight: var(--strong); line-height: 1.2; }
-    .tag--primitive { color: #075985; background: #f0f9ff; border-color: #bae6fd; }
-    .tag--shared { color: #166534; background: #f0fdf4; border-color: #bbf7d0; }
-    .tag--feature { color: #6b21a8; background: #faf5ff; border-color: #e9d5ff; }
-    .tag--native { color: #9a3412; background: #fff7ed; border-color: #fed7aa; }
-    .tag--high { color: var(--high); background: var(--high-soft); border-color: #fecdca; }
-    .tag--medium { color: var(--medium-priority); background: var(--medium-soft); border-color: #fedf89; }
-    .tag--low { color: var(--low); background: var(--low-soft); border-color: #b2ddff; }
-    .preview { min-height: 8rem; overflow-x: clip; padding: 1rem; border-block: 1px solid var(--border); background: linear-gradient(135deg, #f7fbfa, #fff); }
+    .preview { min-height: 8rem; overflow-x: clip; padding: 1rem; border-block: 1px solid var(--border); background: linear-gradient(135deg, var(--background), var(--card)); }
     .preview--center { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .65rem; }
-    .catalog-card__body { display: grid; gap: .75rem; padding: .9rem 1rem 1rem; }
-    .facts { display: grid; grid-template-columns: 6.4rem minmax(0, 1fr); gap: .45rem .65rem; margin: 0; font-size: .76rem; }
-    .facts dt { color: var(--muted-foreground); }
-    .facts dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
-    .source-list { display: flex; flex-wrap: wrap; gap: .25rem .45rem; }
-    .source-list code { color: #31545f; }
-    .note { margin: 0; padding: .7rem .8rem; border-left: 3px solid var(--brand-primary); border-radius: 0 .4rem .4rem 0; color: var(--muted-foreground); background: var(--secondary); font-size: .78rem; }
-    .note--high { border-color: var(--high); background: var(--high-soft); }
-    .note--medium { border-color: var(--medium-priority); background: var(--medium-soft); }
-    .note--low { border-color: var(--low); background: var(--low-soft); }
 
-    .demo-button { display: inline-flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: .45rem; padding: .48rem .9rem; border: 1px solid transparent; border-radius: .38rem; color: #fff; background: var(--brand-primary); font-size: .8rem; font-weight: var(--strong); box-shadow: 0 12px 28px -20px rgba(13,142,144,.9); }
+    .demo-button { display: inline-flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: .45rem; padding: .48rem .9rem; border: 1px solid transparent; border-radius: calc(var(--radius) - 2px); color: #fff; background: var(--brand-primary); font-size: .875rem; font-weight: var(--strong); box-shadow: 0 1px 2px rgb(27 45 59 / 5%); }
     .demo-button--outline { border-color: var(--border); color: var(--foreground); background: #fff; box-shadow: 0 1px 2px rgba(6,52,79,.08); }
     .demo-button--secondary { color: var(--foreground); background: var(--secondary); }
     .demo-button--ghost { color: var(--foreground); background: transparent; }
     .demo-button--destructive { color: #fff; background: var(--destructive); }
     .demo-button--icon { width: 2.25rem; padding: 0; }
     .demo-button:disabled { opacity: .5; }
-    .demo-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .22rem .5rem; border: 1px solid transparent; border-radius: .32rem; color: #fff; background: var(--brand-primary); font-size: .67rem; font-weight: var(--medium); }
+    .demo-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .22rem .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) - 2px); color: #fff; background: var(--brand-primary); font-size: .75rem; line-height: 1rem; font-weight: var(--medium); }
     .demo-badge--secondary { color: var(--foreground); background: var(--secondary); }
     .demo-badge--outline { border-color: var(--border); color: var(--foreground); background: #fff; }
     .demo-badge--destructive { background: var(--destructive); }
-    .demo-card { width: min(100%, 23rem); border: 1px solid var(--border); border-radius: .5rem; background: #fff; box-shadow: var(--shadow); }
+    .demo-card { width: min(100%, 23rem); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow); }
     .demo-card__header { padding: 1rem 1rem .5rem; }
-    .demo-card__title { font-size: 1rem; font-weight: var(--strong); }
+    .demo-card__title { font-size: 1.125rem; font-weight: var(--strong); }
     .demo-card__description { margin-top: .2rem; color: var(--muted-foreground); font-size: .78rem; }
     .demo-card__content { padding: .5rem 1rem 1rem; font-size: .82rem; }
     .demo-field { position: relative; width: min(100%, 16rem); }
-    .demo-field input, .demo-select { width: 100%; height: 2.75rem; padding: 1.15rem .75rem .28rem; border: 1px solid var(--input); border-radius: .38rem; color: var(--foreground); background: transparent; }
-    .demo-field label { position: absolute; top: .32rem; left: .75rem; color: var(--muted-foreground); font-size: .61rem; font-weight: var(--medium); pointer-events: none; }
+    .demo-field input, .demo-select { width: 100%; height: 2.75rem; padding: 1.25rem .75rem .375rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); color: var(--foreground); background: transparent; }
+    .demo-field label { position: absolute; top: .375rem; left: .75rem; color: var(--muted-foreground); font-size: var(--btb-text-field-label); line-height: var(--btb-leading-field-label); font-weight: var(--medium); pointer-events: none; }
     .demo-color-wheel { position: relative; width: 7.5rem; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 50%; background: radial-gradient(circle, #fff 0%, transparent 100%), conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00); box-shadow: inset 0 1px 4px rgba(6,52,79,.18); }
-    .demo-color-wheel::after { position: absolute; top: 18%; left: 69%; width: .85rem; aspect-ratio: 1; content: ""; border: 2px solid #fff; border-radius: 50%; background: #0d8e90; box-shadow: 0 0 0 1px rgba(6,52,79,.8); }
-    .demo-dialog { width: min(100%, 25rem); padding: 1rem; border: 1px solid var(--border); border-radius: .5rem; background: #fff; box-shadow: 0 20px 50px -25px rgba(6,52,79,.65); }
-    .demo-dialog h4 { margin: 0; font-size: 1.08rem; }
+    .demo-color-wheel::after { position: absolute; top: 18%; left: 69%; width: .85rem; aspect-ratio: 1; content: ""; border: 2px solid #fff; border-radius: 50%; background: #236492; box-shadow: 0 0 0 1px rgba(6,52,79,.8); }
+    .demo-dialog { width: min(100%, 25rem); padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; box-shadow: 0 20px 50px -25px rgba(6,52,79,.65); }
+    .demo-dialog h4 { margin: 0; font-size: 1.25rem; }
     .demo-dialog p { margin: .3rem 0 .85rem; color: var(--muted-foreground); font-size: .78rem; }
     .demo-dialog__footer { display: flex; justify-content: flex-end; gap: .5rem; }
     .demo-menu { width: 12rem; padding: .3rem; border: 1px solid var(--border); border-radius: .4rem; background: #fff; box-shadow: 0 10px 30px -18px rgba(6,52,79,.7); }
     .demo-menu div { display: flex; align-items: center; gap: .5rem; padding: .42rem .5rem; border-radius: .28rem; font-size: .76rem; }
     .demo-menu div:nth-child(2) { color: var(--brand-primary); background: var(--secondary); }
-    .demo-menu div:last-child { color: var(--destructive); }
     .role-grid { display: grid; width: min(100%, 34rem); grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .7rem; }
-    .state-preview-grid { display: grid; width: min(100%, 38rem); grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .7rem; text-align: center; }
+    .state-preview-grid { display: grid; width: min(100%, 38rem); grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: .7rem; text-align: center; }
     .responsive-preview-grid { display: grid; width: min(100%, 36rem); grid-template-columns: minmax(0, 1fr) 8.5rem; align-items: start; gap: 1rem; }
-    .demo-separator { width: min(100%, 20rem); height: 1px; background: var(--border); }
-    .demo-toast { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: start; gap: .65rem; width: min(100%, 22rem); padding: .75rem; border: 1px solid var(--border); border-radius: .45rem; background: #fff; box-shadow: 0 12px 30px -20px rgba(6,52,79,.65); }
-    .demo-toast strong, .demo-toast span { display: block; font-size: .76rem; }
-    .demo-toast span { margin-top: .15rem; color: var(--muted-foreground); }
     .table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: .4rem; background: #fff; }
-    .demo-table { width: 100%; min-width: 28rem; border-collapse: collapse; font-size: .76rem; }
-    .demo-table th { padding: .65rem; background: rgba(232,242,241,.7); text-align: left; }
+    .demo-table { width: 100%; min-width: 28rem; border-collapse: collapse; font-size: .875rem; }
+    .demo-table th { padding: .65rem; background: color-mix(in srgb, var(--muted) 70%, transparent); text-align: left; }
     .demo-table td { padding: .65rem; border-top: 1px solid var(--border); }
     .demo-tabs { width: min(100%, 28rem); }
-    .demo-tabs__list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border-radius: .45rem; background: var(--muted); }
-    .demo-tabs__list span { padding: .42rem .6rem; border-radius: .32rem; color: var(--muted-foreground); font-size: .75rem; font-weight: var(--strong); text-align: center; }
-    .demo-tabs__list span:first-child { color: var(--foreground); background: #fff; box-shadow: 0 1px 2px rgba(6,52,79,.12); }
+    .demo-tabs__list { display: flex; gap: .25rem; padding: .3rem; border: 1px solid var(--border); border-radius: var(--radius); background: #e9eef1; }
+    .demo-tabs__list span { flex: 1; min-width: 0; padding: .45rem .75rem; border-radius: calc(var(--radius) - .25rem); color: var(--muted-foreground); font-size: .875rem; font-weight: var(--strong); text-align: center; }
+    .demo-tabs__list span:first-child { color: var(--brand-primary); background: var(--card); box-shadow: 0 2px 6px rgb(27 45 59 / 7%); }
     .demo-tabs__panel { padding: .8rem .2rem .1rem; color: var(--muted-foreground); font-size: .78rem; }
 
     .swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
@@ -196,26 +151,14 @@
     .type-specimen code, .type-specimen small { color: var(--muted-foreground); }
     .shape-row { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
     .shape { display: grid; width: 6.5rem; aspect-ratio: 1.25; place-items: center; border: 1px solid var(--border); background: #fff; color: var(--muted-foreground); font-size: .68rem; }
-    .shape--sm { border-radius: .25rem; }
-    .shape--md { border-radius: .375rem; }
-    .shape--lg { border-radius: .5rem; box-shadow: var(--shadow); }
+    .shape--sm { border-radius: calc(var(--radius) - 4px); }
+    .shape--md { border-radius: calc(var(--radius) - 2px); }
+    .shape--lg { border-radius: var(--radius); box-shadow: var(--shadow); }
     .spacing-scale { display: grid; gap: .5rem; }
     .spacing-item { display: grid; grid-template-columns: 4rem minmax(0,1fr); align-items: center; gap: .65rem; font-size: .7rem; }
     .spacing-bar { width: var(--space); max-width: 100%; height: .75rem; border-radius: .2rem; background: var(--brand-secondary); }
 
-    .finding { display: grid; grid-template-columns: auto minmax(0,1fr); gap: .8rem; padding: 1rem; }
-    .finding__priority { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border-radius: .5rem; font-size: .72rem; font-weight: var(--display); }
-    .finding__priority--high { color: var(--high); background: var(--high-soft); }
-    .finding__priority--medium { color: var(--medium-priority); background: var(--medium-soft); }
-    .finding__priority--low { color: var(--low); background: var(--low-soft); }
-    .finding h3 { margin: 0; }
-    .finding p { margin: .35rem 0 0; color: var(--muted-foreground); font-size: .82rem; }
-    .finding ul { margin: .55rem 0 0; padding-left: 1.1rem; color: var(--muted-foreground); font-size: .76rem; }
 
-    .component-map { display: grid; gap: .42rem; margin: 0; padding: 0; list-style: none; }
-    .component-map li { display: grid; grid-template-columns: minmax(8rem, .45fr) minmax(0, 1fr); gap: .65rem; padding: .45rem .55rem; border: 1px solid var(--border); border-radius: .35rem; background: #fff; font-size: .73rem; }
-    .component-map code:first-child { color: var(--brand-primary); font-weight: 700; }
-    .component-map span { color: var(--muted-foreground); }
     .mini-page { width: min(100%, 30rem); overflow: hidden; border: 1px solid var(--border); border-radius: .55rem; background: var(--background); box-shadow: var(--shadow); }
     .mini-page__bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .55rem .7rem; border-bottom: 1px solid var(--border); background: #fff; }
     .mini-page__brand { display: flex; align-items: center; gap: .45rem; font-size: .7rem; font-weight: var(--display); }
@@ -228,24 +171,18 @@
     .mini-tile i { display: grid; width: 1.45rem; aspect-ratio: 1; place-items: center; margin-bottom: .35rem; border-radius: .28rem; color: #fff; background: var(--brand-primary); font-style: normal; }
     .mini-status { padding: .55rem; border: 1px dashed var(--border); border-radius: .4rem; color: var(--muted-foreground); background: #fff; font-size: .65rem; text-align: center; }
 
-    .feature-preview { display: grid; width: min(100%, 34rem); grid-template-columns: minmax(0, 1fr) minmax(8rem, .65fr); gap: .65rem; }
-    .feature-stage, .feature-panel { min-width: 0; padding: .75rem; border: 1px solid var(--border); border-radius: .45rem; background: #fff; }
-    .feature-stage { display: grid; min-height: 9rem; place-items: center; }
-    .feature-panel { display: grid; align-content: start; gap: .45rem; }
-    .wheel { position: relative; width: 7rem; aspect-ratio: 1; border: 5px solid #fff; border-radius: 50%; background: conic-gradient(#63c6c4 0 28%, #fac889 28% 55%, #fd7261 55% 78%, #a9dfda 78%); box-shadow: 0 0 0 1px var(--border), 0 14px 28px -18px rgba(6,52,79,.65); }
+    .wheel { position: relative; width: 7rem; aspect-ratio: 1; border: 5px solid #fff; border-radius: 50%; background: conic-gradient(#63c6c4 0 28%, #fcf1d7 28% 55%, #b55b43 55% 78%, #c3d9e8 78%); box-shadow: 0 0 0 1px var(--border), 0 14px 28px -18px rgba(6,52,79,.65); }
     .wheel::before { position: absolute; inset: 40%; content: ""; border: 4px solid #fff; border-radius: 50%; background: var(--brand-ink); }
     .wheel::after { position: absolute; top: -.55rem; left: 50%; width: 1rem; height: 1.8rem; content: ""; transform: translateX(-50%); clip-path: polygon(0 0,100% 0,50% 100%); background: var(--brand-accent); }
     .coin { display: grid; width: 7rem; aspect-ratio: 1; place-items: center; border: .45rem solid #ebc375; border-radius: 50%; color: #b67720; background: #f6e3a5; font-size: 2.6rem; font-weight: var(--display); box-shadow: inset 0 0 0 .25rem #f8d88f, 0 14px 30px -20px rgba(6,52,79,.65); }
     .chart { display: flex; width: 9rem; height: 6.5rem; align-items: end; gap: .42rem; padding: .65rem; border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .chart i { flex: 1; height: var(--h); border-radius: .3rem .3rem 0 0; background: var(--brand-secondary); }
     .chart i:last-child { background: var(--brand-primary); }
-    .buzzer { position: relative; width: 7.5rem; height: 5.4rem; border-radius: 50% 50% 38% 38%; background: radial-gradient(circle at 50% 42%, #ff8a7f 0 36%, #fd7261 37% 54%, #e45a50 55% 60%, #dce8e8 61% 70%, transparent 71%); }
-    .buzzer::after { position: absolute; right: 15%; bottom: 0; left: 15%; height: .75rem; content: ""; border-radius: 50%; background: #d7ddde; }
     .map-demo { position: relative; width: 9rem; height: 6.5rem; overflow: hidden; border: 1px solid var(--border); border-radius: .4rem; background: linear-gradient(28deg, transparent 45%, var(--brand-secondary) 46% 48%, transparent 49%), linear-gradient(90deg,#f2f8f7 48%,#fff 49%); }
     .map-demo::before, .map-demo::after { position: absolute; content: ""; border: 2px solid #fff; background: var(--brand-primary); opacity: .7; }
     .map-demo::before { top: 20%; left: 23%; width: 34%; height: 45%; clip-path: polygon(12% 8%,90% 0,76% 100%,0 76%); }
     .map-demo::after { right: 8%; bottom: 15%; width: 35%; height: 38%; clip-path: polygon(10% 0,100% 18%,80% 100%,0 75%); background: var(--brand-accent); }
-    .score-bars { display: grid; width: 10rem; gap: .55rem; }
+    .score-bars { display: grid; width: min(100%, 10rem); gap: .55rem; }
     .score-bar { display: grid; grid-template-columns: 3rem minmax(0,1fr) auto; align-items: center; gap: .4rem; font-size: .65rem; }
     .score-bar span:nth-child(2) { height: .8rem; border-radius: .25rem; background: linear-gradient(90deg,var(--brand-primary) var(--score),var(--muted) var(--score)); }
     .score-bar strong { font-variant-numeric: tabular-nums; }
@@ -255,17 +192,12 @@
 
     .icon-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem; margin: 0; padding: 0; list-style: none; }
     .icon-grid li { display: grid; min-width: 0; grid-template-columns: 1.65rem minmax(0,1fr) auto; align-items: center; gap: .4rem; padding: .45rem .5rem; border: 1px solid var(--border); border-radius: .35rem; background: #fff; }
-    .icon-grid .icon, .icon-placeholder { width: 1.15rem; height: 1.15rem; color: var(--brand-primary); }
-    .icon-placeholder { display: grid; place-items: center; border: 1px solid var(--brand-secondary); border-radius: .25rem; background: var(--secondary); font-size: .58rem; font-weight: var(--display); }
+    .icon-grid .icon, .icon-grid [data-icon-preview] { width: 1.25rem; height: 1.25rem; color: var(--brand-primary); }
     .icon-grid code { min-width: 0; overflow: hidden; font-size: .66rem; text-overflow: ellipsis; white-space: nowrap; }
     .icon-grid small { color: var(--muted-foreground); font-size: .62rem; }
     .asset-list { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
     .asset-list li { display: grid; grid-template-columns: 9rem minmax(0,1fr); gap: .7rem; padding: .65rem; border: 1px solid var(--border); border-radius: .4rem; background: #fff; font-size: .74rem; }
     .asset-list span { color: var(--muted-foreground); }
-    .state-table { width: 100%; border-collapse: collapse; font-size: .76rem; }
-    .state-table th, .state-table td { padding: .7rem; border: 1px solid var(--border); vertical-align: top; text-align: left; }
-    .state-table th { background: var(--muted); }
-    .state-table td:first-child { font-weight: var(--strong); }
 
     .empty-results { padding: 2rem; border: 1px dashed var(--border); border-radius: .75rem; color: var(--muted-foreground); background: rgba(255,255,255,.8); text-align: center; }
     .footer { padding: 2rem 1rem 4rem; color: var(--muted-foreground); font-size: .76rem; text-align: center; }
@@ -278,12 +210,7 @@
       .toolbar { top: .5rem; }
     }
     @media (max-width: 760px) {
-      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .stat:last-child { grid-column: span 2; }
       .catalog-grid { grid-template-columns: 1fr; }
-      .toolbar__top { grid-template-columns: 1fr 1fr; }
-      .search { grid-column: 1 / -1; }
-      .filter-divider { display: none; }
       .swatches { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .icon-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .type-specimen { grid-template-columns: 8.5rem minmax(0,1fr); }
@@ -292,18 +219,11 @@
     @media (max-width: 460px) {
       .hero { padding-inline: .75rem; }
       .catalog-shell { padding-inline: .6rem; }
-      .toolbar { padding: .75rem; }
-      .toolbar__button { padding-inline: .55rem; }
+      .toolbar { padding: .4rem; }
       .catalog-card__header { grid-template-columns: 1fr; }
-      .tags { justify-content: flex-start; }
-      .facts { grid-template-columns: 1fr; }
-      .facts dd { margin-bottom: .25rem; }
-      .feature-preview { grid-template-columns: 1fr; }
-      .component-map li { grid-template-columns: 1fr; }
       .asset-list li { grid-template-columns: 1fr; }
       .mini-page__grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .icon-grid { grid-template-columns: 1fr; }
-      .state-table { min-width: 42rem; }
       .type-specimen { grid-template-columns: 1fr; }
       .type-specimen small { grid-column: auto; }
       .role-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -312,23 +232,66 @@
       .popover-demo { padding-top: 0 !important; }
       .popover-demo .demo-menu { position: static !important; width: auto !important; margin-top: .5rem; }
     }
-    @media print {
-      @page { margin: 12mm; }
-      body { background: #fff; }
-      .catalog-shell { display: block; width: auto; padding: 0; }
-      .catalog-nav, .toolbar, .footer { display: none !important; }
-      .hero { padding: 0 0 1rem; }
-      h1 { font-size: 36pt; }
-      .catalog-section { break-before: page; }
-      .catalog-section:first-child { break-before: auto; }
-      .catalog-card { break-inside: avoid; box-shadow: none; }
-      .catalog-grid, .catalog-grid--wide { grid-template-columns: 1fr; }
-      a { text-decoration: none; }
-    }
+
+    .picker-demo { display: grid; width: min(100%, 19rem); gap: .65rem; }
+    .picker-demo .demo-field { width: 100%; }
+    .picker-demo__icon { position: absolute; right: .75rem; top: 1rem; color: var(--muted-foreground); }
+    .picker-demo__heading, .picker-demo__footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .8rem; }
+    .picker-demo__footer { margin-top: .75rem; padding-top: .65rem; border-top: 1px solid var(--border); color: var(--brand-primary); }
+    .calendar-demo { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .125rem; margin-top: .75rem; text-align: center; }
+    .calendar-demo span { display: grid; height: 2.25rem; place-items: center; border-radius: calc(var(--radius) - 2px); font-size: .875rem; }
+    .calendar-demo small { color: var(--muted-foreground); }
+    .calendar-demo .is-selected { background: var(--brand-primary); color: white; }
+    .time-demo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .5rem; margin: .75rem 0; text-align: center; }
+    .time-demo strong { display: block; padding: .5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--muted); font-size: 1.875rem; font-variant-numeric: tabular-nums; }
+    .time-demo small { color: var(--muted-foreground); }
+    .sport-swim { color: #205a80; background: #e6f0f7; border-color: #c3d9e8; }
+    .sport-bike { color: #755015; background: #fcf1d7; border-color: #e7d7b3; }
+    .sport-run { color: #924331; background: #f9e9e2; border-color: #e7cabe; }
+    .sport-card { width: min(100%, 24rem); padding: 1rem; border: 1px solid; border-radius: var(--radius); }
+    .sport-card h4 { margin: 0 0 .75rem; }
+    .record-demo { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: .5rem; }
+    .record-demo strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+    .record-demo small { grid-column: 1 / -1; color: var(--muted-foreground); }
+    .summary-demo { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+    .summary-demo > div { padding: .8rem; border: 1px solid var(--border); border-radius: var(--radius); }
+    .summary-demo strong, .summary-demo small { display: block; }
+    .summary-demo strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+    .plan-entry { display: grid; gap: .25rem; padding: .7rem; margin-top: .7rem; border: 1px solid; border-radius: calc(var(--radius) - 2px); font-size: .8rem; }
+    .form-demo { display: grid; gap: .65rem; margin: .75rem 0; }
+    .form-demo .demo-field { width: 100%; }
+    .search input:focus-visible, a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--ring) 45%, transparent); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    .demo-tabs__list--icons { margin-top: .8rem; }
+    .demo-tabs__list--icons span { display: flex; flex: 0 0 2.5rem; align-items: center; justify-content: center; gap: .5rem; padding-inline: .5rem; }
+    .demo-tabs__list--icons span:first-child { flex: 1; }
+    .demo-buzz-button { min-height: 9rem; flex-direction: column; font-size: 1.6rem; border-radius: var(--radius); }
+    .demo-buzz-button .icon { width: 2.5rem; height: 2.5rem; }
+    .catalog-card h3 { font-weight: var(--display); }
+    .live-demo { width: min(100%, 26rem); font-size: .875rem; }
+    .preview:has(.live-demo) { min-height: 10rem; }
+    #primitive .catalog-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.25rem 1.5rem; align-items: start; }
+    #primitive .catalog-card { overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; }
+    #primitive .catalog-card__header { padding: .25rem 0 .5rem; }
+    #primitive .preview { min-height: 0; overflow: visible; padding: .375rem; border: 0; background: none; justify-content: flex-start; }
+    .live-demo--artwork, .live-demo--wide { width: 100%; }
+    .artwork-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1.25rem; }
+    .artwork-gallery figure { min-width: 0; margin: 0; }
+    .artwork-image { display: flex; align-items: center; justify-content: center; height: 8rem; overflow: hidden; }
+    .artwork-image > svg { width: 18rem; height: 8rem; max-width: none; flex: none; transform: translateX(-3.333rem); }
+    .artwork-logo { width: 80%; height: 80%; object-fit: contain; }
+    .artwork-sample figcaption { padding-top: .4rem; text-align: center; font-size: .8rem; font-weight: var(--strong); }
+    .catalog-disclosure { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; list-style: none; }
+    .catalog-disclosure::-webkit-details-marker { display: none; }
+    .catalog-disclosure > [data-demo] { display: inline-flex; }
   </style>
 </head>
-<body>
+<body class="ui-catalog">
   <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M2 12h4l3-9 6 18 3-9h4"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
     <symbol id="i-briefcase" viewBox="0 0 24 24"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M9 10v2h6v-2"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
@@ -347,552 +310,297 @@
 
   <header class="hero">
     <div class="hero__inner">
-      <div class="eyebrow">Repository-Inventar</div>
       <h1>UI-Elemente-Katalog</h1>
-      <p class="lede">Der aktuelle visuelle Wortschatz von BengtsToolBox – von globalen Tokens über gemeinsame Controls bis zu fachlichen Karten, Tabellen und Diagrammen. Wiederholungen werden einmal als Muster beschrieben und über ihre Fundstellen nachvollziehbar gemacht.</p>
-      <span class="snapshot">Snapshot: 10. August 2026 · Quelle: aktueller Arbeitsbaum</span>
-      <div class="stats" aria-label="Umfang des Katalogs">
-        <div class="stat"><strong>15</strong><span>generische UI-Dateien</span></div>
-        <div class="stat"><strong>8</strong><span>gemeinsame App-Muster</span></div>
-        <div class="stat"><strong>10</strong><span>fachliche Oberflächen</span></div>
-        <div class="stat"><strong>81</strong><span>Lucide-Icons</span></div>
-        <div class="stat"><strong>320 px</strong><span>verbindliche Mindestbreite</span></div>
-      </div>
+      <p class="lede">Gemeinsame Controls ausprobieren und die Oberflächen von BengtsToolBox entdecken.</p>
     </div>
   </header>
 
   <div class="catalog-shell">
     <nav class="catalog-nav" aria-label="Katalogbereiche">
       <strong>Inhalt</strong>
-      <a href="#methodik">Lesart</a>
-      <a href="#chancen">Vereinheitlichung</a>
+
       <a href="#grundlagen">Grundlagen</a>
       <a href="#primitive">Primitive</a>
       <a href="#shared">Shared Patterns</a>
-      <a href="#shell">Shell &amp; Lobby</a>
-      <a href="#features">Feature-Muster</a>
+      <a href="#triathlon">Triathlon · Fachmuster</a>
       <a href="#icons">Icons &amp; Assets</a>
       <a href="#states">Zustände</a>
     </nav>
 
     <main class="catalog-main">
-      <div class="toolbar" aria-label="Katalog filtern">
-        <div class="toolbar__top">
-          <label class="search">
-            <span class="sr-only">Katalog durchsuchen</span>
-            <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-            <input id="catalog-search" type="search" placeholder="Name, Zweck, Datei oder Zustand …" autocomplete="off">
-          </label>
-          <button class="toolbar__button" id="reset-filters" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Reset</button>
-          <button class="toolbar__button" id="print-catalog" type="button">Drucken</button>
-        </div>
-        <div class="toolbar__filters" aria-label="Kategorien">
-          <span class="filter-label">Kategorie</span>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="all" aria-pressed="true">Alle</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="foundation" aria-pressed="false">Grundlagen</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="primitive" aria-pressed="false">Primitive</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="shared" aria-pressed="false">Shared</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="layout" aria-pressed="false">Shell/Lobby</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="feature" aria-pressed="false">Features</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="asset" aria-pressed="false">Assets</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="state" aria-pressed="false">Zustände</button>
-          <button class="filter-button" type="button" data-filter-group="category" data-filter="finding" aria-pressed="false">Chancen</button>
-          <span class="filter-divider" aria-hidden="true"></span>
-          <span class="filter-label">Priorität</span>
-          <button class="filter-button" type="button" data-filter-group="priority" data-filter="all" aria-pressed="true">Alle</button>
-          <button class="filter-button" type="button" data-filter-group="priority" data-filter="high" aria-pressed="false">Hoch</button>
-          <button class="filter-button" type="button" data-filter-group="priority" data-filter="medium" aria-pressed="false">Mittel</button>
-          <button class="filter-button" type="button" data-filter-group="priority" data-filter="low" aria-pressed="false">Niedrig</button>
-        </div>
-        <div class="result-count" id="result-count" role="status" aria-live="polite"></div>
+      <div class="toolbar" aria-label="Katalogsuche">
+        <label class="search">
+          <span class="search__label">Katalog durchsuchen</span>
+          <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="catalog-search" type="search" placeholder="Komponente oder Zustand suchen …" autocomplete="off">
+        </label>
       </div>
 
-      <div id="empty-results" class="empty-results" hidden>Keine Katalogeinträge passen zu den aktuellen Filtern.</div>
+      <div id="empty-results" class="empty-results" hidden="">Keine Katalogeinträge passen zur Suche.</div>
 
 
 
-
-      <section class="catalog-section" id="methodik" data-filter-section>
-        <div class="section-heading">
-          <div><h2>Lesart und Abgrenzung</h2><p>Ein Eintrag steht für ein unterscheidbares Muster. Compound Components und eng gekoppelte Teilbausteine werden zusammen gezeigt; wiederholte Instanzen erscheinen als Fundstellen.</p></div>
-          <span class="section-count">3 Leitplanken</span>
-        </div>
-        <div class="catalog-grid">
-          <article class="catalog-card" data-catalog-item data-category="foundation" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Vier Ebenen</h3><p class="catalog-card__purpose">Die Architektur bleibt im Katalog sichtbar.</p></div><div class="tags"><span class="tag">Systematik</span></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>Primitive</code><span>generische Controls ohne Fachlogik</span></li>
-                <li><code>Shared</code><span>nachweislich appübergreifende Interaktionen</span></li>
-                <li><code>Feature-lokal</code><span>fachliche Darstellung innerhalb einer App</span></li>
-                <li><code>Native/Sonderfall</code><span>bewusst individuelle HTML-, SVG- oder Grafiksteuerung</span></li>
-              </ul>
-              <p class="note">Eine Ähnlichkeit ist noch kein Auftrag zum Verschieben: Die bestehende Regel „feature-lokal zuerst“ bleibt maßgeblich.</p>
-            </div>
-          </article>
-          <article class="catalog-card" data-catalog-item data-category="foundation" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Quellenabdeckung</h3><p class="catalog-card__purpose">Inventar statt Screenshot-Sammlung.</p></div><div class="tags"><span class="tag">Snapshot</span></div></div>
-            <div class="catalog-card__body">
-              <dl class="facts"><dt>Erfasst</dt><dd><code>src/**/*.tsx</code>, <code>src/styles/globals.css</code>, <code>src/apps/registry.ts</code>, <code>public/</code></dd><dt>Nicht erfasst</dt><dd>Domänenmodule ohne sichtbare Ausgabe, Tests und Build-Artefakte</dd><dt>Vorschauen</dt><dd>statische, vereinfachte Zustandsbilder – keine zweite React-Implementierung</dd></dl>
-              <p class="note">Der aktuelle Code bleibt Detailquelle. Dieser Katalog ist eine datierte Diskussionsgrundlage und kein Laufzeitvertrag.</p>
-            </div>
-          </article>
-          <article class="catalog-card" data-catalog-item data-category="foundation" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Bewertung</h3><p class="catalog-card__purpose">Prioritäten sind Hinweise, keine fertige Roadmap.</p></div><div class="tags"><span class="tag tag--high">Hoch</span><span class="tag tag--medium">Mittel</span><span class="tag tag--low">Niedrig</span></div></div>
-            <div class="catalog-card__body">
-              <dl class="facts"><dt>Hoch</dt><dd>häufig, sichtbar oder mit klarer kanonischer Alternative</dd><dt>Mittel</dt><dd>mehrfach vorhanden, aber fachlicher Zuschnitt muss erhalten bleiben</dd><dt>Niedrig</dt><dd>beobachten; derzeit kein ausreichender Nutzen für neue Abstraktion</dd></dl>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="catalog-section" id="chancen" data-filter-section>
-        <div class="section-heading">
-          <div><h2>Priorisierte Vereinheitlichungschancen</h2><p>Die stärksten, im aktuellen Bestand belegbaren Anstöße. Jede Empfehlung bleibt innerhalb der vorhandenen Architektur.</p></div>
-          <span class="section-count">5 Prüfkandidaten</span>
-        </div>
-        <div class="catalog-grid">
-          <article class="catalog-card" data-catalog-item data-category="finding" data-priority="high">
-            <div class="finding"><span class="finding__priority finding__priority--high">H</span><div><h3>Status-Badges fachlich ordnen</h3><p>Turnierstatus, Korrekturen, Warnungen, Teams und Synchronisationszustände nutzen dieselben vier Badge-Varianten mit vielen lokalen Farbüberschreibungen.</p><ul><li><code>RoundStatusBadge</code> existiert doppelt im selben Feature</li><li>semantische Statusrollen feature-lokal bündeln, visuelle Basis im Badge belassen</li></ul></div></div>
-          </article>
-          <article class="catalog-card" data-catalog-item data-category="finding" data-priority="medium">
-            <div class="finding"><span class="finding__priority finding__priority--medium">M</span><div><h3>RankPlacement feature-lokal kanonisieren</h3><p>Drei SVG-Implementierungen im Turnierbereich visualisieren Rangplätze mit ähnlicher Geometrie.</p><ul><li><code>RankPlacement.tsx</code>, <code>TournamentTables.tsx</code> und <code>TournamentOverview.tsx</code></li><li>gemeinsame Turnierkomponente statt globalem Primitive</li></ul></div></div>
-          </article>
-          <article class="catalog-card" data-catalog-item data-category="finding" data-priority="medium">
-            <div class="finding"><span class="finding__priority finding__priority--medium">M</span><div><h3>Seitenkopf-Aktionen als Layoutmuster schärfen</h3><p>Neun Apps verwenden <code>AppPageTitle</code>; Lobbys und einzelne Turnierzustände bauen vergleichbare Titel-/Aktionszeilen lokal.</p><ul><li>Reihenfolge für Titel, Presenter, Reset und Status festlegen</li><li>keine neue Komponente erzwingen, solange nur Layoutkonvention genügt</li></ul></div></div>
-          </article>
-          <article class="catalog-card" data-catalog-item data-category="finding" data-priority="medium">
-            <div class="finding"><span class="finding__priority finding__priority--medium">M</span><div><h3>Archiv- und Verlaufsoberflächen vergleichen</h3><p>Scoreboard, Fortschritt, Schlag den Raab und Turnier-App besitzen jeweils Archive Cards, Details oder Read-only-Tabellen.</p><ul><li>gemeinsame Informationsreihenfolge und Destruktivaktionen prüfen</li><li>Persistenz- und Fachmodelle ausdrücklich getrennt lassen</li></ul></div></div>
-          </article>
-          <article class="catalog-card" data-catalog-item data-category="finding" data-priority="low">
-            <div class="finding"><span class="finding__priority finding__priority--low">N</span><div><h3>Seltene Primitive nicht vorschnell ausbauen</h3><p>DropdownMenu, Popover und Separator werden derzeit jeweils nur in einem konkreten Pfad eingesetzt.</p><ul><li>bestehende Primitive dokumentieren, aber keine Varianten auf Vorrat ergänzen</li><li>individuelle Grafikcontrols bleiben dort lokal, wo ihre Interaktion einzigartig ist</li></ul></div></div>
-          </article>
-        </div>
-      </section>
 
       <section class="catalog-section" id="grundlagen" data-filter-section>
         <div class="section-heading">
-          <div><h2>Grundlagen</h2><p>Die verbindlichen visuellen Ausgangswerte aus <code>src/styles/globals.css</code>.</p></div>
-          <span class="section-count">Farben · Typografie · Form</span>
+          <div><h2>Grundlagen</h2></div>
         </div>
         <div class="catalog-grid catalog-grid--wide">
-          <article class="catalog-card" data-catalog-item data-category="foundation" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Farbrollen</h3><p class="catalog-card__purpose">Brand- und semantische Tokens statt lokaler Farbnamen.</p></div><div class="tags"><span class="tag">24 Farb-Tokens</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/styles/globals.css">
+            <div class="catalog-card__header"><div><h3>Farbrollen</h3></div></div>
             <div class="preview">
               <div class="swatches">
-                <div class="swatch"><div class="swatch__color" style="--swatch:#067276"></div><div class="swatch__label"><strong>brand-primary</strong><code>#067276</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#a9dfda"></div><div class="swatch__label"><strong>brand-secondary</strong><code>#a9dfda</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#fd7261"></div><div class="swatch__label"><strong>brand-accent</strong><code>#fd7261</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#fac889"></div><div class="swatch__label"><strong>brand-surface</strong><code>#fac889</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#d7ddde"></div><div class="swatch__label"><strong>brand-fog</strong><code>#d7ddde</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#06344f"></div><div class="swatch__label"><strong>brand-ink</strong><code>#06344f</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#f6fbfa"></div><div class="swatch__label"><strong>background</strong><code>#f6fbfa</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#236492"></div><div class="swatch__label"><strong>brand-primary</strong><code>#236492</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#c3d9e8"></div><div class="swatch__label"><strong>brand-secondary</strong><code>#c3d9e8</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#b55b43"></div><div class="swatch__label"><strong>brand-accent</strong><code>#b55b43</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#fcf1d7"></div><div class="swatch__label"><strong>brand-surface</strong><code>#fcf1d7</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#dce3e7"></div><div class="swatch__label"><strong>brand-fog</strong><code>#dce3e7</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#1b2d3b"></div><div class="swatch__label"><strong>brand-ink</strong><code>#1b2d3b</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#f6f9fa"></div><div class="swatch__label"><strong>background</strong><code>#f6f9fa</code></div></div>
                 <div class="swatch"><div class="swatch__color" style="--swatch:#ffffff"></div><div class="swatch__label"><strong>card / popover</strong><code>#ffffff</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#d9f0ed"></div><div class="swatch__label"><strong>secondary</strong><code>#d9f0ed</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#e8f2f1"></div><div class="swatch__label"><strong>muted</strong><code>#e8f2f1</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#4d6870"></div><div class="swatch__label"><strong>muted-foreground</strong><code>#4d6870</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#e6f0f7"></div><div class="swatch__label"><strong>secondary</strong><code>#e6f0f7</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#edf1f3"></div><div class="swatch__label"><strong>muted</strong><code>#edf1f3</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#53616d"></div><div class="swatch__label"><strong>muted-foreground</strong><code>#53616d</code></div></div>
                 <div class="swatch"><div class="swatch__color" style="--swatch:#c83e35"></div><div class="swatch__label"><strong>destructive</strong><code>#c83e35</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#d6e7e5"></div><div class="swatch__label"><strong>border</strong><code>#d6e7e5</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#cbdedc"></div><div class="swatch__label"><strong>input</strong><code>#cbdedc</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#067276"></div><div class="swatch__label"><strong>ring</strong><code>primary</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:linear-gradient(180deg,#fff,#eef8f6)"></div><div class="swatch__label"><strong>body gradient</strong><code>white → fog</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#dce3e7"></div><div class="swatch__label"><strong>border</strong><code>#dce3e7</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#dce3e7"></div><div class="swatch__label"><strong>input</strong><code>#dce3e7</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:#236492"></div><div class="swatch__label"><strong>ring</strong><code>primary</code></div></div>
+                <div class="swatch"><div class="swatch__color" style="--swatch:linear-gradient(180deg,#fff,#eef3f6)"></div><div class="swatch__label"><strong>body gradient</strong><code>white → fog</code></div></div>
               </div>
             </div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Quelle</dt><dd><code>src/styles/globals.css:39</code></dd><dt>Brand</dt><dd><code>brand-primary</code>, <code>brand-secondary</code>, <code>brand-accent</code>, <code>brand-surface</code>, <code>brand-fog</code>, <code>brand-ink</code></dd><dt>Semantik</dt><dd><code>background</code>, <code>foreground</code>, <code>card</code>, <code>card-foreground</code>, <code>popover</code>, <code>popover-foreground</code>, <code>primary</code>, <code>primary-foreground</code>, <code>secondary</code>, <code>secondary-foreground</code>, <code>muted</code>, <code>muted-foreground</code>, <code>accent</code>, <code>accent-foreground</code>, <code>destructive</code>, <code>border</code>, <code>input</code>, <code>ring</code></dd><dt>Verwendung</dt><dd>Tailwind-Theme-Aliase und globale CSS-Variablen</dd></dl><p class="note note--medium">50 direkte <code>#ffffff</code>-Nennungen und weitere Fachfarben sind ein guter Prüfpunkt: Tokenisieren nur, wenn dieselbe semantische Rolle mehrfach vorliegt.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="foundation" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Typografierollen</h3><p class="catalog-card__purpose">Manrope Variable mit semantischen <code>type-*</code>-Klassen.</p></div><div class="tags"><span class="tag">17 Rollen</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/styles/globals.css">
+            <div class="catalog-card__header"><div><h3>Typografierollen</h3></div></div>
             <div class="preview">
-              <div class="type-specimen"><code>type-caption</code><span style="font-size:.75rem;font-weight:500;line-height:1rem">Metadaten und kompakte Hinweise</span><small>12 / 16 · 500</small></div>
-              <div class="type-specimen"><code>type-label</code><span style="font-size:.75rem;font-weight:500;line-height:1rem">Sichtbares Standardlabel</span><small>12 / 16 · 500</small></div>
-              <div class="type-specimen"><code>type-field-label</code><span style="font-size:.6875rem;font-weight:500;line-height:.875rem">Schwebendes Feldlabel</span><small>11 / 14 · 500</small></div>
-              <div class="type-specimen"><code>type-ui</code><span style="font-size:.875rem;line-height:1.25rem">Lauftext in Controls und Karten</span><small>14 / 20 · 400</small></div>
-              <div class="type-specimen"><code>type-control</code><span style="font-size:1rem;line-height:1.5rem">Eingabewert auf kleinen Breiten</span><small>16 / 24 → 14 / 20</small></div>
-              <div class="type-specimen"><code>type-action</code><span style="font-size:.875rem;font-weight:650;line-height:1.25rem">Primäre Aktion</span><small>14 / 20 · 650</small></div>
-              <div class="type-specimen"><code>type-card-title</code><span style="font-size:1.125rem;font-weight:650;line-height:1.35rem">Kartentitel</span><small>18 / 21.6 · 650</small></div>
-              <div class="type-specimen"><code>type-dialog-title</code><span style="font-size:1.25rem;font-weight:650;line-height:1.5rem">Dialogtitel</span><small>20 / 24 · 650</small></div>
-              <div class="type-specimen"><code>type-section-title</code><span style="font-size:1.5rem;font-weight:650;line-height:1.9rem">Abschnittstitel</span><small>24 / 30.4 · 650</small></div>
-              <div class="type-specimen"><code>type-page-title</code><span style="font-size:1.875rem;font-weight:650;line-height:2.2rem">Seitentitel</span><small>30–36 · 650</small></div>
-              <div class="type-specimen"><code>type-dashboard-title</code><span style="font-size:3rem;font-weight:750;line-height:1">App-Hub</span><small>48–72 · 750</small></div>
-              <div class="type-specimen"><code>type-tile-title</code><span style="font-size:1.45rem;font-weight:650;line-height:1.12">App-Kachel</span><small>23.2–26.4 · 650</small></div>
-              <div class="type-specimen"><code>type-brand</code><span style="font-size:1.25rem;font-weight:750;line-height:1">BengtsToolBox</span><small>20 · 750</small></div>
-              <div class="type-specimen"><code>type-metric-sm</code><span style="font-size:1.5rem;font-weight:650;line-height:1.9rem;font-variant-numeric:tabular-nums">12</span><small>24 / 30.4 · 650</small></div>
-              <div class="type-specimen"><code>type-metric-md</code><span style="font-size:2rem;font-weight:650;line-height:2.3rem;font-variant-numeric:tabular-nums">12 : 09</span><small>32 / 36.8 · 650</small></div>
-              <div class="type-specimen"><code>type-metric-lg</code><span style="font-size:3.25rem;font-weight:650;line-height:1;font-variant-numeric:tabular-nums">42</span><small>52 / 1 · 650</small></div>
-              <div class="type-specimen"><code>type-metric-xl</code><span style="font-size:4.5rem;font-weight:650;line-height:1;font-variant-numeric:tabular-nums">84</span><small>72–96 / 1 · 650</small></div>
+              <div class="type-specimen"><code>type-caption</code><span class="type-caption">Metadaten und kompakte Hinweise</span><small>12 / 16 · 500</small></div>
+              <div class="type-specimen"><code>type-label</code><span class="type-label">Sichtbares Standardlabel</span><small>12 / 16 · 500</small></div>
+              <div class="type-specimen"><code>type-field-label</code><span class="type-field-label">Schwebendes Feldlabel</span><small>12 / 16 · 500</small></div>
+              <div class="type-specimen"><code>type-ui</code><span class="type-ui">Lauftext in Controls und Karten</span><small>14 / 20 · 400</small></div>
+              <div class="type-specimen"><code>type-control</code><span class="type-control">Eingabewert auf kleinen Breiten</span><small>16 / 24 → 14 / 20</small></div>
+              <div class="type-specimen"><code>type-action</code><span class="type-action">Primäre Aktion</span><small>14 / 20 · 650</small></div>
+              <div class="type-specimen"><code>type-card-title</code><span class="type-card-title">Kartentitel</span><small>18 / 21.6 · 650</small></div>
+              <div class="type-specimen"><code>type-dialog-title</code><span class="type-dialog-title">Dialogtitel</span><small>20 / 24 · 650</small></div>
+              <div class="type-specimen"><code>type-section-title</code><span class="type-section-title">Abschnittstitel</span><small>20 / 24 · 650</small></div>
+              <div class="type-specimen"><code>type-page-title</code><span class="type-page-title">Seitentitel</span><small>30–36 · 650</small></div>
+              <div class="type-specimen"><code>type-dashboard-title</code><span class="type-dashboard-title">App-Hub</span><small>48–72 · 750</small></div>
+              <div class="type-specimen"><code>type-tile-title</code><span class="type-tile-title">App-Kachel</span><small>23.2–26.4 · 650</small></div>
+              <div class="type-specimen"><code>type-brand</code><span class="type-brand">BengtsToolBox</span><small>20 · 750</small></div>
+              <div class="type-specimen"><code>type-metric-sm</code><span class="type-metric-sm">12</span><small>24 / 30.4 · 650</small></div>
+              <div class="type-specimen"><code>type-metric-md</code><span class="type-metric-md">12 : 09</span><small>32 / 36.8 · 650</small></div>
+              <div class="type-specimen"><code>type-metric-lg</code><span class="type-metric-lg">42</span><small>52 / 1 · 650</small></div>
+              <div class="type-specimen"><code>type-metric-xl</code><span class="type-metric-xl">84</span><small>72–96 / 1 · 650</small></div>
             </div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Quelle</dt><dd><code>src/styles/globals.css:203</code></dd><dt>Häufig</dt><dd><code>type-action</code> 60, <code>type-caption</code> 53, <code>type-label</code> 41 Fundstellen</dd></dl><p class="note">Die Rollen sind bereits stark zentralisiert. Lokale Größen sollten nur bei fachlichen Visualisierungen von der Skala abweichen.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="foundation" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Radien, Schatten und Abstände</h3><p class="catalog-card__purpose">Eine kleine Grundskala, ergänzt durch viele lokale Layoutabstände.</p></div><div class="tags"><span class="tag">Form</span></div></div>
+          <article class="catalog-card" data-catalog-item>
+            <div class="catalog-card__header"><div><h3>Radien, Schatten und Abstände</h3></div></div>
             <div class="preview">
               <div class="shape-row">
-                <div class="shape shape--sm">radius-sm<br>4 px</div><div class="shape shape--md">radius-md<br>6 px</div><div class="shape shape--lg">radius-lg<br>8 px</div>
+                <div class="shape shape--sm">radius-sm<br>9,6 px</div><div class="shape shape--md">radius-md<br>11,6 px</div><div class="shape shape--lg">radius-lg<br>13,6 px</div>
                 <div class="spacing-scale" style="flex:1;min-width:13rem">
-                  <div class="spacing-item"><code>gap-1</code><span class="spacing-bar" style="--space:1rem"></span></div>
-                  <div class="spacing-item"><code>gap-2</code><span class="spacing-bar" style="--space:2rem"></span></div>
-                  <div class="spacing-item"><code>gap-4</code><span class="spacing-bar" style="--space:4rem"></span></div>
-                  <div class="spacing-item"><code>gap-6</code><span class="spacing-bar" style="--space:6rem"></span></div>
+                  <div class="spacing-item"><code>gap-1</code><span class="spacing-bar" style="--space:.25rem"></span></div>
+                  <div class="spacing-item"><code>gap-2</code><span class="spacing-bar" style="--space:.5rem"></span></div>
+                  <div class="spacing-item"><code>gap-4</code><span class="spacing-bar" style="--space:1rem"></span></div>
+                  <div class="spacing-item"><code>gap-6</code><span class="spacing-bar" style="--space:1.5rem"></span></div>
                 </div>
               </div>
             </div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Radien</dt><dd>Basis <code>.5rem</code>, abgeleitet <code>.25/.375/.5/.75rem</code></dd><dt>Schatten</dt><dd><code>shadow-xs</code> sowie wiederkehrende teal-/ink-farbige Langschatten</dd><dt>Layout</dt><dd>AppPage: <code>gap-6</code>, Karten meist <code>p-6</code>, kompakte Controls <code>h-9</code></dd></dl><p class="note note--medium">Schatten sind optisch konsistent, aber als freie Arbitrary Values dupliziert. Ein Token lohnt erst bei tatsächlicher gemeinsamer Änderung.</p></div>
           </article>
         </div>
       </section>
 
       <section class="catalog-section" id="primitive" data-filter-section>
         <div class="section-heading">
-          <div><h2>Generische Primitive</h2><p>Die Controls aus <code>src/components/ui</code>. Compound Components werden als zusammengehörige Familie geführt.</p></div>
-          <span class="section-count">15 Dateien · 56 Exporte</span>
+          <div><h2>Generische Primitive</h2></div>
         </div>
         <div class="catalog-grid">
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Badge</h3><p class="catalog-card__purpose">Kompakte Status-, Typ- und Zählerkennzeichnung.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span></div></div>
-            <div class="preview preview--center"><span class="demo-badge">Aktiv</span><span class="demo-badge demo-badge--secondary">Team A</span><span class="demo-badge demo-badge--outline">Runde 5</span><span class="demo-badge demo-badge--destructive">Fehler</span></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>default</code>, <code>secondary</code>, <code>destructive</code>, <code>outline</code></dd><dt>Fundstellen</dt><dd>67 Instanzen in 16 Dateien; besonders Turnier-App (36)</dd><dt>Quelle</dt><dd><code>src/components/ui/badge.tsx</code></dd></dl><p class="note note--high">Die visuelle Basis ist kanonisch. Semantische Statuszuordnung ist vor allem im Turnierbereich lokal zu bündeln.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/badge.tsx">
+            <div class="catalog-card__header"><div><h3>Badge</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Badge"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Button</h3><p class="catalog-card__purpose">Kanonisches Aktions-Control und Link-Adapter über Radix Slot.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span></div></div>
-            <div class="preview preview--center"><button class="demo-button" type="button"><svg class="icon"><use href="#i-plus"/></svg>Primär</button><button class="demo-button demo-button--outline" type="button">Outline</button><button class="demo-button demo-button--secondary" type="button">Sekundär</button><button class="demo-button demo-button--ghost" type="button">Ghost</button><button class="demo-button demo-button--destructive" type="button"><svg class="icon"><use href="#i-trash"/></svg>Löschen</button><button class="demo-button demo-button--icon" type="button" aria-label="Beispielhafte Icon-Aktion"><svg class="icon"><use href="#i-plus"/></svg></button><button class="demo-button" type="button" disabled>Disabled</button></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>default</code>, <code>destructive</code>, <code>outline</code>, <code>secondary</code>, <code>ghost</code>, <code>link</code></dd><dt>Größen</dt><dd><code>default</code>, <code>ifta</code>, <code>sm</code>, <code>lg</code>, <code>icon</code></dd><dt>Fundstellen</dt><dd>98 Instanzen in 29 Dateien; 38 outline, 22 destructive, 23 icon</dd><dt>Quelle</dt><dd><code>src/components/ui/button.tsx</code></dd></dl><p class="note"><code>destructive</code> ist der einzige rote Aktionsmodus; Bestätigungsbedarf bleibt Aufgabe von <code>ConfirmButton</code>.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/button.tsx">
+            <div class="catalog-card__header"><div><h3>Button</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Button"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Card-Familie</h3><p class="catalog-card__purpose">Universeller Oberflächencontainer mit optionaler Kopf-, Inhalts- und Fußstruktur.</p></div><div class="tags"><span class="tag tag--primitive">6 Exporte</span></div></div>
-            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header"><div class="demo-card__title">Aktuelle Runde</div><div class="demo-card__description">Drei Paarungen sind bereit.</div></div><div class="demo-card__content"><span class="demo-badge demo-badge--secondary">Runde 5</span></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Teile</dt><dd><code>Card</code>, <code>CardHeader</code>, <code>CardTitle</code>, <code>CardDescription</code>, <code>CardContent</code>, <code>CardFooter</code></dd><dt>Fundstellen</dt><dd>70 Card-Instanzen in 23 Dateien</dd><dt>Quelle</dt><dd><code>src/components/ui/card.tsx</code></dd></dl><p class="note">Die Familie ist breit etabliert. Unterschiede entstehen beabsichtigt über Feature-Layoutklassen, nicht über parallele Card-Primitives.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/disclosure.tsx">
+            <div class="catalog-card__header"><div><h3>Aufklappen</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Aufklappen"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>ColorPicker</h3><p class="catalog-card__purpose">Gemeinsamer, tastaturbedienbarer Farbkreis mit Commit-Semantik.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span><span class="tag tag--native">Custom</span></div></div>
-            <div class="preview preview--center"><div class="demo-color-wheel" role="img" aria-label="Statische Vorschau des Farbkreises"></div><div class="demo-field"><label>Farbe</label><div class="demo-select" style="display:flex;align-items:flex-end"><span style="display:block;width:100%;height:.85rem;border-radius:.2rem;background:#0d8e90"></span></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>compact</code>, <code>field</code></dd><dt>Zustände</dt><dd>Preview, Pointer Capture, Pfeiltasten, Disabled, asynchroner Commit</dd><dt>Fundstellen</dt><dd>5 Instanzen in Glücksrad, Scoreboard, Fortschritt und Sushi Map</dd><dt>Quelle</dt><dd><code>src/components/ui/ColorPicker.tsx</code></dd></dl><p class="note">Ein gutes Beispiel für bereits erfolgreich zentralisierte Spezialinteraktion. Keine native Farbeingabe parallel ergänzen.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/card.tsx">
+            <div class="catalog-card__header"><div><h3>Card-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Card-Familie"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Dialog-Familie</h3><p class="catalog-card__purpose">Fokusgeführte Modals auf Basis von Radix Dialog.</p></div><div class="tags"><span class="tag tag--primitive">10 Exporte</span></div></div>
-            <div class="preview preview--center"><div class="demo-dialog"><h4>Wirklich löschen?</h4><p>Dieser Vorgang kann nicht rückgängig gemacht werden.</p><div class="demo-dialog__footer"><button class="demo-button demo-button--outline" type="button">Abbrechen</button><button class="demo-button demo-button--destructive" type="button">Löschen</button></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Exporte</dt><dd><code>Dialog</code>, <code>DialogTrigger</code>, <code>DialogPortal</code>, <code>DialogClose</code>, <code>DialogOverlay</code>, <code>DialogContent</code>, <code>DialogHeader</code>, <code>DialogFooter</code>, <code>DialogTitle</code>, <code>DialogDescription</code></dd><dt>Fundstellen</dt><dd>5 Dialoge: Confirm, Presenter-Auswahl, Claim, Ergebnisdialog, Turniererstellung</dd><dt>Quelle</dt><dd><code>src/components/ui/dialog.tsx</code></dd></dl><p class="note">Schließen-Button, zugänglicher Name und mobile Breite sind zentral gelöst. Inhaltslayout bleibt beim Anwendungsfall.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/ColorPicker.tsx">
+            <div class="catalog-card__header"><div><h3>ColorPicker</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="ColorPicker"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="low">
-            <div class="catalog-card__header"><div><h3>DropdownMenu-Familie</h3><p class="catalog-card__purpose">Menüs mit normalen, Checkbox-, Radio- und Submenu-Einträgen.</p></div><div class="tags"><span class="tag tag--primitive">13 Exporte</span><span class="tag tag--low">Niedrig</span></div></div>
-            <div class="preview preview--center"><div class="demo-menu"><div>App Hub</div><div>Schlag den Raab</div><div>Lobbys</div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Exporte</dt><dd><code>DropdownMenu</code>, <code>DropdownMenuTrigger</code>, <code>DropdownMenuContent</code>, <code>DropdownMenuItem</code>, <code>DropdownMenuCheckboxItem</code>, <code>DropdownMenuRadioGroup</code>, <code>DropdownMenuRadioItem</code>, <code>DropdownMenuLabel</code>, <code>DropdownMenuSeparator</code>, <code>DropdownMenuShortcut</code>, <code>DropdownMenuSub</code>, <code>DropdownMenuSubTrigger</code>, <code>DropdownMenuSubContent</code></dd><dt>Fundstellen</dt><dd>aktuell ausschließlich mobiles Shell-Menü; nur Root, Trigger, Content und Item produktiv</dd><dt>Quelle</dt><dd><code>src/components/ui/dropdown-menu.tsx</code></dd></dl><p class="note note--low">Die vollständige Radix-Familie ist vorhanden, aber selten genutzt. Keine zusätzlichen Wrapper oder Varianten ohne zweiten realen Bedarf.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/dialog.tsx">
+            <div class="catalog-card__header"><div><h3>Dialog-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Dialog-Familie"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Ifta-Felder</h3><p class="catalog-card__purpose">Kanonischer 44-px-Modus mit dauerhaftem Label innerhalb des Rahmens.</p></div><div class="tags"><span class="tag tag--primitive">2 Exporte</span></div></div>
-            <div class="preview preview--center"><div class="demo-field"><label>Spielername</label><input value="Paul" readonly></div><div class="demo-field"><label>Turniermodus</label><div class="demo-select">Swiss <span style="float:right">⌄</span></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Teile</dt><dd><code>IftaInput</code>, <code>IftaSelectTrigger</code></dd><dt>Fundstellen</dt><dd>18 Inputs in 10 Dateien, 16 Select-Trigger in 7 Dateien</dd><dt>Quelle</dt><dd><code>src/components/ui/ifta-field.tsx</code></dd><dt>Zustände</dt><dd>Focus, Disabled und <code>aria-invalid</code> einschließlich Label</dd></dl><p class="note">Der einzige eingebaute Label-Modus. Komplexe React-Labels benötigen weiterhin ein explizites <code>aria-label</code>.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/dropdown-menu.tsx">
+            <div class="catalog-card__header"><div><h3>DropdownMenu-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="DropdownMenu-Familie"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Input</h3><p class="catalog-card__purpose">Kompaktes 36-px-Standardfeld ohne eingebautes Label.</p></div><div class="tags"><span class="tag tag--primitive">1 Export</span></div></div>
-            <div class="preview preview--center"><div class="demo-field"><input aria-label="Standard Input" value="Standard Input" readonly style="padding:.45rem .75rem;height:2.25rem"></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>18 Instanzen in 10 Dateien</dd><dt>Quelle</dt><dd><code>src/components/ui/input.tsx</code></dd><dt>Zustände</dt><dd>Focus Ring, Placeholder, Disabled, Invalid und Textauswahl</dd></dl><p class="note">Für Tabellen, Inline-Edit und extern beschriftete Felder; sonst ist ein sichtbares oder programmatisches Label erforderlich.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/ifta-field.tsx">
+            <div class="catalog-card__header"><div><h3>Ifta-Felder</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Ifta-Felder"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Label</h3><p class="catalog-card__purpose">Radix-basiertes, sichtbares Standardlabel.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span></div></div>
-            <div class="preview preview--center"><label style="display:grid;gap:.35rem;width:min(100%,16rem);font-size:.75rem;font-weight:650">Turniername<input value="Sommerturnier" readonly style="height:2.25rem;padding:.45rem .7rem;border:1px solid var(--input);border-radius:.38rem;background:#fff"></label></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>2 Instanzen, beide im TournamentCreatorDialog</dd><dt>Quelle</dt><dd><code>src/components/ui/label.tsx</code></dd></dl><p class="note">Programmatic Labels sind zusätzlich in Ifta-Feldern enthalten. Die visuelle Entscheidung „außen oder innen“ sollte an Feldtypen gebunden werden.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/input.tsx">
+            <div class="catalog-card__header"><div><h3>Input</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Input"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="low">
-            <div class="catalog-card__header"><div><h3>Popover-Familie</h3><p class="catalog-card__purpose">Leichte schwebende Oberfläche für kontextnahe Interaktion.</p></div><div class="tags"><span class="tag tag--primitive">3 Exporte</span><span class="tag tag--low">Niedrig</span></div></div>
-            <div class="preview preview--center"><div class="popover-demo" style="position:relative;padding-top:2rem"><button class="demo-button demo-button--outline demo-button--icon" type="button" aria-label="Farbe wählen"><svg class="icon"><use href="#i-palette"/></svg></button><div class="demo-menu" style="position:absolute;top:0;left:3rem;width:9rem"><div>Popover Content</div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Exporte</dt><dd><code>Popover</code>, <code>PopoverTrigger</code>, <code>PopoverContent</code></dd><dt>Fundstellen</dt><dd>nur als interne Basis des ColorPicker</dd><dt>Quelle</dt><dd><code>src/components/ui/popover.tsx</code></dd></dl><p class="note note--low">Die Abstraktion ist passend klein. Erst ein zweiter Konsument rechtfertigt zusätzliche Ausrichtungspresets.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/label.tsx">
+            <div class="catalog-card__header"><div><h3>Label</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Label"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Select-Familie</h3><p class="catalog-card__purpose">Kompakter 36-px-Radix-Select ohne eingebautes Label.</p></div><div class="tags"><span class="tag tag--primitive">5 öffentliche Exporte</span></div></div>
-            <div class="preview preview--center"><div class="demo-select" style="width:min(100%,16rem);height:2.25rem;padding:.45rem .75rem">1 Punkt <span style="float:right">⌄</span></div><div class="demo-menu"><div>½ Punkt</div><div>1 Punkt ✓</div><div>2 Punkte</div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Teile</dt><dd><code>Select</code>, <code>SelectContent</code>, <code>SelectItem</code>, <code>SelectTrigger</code>, <code>SelectValue</code></dd><dt>Fundstellen</dt><dd>28 Selects in 8 Dateien, 43 Items</dd><dt>Quelle</dt><dd><code>src/components/ui/select.tsx</code></dd><dt>Zustände</dt><dd>Focus, Disabled und <code>aria-invalid</code></dd></dl><p class="note">Für kompakte oder extern beschriftete Auswahlfelder; eingebaute Labels werden ausschließlich mit <code>IftaSelectTrigger</code> umgesetzt.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/popover.tsx">
+            <div class="catalog-card__header"><div><h3>Popover-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Popover-Familie"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="low">
-            <div class="catalog-card__header"><div><h3>Separator</h3><p class="catalog-card__purpose">Dekorative oder semantische Trennlinie.</p></div><div class="tags"><span class="tag tag--primitive">Primitive</span><span class="tag tag--low">Niedrig</span></div></div>
-            <div class="preview preview--center"><div class="demo-separator"></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd>horizontal, vertikal; standardmäßig dekorativ</dd><dt>Fundstellen</dt><dd>1 Instanz im Glücksrad</dd><dt>Quelle</dt><dd><code>src/components/ui/separator.tsx</code></dd></dl><p class="note note--low">Viele Layouts verwenden stattdessen Borders. Vereinheitlichung nur erwägen, wenn Semantik oder Abstände dadurch klarer werden.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/select.tsx">
+            <div class="catalog-card__header"><div><h3>Select-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Select-Familie"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Toaster / Sonner</h3><p class="catalog-card__purpose">Globale Erfolgs- und Fehlerrückmeldung.</p></div><div class="tags"><span class="tag tag--primitive">Provider</span></div></div>
-            <div class="preview preview--center"><div class="demo-toast"><svg class="icon" style="color:var(--brand-primary);font-size:1.2rem"><use href="#i-check"/></svg><div><strong>Änderung gespeichert</strong><span>Der neue Stand wurde synchronisiert.</span></div></div><div class="demo-toast"><svg class="icon" style="color:var(--destructive);font-size:1.2rem"><use href="#i-alert"/></svg><div><strong>Speichern fehlgeschlagen</strong><span>Bitte Verbindung prüfen.</span></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Einbindung</dt><dd>ein globaler <code>Toaster</code> in <code>AppProviders</code></dd><dt>Nutzung</dt><dd><code>toast.success/error</code> in Lobby und acht Feature-Dateien</dd><dt>Quelle</dt><dd><code>src/components/ui/sonner.tsx</code></dd></dl><p class="note">Farben und Schatten sind zentral. Textinhalte laufen überwiegend über i18n; der Toast ersetzt keine dauerhafte Sync-Fehleranzeige.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/separator.tsx">
+            <div class="catalog-card__header"><div><h3>Separator</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Separator"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Table-Familie</h3><p class="catalog-card__purpose">Responsive Datentabellen mit eigenem horizontalem Scrollcontainer.</p></div><div class="tags"><span class="tag tag--primitive">6 Exporte</span></div></div>
-            <div class="preview"><div class="table-wrap"><table class="demo-table"><thead><tr><th>Rang</th><th>Spieler</th><th>Punkte</th><th>Status</th></tr></thead><tbody><tr><td>1</td><td>Paul</td><td>12</td><td><span class="demo-badge">Aktiv</span></td></tr><tr><td>2</td><td>Kim</td><td>9</td><td><span class="demo-badge demo-badge--outline">Bereit</span></td></tr></tbody></table></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Teile</dt><dd><code>Table</code>, <code>TableHeader</code>, <code>TableBody</code>, <code>TableRow</code>, <code>TableHead</code>, <code>TableCell</code></dd><dt>Fundstellen</dt><dd>17 Tabellen in 9 Dateien; 87 Header- und 89 Datenzellen</dd><dt>Quelle</dt><dd><code>src/components/ui/table.tsx</code></dd></dl><p class="note">Der fokussierbare Scrollcontainer ist die gemeinsame mobile Basis. Fachlich breite Tabellen dürfen weiterhin lokal Spalten und Printregeln definieren.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/sonner.tsx">
+            <div class="catalog-card__header"><div><h3>Toaster / Sonner</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Toaster / Sonner"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="primitive" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Tabs-Familie</h3><p class="catalog-card__purpose">Modus- und Workflow-Navigation innerhalb einer Oberfläche.</p></div><div class="tags"><span class="tag tag--primitive">4 Exporte</span></div></div>
-            <div class="preview preview--center"><div class="demo-tabs"><div class="demo-tabs__list" role="tablist"><span role="tab" aria-selected="true">Übersicht</span><span role="tab" aria-selected="false">Spieler</span><span role="tab" aria-selected="false">Rangliste</span></div><div class="demo-tabs__panel" role="tabpanel">Aktueller Tab-Inhalt</div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Exporte</dt><dd><code>Tabs</code>, <code>TabsList</code>, <code>TabsTrigger</code>, <code>TabsContent</code></dd><dt>Fundstellen</dt><dd>2 Root-Instanzen: Turnier-App (4 Tabs) und Fortschritts-Details (2 Tabs)</dd><dt>Quelle</dt><dd><code>src/components/ui/tabs.tsx</code></dd></dl><p class="note">Ein visuell stabiles Navigationsmuster. Mobile Breite wird von den Konsumenten angepasst, nicht durch eine zweite Tabs-Komponente.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/table.tsx">
+            <div class="catalog-card__header"><div><h3>Table-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Table-Familie"></div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/tabs.tsx">
+            <div class="catalog-card__header"><div><h3>Tabs-Familie</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Tabs-Familie"></div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/DatePicker.tsx">
+            <div class="catalog-card__header"><div><h3>DatePicker</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="DatePicker"></div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/TimePicker.tsx">
+            <div class="catalog-card__header"><div><h3>TimePicker</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="TimePicker"></div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/components/ui/SegmentedControl.tsx src/components/ui/useSlidingIndicator.ts">
+            <div class="catalog-card__header"><div><h3>SegmentedControl</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="SegmentedControl"></div></div>
           </article>
         </div>
       </section>
 
       <section class="catalog-section" id="shared" data-filter-section>
         <div class="section-heading">
-          <div><h2>Gemeinsame App-Muster</h2><p>Tatsächlich appübergreifend eingesetzte Layout- und Interaktionsbausteine aus <code>src/apps/shared/components</code>.</p></div>
-          <span class="section-count">8 Muster</span>
+          <div><h2>Gemeinsame App-Muster</h2></div>
         </div>
         <div class="catalog-grid">
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>AppPage</h3><p class="catalog-card__purpose">Kanonischer Seitencontainer für Breite, Außenabstand und vertikalen Rhythmus.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/AppPage.tsx">
+            <div class="catalog-card__header"><div><h3>AppPage</h3></div></div>
             <div class="preview preview--center"><div class="mini-page"><div class="mini-page__body"><div class="mini-page__title"><svg class="icon" style="color:var(--brand-primary)"><use href="#i-trophy"/></svg> Seitentitel</div><div class="mini-page__grid"><div class="mini-tile">Inhalt A</div><div class="mini-tile">Inhalt B</div><div class="mini-tile">Inhalt C</div></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>default</code> max-w-6xl, <code>wide</code> max-w-7xl</dd><dt>Fundstellen</dt><dd>18 Instanzen in 13 Dateien, darunter alle regulären Apps und Lobby-Seiten</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/AppPage.tsx</code></dd></dl><p class="note">Bereits das zentrale Raster. Lokale Seitencontainer sollten nur bei bewusst anders strukturierten Bereichen verbleiben.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>AppPageTitle</h3><p class="catalog-card__purpose">Seitentitel mit Registry-/Feature-Icon und optional eigenem Inhalt.</p></div><div class="tags"><span class="tag tag--shared">Shared</span><span class="tag tag--medium">Mittel</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/AppPageTitle.tsx">
+            <div class="catalog-card__header"><div><h3>AppPageTitle</h3></div></div>
             <div class="preview preview--center"><div style="display:flex;align-items:center;gap:.7rem"><span style="display:grid;width:2.5rem;aspect-ratio:1;place-items:center;color:var(--brand-primary)"><svg class="icon" style="font-size:2.1rem"><use href="#i-trophy"/></svg></span><strong style="font-size:1.9rem;line-height:1.1">Scoreboard</strong></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>9 Instanzen – jeweils eine pro registrierter App</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/AppPageTitle.tsx</code></dd><dt>Sonderfälle</dt><dd>Lobbys, Schlag den Raab und einzelne Turnierköpfe bauen Titel lokal</dd></dl><p class="note note--medium">Die Komponente deckt den Kern ab. Für Einheitlichkeit reicht wahrscheinlich eine dokumentierte Aktionszeile statt weiterer Props.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>AppResetButton</h3><p class="catalog-card__purpose">Standardisierte Reset-Aktion mit Bestätigungsdialog.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
-            <div class="preview preview--center"><button class="demo-button demo-button--outline" type="button"><svg class="icon"><use href="#i-refresh"/></svg>Reset</button><span style="color:var(--muted-foreground);font-size:.75rem">→ öffnet ConfirmButton</span></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>7 Instanzen in Glücksrad, Randomizer, Coinflip, Fortschritt und Live-Buzzer</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/AppResetButton.tsx</code></dd><dt>Standard</dt><dd>Outline, klein, RotateCcw, übersetztes Label</dd></dl><p class="note">Der Reset-Vertrag ist gut vereinheitlicht. Abweichende fachliche Rücksetzungen verwenden zu Recht eigene Titel und Inhalte.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/AppResetButton.tsx">
+            <div class="catalog-card__header"><div><h3>AppResetButton</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="AppResetButton"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>ConfirmButton</h3><p class="catalog-card__purpose">Wiederverwendbare Bestätigung für destruktive und schwer reversible Aktionen.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
-            <div class="preview preview--center"><div class="demo-dialog"><h4>Datensatz löschen?</h4><p>Der archivierte Stand wird dauerhaft entfernt.</p><div class="demo-dialog__footer"><button class="demo-button demo-button--outline" type="button">Abbrechen</button><button class="demo-button demo-button--destructive" type="button">Bestätigen</button></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>16 Instanzen in 9 Dateien</dd><dt>Zustände</dt><dd>Open, Confirming/Disabled, Enter bestätigt, Fokus auf Bestätigung</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/ConfirmButton.tsx</code></dd></dl><p class="note">Ein klarer gemeinsamer Interaktionsvertrag. Trigger-Optik bleibt bewusst beim Aufrufer.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/ConfirmButton.tsx">
+            <div class="catalog-card__header"><div><h3>ConfirmButton</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="ConfirmButton"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>EmptyState</h3><p class="catalog-card__purpose">Neutrale Leerdarstellung für fehlende Einträge, Ereignisse oder Datensätze.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/EmptyState.tsx">
+            <div class="catalog-card__header"><div><h3>EmptyState</h3></div></div>
             <div class="preview preview--center"><div class="mini-status" style="width:min(100%,24rem);padding:1.5rem">Noch keine Ergebnisse vorhanden.</div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>24 Instanzen in 12 Dateien</dd><dt>Darstellung</dt><dd>gestrichelter Rahmen, Background, zentrierter muted Text</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/EmptyState.tsx</code></dd></dl><p class="note">Der Container ist kanonisch. Inhalt darf fachlich variieren, sollte aber Handlung oder nächsten Zustand klar benennen.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>InlineTextEdit</h3><p class="catalog-card__purpose">Anzeigename wird an Ort und Stelle zu einem speichernden Input.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
-            <div class="preview preview--center"><div style="display:flex;align-items:center;gap:.45rem"><strong>Team A</strong><button class="demo-button demo-button--ghost demo-button--icon" type="button" aria-label="Team A bearbeiten">✎</button></div><span style="color:var(--muted-foreground)">↔</span><div class="demo-field"><input value="Team A" readonly style="height:2.25rem;padding:.45rem .7rem"></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Varianten</dt><dd><code>label</code>, <code>label-with-icon</code></dd><dt>Fundstellen</dt><dd>10 Instanzen in Sushi Map, Schlag den Raab, Scoreboard und Fortschritt</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/InlineTextEdit.tsx</code></dd></dl><p class="note">Enter speichert über Blur, Escape verwirft. Dieses Tastaturmuster sollte für alle Inline-Namen gelten.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/InlineTextEdit.tsx">
+            <div class="catalog-card__header"><div><h3>InlineTextEdit</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="InlineTextEdit"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Shared PlayerCard</h3><p class="catalog-card__purpose">Spielername, Team, Score-Aktionen und optionaler Buzz-Status.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
-            <div class="preview preview--center"><div class="demo-card"><div style="height:4px;background:var(--brand-primary)"></div><div class="demo-card__header"><div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem"><div class="demo-card__title">Paul</div><button class="demo-button demo-button--destructive demo-button--icon" type="button" aria-label="Paul entfernen"><svg class="icon"><use href="#i-trash"/></svg></button></div></div><div class="demo-card__content"><div style="display:flex;align-items:end;justify-content:space-between;gap:1rem"><div><strong style="font-size:2rem">12</strong><div style="color:var(--muted-foreground);font-size:.7rem">Punkte</div></div><div style="display:flex;gap:.35rem"><button class="demo-button demo-button--outline demo-button--icon" type="button">−</button><button class="demo-button demo-button--icon" type="button">+</button></div></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>Eine Instanz im Fortschritts-Dashboard; Live-Buzzer nutzt kompakte eigene Teilnehmerzeilen.</dd><dt>Fähigkeiten</dt><dd>Name, Entfernen, Teamwahl, Score ±1/+5, Buzz-Zeit und Rang</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/PlayerCard.tsx</code></dd></dl><p class="note">Scoreboard und Fortschritt besitzen zusätzlich fachlich reichere Player Cards. Vor Zusammenführung erst die Unterschiede im Zustandsmodell prüfen.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/PlayerCard.tsx">
+            <div class="catalog-card__header"><div><h3>Shared PlayerCard</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Shared PlayerCard"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="shared" data-priority="none">
-            <div class="catalog-card__header"><div><h3>PresenterLauncher &amp; PresenterStage</h3><p class="catalog-card__purpose">Read-only Auswahl und Fullscreen-Overlay für zuschauerrelevante Ansichten.</p></div><div class="tags"><span class="tag tag--shared">Shared</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/Presenter.tsx">
+            <div class="catalog-card__header"><div><h3>PresenterLauncher &amp; PresenterStage</h3></div></div>
             <div class="preview preview--center"><div class="mini-page"><div class="mini-page__bar"><div class="mini-page__brand"><span class="mini-page__mark"><svg class="icon"><use href="#i-monitor"/></svg></span><span><small style="display:block;color:var(--muted-foreground)">Scoreboard</small>Rangliste</span></div><button class="demo-button demo-button--outline" type="button">Beenden</button></div><div class="mini-page__body"><div class="score-bars"><div class="score-bar"><span>Paul</span><span style="--score:85%"></span><strong>12</strong></div><div class="score-bar"><span>Kim</span><span style="--score:64%"></span><strong>9</strong></div></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Fundstellen</dt><dd>8 Apps: alle außer Nächste Frage; zusätzlich 8 lokale Presenter-Views</dd><dt>Zustände</dt><dd>Disabled, direkte Einzelansicht, Auswahl-Dialog, Fullscreen-Fallback, Escape/Exit</dd><dt>Quelle</dt><dd><code>src/apps/shared/components/Presenter.tsx</code></dd></dl><p class="note">Der Lifecycle ist zentral und zugänglich. Feature-Views bleiben read-only und fachlich lokal.</p></div>
           </article>
         </div>
       </section>
 
-      <section class="catalog-section" id="shell" data-filter-section>
-        <div class="section-heading">
-          <div><h2>Shell, Dashboard und Lobbys</h2><p>Globale Navigation, Einstiegskacheln sowie Lade-, Fehler- und Verwaltungsoberflächen außerhalb einzelner Apps.</p></div>
-          <span class="section-count">3 Oberflächenfamilien</span>
-        </div>
+      <section class="catalog-section" id="triathlon" data-filter-section>
+        <div class="section-heading"><div><h2>Triathlon · Fachmuster</h2></div></div>
         <div class="catalog-grid">
-          <article class="catalog-card" data-catalog-item data-category="layout" data-priority="none">
-            <div class="catalog-card__header"><div><h3>AppShell &amp; LanguageSelector</h3><p class="catalog-card__purpose">Sticky Markenleiste, Desktopnavigation und mobiles Dropdown.</p></div><div class="tags"><span class="tag tag--native">Layout</span></div></div>
-            <div class="preview preview--center"><div class="mini-page"><div class="mini-page__bar"><div class="mini-page__brand"><span class="mini-page__mark"><svg class="icon"><use href="#i-briefcase"/></svg></span>BengtsToolBox</div><div style="display:flex;gap:.3rem;align-items:center"><span class="demo-badge demo-badge--secondary">🇩🇪 🇬🇧</span><div class="mini-page__nav"><strong>App Hub</strong><span>Schlag den Raab</span><span>Lobbys</span></div></div></div><div class="mini-page__body"><div class="mini-status">Unter 768 px ersetzt ein Menü-Button die Navigation.</div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Komponenten</dt><dd><code>AppShell</code>, <code>LanguageSelector</code>, <code>FlagIcon</code></dd><dt>Elemente</dt><dd>Brand-Link, Radiogroup, NavLink-Status, DropdownMenu, Outlet</dd><dt>Quellen</dt><dd><code>src/components/layout/AppShell.tsx</code>, <code>LanguageSelector.tsx</code></dd></dl><p class="note">Die Sprachauswahl ist ein eigenes Radio-Muster, kein Tabs-Ersatz. Sie besitzt bewusst Flaggen statt Lucide-Icons.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/PersonalBestsPanel.tsx src/apps/triathlon-tracker/triathlon-tracker.css">
+            <div class="catalog-card__header"><div><h3>Rekordkarten und Sportpalette</h3></div></div>
+            <div class="preview preview--center"><div class="sport-card sport-swim"><h4>Schwimmen</h4><div class="record-demo"><span>100 m</span><strong>1:42</strong><small>05.10.2026 · Becken</small><span>400 m</span><strong>7:12</strong><small>Modell und Messwerte</small></div><p class="note">Quellen und Modellhinweise aufklappbar</p></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="layout" data-priority="none">
-            <div class="catalog-card__header"><div><h3>DashboardPage, AppTile &amp; Illustrations</h3><p class="catalog-card__purpose">App-Hub mit Lobby-/QR-Status und neun illustrierter Einstiegskarten.</p></div><div class="tags"><span class="tag tag--native">Layout</span><span class="tag tag--feature">Illustration</span></div></div>
-            <div class="preview preview--center"><div class="mini-page"><div class="mini-page__body"><div class="mini-page__title">App-Hub</div><div class="mini-page__grid"><div class="mini-tile"><i>○</i>Glücksrad</div><div class="mini-tile"><i>₵</i>Coinflip</div><div class="mini-tile"><i>↗</i>Fortschritt</div><div class="mini-tile"><i>≡</i>Scoreboard</div><div class="mini-tile"><i>●</i>Live-Buzzer</div><div class="mini-tile"><i>?</i>Nächste Frage</div></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Komponenten</dt><dd><code>DashboardPage</code>, <code>AppTile</code>, <code>DashboardIllustration</code>, neun lokale Illustration-Funktionen</dd><dt>Zustände</dt><dd>Hover-Lift, Focus Ring, Prefetch, Lobbykarte, QR, App-Zähler</dd><dt>Quellen</dt><dd><code>src/components/layout/DashboardPage.tsx</code>, <code>DashboardIllustrations.tsx</code></dd></dl><p class="note">Kachelstruktur und Illustrationsshell sind bereits kanonisch. Neue reguläre Apps gehören in Registry und Illustration-Switch, nicht in eine zweite Dashboard-Liste.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/components.tsx">
+            <div class="catalog-card__header"><div><h3>Wochenübersicht und Kennzahlen</h3></div></div>
+            <div class="preview preview--center"><div class="summary-demo"><div><strong>5:40 h</strong><small>Gesamt</small></div><div class="sport-swim"><strong>3,2 km</strong><small>Schwimmen</small></div><div class="sport-bike"><strong>62 km</strong><small>Rad</small></div><div class="sport-run"><strong>18 km</strong><small>Laufen</small></div></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="layout" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>Lobby-Oberflächen und RouteFallback</h3><p class="catalog-card__purpose">Verzeichnis, Erstellung, Admin-Entsperrung, Gerätehistorie und Routerzustände.</p></div><div class="tags"><span class="tag tag--native">Layout</span><span class="tag tag--medium">Mittel</span></div></div>
-            <div class="preview preview--center"><div class="mini-page"><div class="mini-page__body"><div class="mini-page__title"><svg class="icon" style="color:var(--brand-primary)"><use href="#i-users"/></svg>Lobbys</div><div class="mini-page__grid"><div class="mini-tile"><i>+</i>Lobby erstellen</div><div class="mini-tile"><i>G</i>Globale Lobby</div><div class="mini-tile"><i>A</i>Verwaltung</div></div><div class="mini-status">Lade-, Nicht-gefunden-, Firebase- und Sync-Fehlerzustände</div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Komponenten</dt><dd><code>LobbyDirectoryPage</code>, <code>LobbyAdminPage</code>, <code>LobbyRoute</code>, <code>LobbyDashboardPage</code>, <code>RouteFallback</code></dd><dt>Elemente</dt><dd>Erstellformular, Lobby-Kachel, PIN-Gate, Gerätezeilen, Error Cards, Load more</dd><dt>Quellen</dt><dd><code>src/lobbies/*.tsx</code>, <code>src/app/lazyRoutes.tsx</code></dd></dl><p class="note note--medium">Lobby-Seitentitel entsprechen AppPageTitle visuell, werden aber lokal gebaut. Zuerst Header-Layoutkonvention prüfen, nicht die Lobby-Domain in Shared verschieben.</p></div>
-          </article>
-        </div>
-      </section>
-
-      <section class="catalog-section" id="features" data-filter-section>
-        <div class="section-heading">
-          <div><h2>Feature-Muster</h2><p>Die eigenständigen Fachoberflächen aller neun Registry-Apps sowie des bewussten Sonderbereichs Schlag den Raab.</p></div>
-          <span class="section-count">10 Oberflächenfamilien</span>
-        </div>
-        <div class="catalog-grid catalog-grid--wide">
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Glücksrad</h3><p class="catalog-card__purpose">Gewichtete Einträge, SVG-Rad, Gewinnerdarstellung, Verlauf und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag">/apps/decision-wheel</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="wheel" aria-label="Statische Glücksrad-Vorschau"></div></div><div class="feature-panel"><span class="demo-badge demo-badge--secondary"><svg class="icon"><use href="#i-trophy"/></svg>Gewinner</span><strong>Paul</strong><button class="demo-button" type="button">Drehen</button><div class="mini-status">Konfetti + Announcement</div></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>DecisionWheelPage</code><span>Page-Layout, Optionen, Verlauf, Aktionen</span></li>
-                <li><code>DecisionWheelPresenter</code><span>read-only Rad und Ergebnis</span></li>
-                <li><code>WheelGraphic</code><span>gewichtete SVG-Segmente, Beschriftung und Animation</span></li>
-                <li><code>EntryTextControl · EntryWeightControl</code><span>Inline-Text und numerische Gewichtung</span></li>
-                <li><code>EntryColorControl · RemoveEntryButton</code><span>ColorPicker und icon-only Löschen</span></li>
-                <li><code>ResultPanel · WinnerAnnouncement · ConfettiOverlay</code><span>Ergebnis-, Dialog- und Effektzustände</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Button, Card, Table, Separator, IftaInput, Input, ColorPicker</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, AppResetButton, EmptyState, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/decision-wheel/**/*.tsx</code></dd></dl>
-              <p class="note">Rad und Konfetti sind bewusst einzigartige Grafikmuster. Die Entry-Felder nutzen dagegen das gemeinsame Feld- und Farbsystem.</p>
-            </div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/PlanCalendar.tsx src/apps/triathlon-tracker/components.tsx">
+            <div class="catalog-card__header"><div><h3>Plan-Kalender und Trainingseinträge</h3></div></div>
+            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header"><div class="demo-tabs__list"><span>Woche</span><span>Monat</span></div></div><div class="demo-card__content"><strong>Montag, 5. Oktober</strong><div class="plan-entry sport-run"><strong>Laufen</strong><span>08:30 · 45 min · Locker</span></div><div class="plan-entry sport-bike"><strong>Rad</strong><span>18:00 · 60 min</span></div></div></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Coinflip</h3><p class="catalog-card__purpose">Animierte Zwei-Seiten-Münze, Ergebnis, Historie und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag">/apps/coinflip</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="coin" aria-label="Statische Münzvorschau">K</div></div><div class="feature-panel"><strong>Kopf oder Zahl</strong><button class="demo-button" type="button">Münze werfen</button><span class="demo-badge demo-badge--outline"><svg class="icon"><use href="#i-history"/></svg>12 Würfe</span></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>CoinflipPage</code><span>Steuerung, aktuelles Ergebnis und Verlauf</span></li>
-                <li><code>CoinflipPresenter</code><span>großformatige read-only Münze</span></li>
-                <li><code>CoinGraphic · CoinFace</code><span>3D-ähnliche Münzanimation und Seiten</span></li>
-                <li><code>BrandenburgGateMark · EuroMark</code><span>lokale SVG-Motive der Münzseiten</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Button, Card</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, AppResetButton, EmptyState, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/coinflip/CoinflipPage.tsx</code>, <code>components/CoinGraphic.tsx</code></dd></dl>
-              <p class="note">Die Münze ist ein fachliches Brand-Objekt. Ergebnis- und Verlaufskarten sollten sich weiter an gemeinsamen Card-/Empty-State-Rollen orientieren.</p>
-            </div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/components.tsx">
+            <div class="catalog-card__header"><div><h3>Trainingsformulare und Intervalle</h3></div></div>
+            <div class="preview preview--center"><div class="demo-dialog"><h4>Training eintragen</h4><div class="form-demo"><div class="demo-field"><label for="demo-field-4">Dauer</label><input id="demo-field-4" value="45:00" readonly=""></div><div class="demo-field"><label for="demo-field-5">Distanz (km)</label><input id="demo-field-5" value="8,5" readonly=""></div><div class="demo-field"><label for="demo-field-6">Pace (/km)</label><input id="demo-field-6" value="5:18" readonly=""></div></div><details class="group"><summary class="catalog-disclosure">Intervalle und Zusatzangaben<span data-demo="DisclosureIndicator"></span></summary><p>Intervallwerte und Benchmark-Kennzeichnung</p></details><div class="demo-dialog__footer"><span class="demo-button demo-button--outline">Abbrechen</span><span class="demo-button">Speichern</span></div></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>Fortschritts-Dashboard</h3><p class="catalog-card__purpose">Spieler, Ereignisse, Zeitlinien, Balken/SVG-Charts, Filter, Archive und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag tag--medium">Mittel</span><span class="tag">/apps/progress-dashboard</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="chart" aria-label="Statische Balkendiagramm-Vorschau"><i style="--h:35%"></i><i style="--h:52%"></i><i style="--h:68%"></i><i style="--h:88%"></i></div></div><div class="feature-panel"><strong>Fortschritt</strong><div class="score-bars"><div class="score-bar"><span>Paul</span><span style="--score:84%"></span><strong>84</strong></div><div class="score-bar"><span>Kim</span><span style="--score:62%"></span><strong>62</strong></div></div><span class="demo-badge demo-badge--secondary">Live</span></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>ProgressDashboardPage · ProgressDashboardPresenter</code><span>Steuerfläche und read-only Ergebnisansicht</span></li>
-                <li><code>ProgressChart</code><span>Desktopchart mit Score- und Ereignisachsen</span></li>
-                <li><code>MobileScoreBars · MobilePlayerTimelines · MobileProgressChart</code><span>mobile Alternativdarstellungen</span></li>
-                <li><code>PlayerCard</code><span>fachlich erweiterte Spieler-/Getränke-/Ereigniskarte</span></li>
-                <li><code>EventTable</code><span>Filter, Korrektur und Ereignishistorie</span></li>
-                <li><code>ArchiveDatasetCard · ArchiveDatasetDetails</code><span>Archivübersicht und Tabs-Details</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, ColorPicker, Input, Select, Tabs, Table, IftaInput</dd><dt>Shared</dt><dd>ConfirmButton, EmptyState, InlineTextEdit, PresenterLauncher sowie Shared PlayerCard an einer Stelle</dd><dt>Quellen</dt><dd><code>src/apps/progress-dashboard/*.tsx</code></dd></dl>
-              <p class="note note--medium">Die lokale PlayerCard ist deutlich fachlicher als Shared PlayerCard. Vereinheitlichung sollte bei Header, Aktionen und Status beginnen – nicht beim Domänenmodell.</p>
-            </div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/TrainingJournal.tsx">
+            <div class="catalog-card__header"><div><h3>Journal, Filter und Paginierung</h3></div></div>
+            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header"><span class="demo-badge demo-badge--outline">Oktober · Alle Sportarten</span></div><div class="demo-card__content"><div class="plan-entry sport-run"><strong>05.10.2026 · Laufen</strong><span>8,5 km · 45:00 · 5:18/km</span></div><div class="picker-demo__footer"><span>‹</span><small>1–10</small><span>›</span></div></div></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>Scoreboard</h3><p class="catalog-card__purpose">Rangbalken, Zielmodus, Kaderkarten, Verlauf, Archive und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag tag--medium">Mittel</span><span class="tag">/apps/scoreboard</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="score-bars"><div class="score-bar"><span>Team A</span><span style="--score:78%"></span><strong>12</strong></div><div class="score-bar"><span>Team B</span><span style="--score:58%"></span><strong>9</strong></div><div class="score-bar"><span>Team C</span><span style="--score:36%"></span><strong>5</strong></div></div></div><div class="feature-panel"><strong>Ziel: 15</strong><div style="display:flex;gap:.35rem"><button class="demo-button demo-button--outline demo-button--icon" type="button">−</button><button class="demo-button demo-button--icon" type="button">+</button></div><span class="demo-badge">Team A führt</span></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>ScoreboardPage · ScoreboardPresenter</code><span>Gesamtsteuerung und read-only Rangliste</span></li>
-                <li><code>RankingBars · ScoreTargetCard</code><span>Rangvisualisierung und Zielwert</span></li>
-                <li><code>RosterPlayerCard</code><span>Name, Farbe, Punkte und Spieleraktionen</span></li>
-                <li><code>HistoryList</code><span>letzte Wertungsänderungen</span></li>
-                <li><code>ArchiveCard · AddCard</code><span>gespeicherte Stände und neue Spieler</span></li>
-                <li><code>ModeToggle</code><span>fachlicher Umschalter als eigenes Button-/Radio-Muster</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, ColorPicker, Input, Select</dd><dt>Shared</dt><dd>ConfirmButton, EmptyState, InlineTextEdit, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/scoreboard/ScoreboardPage.tsx</code>, <code>components.tsx</code></dd></dl>
-              <p class="note note--medium">RosterPlayerCard und Shared PlayerCard teilen sichtbare Aktionen, aber nicht denselben Vertrag. Das ModeToggle sollte gegen Tabs/Radio nur semantisch, nicht optisch verglichen werden.</p>
-            </div>
-          </article>
-
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Live-Buzzer</h3><p class="catalog-card__purpose">Team-/Spielerverwaltung, großer Buzz-Trigger, Sperrstatus, Reihenfolge und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag">/apps/live-buzzer</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="buzzer" aria-label="Statische Buzzer-Vorschau"></div></div><div class="feature-panel"><span class="demo-badge demo-badge--outline">Bereit</span><strong>Wer ist zuerst?</strong><button class="demo-button demo-button--destructive" type="button">BUZZ!</button><small style="color:var(--muted-foreground)">Audio · Lock · Reihenfolge</small></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>LiveBuzzerPage</code><span>Rundenboard mit kompakten Teamspalten, eigenem Buzz-Trigger und Profil-Dialog</span></li>
-                <li><code>BuzzerResult</code><span>Gemeinsame Ergebnis-/Presenter-Anzeige mit Sieger und getrennten Nachbuzzes</span></li>
-                <li><code>useLiveBuzzer</code><span>Geschützte Spielleitung, gemeinsamer Uhrabgleich und automatische Entscheidung nach 800 ms</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, Dialog, IftaInput</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, AppResetButton, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/live-buzzer/LiveBuzzerPage.tsx</code></dd></dl>
-              <p class="note">Buzzer und Audio-/Sperrlogik sind fachliche Sonderinteraktionen. Layout, Felder, Dialoge und Status verwenden vorhandene UI-Bausteine. Der Sieger wird automatisch ohne Bestätigung angezeigt.</p>
-            </div>
-          </article>
-
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Sushi Map / Territory Map</h3><p class="catalog-card__purpose">Zoombare SVG-Karte, Territorien, Eigentümermuster, Claim-Dialog, Ereignisse und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag tag--native">SVG/Pointer</span><span class="tag">/apps/sushi</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="map-demo" aria-label="Statische Karten-Vorschau"></div></div><div class="feature-panel"><strong>Territorium wählen</strong><span class="demo-badge demo-badge--secondary">Paul</span><span class="demo-badge demo-badge--outline">3 Besuche</span><button class="demo-button" type="button">Beanspruchen</button></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>TerritoryMapPage · TerritoryMapPresenter</code><span>Kartensteuerung und read-only Übersicht</span></li>
-                <li><code>PresenterTerritoryShape · TerritoryShape</code><span>SVG-Flächen, Zustände und Pointer-Interaktion</span></li>
-                <li><code>AdaptiveTerritoryOwnerPattern</code><span>Farb-/Musterfüllung ohne Farbe als einzigen Träger</span></li>
-                <li><code>CollapsibleCardHeader</code><span>lokaler Disclosure-Header mit nativer Summary-Anmutung</span></li>
-                <li><code>ClaimDialog · AddEaterCard</code><span>Gebietszuordnung und neue Person</span></li>
-                <li><code>TerritoryEventTable</code><span>Besuchs-/Besitzverlauf</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, ColorPicker, Dialog, Input, Select, Table</dd><dt>Shared</dt><dd>ConfirmButton, EmptyState, InlineTextEdit, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/territory-map/TerritoryMapPage.tsx</code>, <code>components.tsx</code></dd></dl>
-              <p class="note">Karte, Pan/Zoom und Muster sind begründete Sonderfälle. Claim- und Eater-Formulare gehören dagegen in die allgemeine Feldsystem-Diskussion.</p>
-            </div>
-          </article>
-
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Random Number Generator</h3><p class="catalog-card__purpose">Bereichseingabe, aktuelles Ergebnis, Historie und Presenter.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag">/apps/randomizer</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><strong style="font-size:4.5rem;line-height:1;color:var(--brand-primary);font-variant-numeric:tabular-nums">42</strong></div><div class="feature-panel"><div style="display:flex;gap:.35rem"><span class="demo-badge demo-badge--outline">1</span><span>bis</span><span class="demo-badge demo-badge--outline">100</span></div><button class="demo-button" type="button">Zahl ziehen</button><span class="demo-badge demo-badge--secondary"><svg class="icon"><use href="#i-history"/></svg>Verlauf</span></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map"><li><code>RandomizerPage</code><span>Min-/Max-Felder, Ergebnis, Reset und Verlauf</span></li><li><code>RandomizerPresenter</code><span>großformatige read-only Zahl</span></li></ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Button, Card, IftaInput</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, AppResetButton, EmptyState, PresenterLauncher</dd><dt>Quellen</dt><dd><code>src/apps/randomizer/RandomizerPage.tsx</code></dd></dl>
-              <p class="note">Das Feature zeigt den einfachsten App-Aufbau und eignet sich als Referenz für kompakte neue Werkzeuge.</p>
-            </div>
-          </article>
-
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="high">
-            <div class="catalog-card__header"><div><h3>SK Anderten Turnier-App</h3><p class="catalog-card__purpose">Mehrstufige Workflows, Formatwahl, Spieler, Paarungen, Ranglisten, Warnungen, Export und Archive.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag tag--high">Hoch</span><span class="tag">/apps/swiss-tournaments</span></div></div>
-            <div class="preview preview--center"><div class="mini-page" style="width:min(100%,36rem)"><div class="mini-page__body"><div class="mini-page__title">♔ SK Anderten Turnier-App</div><div class="demo-tabs"><div class="demo-tabs__list"><span>Übersicht</span><span>Spieler</span><span>Paarungen</span></div></div><div class="mini-page__grid"><div class="mini-tile"><small>Aktuelle Runde</small><strong style="display:block;font-size:1.2rem">5/5</strong></div><div class="mini-tile"><small>Turniermodus</small><strong style="display:block">Swiss</strong></div><div class="mini-tile" style="color:#fff;background:var(--brand-primary)">+ Neues Turnier</div></div><div class="table-wrap"><table class="demo-table"><thead><tr><th>Brett</th><th>Weiß</th><th>Schwarz</th><th>Ergebnis</th></tr></thead><tbody><tr><td>1</td><td>David</td><td>Niklas</td><td><span class="demo-badge demo-badge--outline">0–1</span></td></tr></tbody></table></div></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>SwissTournamentsPage · AppTitleHeader</code><span>Tabs, Titelvarianten und Presenter</span></li>
-                <li><code>NewTournamentDialog · TournamentFormatPicker · TournamentCreator</code><span>Turnierformat und Erstellworkflow</span></li>
-                <li><code>TournamentOverviewWorkflow · RoundProgress · TournamentFormatCard</code><span>Übersicht, Fortschritt und Modus</span></li>
-                <li><code>TournamentPlayersWorkflow</code><span>Spieler, Reihenfolge und Formatdaten</span></li>
-                <li><code>TournamentPairingsWorkflow</code><span>Runden, Warnungen, Ergebnisse und Korrekturen</span></li>
-                <li><code>RoundStatusBadge ×2</code><span>dupliziert in Overview- und Pairings-Workflow</span></li>
-                <li><code>TournamentCompleteBanner · MarioKartPlanningBanner</code><span>fachliche Statusbanner</span></li>
-                <li><code>PairingsTable · StandingsTable</code><span>responsive und druckoptimierte Fachdatentabellen</span></li>
-                <li><code>RankPlacement ×3 · BeerToggle · ResultCorrectionBadge</code><span>lokale SVG-/Status-Sondermuster</span></li>
-                <li><code>ArchivedTournamentsList · SwissStandingsPresenter</code><span>Archive, Export und read-only Rangliste</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, Dialog, Ifta-Felder, Input, Label, Select, Table, Tabs</dd><dt>Grafik</dt><dd>Rank-SVGs, QR, SK-Anderten-Wasserzeichen, Mario-Kart-Bild, Printlayout</dd><dt>Quellen</dt><dd><code>src/apps/swiss-tournaments/**/*.tsx</code></dd></dl>
-              <p class="note note--high">Größtes UI-Cluster des Repos. Vereinheitlichung zuerst innerhalb dieses Features: RoundStatusBadge und RankPlacement sind konkrete lokale Duplikate; Tabellen bleiben fachlich spezialisiert.</p>
-            </div>
-          </article>
-
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Nächste Frage</h3><p class="catalog-card__purpose">Kartennummer, Frage, Antwortsichtbarkeit, Vor/Zurück und Lade-/Fehlerzustände.</p></div><div class="tags"><span class="tag tag--feature">Feature-lokal</span><span class="tag">/apps/next-question</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="question-card" aria-label="Statische Fragekarten-Vorschau">?</div></div><div class="feature-panel"><span class="demo-badge demo-badge--outline">Karte 17</span><strong>Welche Stadt …?</strong><button class="demo-button demo-button--outline" type="button">Antwort zeigen</button><div style="display:flex;gap:.35rem"><button class="demo-button demo-button--outline" type="button">←</button><button class="demo-button" type="button">Weiter →</button></div></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map"><li><code>NextQuestionPage</code><span>einzige UI-Komponente; Zustände und Kartennavigation liegen kompakt in der Page</span></li></ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Button, Card, IftaInput</dd><dt>Shared</dt><dd>AppPage, AppPageTitle, EmptyState</dd><dt>Zustände</dt><dd>Laden, Datensatzfehler, ungültige Kartennummer, Frage, Antwort verborgen/sichtbar</dd><dt>Quelle</dt><dd><code>src/apps/next-question/NextQuestionPage.tsx</code></dd></dl>
-              <p class="note">Bewusst kein Presenter: Die Frage ist bereits die primäre Anzeige. Das Feature ist ein gutes Beispiel für kompakte Zustandsführung ohne zusätzliche Komponenten.</p>
-            </div>
-          </article>
-
-          <article class="catalog-card" data-catalog-item data-category="feature" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>Schlag den Raab</h3><p class="catalog-card__purpose">PIN-Gate, Spieltabelle, Punktvergabe, Fortschrittsdiagramm, Archive und Tiebreak.</p></div><div class="tags"><span class="tag tag--feature">Sonderroute</span><span class="tag tag--native">Custom Controls</span><span class="tag tag--medium">Mittel</span></div></div>
-            <div class="preview preview--center"><div class="feature-preview"><div class="feature-stage"><div class="score-pie" aria-label="Statische Fortschrittsdiagramm-Vorschau"></div></div><div class="feature-panel"><strong>Spiel 8</strong><div class="score-bars"><div class="score-bar"><span>Paul</span><span style="--score:70%"></span><strong>21</strong></div><div class="score-bar"><span>Kim</span><span style="--score:43%"></span><strong>13</strong></div></div><span class="demo-badge demo-badge--secondary">60 Punkte Ziel</span></div></div></div>
-            <div class="catalog-card__body">
-              <ul class="component-map">
-                <li><code>SchlagDenRaabGate</code><span>Passwort-/PIN-Gate als Card-Formular</span></li>
-                <li><code>SchlagDenRaabPage</code><span>Gesamtsteuerung, Titel, Aktionen und Archiv</span></li>
-                <li><code>PlayerScoreSummary · ScoreButton · ScoreOverview</code><span>Spielerstände und tabellarische Punktvergabe</span></li>
-                <li><code>ScoreProgressPie</code><span>SVG-Kreis mit Schwelle, Segmenten, Labels und Legenden</span></li>
-                <li><code>ArchiveSection · ArchiveDatasetCard · ReadOnlyArchiveTable</code><span>Verlaufs- und Archivdarstellung</span></li>
-              </ul>
-              <dl class="facts"><dt>Primitive</dt><dd>Badge, Button, Card, IftaInput, Table</dd><dt>Shared</dt><dd>AppPage, ConfirmButton, InlineTextEdit</dd><dt>Sonder-CSS</dt><dd><code>raab-score-*</code>, <code>raab-progress-*</code>, mobile Tabellenbreiten</dd><dt>Quellen</dt><dd><code>src/apps/schlag-den-raab/*.tsx</code>, <code>src/styles/globals.css</code></dd></dl>
-              <p class="note note--medium">ScoreButton und Diagramm sind fachliche Custom Controls. Archivkarten und Inline-Namen sollten mit den entsprechenden Mustern anderer Score-Apps verglichen werden.</p>
-            </div>
+          <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/TrainingStatistics.tsx src/apps/triathlon-tracker/TrainingCharts.tsx">
+            <div class="catalog-card__header"><div><h3>Diagramme, Legenden und Datentabellen</h3></div></div>
+            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header sport-bike"><div class="demo-card__title">Radleistung</div><strong style="font-size:1.9rem">235 W</strong></div><div class="demo-card__content"><div class="chart"><i style="--h:35%"></i><i style="--h:50%"></i><i style="--h:65%"></i><i style="--h:85%"></i></div><small>Messung · Modell · Unsicherheit</small><details class="group"><summary class="catalog-disclosure">Datentabellen<span data-demo="DisclosureIndicator"></span></summary><p>Werte aller Diagramme gemeinsam aufklappbar</p></details></div></div></div>
           </article>
         </div>
       </section>
 
       <section class="catalog-section" id="icons" data-filter-section>
         <div class="section-heading">
-          <div><h2>Icons, Illustrationen und Assets</h2><p>Vollständiges Namensinventar der Lucide-Imports sowie die eigenen SVG-, PNG- und CSS-Grafikfamilien.</p></div>
-          <span class="section-count">81 Icons · 9 Dashboardmotive</span>
+          <div><h2>Icons, Illustrationen und Assets</h2></div>
         </div>
         <div class="catalog-grid catalog-grid--wide">
-          <article class="catalog-card" data-catalog-item data-category="asset" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Häufige Icon-Rollen</h3><p class="catalog-card__purpose">Lucide liefert die gemeinsame Strichsprache; Bedeutung entsteht durch konsistente Aktion und Beschriftung.</p></div><div class="tags"><span class="tag tag--primitive">Lucide</span></div></div>
+          <article class="catalog-card" data-catalog-item data-source="src/**/*.tsx src/apps/registry.ts">
+            <div class="catalog-card__header"><div><h3>Häufige Icon-Rollen</h3></div></div>
             <div class="preview preview--center">
               <div class="role-grid">
                 <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--brand-primary)"><use href="#i-plus"/></svg><small>Hinzufügen</small></div>
@@ -903,230 +611,207 @@
                 <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--destructive)"><use href="#i-alert"/></svg><small>Warnung</small></div>
               </div>
             </div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Größe</dt><dd>meist <code>size-4</code>, im Seitentitel <code>size-9/10</code>, in Kacheln <code>size-6</code></dd><dt>Zugänglichkeit</dt><dd>dekorative Icons verborgen; icon-only Buttons benötigen einen Namen</dd><dt>Quelle</dt><dd><code>lucide-react</code>-Imports in <code>src/**/*.tsx</code> und <code>src/apps/registry.ts</code></dd></dl><p class="note">Die 81 Namen unten sind vollständig. Die Zahl bezeichnet importierende Quelldateien, nicht gerenderte Instanzen.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="asset" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Lucide-Inventar</h3><p class="catalog-card__purpose">Alle im aktuellen Arbeitsbaum importierten Icon-Symbole.</p></div><div class="tags"><span class="tag">81 Namen</span></div></div>
+          <article class="catalog-card" data-catalog-item>
+            <div class="catalog-card__header"><div><h3>Lucide-Inventar</h3></div></div>
             <div class="preview">
               <ul class="icon-grid" aria-label="Lucide-Icon-Inventar">
-                <li data-icon-name="Archive"><svg class="icon"><use href="#i-history"/></svg><code>Archive</code><small>4</small></li>
-                <li data-icon-name="ArrowLeft"><span class="icon-placeholder">AL</span><code>ArrowLeft</code><small>1</small></li>
-                <li data-icon-name="ArrowRight"><svg class="icon"><use href="#i-chevron"/></svg><code>ArrowRight</code><small>2</small></li>
-                <li data-icon-name="BarChart3"><span class="icon-placeholder">BC</span><code>BarChart3</code><small>2</small></li>
-                <li data-icon-name="Beer"><span class="icon-placeholder">B</span><code>Beer</code><small>2</small></li>
-                <li data-icon-name="Bell"><span class="icon-placeholder">B</span><code>Bell</code><small>2</small></li>
-                <li data-icon-name="Brain"><span class="icon-placeholder">B</span><code>Brain</code><small>4</small></li>
-                <li data-icon-name="BriefcaseBusiness"><svg class="icon"><use href="#i-briefcase"/></svg><code>BriefcaseBusiness</code><small>1</small></li>
-                <li data-icon-name="Building2"><span class="icon-placeholder">B2</span><code>Building2</code><small>1</small></li>
-                <li data-icon-name="ChartNoAxesCombined"><span class="icon-placeholder">CN</span><code>ChartNoAxesCombined</code><small>2</small></li>
-                <li data-icon-name="Check"><svg class="icon"><use href="#i-check"/></svg><code>Check</code><small>1</small></li>
-                <li data-icon-name="CheckCircle2"><svg class="icon"><use href="#i-check"/></svg><code>CheckCircle2</code><small>1</small></li>
-                <li data-icon-name="CheckIcon"><svg class="icon"><use href="#i-check"/></svg><code>CheckIcon</code><small>2</small></li>
-                <li data-icon-name="ChessKing"><span class="icon-placeholder">CK</span><code>ChessKing</code><small>3</small></li>
-                <li data-icon-name="ChevronDown"><span class="icon-placeholder">⌄</span><code>ChevronDown</code><small>8</small></li>
-                <li data-icon-name="ChevronDownIcon"><span class="icon-placeholder">⌄</span><code>ChevronDownIcon</code><small>1</small></li>
-                <li data-icon-name="ChevronRight"><svg class="icon"><use href="#i-chevron"/></svg><code>ChevronRight</code><small>5</small></li>
-                <li data-icon-name="ChevronRightIcon"><svg class="icon"><use href="#i-chevron"/></svg><code>ChevronRightIcon</code><small>1</small></li>
-                <li data-icon-name="ChevronUpIcon"><span class="icon-placeholder">⌃</span><code>ChevronUpIcon</code><small>1</small></li>
-                <li data-icon-name="CircleDot"><span class="icon-placeholder">⊙</span><code>CircleDot</code><small>2</small></li>
-                <li data-icon-name="CircleIcon"><span class="icon-placeholder">○</span><code>CircleIcon</code><small>1</small></li>
-                <li data-icon-name="CirclePlus"><svg class="icon"><use href="#i-plus"/></svg><code>CirclePlus</code><small>3</small></li>
-                <li data-icon-name="CircleQuestionMark"><span class="icon-placeholder">?</span><code>CircleQuestionMark</code><small>1</small></li>
-                <li data-icon-name="Coins"><span class="icon-placeholder">C</span><code>Coins</code><small>2</small></li>
-                <li data-icon-name="Compass"><span class="icon-placeholder">C</span><code>Compass</code><small>1</small></li>
-                <li data-icon-name="CornerDownLeft"><span class="icon-placeholder">↵</span><code>CornerDownLeft</code><small>1</small></li>
-                <li data-icon-name="Dice5"><span class="icon-placeholder">⚄</span><code>Dice5</code><small>2</small></li>
-                <li data-icon-name="Download"><span class="icon-placeholder">↓</span><code>Download</code><small>2</small></li>
-                <li data-icon-name="Eye"><span class="icon-placeholder">E</span><code>Eye</code><small>1</small></li>
-                <li data-icon-name="EyeOff"><span class="icon-placeholder">EO</span><code>EyeOff</code><small>1</small></li>
-                <li data-icon-name="Funnel"><span class="icon-placeholder">F</span><code>Funnel</code><small>1</small></li>
-                <li data-icon-name="Gamepad2"><span class="icon-placeholder">G2</span><code>Gamepad2</code><small>3</small></li>
-                <li data-icon-name="GitBranch"><span class="icon-placeholder">GB</span><code>GitBranch</code><small>2</small></li>
-                <li data-icon-name="Globe2"><span class="icon-placeholder">G2</span><code>Globe2</code><small>3</small></li>
-                <li data-icon-name="Hand"><span class="icon-placeholder">H</span><code>Hand</code><small>2</small></li>
-                <li data-icon-name="History"><svg class="icon"><use href="#i-history"/></svg><code>History</code><small>5</small></li>
-                <li data-icon-name="Home"><span class="icon-placeholder">H</span><code>Home</code><small>2</small></li>
-                <li data-icon-name="KeyRound"><span class="icon-placeholder">K</span><code>KeyRound</code><small>1</small></li>
-                <li data-icon-name="Landmark"><span class="icon-placeholder">L</span><code>Landmark</code><small>1</small></li>
-                <li data-icon-name="Layers3"><span class="icon-placeholder">L3</span><code>Layers3</code><small>1</small></li>
-                <li data-icon-name="LayoutDashboard"><span class="icon-placeholder">LD</span><code>LayoutDashboard</code><small>1</small></li>
-                <li data-icon-name="ListChecks"><span class="icon-placeholder">LC</span><code>ListChecks</code><small>2</small></li>
-                <li data-icon-name="ListOrdered"><span class="icon-placeholder">LO</span><code>ListOrdered</code><small>3</small></li>
-                <li data-icon-name="LoaderCircle"><span class="icon-placeholder">↻</span><code>LoaderCircle</code><small>3</small></li>
-                <li data-icon-name="Lock"><span class="icon-placeholder">L</span><code>Lock</code><small>1</small></li>
-                <li data-icon-name="LockKeyhole"><span class="icon-placeholder">LK</span><code>LockKeyhole</code><small>1</small></li>
-                <li data-icon-name="MapPinned"><span class="icon-placeholder">MP</span><code>MapPinned</code><small>1</small></li>
-                <li data-icon-name="Martini"><span class="icon-placeholder">M</span><code>Martini</code><small>1</small></li>
-                <li data-icon-name="Menu"><span class="icon-placeholder">≡</span><code>Menu</code><small>1</small></li>
-                <li data-icon-name="Minus"><span class="icon-placeholder">−</span><code>Minus</code><small>4</small></li>
-                <li data-icon-name="Monitor"><svg class="icon"><use href="#i-monitor"/></svg><code>Monitor</code><small>1</small></li>
-                <li data-icon-name="Mountain"><span class="icon-placeholder">M</span><code>Mountain</code><small>1</small></li>
-                <li data-icon-name="Pencil"><span class="icon-placeholder">P</span><code>Pencil</code><small>3</small></li>
-                <li data-icon-name="Pin"><span class="icon-placeholder">P</span><code>Pin</code><small>1</small></li>
-                <li data-icon-name="Plus"><svg class="icon"><use href="#i-plus"/></svg><code>Plus</code><small>10</small></li>
-                <li data-icon-name="Printer"><span class="icon-placeholder">P</span><code>Printer</code><small>2</small></li>
-                <li data-icon-name="RadioTower"><span class="icon-placeholder">RT</span><code>RadioTower</code><small>2</small></li>
-                <li data-icon-name="RefreshCw"><svg class="icon"><use href="#i-refresh"/></svg><code>RefreshCw</code><small>2</small></li>
-                <li data-icon-name="RotateCcw"><svg class="icon"><use href="#i-refresh"/></svg><code>RotateCcw</code><small>3</small></li>
-                <li data-icon-name="Save"><span class="icon-placeholder">S</span><code>Save</code><small>1</small></li>
-                <li data-icon-name="Settings"><span class="icon-placeholder">S</span><code>Settings</code><small>1</small></li>
-                <li data-icon-name="ShieldCheck"><svg class="icon"><use href="#i-check"/></svg><code>ShieldCheck</code><small>2</small></li>
-                <li data-icon-name="ShipWheel"><span class="icon-placeholder">SW</span><code>ShipWheel</code><small>1</small></li>
-                <li data-icon-name="Shuffle"><span class="icon-placeholder">S</span><code>Shuffle</code><small>1</small></li>
-                <li data-icon-name="Snowflake"><span class="icon-placeholder">S</span><code>Snowflake</code><small>1</small></li>
-                <li data-icon-name="StepForward"><span class="icon-placeholder">SF</span><code>StepForward</code><small>2</small></li>
-                <li data-icon-name="Swords"><span class="icon-placeholder">S</span><code>Swords</code><small>4</small></li>
-                <li data-icon-name="Target"><span class="icon-placeholder">T</span><code>Target</code><small>2</small></li>
-                <li data-icon-name="Trash2"><svg class="icon"><use href="#i-trash"/></svg><code>Trash2</code><small>12</small></li>
-                <li data-icon-name="TriangleAlert"><svg class="icon"><use href="#i-alert"/></svg><code>TriangleAlert</code><small>3</small></li>
-                <li data-icon-name="Trophy"><svg class="icon"><use href="#i-trophy"/></svg><code>Trophy</code><small>10</small></li>
-                <li data-icon-name="Undo2"><span class="icon-placeholder">U</span><code>Undo2</code><small>1</small></li>
-                <li data-icon-name="Unlock"><span class="icon-placeholder">U</span><code>Unlock</code><small>1</small></li>
-                <li data-icon-name="Users"><svg class="icon"><use href="#i-users"/></svg><code>Users</code><small>1</small></li>
-                <li data-icon-name="UsersRound"><svg class="icon"><use href="#i-users"/></svg><code>UsersRound</code><small>9</small></li>
-                <li data-icon-name="UtensilsCrossed"><span class="icon-placeholder">UC</span><code>UtensilsCrossed</code><small>2</small></li>
-                <li data-icon-name="Volume2"><span class="icon-placeholder">V</span><code>Volume2</code><small>1</small></li>
-                <li data-icon-name="VolumeX"><span class="icon-placeholder">VX</span><code>VolumeX</code><small>1</small></li>
-                <li data-icon-name="Wine"><span class="icon-placeholder">W</span><code>Wine</code><small>1</small></li>
-                <li data-icon-name="X"><span class="icon-placeholder">×</span><code>X</code><small>4</small></li>
-                <li data-icon-name="XIcon"><span class="icon-placeholder">×</span><code>XIcon</code><small>1</small></li>
+                <li data-icon-name="Activity"><span data-icon-preview></span><code>Activity</code></li>
+                <li data-icon-name="Archive"><span data-icon-preview></span><code>Archive</code></li>
+                <li data-icon-name="ArrowDownWideNarrow"><span data-icon-preview></span><code>ArrowDownWideNarrow</code></li>
+                <li data-icon-name="ArrowLeft"><span data-icon-preview></span><code>ArrowLeft</code></li>
+                <li data-icon-name="ArrowRight"><span data-icon-preview></span><code>ArrowRight</code></li>
+                <li data-icon-name="BarChart3"><span data-icon-preview></span><code>BarChart3</code></li>
+                <li data-icon-name="Beer"><span data-icon-preview></span><code>Beer</code></li>
+                <li data-icon-name="Bell"><span data-icon-preview></span><code>Bell</code></li>
+                <li data-icon-name="Bike"><span data-icon-preview></span><code>Bike</code></li>
+                <li data-icon-name="Brain"><span data-icon-preview></span><code>Brain</code></li>
+                <li data-icon-name="BriefcaseBusiness"><span data-icon-preview></span><code>BriefcaseBusiness</code></li>
+                <li data-icon-name="Building2"><span data-icon-preview></span><code>Building2</code></li>
+                <li data-icon-name="CalendarDays"><span data-icon-preview></span><code>CalendarDays</code></li>
+                <li data-icon-name="ChartNoAxesCombined"><span data-icon-preview></span><code>ChartNoAxesCombined</code></li>
+                <li data-icon-name="Check"><span data-icon-preview></span><code>Check</code></li>
+                <li data-icon-name="CheckCircle2"><span data-icon-preview></span><code>CheckCircle2</code></li>
+                <li data-icon-name="CheckIcon"><span data-icon-preview></span><code>CheckIcon</code></li>
+                <li data-icon-name="ChessKing"><span data-icon-preview></span><code>ChessKing</code></li>
+                <li data-icon-name="ChevronDown"><span data-icon-preview></span><code>ChevronDown</code></li>
+                <li data-icon-name="ChevronDownIcon"><span data-icon-preview></span><code>ChevronDownIcon</code></li>
+                <li data-icon-name="ChevronLeft"><span data-icon-preview></span><code>ChevronLeft</code></li>
+                <li data-icon-name="ChevronRight"><span data-icon-preview></span><code>ChevronRight</code></li>
+                <li data-icon-name="ChevronRightIcon"><span data-icon-preview></span><code>ChevronRightIcon</code></li>
+                <li data-icon-name="ChevronUpIcon"><span data-icon-preview></span><code>ChevronUpIcon</code></li>
+                <li data-icon-name="CircleDot"><span data-icon-preview></span><code>CircleDot</code></li>
+                <li data-icon-name="CircleIcon"><span data-icon-preview></span><code>CircleIcon</code></li>
+                <li data-icon-name="CirclePlus"><span data-icon-preview></span><code>CirclePlus</code></li>
+                <li data-icon-name="CircleQuestionMark"><span data-icon-preview></span><code>CircleQuestionMark</code></li>
+                <li data-icon-name="Clock3"><span data-icon-preview></span><code>Clock3</code></li>
+                <li data-icon-name="Coins"><span data-icon-preview></span><code>Coins</code></li>
+                <li data-icon-name="Compass"><span data-icon-preview></span><code>Compass</code></li>
+                <li data-icon-name="Copy"><span data-icon-preview></span><code>Copy</code></li>
+                <li data-icon-name="CornerDownLeft"><span data-icon-preview></span><code>CornerDownLeft</code></li>
+                <li data-icon-name="Dice5"><span data-icon-preview></span><code>Dice5</code></li>
+                <li data-icon-name="Download"><span data-icon-preview></span><code>Download</code></li>
+                <li data-icon-name="Eye"><span data-icon-preview></span><code>Eye</code></li>
+                <li data-icon-name="EyeOff"><span data-icon-preview></span><code>EyeOff</code></li>
+                <li data-icon-name="Footprints"><span data-icon-preview></span><code>Footprints</code></li>
+                <li data-icon-name="Funnel"><span data-icon-preview></span><code>Funnel</code></li>
+                <li data-icon-name="Gamepad2"><span data-icon-preview></span><code>Gamepad2</code></li>
+                <li data-icon-name="GitBranch"><span data-icon-preview></span><code>GitBranch</code></li>
+                <li data-icon-name="Globe2"><span data-icon-preview></span><code>Globe2</code></li>
+                <li data-icon-name="Hand"><span data-icon-preview></span><code>Hand</code></li>
+                <li data-icon-name="History"><span data-icon-preview></span><code>History</code></li>
+                <li data-icon-name="Home"><span data-icon-preview></span><code>Home</code></li>
+                <li data-icon-name="KeyRound"><span data-icon-preview></span><code>KeyRound</code></li>
+                <li data-icon-name="Landmark"><span data-icon-preview></span><code>Landmark</code></li>
+                <li data-icon-name="Layers3"><span data-icon-preview></span><code>Layers3</code></li>
+                <li data-icon-name="LayoutDashboard"><span data-icon-preview></span><code>LayoutDashboard</code></li>
+                <li data-icon-name="ListChecks"><span data-icon-preview></span><code>ListChecks</code></li>
+                <li data-icon-name="ListFilter"><span data-icon-preview></span><code>ListFilter</code></li>
+                <li data-icon-name="ListOrdered"><span data-icon-preview></span><code>ListOrdered</code></li>
+                <li data-icon-name="LoaderCircle"><span data-icon-preview></span><code>LoaderCircle</code></li>
+                <li data-icon-name="Lock"><span data-icon-preview></span><code>Lock</code></li>
+                <li data-icon-name="LockKeyhole"><span data-icon-preview></span><code>LockKeyhole</code></li>
+                <li data-icon-name="MapPinned"><span data-icon-preview></span><code>MapPinned</code></li>
+                <li data-icon-name="Martini"><span data-icon-preview></span><code>Martini</code></li>
+                <li data-icon-name="Menu"><span data-icon-preview></span><code>Menu</code></li>
+                <li data-icon-name="Minus"><span data-icon-preview></span><code>Minus</code></li>
+                <li data-icon-name="Monitor"><span data-icon-preview></span><code>Monitor</code></li>
+                <li data-icon-name="Mountain"><span data-icon-preview></span><code>Mountain</code></li>
+                <li data-icon-name="NotebookPen"><span data-icon-preview></span><code>NotebookPen</code></li>
+                <li data-icon-name="Pencil"><span data-icon-preview></span><code>Pencil</code></li>
+                <li data-icon-name="Pin"><span data-icon-preview></span><code>Pin</code></li>
+                <li data-icon-name="Plus"><span data-icon-preview></span><code>Plus</code></li>
+                <li data-icon-name="Printer"><span data-icon-preview></span><code>Printer</code></li>
+                <li data-icon-name="Radio"><span data-icon-preview></span><code>Radio</code></li>
+                <li data-icon-name="RadioTower"><span data-icon-preview></span><code>RadioTower</code></li>
+                <li data-icon-name="RefreshCw"><span data-icon-preview></span><code>RefreshCw</code></li>
+                <li data-icon-name="RotateCcw"><span data-icon-preview></span><code>RotateCcw</code></li>
+                <li data-icon-name="Save"><span data-icon-preview></span><code>Save</code></li>
+                <li data-icon-name="Settings"><span data-icon-preview></span><code>Settings</code></li>
+                <li data-icon-name="Settings2"><span data-icon-preview></span><code>Settings2</code></li>
+                <li data-icon-name="ShieldCheck"><span data-icon-preview></span><code>ShieldCheck</code></li>
+                <li data-icon-name="ShipWheel"><span data-icon-preview></span><code>ShipWheel</code></li>
+                <li data-icon-name="Shuffle"><span data-icon-preview></span><code>Shuffle</code></li>
+                <li data-icon-name="Snowflake"><span data-icon-preview></span><code>Snowflake</code></li>
+                <li data-icon-name="StepForward"><span data-icon-preview></span><code>StepForward</code></li>
+                <li data-icon-name="Swords"><span data-icon-preview></span><code>Swords</code></li>
+                <li data-icon-name="Target"><span data-icon-preview></span><code>Target</code></li>
+                <li data-icon-name="Trash2"><span data-icon-preview></span><code>Trash2</code></li>
+                <li data-icon-name="TriangleAlert"><span data-icon-preview></span><code>TriangleAlert</code></li>
+                <li data-icon-name="Trophy"><span data-icon-preview></span><code>Trophy</code></li>
+                <li data-icon-name="Undo2"><span data-icon-preview></span><code>Undo2</code></li>
+                <li data-icon-name="Users"><span data-icon-preview></span><code>Users</code></li>
+                <li data-icon-name="UsersRound"><span data-icon-preview></span><code>UsersRound</code></li>
+                <li data-icon-name="UtensilsCrossed"><span data-icon-preview></span><code>UtensilsCrossed</code></li>
+                <li data-icon-name="Volume2"><span data-icon-preview></span><code>Volume2</code></li>
+                <li data-icon-name="VolumeX"><span data-icon-preview></span><code>VolumeX</code></li>
+                <li data-icon-name="Waves"><span data-icon-preview></span><code>Waves</code></li>
+                <li data-icon-name="Wine"><span data-icon-preview></span><code>Wine</code></li>
+                <li data-icon-name="X"><span data-icon-preview></span><code>X</code></li>
+                <li data-icon-name="XIcon"><span data-icon-preview></span><code>XIcon</code></li>
               </ul>
             </div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Meistverwendet</dt><dd>Trash2 (12 Dateien), Plus/Trophy (je 10), UsersRound (9), ChevronDown (8)</dd><dt>Namensvarianten</dt><dd><code>Check</code>/<code>CheckIcon</code>, Chevron-Namen mit und ohne <code>Icon</code>, <code>X</code>/<code>XIcon</code></dd></dl><p class="note note--low">Die Namensvarianten stammen aus Library-Exports und sind kein sichtbarer UI-Bruch. Eine Aliasbereinigung hat nur geringen Produktnutzen.</p></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="asset" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Dashboard-Illustrationen</h3><p class="catalog-card__purpose">Neun eigene, gedämpfte Motive unterstützen die App-Erkennung in den Hub-Kacheln.</p></div><div class="tags"><span class="tag tag--feature">Inline SVG</span></div></div>
-            <div class="preview"><ul class="asset-list"><li><code>WheelIllustration</code><span>farbige Radsegmente und Zeiger</span></li><li><code>CoinflipIllustration</code><span>überlagerte Kopf-/Zahl-Münzen</span></li><li><code>ProgressIllustration</code><span>Balken und steigende Linie</span></li><li><code>ScoreboardIllustration</code><span>zwei Team-Scores</span></li><li><code>BuzzerIllustration</code><span>roter Buzzer mit Schallwellen</span></li><li><code>SushiMapIllustration</code><span>Kartengitter, Route und Marker</span></li><li><code>RandomizerIllustration</code><span>Zahlenkacheln</span></li><li><code>NextQuestionIllustration</code><span>gestapelte Fragekarten</span></li><li><code>SwissTournamentIllustration</code><span>SK-Anderten-Bild innerhalb des gemeinsamen SvgShell</span></li></ul></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Shell</dt><dd><code>SvgShell</code> vereinheitlicht ViewBox, Größe und Zugänglichkeit</dd><dt>Quelle</dt><dd><code>src/components/layout/DashboardIllustrations.tsx</code></dd></dl><p class="note">Die Illustrationen sind als Familie konsistent, obwohl ihre Motive individuell bleiben. Neue Apps sollten denselben Kontrast und dieselbe optische Dichte treffen.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/components/layout/DashboardIllustrations.tsx">
+            <div class="catalog-card__header"><div><h3>Dashboard-Illustrationen</h3></div></div>
+            <div class="preview"><div class="live-demo live-demo--artwork" data-demo="Dashboard-Illustrationen"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="asset" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>Fachgrafiken und öffentliche Assets</h3><p class="catalog-card__purpose">Eigene SVG-Komponenten, Kartenformen, Diagramme und statische Bilddateien.</p></div><div class="tags"><span class="tag tag--native">Custom</span><span class="tag tag--medium">Mittel</span></div></div>
-            <div class="preview"><ul class="asset-list"><li><code>WheelGraphic / ConfettiOverlay</code><span>gewichtetes Rad und Ergebniseffekt</span></li><li><code>CoinGraphic / CoinFace</code><span>animierte Münze mit BrandenburgGateMark und EuroMark</span></li><li><code>ProgressChart</code><span>Desktop- und mobile SVG-/Balkenvarianten</span></li><li><code>TerritoryShape / OwnerPattern</code><span>SVG-Territorien, Farbe, Muster, Drag-/Touchzustände</span></li><li><code>ScoreProgressPie</code><span>Raab-Fortschritt, Schwelle, Labels und Legenden</span></li><li><code>RankPlacement</code><span>drei ähnliche Rang-SVGs im Turnierfeature</span></li><li><code>favicon.svg · qrcode.svg</code><span>618 B · 1,5 KB</span></li><li><code>sk-anderten-watermark.png</code><span>62 KB · Seiten-/Printbranding</span></li><li><code>mario-kart-blue-shell.png</code><span>1,59 MB · alternative Turniermarke</span></li></ul></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Quellen</dt><dd><code>src/apps/**</code>, <code>src/styles/globals.css</code>, <code>public/</code></dd><dt>Regel</dt><dd>Farbe ist bei Kartenbesitz und Status nie einziger Informationsträger</dd></dl><p class="note note--medium">RankPlacement ist der klare lokale Duplikat-Kandidat. Die übrigen Grafiken bilden unterschiedliche Fachobjekte und sollten nicht in ein generisches Chart-System gedrängt werden.</p></div>
-          </article>
 
-          <article class="catalog-card" data-catalog-item data-category="asset" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Native HTML- und Landmark-Muster</h3><p class="catalog-card__purpose">Semantische Elemente unterhalb und neben den React-Primitives.</p></div><div class="tags"><span class="tag tag--native">Native/Sonderfall</span></div></div>
-            <div class="preview"><div class="mini-page"><div class="mini-page__bar"><strong>&lt;header&gt;</strong><span>&lt;nav&gt;</span></div><div class="mini-page__body"><div class="mini-status">&lt;main&gt; · &lt;section&gt; · &lt;aside&gt;</div><form style="display:flex;gap:.4rem"><div class="demo-field" style="flex:1"><label>&lt;form&gt;</label><input value="Eingabe" readonly></div><button class="demo-button" type="button">&lt;button&gt;</button></form><div class="table-wrap"><table class="demo-table"><tbody><tr><td>&lt;table&gt;</td><td>&lt;details&gt; / &lt;summary&gt;</td></tr></tbody></table></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Landmarks</dt><dd>Shell und Presenter: header/main; Shell: nav; Apps: section und aside</dd><dt>Formulare</dt><dd>Lobby-Erstellung/-Admin, Raab-Gate, Scoreboard AddCard, Turniererstellung</dd><dt>Direkte Controls</dt><dd>ColorPicker, LanguageSelector, InlineTextEdit und fachliche Grafik-/Score-Buttons</dd><dt>Disclosure</dt><dd>Territory Map verwendet eine native Summary-Struktur</dd></dl><p class="note">Direkte native Controls sind nicht automatisch Inkonsistenz. Sie brauchen denselben Fokus-, Größen- und Namensvertrag wie das Button-/Input-Primitive.</p></div>
+          <article class="catalog-card" data-catalog-item>
+            <div class="catalog-card__header"><div><h3>Native HTML- und Landmark-Muster</h3></div></div>
+            <div class="preview"><div class="mini-page"><div class="mini-page__bar"><strong>&lt;header&gt;</strong><span>&lt;nav&gt;</span></div><div class="mini-page__body"><div class="mini-status">&lt;main&gt; · &lt;section&gt; · &lt;aside&gt;</div><div class="live-demo" data-demo="HTML-Formular"></div><div class="table-wrap"><table class="demo-table"><tbody><tr><td>&lt;table&gt;</td><td>&lt;details&gt; / &lt;summary&gt;</td></tr></tbody></table></div></div></div></div>
           </article>
         </div>
       </section>
 
       <section class="catalog-section" id="states" data-filter-section>
         <div class="section-heading">
-          <div><h2>Zustandsmatrix</h2><p>Wie das Repository Lade-, Leer-, Fehler-, Interaktions- und Ausgabestatus sichtbar macht.</p></div>
-          <span class="section-count">13 Zustandsfamilien</span>
+          <div><h2>Zustandsmatrix</h2></div>
         </div>
         <div class="catalog-grid catalog-grid--wide">
-          <article class="catalog-card" data-catalog-item data-category="state" data-priority="medium">
-            <div class="catalog-card__header"><div><h3>Laufzeit- und Rückmeldungszustände</h3><p class="catalog-card__purpose">Bestehende Darstellung und naheliegender gemeinsamer Bezugspunkt.</p></div><div class="tags"><span class="tag tag--medium">Mittel</span><span class="tag">State inventory</span></div></div>
-            <div class="preview">
-              <div class="table-wrap"><table class="state-table"><thead><tr><th>Zustand</th><th>Aktuelles Muster</th><th>Beispiele / Fundstellen</th><th>Vereinheitlichungsimpuls</th></tr></thead><tbody>
-                <tr><td>Loading</td><td>LoaderCircle mit <code>animate-spin</code> oder kompakter RouteFallback-Text</td><td>LobbyRoute, LobbyAdmin, NextQuestion, lazyRoutes</td><td>Icon + Verb verwenden; keine Marketing-Skeletons nötig</td></tr>
-                <tr><td>Empty</td><td>Shared EmptyState mit gestricheltem Rahmen</td><td>24 Instanzen in 12 Dateien</td><td>Container beibehalten, Texte handlungsorientiert formulieren</td></tr>
-                <tr><td>Error</td><td>Card mit destructive Border, Alert-Icon und ggf. Rückweg</td><td>LobbyRoute, NextQuestion, Turnierwarnungen</td><td>dauerhafte Fehler nicht ausschließlich als Toast zeigen</td></tr>
-                <tr><td>Local Mode</td><td>informative Card in Secondary/Primary-Tönung</td><td>LobbyDirectory und Sync-Hooks der Apps</td><td>eine gemeinsame semantische Rolle, aber kein neuer Error-Typ</td></tr>
-                <tr><td>Sync-Fehler</td><td>CardTitle + übersetzte CardDescription; Features zeigen eigene Error-Texte</td><td>LobbyDirectory, Feature-Hooks</td><td>Textpriorität und Platzierung zwischen Apps vergleichen</td></tr>
-                <tr><td>Disabled</td><td>Opacity 50 %, Pointer Events aus, Cursor not-allowed</td><td>Button, Input, Select, ColorPicker, Tabs, Menüs</td><td>bereits stark zentralisiert; Kontrast bei Spezialcontrols prüfen</td></tr>
-                <tr><td>Hover</td><td>Secondary-Fläche/Primary-Text; Kacheln zusätzlich Lift und Border</td><td>Button, NavLink, AppTile, DropdownMenu</td><td>expressive Kachelbewegung nicht auf operative Tabellen übertragen</td></tr>
-                <tr><td>Focus</td><td>3-px Ring in Primary mit 45–50 % Alpha</td><td>gemeinsame Controls, Links, native Grafikbuttons</td><td>direkte Buttons gegen denselben Ring prüfen</td></tr>
-                <tr><td>Confirm</td><td>Shared ConfirmButton; Fokus auf destructive Bestätigung, Enter bestätigt</td><td>16 Instanzen in 9 Dateien</td><td>kanonisch; Trigger-Variante getrennt behandeln</td></tr>
-                <tr><td>Toast</td><td>Sonner success/error mit globalen Tokenklassen</td><td>Lobby und acht Feature-Dateien</td><td>kurze Transaktionsmeldung, nicht alleiniger Fehlerkanal</td></tr>
-                <tr><td>Presenter</td><td>read-only Portal-Overlay mit Auswahl, Fullscreen-Fallback und Exit</td><td>8 Apps</td><td>Lifecycle zentral; View-Inhalte lokal belassen</td></tr>
-                <tr><td>Responsive</td><td>320-px Basis, mobile Alternativcharts und scrollbare Tabellen</td><td>globals.css, ProgressChart, TournamentTables, Raab</td><td>Alternativdarstellung nur bei echter Informationsdichte</td></tr>
-                <tr><td>Print</td><td>Turnier-Rangliste mit A4-Regeln, QR und ausgeblendeter Shell</td><td><code>@media print</code> in globals.css</td><td>fachlicher Sonderfall; nicht global auf alle Apps ausweiten</td></tr>
-              </tbody></table></div>
-            </div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Quellen</dt><dd><code>src/apps/shared/components</code>, <code>src/components/ui</code>, Feature-Pages und <code>src/styles/globals.css</code></dd><dt>Leitlinie</dt><dd>sichtbar, tastaturbedienbar, übersetzt und bei Farbe zusätzlich textlich/symbolisch codiert</dd></dl><p class="note note--medium">Die größten Unterschiede liegen nicht in den Basiszuständen, sondern in Position und Texttiefe der Statuskarten. Diese lassen sich zunächst über Konventionen vereinheitlichen.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/styles/globals.css">
+            <div class="catalog-card__header"><div><h3>Laufzeit- und Rückmeldungszustände</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo live-demo--wide" data-demo="Laufzeit- und Rückmeldungszustände"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="state" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Interaktionszustände als visuelle Reihe</h3><p class="catalog-card__purpose">Default, Hover/Active, Focus, Disabled und Destructive.</p></div><div class="tags"><span class="tag">State preview</span></div></div>
-            <div class="preview preview--center"><div class="state-preview-grid"><div><button class="demo-button" type="button">Default</button><small style="display:block;margin-top:.35rem">bereit</small></div><div><button class="demo-button demo-button--secondary" type="button">Active</button><small style="display:block;margin-top:.35rem">ausgewählt</small></div><div><button class="demo-button demo-button--outline" type="button" style="outline:3px solid rgba(6,114,118,.35);outline-offset:2px">Focus</button><small style="display:block;margin-top:.35rem">Tastatur</small></div><div><button class="demo-button" type="button" disabled>Disabled</button><small style="display:block;margin-top:.35rem">gesperrt</small></div><div><button class="demo-button demo-button--destructive" type="button">Löschen</button><small style="display:block;margin-top:.35rem">destruktiv</small></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Primitive</dt><dd>Button, Input, Select, Tabs, DropdownMenu, ColorPicker</dd><dt>Sonderfälle</dt><dd>LanguageSelector, InlineTextEdit, ScoreButton, TerritoryShape, Wheel/Map Pointer</dd></dl><p class="note">Spezialcontrols dürfen anders aussehen, aber ihr Fokus muss ebenso sichtbar und ihre Disabled-Semantik ebenso eindeutig sein.</p></div>
+          <article class="catalog-card" data-catalog-item>
+            <div class="catalog-card__header"><div><h3>Interaktionszustände als visuelle Reihe</h3></div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="Interaktionszustände als visuelle Reihe"></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-category="state" data-priority="none">
-            <div class="catalog-card__header"><div><h3>Responsive Informationsdichte</h3><p class="catalog-card__purpose">Ein Inhalt kann je nach Breite seine Darstellung wechseln, nicht seine Bedeutung.</p></div><div class="tags"><span class="tag">320 px+</span></div></div>
-            <div class="preview preview--center"><div class="responsive-preview-grid"><div class="mini-page"><div class="mini-page__bar"><strong>Desktop</strong><span>Tabs + Tabelle</span></div><div class="mini-page__body"><div class="table-wrap"><table class="demo-table"><tbody><tr><td>Paul</td><td>12</td><td>Aktiv</td></tr><tr><td>Kim</td><td>9</td><td>Bereit</td></tr></tbody></table></div></div></div><div class="mini-page"><div class="mini-page__bar"><strong>Mobil</strong></div><div class="mini-page__body"><div class="score-bars"><div class="score-bar" style="grid-template-columns:2rem 1fr auto"><span>P</span><span style="--score:80%"></span><strong>12</strong></div><div class="score-bar" style="grid-template-columns:2rem 1fr auto"><span>K</span><span style="--score:60%"></span><strong>9</strong></div></div></div></div></div></div>
-            <div class="catalog-card__body"><dl class="facts"><dt>Global</dt><dd>Shell-Menü unter md, Dashboard 1/2/3 Spalten, AppPage-Padding, 320-px Mindestbreite</dd><dt>Feature-lokal</dt><dd>mobile Progress-Charts, Turnier-Ranglistenkarten, Raab-Spalten, eigene Table-Scroller</dd><dt>Quelle</dt><dd><code>src/styles/globals.css</code> und responsive Klassen in Pages</dd></dl><p class="note">Die zentrale Regel ist bereits klar: keine Seite scrollt unkontrolliert horizontal; fachlich breite Tabellen besitzen ihren eigenen Scrollbereich.</p></div>
+          <article class="catalog-card" data-catalog-item data-source="src/styles/globals.css">
+            <div class="catalog-card__header"><div><h3>Responsive Informationsdichte</h3></div></div>
+            <div class="preview preview--center"><div class="responsive-preview-grid"><div class="mini-page"><div class="mini-page__bar"><strong>Desktop</strong><span>Tabs + Tabelle</span></div><div class="mini-page__body"><div class="live-demo" data-demo="Responsive Tabelle"></div></div></div><div class="mini-page"><div class="mini-page__bar"><strong>Mobil</strong></div><div class="mini-page__body"><div class="score-bars"><div class="score-bar" style="grid-template-columns:2rem 1fr auto"><span>P</span><span style="--score:80%"></span><strong>12</strong></div><div class="score-bar" style="grid-template-columns:2rem 1fr auto"><span>K</span><span style="--score:60%"></span><strong>9</strong></div></div></div></div></div></div>
           </article>
         </div>
       </section>
     </main>
   </div>
 
-  <footer class="footer">BengtsToolBox UI-Elemente-Katalog · Snapshot 10.08.2026 · Diskussionsgrundlage, kein Laufzeitvertrag</footer>
+  <footer class="footer">BengtsToolBox UI-Elemente-Katalog · Bestandsaufnahme 06.10.2026 · Diskussionsgrundlage, kein Laufzeitvertrag</footer>
 
   <script>
     (() => {
       const search = document.querySelector('#catalog-search');
-      const reset = document.querySelector('#reset-filters');
-      const print = document.querySelector('#print-catalog');
-      const resultCount = document.querySelector('#result-count');
+      const toolbar = document.querySelector('.toolbar');
       const emptyResults = document.querySelector('#empty-results');
       const items = [...document.querySelectorAll('[data-catalog-item]')];
       const sections = [...document.querySelectorAll('[data-filter-section]')];
-      const filterButtons = [...document.querySelectorAll('[data-filter-group]')];
-      const active = { category: 'all', priority: 'all' };
+      const links = [...document.querySelectorAll('.catalog-nav a')];
+      const normalize = (value) => value.toLocaleLowerCase('de-DE')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-      const normalize = (value) => value
-        .toLocaleLowerCase('de-DE')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-
-      const applyFilters = () => {
-        const query = normalize(search.value.trim());
-        let visible = 0;
-
-        items.forEach((item) => {
-          const matchesCategory = active.category === 'all' || item.dataset.category === active.category;
-          const matchesPriority = active.priority === 'all' || item.dataset.priority === active.priority;
-          const matchesQuery = !query || normalize(item.textContent).includes(query);
-          const matches = matchesCategory && matchesPriority && matchesQuery;
-
-          item.hidden = !matches;
-          if (matches) visible += 1;
+      const updateNavigation = () => {
+        const visible = sections.filter((section) => !section.hidden);
+        const readingLine = toolbar.getBoundingClientRect().bottom + 32;
+        let current = visible[0];
+        for (const section of visible) {
+          if (section.getBoundingClientRect().top <= readingLine) current = section;
+        }
+        if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+          current = visible.at(-1);
+        }
+        links.forEach((link) => {
+          const section = document.querySelector(link.hash);
+          link.hidden = section.hidden;
+          if (section === current) link.setAttribute('aria-current', 'location');
+          else link.removeAttribute('aria-current');
         });
-
-        sections.forEach((section) => {
-          const sectionItems = [...section.querySelectorAll('[data-catalog-item]')];
-          section.hidden = !sectionItems.some((item) => !item.hidden);
-        });
-
-        emptyResults.hidden = visible !== 0;
-        resultCount.textContent = `${visible} von ${items.length} Katalogeinträgen sichtbar`;
       };
-
-      filterButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          const group = button.dataset.filterGroup;
-          active[group] = button.dataset.filter;
-
-          filterButtons
-            .filter((candidate) => candidate.dataset.filterGroup === group)
-            .forEach((candidate) => candidate.setAttribute('aria-pressed', String(candidate === button)));
-
-          applyFilters();
+      let pendingFrame = false;
+      const scheduleNavigation = () => {
+        if (pendingFrame) return;
+        pendingFrame = true;
+        requestAnimationFrame(() => {
+          pendingFrame = false;
+          updateNavigation();
         });
-      });
-
-      search.addEventListener('input', applyFilters);
-      reset.addEventListener('click', () => {
-        search.value = '';
-        active.category = 'all';
-        active.priority = 'all';
-        filterButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === 'all')));
-        applyFilters();
-        search.focus();
-      });
-      print.addEventListener('click', () => window.print());
-      applyFilters();
+      };
+      const applySearch = () => {
+        const query = normalize(search.value.trim());
+        items.forEach((item) => {
+          const sectionTitle = item.closest('section').querySelector('h2').textContent;
+          item.hidden = Boolean(query) && !normalize(sectionTitle + ' ' + item.textContent + ' ' + (item.dataset.source ?? '')).includes(query);
+        });
+        sections.forEach((section) => {
+          section.hidden = ![...section.querySelectorAll('[data-catalog-item]')].some((item) => !item.hidden);
+        });
+        emptyResults.hidden = items.some((item) => !item.hidden);
+        scheduleNavigation();
+      };
+      search.addEventListener('input', applySearch);
+      window.addEventListener('scroll', scheduleNavigation, { passive: true });
+      window.addEventListener('resize', scheduleNavigation);
+      window.addEventListener('hashchange', scheduleNavigation);
+      document.fonts.ready.then(scheduleNavigation);
+      applySearch();
     })();
   </script>
+
+  <div id="catalog-root"></div>
+  <script type="module" src="../src/uiElements.tsx"></script>
 </body>
 </html>

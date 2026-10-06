@@ -1,6 +1,4 @@
 import {
-  ChevronDown,
-  ChevronRight,
   CornerDownLeft,
   Minus,
   Plus,
@@ -21,6 +19,7 @@ import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IftaSelectTrigger } from '@/components/ui/ifta-field'
@@ -409,15 +408,6 @@ export function ArchiveCard({
     <div className="rounded-lg border bg-background">
       <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <button
-            type="button"
-            className="grid size-11 shrink-0 place-items-center rounded-md text-primary transition-colors hover:bg-muted sm:size-9"
-            aria-expanded={isOpen}
-            aria-label={isOpen ? t('common.collapse') : t('common.expand')}
-            onClick={() => setIsOpen((current) => !current)}
-          >
-            {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-          </button>
           <div className="min-w-0 flex-1">
             <InlineTextEdit
               ariaLabel={t('scoreboard.scoringNameAria')}
@@ -444,6 +434,15 @@ export function ArchiveCard({
               </Badge>
             </div>
           </div>
+          <button
+            type="button"
+            className="grid size-11 shrink-0 place-items-center rounded-md text-primary transition-colors hover:bg-muted sm:size-9"
+            aria-expanded={isOpen}
+            aria-label={isOpen ? t('common.collapse') : t('common.expand')}
+            onClick={() => setIsOpen((current) => !current)}
+          >
+            <DisclosureIndicator isOpen={isOpen} />
+          </button>
         </div>
         <ConfirmButton
           title={t('scoreboard.archiveDeleteTitle')}

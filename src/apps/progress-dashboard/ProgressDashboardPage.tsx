@@ -2,8 +2,6 @@ import {
   Archive,
   BarChart3,
   ChartNoAxesCombined,
-  ChevronDown,
-  ChevronRight,
   Plus,
   Trophy,
   UsersRound,
@@ -31,6 +29,7 @@ import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import {
   Card,
   CardContent,
@@ -263,10 +262,9 @@ export function ProgressDashboardPage() {
       )}
 
       <Card
-        className="min-[900px]:grid min-[900px]:grid-cols-[minmax(12rem,0.32fr)_minmax(0,1fr)] min-[900px]:gap-6"
         style={chartAccentStyle}
       >
-        <CardHeader className="min-w-0 gap-3 min-[900px]:pr-0">
+        <CardHeader className="min-w-0 gap-3 min-[900px]:grid min-[900px]:grid-cols-3 min-[900px]:items-center">
           <div
             className="grid min-w-0 gap-2 rounded-md border p-3"
             style={{ backgroundColor: 'color-mix(in srgb, var(--progress-accent) 12%, var(--card))' }}
@@ -300,7 +298,7 @@ export function ProgressDashboardPage() {
             }
           />
         </CardHeader>
-        <CardContent className="min-w-0 px-3 pb-4 sm:px-6 sm:pb-6 min-[900px]:pl-0 min-[900px]:pt-6">
+        <CardContent className="min-w-0 px-3 pb-4 sm:px-6 sm:pb-6">
           <ProgressChart
             dataset={activeDataset}
             mode="dashboard"
@@ -375,19 +373,16 @@ export function ProgressDashboardPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
-              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
+              aria-expanded={isActiveDatasetOpen}
               onClick={() => setIsActiveDatasetOpen((current) => !current)}
             >
-              {isActiveDatasetOpen ? (
-                <ChevronDown className="size-4 shrink-0" />
-              ) : (
-                <ChevronRight className="size-4 shrink-0" />
-              )}
               <BarChart3 className="size-5 text-primary" />
               <span className="type-action">{t('common.dataset')}</span>
               <span className="type-caption text-muted-foreground">
                 {t('progress.eventCount', { count: formatNumber(totalEvents) })}
               </span>
+              <DisclosureIndicator isOpen={isActiveDatasetOpen} className="ml-auto" />
             </button>
             <AppResetButton
               title={t('progress.archive.restartTitle')}

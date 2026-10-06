@@ -94,8 +94,11 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 - Destruktive Aktionen benötigen eine angemessene Bestätigung.
 - Farbe darf nie der einzige Informationsträger sein.
 - Frei wählbare App-Farben verwenden den gemeinsamen Farbkreis. Zwischenstände bleiben lokal; erst die bestätigte Farbe wird als kanonisches `#RRGGBB` an die jeweilige App übergeben.
-- Fokuszustände und Tastaturbedienung müssen sichtbar und funktionsfähig bleiben.
-- Globale Typografie verwendet Manrope Variable und semantische `type-*`-Rollen aus `src/styles/globals.css`.
+- Gemeinsame Icon-Tabs und segmentierte Auswahlen zeigen unter 430 px nur das aktive Label, ab 430 px alle Labels. Die Gesamtbreite bleibt beim Wechsel stabil; die kompakte Variante reserviert den längsten Namen. Zugängliche Namen und ein nach Größenänderungen ausgerichteter Auswahlindikator bleiben erhalten. Datum und Uhrzeit verwenden die gemeinsamen Picker und bleiben per Tastatur eingebbar.
+- Auswahlfelder unterscheiden sich durch eine dezente Fläche und ein Listenfilter-Icon von Texteingaben. Team Gelb verwendet eine eigene gelbe Teamfarbe.
+- Aufklappbereiche teilen eine rechts angeordnete Chevron-Anzeige, die den geöffneten Zustand durch Drehung kennzeichnet.
+- Tastaturfokus verwendet eine klare Kontur. Dialog-Schließen besitzt 44 px Bedienfläche mobil und 36 px ab 640 px.
+- Globale Typografie verwendet Manrope Variable und semantische `type-*`-Rollen aus `src/styles/globals.css`; Feldlabels und kleine Hinweise teilen 12/16 px, Abschnitts- und Dialogtitel 20/24 px.
 - Oberflächen bleiben standardmäßig kompakt und verzichten auf erklärende Untertitel. Untertitel werden nur auf ausdrücklichen Produktwunsch oder für notwendige Status- und Fehlermeldungen ergänzt.
 
 ## 4. Persistenz- und Synchronisationsvertrag
@@ -545,6 +548,9 @@ src/apps/<app-id>/
 - Initialwerte von Sync-Hooks bleiben referenziell stabil.
 - Firestore-Serverzeit wird zentral geschrieben; Features dürfen ergänzende Client-ISO-Zeiten für Anzeige und Fallback speichern.
 - Lucide Icons, globale Tokens und gemeinsame Controls werden bevorzugt.
+- UI-Katalog: Name und kompakte Vorschau; Quellenpfade im HTML ohne Dateilinks. Keine Untertitel, Metadatenblöcke oder Prioritätswertung.
+- Gemeinsame Controls im Katalog verwenden interaktive Originalkomponenten; das Icon-Inventar zeigt echte SVGs. Zustandsbeispiele zeigen ungültige Eingaben, Speichern, erhaltene Entwürfe nach Fehlern, erneuten Versuch, lange Texte und Erfolg ausschließlich mit lokalen Beispieldaten. Große Fachvorschauen bleiben statisch; Suche bleibt beim Scrollen sichtbar und die Navigation markiert den aktuellen Abschnitt.
+- Icon-Auswahlleisten behalten beim Labelwechsel ihre Gesamtbreite; Kennzahlen stehen über breiten Fortschrittsgrafiken.
 - Feature-Layout bleibt in Komponenten; neue globale CSS-Regeln sind die Ausnahme.
 - Presenter-Views bleiben read-only.
 - Komplexe Regeln werden über ihr öffentliches Interface getestet; interne Implementierungsdetails sind keine eigene Testoberfläche.

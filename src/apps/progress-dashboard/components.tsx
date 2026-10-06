@@ -1,7 +1,5 @@
 import {
   Beer,
-  ChevronDown,
-  ChevronRight,
   Funnel,
   Martini,
   Minus,
@@ -27,6 +25,7 @@ import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import {
   Card,
   CardContent,
@@ -923,7 +922,7 @@ export function ProgressChart({
           textAnchor="middle"
           dominantBaseline="central"
           transform={`rotate(-90 24 ${chartData.plotCenterY})`}
-          className={isDashboard ? dashboardChartAxisClassName : undefined}
+          className={isDashboard ? cn(dashboardChartAxisClassName, 'hidden md:block') : undefined}
           fontSize="17"
           fill="var(--foreground)"
         >
@@ -1536,20 +1535,6 @@ export function ArchiveDatasetCard({
     <div className="rounded-lg border">
       <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <button
-            className="grid size-8 shrink-0 place-items-center rounded-md text-primary transition-colors hover:bg-muted"
-            aria-expanded={isOpen}
-            aria-label={`${dataset.name || t('common.archivedDataset')} ${
-              isOpen ? t('common.collapse') : t('common.expand')
-            }`}
-            onClick={() => setIsOpen((current) => !current)}
-          >
-            {isOpen ? (
-              <ChevronDown className="size-4" />
-            ) : (
-              <ChevronRight className="size-4" />
-            )}
-          </button>
           <div className="min-w-0 flex-1">
             <InlineTextEdit
               ariaLabel={t('progress.archiveName')}
@@ -1567,6 +1552,16 @@ export function ArchiveDatasetCard({
               </Badge>
             </div>
           </div>
+          <button
+            className="grid size-11 shrink-0 place-items-center rounded-md text-primary transition-colors hover:bg-muted sm:size-9"
+            aria-expanded={isOpen}
+            aria-label={`${dataset.name || t('common.archivedDataset')} ${
+              isOpen ? t('common.collapse') : t('common.expand')
+            }`}
+            onClick={() => setIsOpen((current) => !current)}
+          >
+            <DisclosureIndicator isOpen={isOpen} />
+          </button>
         </div>
         <ConfirmButton
           title={t('common.dataset.delete')}

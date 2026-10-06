@@ -50,16 +50,16 @@
   --btb-leading-ui: 1.45;
   --btb-text-caption: 0.75rem;
   --btb-leading-caption: 1rem;
-  --btb-text-field-label: 0.6875rem;
-  --btb-leading-field-label: 0.875rem;
+  --btb-text-field-label: var(--btb-text-caption);
+  --btb-leading-field-label: var(--btb-leading-caption);
   --btb-text-ui: 0.875rem;
   --btb-leading-ui-text: 1.25rem;
   --btb-text-card-title: 1.125rem;
   --btb-leading-card-title: 1.35rem;
   --btb-text-dialog-title: 1.25rem;
   --btb-leading-dialog-title: 1.5rem;
-  --btb-text-section-title: 1.2rem;
-  --btb-leading-section-title: 1.5rem;
+  --btb-text-section-title: var(--btb-text-dialog-title);
+  --btb-leading-section-title: var(--btb-leading-dialog-title);
   --btb-text-page-title: 1.875rem;
   --btb-leading-page-title: 2.2rem;
   --btb-text-page-title-wide: 2.25rem;
@@ -154,6 +154,12 @@ select {
   font-family: inherit;
 }
 
+:is(button, input, select, textarea, a, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
 #root {
   position: relative;
   z-index: 1;
@@ -186,7 +192,8 @@ select {
   display: inline-flex;
   align-items: stretch;
   gap: 0.25rem;
-  width: fit-content;
+  width: var(--selection-width, fit-content);
+  max-width: 100%;
   padding: 0.3rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -204,7 +211,7 @@ select {
   background: var(--card);
   box-shadow: 0 2px 6px rgb(27 45 59 / 7%);
   pointer-events: none;
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), width 240ms cubic-bezier(0.22, 1, 0.36, 1), height 240ms ease;
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), width 120ms cubic-bezier(0.22, 1, 0.36, 1), height 120ms ease;
 }
 
 .selection-item {
@@ -222,7 +229,7 @@ select {
   background: transparent;
   white-space: nowrap;
   outline: none;
-  transition: color 160ms ease;
+  transition: color 80ms ease;
 }
 
 .selection-item:focus-visible {
@@ -246,15 +253,20 @@ select {
   gap: 0;
 }
 
+.selection-track[data-variant='icon-tabs'] {
+  min-width: min(100%, var(--selection-width, 0px));
+}
+
 .selection-track[data-variant='icon-tabs'] .selection-item:is([data-state='active'], [aria-checked='true']) {
-  flex: 1 1 auto;
+  flex: 1 1 0;
 }
 
 .selection-track[data-variant='icon-tabs'] .selection-label {
   display: grid;
+  min-width: 0;
   grid-template-columns: 0fr;
   opacity: 0;
-  transition: grid-template-columns 240ms ease, opacity 160ms ease;
+  transition: grid-template-columns 120ms ease, opacity 80ms ease;
 }
 
 .selection-track[data-variant='icon-tabs'] .selection-label > span {
@@ -266,6 +278,25 @@ select {
   grid-template-columns: 1fr;
   margin-left: 0.5rem;
   opacity: 1;
+}
+
+@media (min-width: 430px) {
+  .selection-track[data-variant='icon-tabs'] {
+    flex-wrap: wrap;
+  }
+
+  .selection-track[data-variant='icon-tabs'] .selection-item,
+  .selection-track[data-variant='icon-tabs'] .selection-item:is([data-state='active'], [aria-checked='true']) {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 2.75rem;
+  }
+
+  .selection-track[data-variant='icon-tabs'] .selection-label {
+    grid-template-columns: 1fr;
+    margin-left: 0.5rem;
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

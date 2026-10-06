@@ -59,14 +59,14 @@ function IftaSelectTrigger({
         aria-label={
           props['aria-label'] ?? (typeof label === 'string' ? label : undefined)
         }
-        className={cn('h-11 px-3 pb-1.5 pt-5', className)}
+        className={cn('h-11 pl-3 pr-9 pb-1.5 pt-5', className)}
         {...props}
       >
         {children}
       </SelectTrigger>
       <span
         className={cn(
-          'type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-2.5rem)] truncate text-muted-foreground',
+          'type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-3rem)] truncate text-muted-foreground',
           props.disabled && 'opacity-50',
           isInvalid && 'text-destructive',
         )}

@@ -15,6 +15,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rolldownOptions: {
+      input: {
+        app: path.resolve(__dirname, 'index.html'),
+        uiElements: path.resolve(__dirname, 'docs/ui-elements.html'),
+      },
+    },
+  },
   test: {
     environment: 'node',
     pool: 'threads',

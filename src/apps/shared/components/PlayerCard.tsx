@@ -168,7 +168,6 @@ export function PlayerCard({
               </Button>
               {onIncrementLarge && (
                 <Button
-                  size="sm"
                   aria-label={t('shared.playerCard.incrementLargeAria', {
                     name: player.name,
                   })}

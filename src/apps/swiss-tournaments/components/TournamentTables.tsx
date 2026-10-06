@@ -6,6 +6,7 @@ import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTour
 import type { GameResult, MarioKartRacer, Pairing, PairingWarning, PlayerStatus, Tournament } from '@/apps/swiss-tournaments/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DisclosureIndicator } from '@/components/ui/disclosure';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { IftaSelectTrigger } from '@/components/ui/ifta-field';
@@ -1420,7 +1421,10 @@ export function StandingsTable({
                         />
                       </TableCell>
                       <TableCell className="type-label min-w-0 py-2 pl-4 pr-1.5">
-                        <span className="block min-w-0 truncate">{row.playerName}</span>
+                        <span className="flex min-w-0 items-center justify-between gap-2">
+                          <span className="min-w-0 truncate">{row.playerName}</span>
+                          <DisclosureIndicator isOpen={isExpanded} />
+                        </span>
                       </TableCell>
                       <TableCell className="px-1 py-2 text-center tabular-nums">
                         <span className="type-action inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-primary">

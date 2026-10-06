@@ -18,6 +18,7 @@ import { useState, type ReactNode } from 'react'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { disciplineColors } from '@/apps/triathlon-tracker/presentation'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { DisclosureSummary } from '@/components/ui/disclosure'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -845,10 +846,10 @@ export default function TrainingCharts({
         </>
       )}
       {hasProgress && (
-        <details className="min-w-0 rounded-lg border bg-card">
-          <summary className="type-action cursor-pointer p-4">
+        <details className="group min-w-0 rounded-lg border bg-card">
+          <DisclosureSummary className="p-4">
             {t('triathlon.charts.progress')}
-          </summary>
+          </DisclosureSummary>
           <div className="px-3 pb-3 sm:px-4 sm:pb-4">
             <ProgressCard points={progressPoints} />
           </div>
@@ -856,12 +857,12 @@ export default function TrainingCharts({
       )}
       {(hasPerformance || hasProgress) && (
         <details
-          className="min-w-0 rounded-lg border bg-card p-4"
+          className="group min-w-0 rounded-lg border bg-card p-4"
           data-chart-tables
         >
-          <summary className="type-action cursor-pointer">
+          <DisclosureSummary>
             {t('triathlon.charts.table')}
-          </summary>
+          </DisclosureSummary>
           <div className="mt-4 grid gap-5">
             {performancePlots.filter(hasPerformanceData).map((plot) => (
               <PerformanceDataTable key={plot.id} plot={plot} />

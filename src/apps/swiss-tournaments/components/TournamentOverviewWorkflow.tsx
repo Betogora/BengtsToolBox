@@ -1,7 +1,6 @@
 import {
   Archive,
   Brain,
-  ChevronDown,
   Download,
   Gamepad2,
   GitBranch,
@@ -24,6 +23,7 @@ import type {
 } from "@/apps/swiss-tournaments/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import {
   Card,
   CardContent,
@@ -417,7 +417,7 @@ export function TournamentOverviewWorkflow({
           <div className="grid gap-3 border-t pt-4">
             <button
               aria-expanded={isArchiveOpen}
-              className="flex w-full items-center justify-between gap-3 rounded-md px-0 py-1 text-left"
+              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-0 py-1 text-left"
               type="button"
               onClick={() => setIsArchiveOpen((current) => !current)}
             >
@@ -428,12 +428,7 @@ export function TournamentOverviewWorkflow({
                 </span>
                 <Badge variant="secondary">{archivedEntries.length}</Badge>
               </span>
-              <ChevronDown
-                className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
-                  isArchiveOpen && "rotate-180",
-                )}
-              />
+              <DisclosureIndicator isOpen={isArchiveOpen} />
             </button>
             {isArchiveOpen && (
               <ArchivedTournamentsList

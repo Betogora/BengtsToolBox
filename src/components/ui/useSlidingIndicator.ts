@@ -10,6 +10,33 @@ export function useSlidingIndicator() {
     if (!list || !indicator) return
 
     const measure = () => {
+      if (list.dataset.variant === 'icon-tabs') {
+        const items = [...list.querySelectorAll<HTMLElement>('.selection-item')]
+        const trackStyle = getComputedStyle(list)
+        const labelGap = parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.5
+        const allLabelsVisible = window.matchMedia('(min-width: 430px)').matches
+        let baseWidth = 0
+        let labelWidth = 0
+        for (const item of items) {
+          const style = getComputedStyle(item)
+          const icon = item.querySelector('svg')
+          baseWidth += Math.max(
+            parseFloat(style.minWidth),
+            parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + (icon?.getBoundingClientRect().width ?? 0),
+          )
+          const label = item.querySelector('.selection-label > span')
+          if (label) {
+            const range = document.createRange()
+            range.selectNodeContents(label)
+            const width = range.getBoundingClientRect().width + labelGap
+            labelWidth = allLabelsVisible ? labelWidth + width : Math.max(labelWidth, width)
+          }
+        }
+        const width = baseWidth + labelWidth + Math.max(0, items.length - 1) * parseFloat(trackStyle.columnGap)
+          + parseFloat(trackStyle.paddingLeft) + parseFloat(trackStyle.paddingRight)
+          + parseFloat(trackStyle.borderLeftWidth) + parseFloat(trackStyle.borderRightWidth)
+        list.style.setProperty('--selection-width', `${Math.ceil(width)}px`)
+      }
       const selected = list.querySelector<HTMLElement>(
         '[data-state="active"], [aria-checked="true"]',
       )
@@ -42,13 +69,17 @@ export function useSlidingIndicator() {
     mutation.observe(list, {
       subtree: true,
       childList: true,
+      characterData: true,
       attributes: true,
-      attributeFilter: ['data-state', 'aria-checked'],
+      attributeFilter: ['data-state', 'aria-checked', 'data-variant'],
     })
     observeItems()
+    document.fonts.addEventListener('loadingdone', measure)
+    void document.fonts.ready.then(measure)
     return () => {
       resize.disconnect()
       mutation.disconnect()
+      document.fonts.removeEventListener('loadingdone', measure)
     }
   }, [])
 

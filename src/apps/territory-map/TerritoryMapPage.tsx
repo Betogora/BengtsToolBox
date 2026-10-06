@@ -1,7 +1,6 @@
 import {
   BarChart3,
   Building2,
-  ChevronDown,
   Compass,
   Globe2,
   Home,
@@ -41,6 +40,7 @@ import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import {
   loadTerritories,
@@ -586,7 +586,7 @@ function CollapsibleCardHeader({
     <CardHeader className="p-4 sm:p-6">
       <button
         aria-expanded={isOpen}
-        className="flex w-full min-w-0 items-center justify-between gap-3 rounded-md px-0 py-1 text-left outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+        className="flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-md px-0 py-1 text-left outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
         type="button"
         onClick={onToggle}
       >
@@ -596,12 +596,7 @@ function CollapsibleCardHeader({
             {title}
           </CardTitle>
         </span>
-        <ChevronDown
-          className={[
-            'size-4 shrink-0 text-muted-foreground transition-transform',
-            isOpen ? 'rotate-180' : '',
-          ].join(' ')}
-        />
+        <DisclosureIndicator isOpen={isOpen} />
       </button>
     </CardHeader>
   )
@@ -1032,13 +1027,13 @@ export function TerritoryMapPage() {
                   <li key={achievement.id}>
                     <details
                       className={[
-                        'overflow-hidden rounded-md border bg-background transition-colors',
+                        'group overflow-hidden rounded-md border bg-background transition-colors',
                         isUnlocked
                           ? 'text-foreground'
                           : 'text-muted-foreground grayscale',
                       ].join(' ')}
                     >
-                      <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                      <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)_1rem] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                         <span className="type-label min-w-0 truncate">
                           {t(achievement.title)}
                         </span>
@@ -1048,6 +1043,7 @@ export function TerritoryMapPage() {
                         <span className="type-action min-w-0 truncate text-right">
                           {winnerLabel || '-'}
                         </span>
+                        <DisclosureIndicator />
                       </summary>
                       <p className="type-caption border-t bg-secondary/70 px-3 py-2 text-secondary-foreground">
                         {t(achievement.rule)}

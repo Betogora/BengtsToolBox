@@ -26,8 +26,8 @@ export const appTeams: {
     nameKey: 'common.teamYellow',
     buttonLabel: 'Team Gelb',
     buttonLabelKey: 'common.teamYellow',
-    className: 'border-accent/40 bg-accent/20 text-accent-foreground',
-    dotClassName: 'bg-accent',
+    className: 'border-[#d3aa33] bg-[#fff4cc] text-[#755300]',
+    dotClassName: 'bg-[#d6a914]',
   },
 ]
 

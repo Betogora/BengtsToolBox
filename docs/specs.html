@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:c3faad71d47d559cb40ba1a74328626b34ecd4caff815224ea65b99ae048b52d">
+  <meta name="specs-source-sha256" content="sha256:3e1a8bc26858a9b1e45adab0356c61030ef6d3be4d46e01069995d693fcbd14a">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -544,6 +544,11 @@
               <li>Labels, ARIA-Namen, sichtbare Fokuszustände.</li>
               <li>Bestätigung destruktiver Aktionen; Farbe nie allein.</li>
               <li>Freie App-Farben verwenden einen gemeinsamen Farbkreis; nur bestätigte <code>#RRGGBB</code>-Werte werden gespeichert.</li>
+              <li>Icon-Tabs und segmentierte Auswahlen zeigen unter 430 px nur das aktive Label, ab 430 px alle Labels. Die Gesamtbreite bleibt beim Wechsel stabil; die kompakte Variante reserviert den längsten Namen. Zugängliche Namen und ein nach Größenänderungen ausgerichteter Auswahlindikator bleiben erhalten. Gemeinsame Datums-/Uhrzeitpicker bleiben per Tastatur eingebbar.</li>
+              <li>Auswahlfelder unterscheiden sich durch eine dezente Fläche und ein Listenfilter-Icon von Texteingaben. Team Gelb verwendet eine eigene gelbe Teamfarbe.</li>
+              <li>Aufklappbereiche teilen eine rechts angeordnete Chevron-Anzeige, die den geöffneten Zustand durch Drehung kennzeichnet.</li>
+              <li>Tastaturfokus verwendet eine klare Kontur. Dialog-Schließen besitzt 44 px Bedienfläche mobil und 36 px ab 640 px.</li>
+              <li>Globale Typografie verwendet Manrope Variable und semantische <code>type-*</code>-Rollen; Feldlabels und kleine Hinweise teilen 12/16 px, Abschnitts- und Dialogtitel 20/24 px.</li>
               <li>Kompakte Oberflächen; erklärende Untertitel nur auf ausdrücklichen Wunsch oder für notwendige Status- und Fehlermeldungen.</li>
             </ul>
           </article>
@@ -902,6 +907,11 @@
             </ul>
           </article>
         </div>
+        <ul>
+          <li>UI-Katalog: Name und kompakte Vorschau; Quellenpfade im HTML ohne Dateilinks. Keine Untertitel, Metadatenblöcke oder Prioritätswertung.</li>
+          <li>Gemeinsame Controls im Katalog verwenden interaktive Originalkomponenten; das Icon-Inventar zeigt echte SVGs. Zustandsbeispiele zeigen ungültige Eingaben, Speichern, erhaltene Entwürfe nach Fehlern, erneuten Versuch, lange Texte und Erfolg ausschließlich mit lokalen Beispieldaten. Große Fachvorschauen bleiben statisch; Suche bleibt beim Scrollen sichtbar und die Navigation markiert den aktuellen Abschnitt.</li>
+          <li>Icon-Auswahlleisten behalten beim Labelwechsel ihre Gesamtbreite; Kennzahlen stehen über breiten Fortschrittsgrafiken.</li>
+        </ul>
         <h3 style="margin:2rem 0 0.8rem">Testsystem</h3>
         <div class="grid-2">
           <article class="card accent">

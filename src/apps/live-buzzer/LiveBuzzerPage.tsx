@@ -10,6 +10,7 @@ import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DisclosureSummary } from '@/components/ui/disclosure'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -234,8 +235,8 @@ export function LiveBuzzerPage() {
           </Dialog>
         </div>
       </div>
-      {app.isHost && <details className="type-ui rounded-lg border bg-card p-3">
-        <summary className="flex cursor-pointer items-center gap-2"><History className="size-4" />{t('liveBuzzer.history')}</summary>
+      {app.isHost && <details className="type-ui group rounded-lg border bg-card p-3">
+        <DisclosureSummary><span className="flex items-center gap-2"><History className="size-4" />{t('liveBuzzer.history')}</span></DisclosureSummary>
         <div className="mt-3 grid gap-2">
           {sessionState.history.map((round) => <div key={round.id} className="break-words">{t('liveBuzzer.winnerLine', { round: round.roundNumber, name: round.winnerPlayerName })}</div>)}
           {!sessionState.history.length && <p className="text-muted-foreground">{t('liveBuzzer.emptyWinners')}</p>}

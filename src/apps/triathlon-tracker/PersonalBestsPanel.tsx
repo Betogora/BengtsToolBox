@@ -18,6 +18,7 @@ import type {
   TrainingContext,
 } from './types'
 import { Button } from '@/components/ui/button'
+import { DisclosureSummary } from '@/components/ui/disclosure'
 import { Card } from '@/components/ui/card'
 import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
@@ -299,7 +300,7 @@ export function PersonalBestsPanel({
                                     record.durationSeconds,
                                   )}
                                 </span>
-                                <span className="block text-[11px] text-muted-foreground">
+                                <span className="type-caption block text-muted-foreground">
                                   {formattedDate(record.localDate)}
                                 </span>
                               </button>
@@ -330,7 +331,7 @@ export function PersonalBestsPanel({
                                     </span>
                                   )}
                                 </span>
-                                <span className="block text-[11px] text-muted-foreground">
+                                <span className="type-caption block text-muted-foreground">
                                   {formatPace(
                                     (estimate.predictedDurationSeconds /
                                       targetDistanceMeters) *
@@ -419,7 +420,7 @@ export function PersonalBestsPanel({
                                 })}
                               >
                                 {Math.round(record.averagePowerWatts)} W{' '}
-                                <span className="text-[11px] font-normal text-muted-foreground">
+                                <span className="type-caption font-normal text-muted-foreground">
                                   {formattedDate(record.localDate)}
                                 </span>
                               </button>
@@ -513,10 +514,10 @@ export function PersonalBestsPanel({
           onSave={onUpdateWeight}
         />
       </div>
-      <details className="rounded-lg border bg-card p-3">
-        <summary className="cursor-pointer text-sm font-medium">
+      <details className="group rounded-lg border bg-card p-3">
+        <DisclosureSummary>
           {t('triathlon.performance.methodology')}
-        </summary>
+        </DisclosureSummary>
         <div className="mt-3 grid gap-4 text-xs leading-relaxed text-muted-foreground md:grid-cols-3">
           {(
             [

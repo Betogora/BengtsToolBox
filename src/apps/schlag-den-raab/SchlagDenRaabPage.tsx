@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import {
   Archive,
-  ChevronDown,
-  ChevronRight,
   RotateCcw,
   Trash2,
   Trophy,
@@ -24,6 +22,7 @@ import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import {
   Card,
   CardContent,
@@ -330,18 +329,14 @@ function ArchiveSection({
     <Card>
       <CardHeader>
         <button
-          className="flex min-w-0 items-center gap-2 text-left"
+          className="flex min-h-11 w-full min-w-0 items-center gap-2 text-left"
           aria-expanded={isOpen}
           onClick={() => setIsOpen((current) => !current)}
         >
-          {isOpen ? (
-            <ChevronDown className="size-4 shrink-0" />
-          ) : (
-            <ChevronRight className="size-4 shrink-0" />
-          )}
           <Archive className="size-5 shrink-0 text-primary" />
           <span className="type-action">{t('common.oldDatasets')}</span>
           <Badge variant="secondary">{archivedDatasets.length}</Badge>
+          <DisclosureIndicator isOpen={isOpen} className="ml-auto" />
         </button>
       </CardHeader>
       {isOpen && (
@@ -386,15 +381,10 @@ function ArchiveDatasetCard({
     <div className="rounded-lg border bg-card">
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <button
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
           aria-expanded={isOpen}
           onClick={() => setIsOpen((current) => !current)}
         >
-          {isOpen ? (
-            <ChevronDown className="size-4 shrink-0" />
-          ) : (
-            <ChevronRight className="size-4 shrink-0" />
-          )}
           <div className="min-w-0">
             <InlineTextEdit
               ariaLabel={t('progress.archiveName')}
@@ -408,6 +398,7 @@ function ArchiveDatasetCard({
               {t('raab.gameCount', { count: playedGames })}
             </div>
           </div>
+          <DisclosureIndicator isOpen={isOpen} className="ml-auto" />
         </button>
         <ConfirmButton
           title={t('common.dataset.delete')}

@@ -1,8 +1,9 @@
-import { ChevronDown, Clock3, Copy, Plus, Trash2 } from 'lucide-react'
+import { Clock3, Copy, Plus, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 
 import type {
   ActualTraining,
@@ -52,7 +53,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import {
   updateTrainingMetrics,
   parseTrainingDuration,
@@ -875,13 +875,7 @@ function ActualTrainingDialogContent({
             onClick={() => setShowDetails((current) => !current)}
           >
             {t('triathlon.intervals.title')}
-            <ChevronDown
-              aria-hidden="true"
-              className={cn(
-                'transition-transform',
-                showDetails && 'rotate-180',
-              )}
-            />
+            <DisclosureIndicator isOpen={showDetails} />
           </Button>
           {showDetails && (
             <div

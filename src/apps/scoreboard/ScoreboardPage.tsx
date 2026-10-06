@@ -1,7 +1,5 @@
 import {
   Archive,
-  ChevronDown,
-  ChevronRight,
   History,
   ListOrdered,
   RotateCcw,
@@ -29,6 +27,7 @@ import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
   Card,
@@ -39,7 +38,6 @@ import {
 } from '@/components/ui/card'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
-import { cn } from '@/lib/utils'
 
 function ScoreboardPresenter({ standings }: { standings: ScoreboardStanding[] }) {
   const { formatNumber, t } = useI18n()
@@ -326,18 +324,14 @@ export function ScoreboardPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
               aria-expanded={isHistoryOpen}
               onClick={() => setIsHistoryOpen((current) => !current)}
             >
-              {isHistoryOpen ? (
-                <ChevronDown className="size-4 shrink-0" />
-              ) : (
-                <ChevronRight className="size-4 shrink-0" />
-              )}
               <History className="size-5 shrink-0 text-primary" />
               <span className="type-action">{t('common.history')}</span>
               <Badge variant="secondary">{scoreboard.activeEvents.length}</Badge>
+              <DisclosureIndicator isOpen={isHistoryOpen} className="ml-auto" />
             </button>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -380,7 +374,7 @@ export function ScoreboardPage() {
         <CardHeader>
           <button
             type="button"
-            className="flex w-full items-center justify-between gap-3 text-left"
+            className="flex min-h-11 w-full items-center justify-between gap-3 text-left"
             aria-expanded={isArchiveOpen}
             onClick={() => setIsArchiveOpen((current) => !current)}
           >
@@ -389,12 +383,7 @@ export function ScoreboardPage() {
               <span className="type-action">{t('scoreboard.oldScorings')}</span>
               <Badge variant="secondary">{scoreboard.archiveViews.length}</Badge>
             </span>
-            <ChevronDown
-              className={cn(
-                'size-4 shrink-0 text-muted-foreground transition-transform',
-                isArchiveOpen && 'rotate-180',
-              )}
-            />
+            <DisclosureIndicator isOpen={isArchiveOpen} />
           </button>
         </CardHeader>
         {isArchiveOpen && (

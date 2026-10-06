@@ -1,5 +1,5 @@
 import * as SelectPrimitive from '@radix-ui/react-select'
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon, ListFilter } from 'lucide-react'
 import type * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -22,15 +22,15 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        'type-ui flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 shadow-xs outline-none focus:ring-[3px] focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+        'type-ui relative flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-[#f3f7fa] pl-3 pr-9 py-2 shadow-xs outline-none focus:ring-[3px] focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
         isInvalid && 'border-destructive! focus:ring-destructive/20',
         className,
       )}
       {...props}
     >
-      {children}
+      <span className="min-w-0 flex-1 truncate text-left">{children}</span>
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 opacity-50" />
+        <ListFilter aria-hidden="true" className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )

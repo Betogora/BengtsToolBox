@@ -98,6 +98,9 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
   const progressItems = progressList.getByRole('listitem')
 
   await expect(chart).toBeVisible()
+  const chartUnit = chart.locator('text').filter({ hasText: /^Getränke$/ })
+  if (page.viewportSize()!.width < 768) await expect(chartUnit).toBeHidden()
+  else await expect(chartUnit).toBeVisible()
   await expect(progressList).toBeVisible()
   await expect(progressItems).toHaveCount(5)
   await expect(progressItems.nth(0)).toContainText('Person 1')
@@ -116,6 +119,13 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
 
   const chartBounds = await chart.boundingBox()
   const listBounds = await progressList.boundingBox()
+  const summary = page.getByRole('textbox', { name: 'Einheit' }).locator('xpath=ancestor::*[@data-slot="card-header"]')
+  const summaryBounds = await summary.boundingBox()
+  expect(summaryBounds!.y + summaryBounds!.height).toBeLessThanOrEqual(chartBounds!.y)
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    const frameBounds = await chart.locator('..').boundingBox()
+    expect(Math.abs(frameBounds!.width - (summaryBounds!.width - 48))).toBeLessThanOrEqual(2)
+  }
 
   expect(listBounds?.y ?? 0).toBeGreaterThan(
     (chartBounds?.y ?? 0) + (chartBounds?.height ?? 0),
