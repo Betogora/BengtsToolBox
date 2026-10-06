@@ -25,7 +25,16 @@ const territoryPathLoaders: Record<TerritoryMapId, () => Promise<string[]>> = {
     ),
 }
 
-export async function loadTerritories(mapId: TerritoryMapId) {
+const territoryLoads: Partial<Record<TerritoryMapId, Promise<Territory[]>>> = {}
+
+export function loadTerritories(mapId: TerritoryMapId) {
+  return (territoryLoads[mapId] ??= loadTerritoryData(mapId).catch((error) => {
+    delete territoryLoads[mapId]
+    throw error
+  }))
+}
+
+async function loadTerritoryData(mapId: TerritoryMapId) {
   const paths = await territoryPathLoaders[mapId]()
   const options = territoryOptionsByMap[mapId]
 

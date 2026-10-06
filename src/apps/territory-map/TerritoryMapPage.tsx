@@ -631,7 +631,6 @@ export function TerritoryMapPage() {
   } = useTerritoryMap()
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
   const [isDatasetPrepared, setIsDatasetPrepared] = useState(false)
-  const [isDatasetWarmed, setIsDatasetWarmed] = useState(false)
   const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
   const [territoriesByMap, setTerritoriesByMap] = useState<
@@ -694,10 +693,11 @@ export function TerritoryMapPage() {
         return
       }
 
-      setTerritoriesByMap((current) => ({
-        ...current,
-        [state.activeMap]: nextTerritories,
-      }))
+      setTerritoriesByMap((current) =>
+        current[state.activeMap] === nextTerritories
+          ? current
+          : { ...current, [state.activeMap]: nextTerritories },
+      )
     })
 
     return () => {
@@ -706,34 +706,32 @@ export function TerritoryMapPage() {
   }, [state.activeMap])
 
   useEffect(() => {
-    if (isDatasetPrepared || isMapLoading || !isDatasetReady) {
+    const otherMap = state.activeMap === 'world' ? 'germany' : 'world'
+    if (isMapLoading || territoriesByMap[otherMap]) {
       return
     }
 
-    const frameId = window.requestAnimationFrame(() => {
-      setIsDatasetPrepared(true)
-    })
-
-    return () => {
-      window.cancelAnimationFrame(frameId)
-    }
-  }, [isDatasetPrepared, isDatasetReady, isMapLoading])
-
-  useEffect(() => {
-    if (!isDatasetPrepared || isDatasetOpen || isDatasetWarmed) {
-      return
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      startTransition(() => {
-        setIsDatasetWarmed(true)
+    let isActive = true
+    const timerId = window.setTimeout(() => {
+      loadTerritories(otherMap).then((nextTerritories) => {
+        if (isActive) {
+          startTransition(() => {
+            setTerritoriesByMap((current) => ({
+              ...current,
+              [otherMap]: nextTerritories,
+            }))
+          })
+        }
+      }).catch(() => {
+        // Ein fehlgeschlagenes Vorladen wird beim Kartenwechsel erneut versucht.
       })
-    })
+    }, 0)
 
     return () => {
-      window.cancelAnimationFrame(frameId)
+      isActive = false
+      window.clearTimeout(timerId)
     }
-  }, [isDatasetOpen, isDatasetPrepared, isDatasetWarmed])
+  }, [isMapLoading, state.activeMap, territoriesByMap])
 
   const handleMapChange = (nextMap: TerritoryMapId) => {
     setSelectedTerritoryId(null)
@@ -1071,42 +1069,35 @@ export function TerritoryMapPage() {
           onToggle={() => {
             if (!isDatasetOpen) {
               setIsDatasetPrepared(true)
-              setIsDatasetWarmed(true)
             }
             setIsDatasetOpen((current) => !current)
           }}
         />
         {isDatasetPrepared && (
-          <div
-            aria-hidden={!isDatasetOpen}
-            className={isDatasetOpen ? '' : 'invisible h-0 overflow-hidden'}
-            data-dataset-warmed={isDatasetWarmed}
-          >
-            <Activity mode={isDatasetWarmed ? 'visible' : 'hidden'}>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                {!isDatasetReady ? (
-                  <p className="type-ui text-muted-foreground" role="status">
-                    {t('common.syncing')}
-                  </p>
-                ) : (
-                  <TerritoryEventTable
-                    dataset={activeDataset}
-                    disabled={false}
-                    players={players}
-                    onDeleteEvent={async (eventId) => {
-                      const result = await deleteEvent(eventId)
-                      if (result.ok) {
-                        toast.success(t('territory.claimDeleted'))
-                      }
-                    }}
-                    onUpdateEvent={(eventId, partialValue) =>
-                      updateEvent(eventId, partialValue)
+          <Activity mode={isDatasetOpen ? 'visible' : 'hidden'}>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              {!isDatasetReady ? (
+                <p className="type-ui text-muted-foreground" role="status">
+                  {t('common.syncing')}
+                </p>
+              ) : (
+                <TerritoryEventTable
+                  dataset={activeDataset}
+                  disabled={false}
+                  players={players}
+                  onDeleteEvent={async (eventId) => {
+                    const result = await deleteEvent(eventId)
+                    if (result.ok) {
+                      toast.success(t('territory.claimDeleted'))
                     }
-                  />
-                )}
-              </CardContent>
-            </Activity>
-          </div>
+                  }}
+                  onUpdateEvent={(eventId, partialValue) =>
+                    updateEvent(eventId, partialValue)
+                  }
+                />
+              )}
+            </CardContent>
+          </Activity>
         )}
       </Card>
 

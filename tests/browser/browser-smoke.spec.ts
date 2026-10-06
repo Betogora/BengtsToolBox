@@ -293,9 +293,26 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   app,
   page,
 }) => {
+  const geometryRequests: string[] = []
+  page.on('request', (request) => {
+    if (/\/(world|germany)Territories/.test(request.url())) {
+      geometryRequests.push(request.url())
+    }
+  })
+  const germanyGeometryLoaded = page.waitForResponse((response) =>
+    response.url().includes('/germanyTerritories'),
+  )
   await app.open('/apps/sushi')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Sushi Map' })).toBeVisible()
+  await expect(page.locator('input[aria-label="Datum"]')).toHaveCount(0)
+  await germanyGeometryLoaded
+  await page.getByRole('radio', { name: 'Deutschland', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Bayern, / })).toBeVisible()
+  await page.getByRole('radio', { name: 'Welt', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Japan, / })).toBeVisible()
+  expect(geometryRequests.filter((url) => url.includes('/worldTerritories'))).toHaveLength(1)
+  expect(geometryRequests.filter((url) => url.includes('/germanyTerritories'))).toHaveLength(1)
 
   for (const territory of ['England', 'Nordirland', 'Schottland', 'Wales']) {
     await expect(
@@ -390,13 +407,7 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     expect(scoreColumnWidths[1]).toBeCloseTo(scoreColumnWidths[2] ?? 0, 0)
   }
 
-  await expect(
-    page.locator('[data-dataset-warmed="true"]'),
-  ).toHaveCount(1)
-
-  const preparedDateInputs = page.locator('input[aria-label="Datum"]')
-  await expect.poll(() => preparedDateInputs.count()).toBeGreaterThan(0)
-  await expect(page.locator('input[aria-label="Datum"]:visible')).toHaveCount(0)
+  await expect(page.locator('input[aria-label="Datum"]')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Datensatz' }).click()
   const expectedVisibleTables = viewportWidth >= 768 ? 2 : 1
@@ -459,6 +470,18 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
   await page.getByRole('button', { name: 'Kalender öffnen: Datum' }).filter({ visible: true }).click()
   await page.locator('[data-date-picker]').getByRole('button', { name: 'Heute', exact: true }).click()
   await expect.poll(storedDatasets).not.toBe(committedDataset)
+
+  const retainedDateInput = await dateInput.elementHandle()
+  const savedDate = await dateInput.inputValue()
+  await page.getByRole('button', { name: 'Datensatz' }).click()
+  await expect(page.locator('input[aria-label="Datum"]:visible')).toHaveCount(0)
+  await page.getByRole('radio', { name: 'Deutschland', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Bayern, / })).toBeVisible()
+  await page.getByRole('radio', { name: 'Welt', exact: true }).click()
+  await expect(page.getByRole('button', { name: /^Japan, / })).toBeVisible()
+  await page.getByRole('button', { name: 'Datensatz' }).click()
+  await expect(dateInput).toHaveValue(savedDate)
+  expect(await retainedDateInput?.isVisible()).toBe(true)
 
   await page.evaluate(() => window.scrollTo({ top: 0 }))
   await app.expectHealthy()

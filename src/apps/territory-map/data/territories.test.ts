@@ -25,7 +25,10 @@ describe('Sushi-Map-Geometriedaten', () => {
   it.each(['world', 'germany'] as const)(
     'verbindet für %s jede Option mit genau einem Pfad',
     async (mapId) => {
-      const territories = await loadTerritories(mapId)
+      const load = loadTerritories(mapId)
+      expect(loadTerritories(mapId)).toBe(load)
+      const territories = await load
+      expect(await loadTerritories(mapId)).toBe(territories)
 
       expect(territories).toHaveLength(territoryOptionsByMap[mapId].length)
       territories.forEach((territory, index) => {
