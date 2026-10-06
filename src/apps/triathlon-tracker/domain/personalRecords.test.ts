@@ -35,7 +35,7 @@ describe('measured personal records', () => {
 
   it('excludes other contexts, structured intervals, future and retrospectively unavailable results', () => {
     const excluded = [
-      training({ context: 'track' }),
+      training({ context: 'treadmill' }),
       training({ intervals: [{ id: 'work', position: 1, kind: 'work', durationSeconds: 1_200, distanceMeters: 5_000, averageHeartRateBpm: null, averagePowerWatts: null }] }),
       training({ localDate: '2026-10-04' }),
       training({ analyticsAvailableFromLocalDate: '2026-10-04' }),

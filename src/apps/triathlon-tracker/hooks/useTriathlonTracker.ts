@@ -44,6 +44,10 @@ export type TrackerSettingsInput = Pick<
   'weightKg'
 >
 
+type StoredActualTraining = Omit<ActualTraining, 'context'> & {
+  context: ActualTraining['context'] | 'track'
+}
+
 export type PlannedWeekCopyPreview = {
   sourceWeekStartLocalDate: string
   targetWeekStartLocalDate: string
@@ -198,10 +202,17 @@ export function useTriathlonTracker(lobbyId?: string) {
     [],
     'position',
   )
-  const actualTrainingsStore = useFirestoreCollection<ActualTraining>(
+  const actualTrainingsStore = useFirestoreCollection<StoredActualTraining>(
     actualTrainingsPath,
     [],
     'position',
+  )
+  const actualTrainings = useMemo<ActualTraining[]>(
+    () => actualTrainingsStore.data.map((training) => ({
+      ...training,
+      context: training.context === 'track' ? 'road' : training.context,
+    })),
+    [actualTrainingsStore.data],
   )
 
   const updateSettings = (partial: Partial<TrackerSettingsInput>) => {
@@ -281,7 +292,7 @@ export function useTriathlonTracker(lobbyId?: string) {
     id: string,
     partial: Partial<ActualTrainingInput>,
   ) => {
-    const training = actualTrainingsStore.data.find((item) => item.id === id)
+    const training = actualTrainings.find((item) => item.id === id)
     if (!training) {
       return rejectedWrite('The actual training no longer exists.')
     }
@@ -360,7 +371,7 @@ export function useTriathlonTracker(lobbyId?: string) {
   }
 
   return {
-    actualTrainings: actualTrainingsStore.data,
+    actualTrainings,
     addActualTraining,
     addPlannedTraining,
     copyPlannedWeek,

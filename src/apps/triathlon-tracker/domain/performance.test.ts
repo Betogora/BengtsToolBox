@@ -86,7 +86,7 @@ describe('running performance', () => {
       [
         performance('run-1', 'run', 'road', 300, 1_400),
         performance('run-2', 'run', 'road', 600, 2_600),
-        performance('run-3', 'run', 'track', 1_200, 5_000),
+        performance('run-3', 'run', 'treadmill', 1_200, 5_000),
       ],
       { context: 'road', asOfLocalDate: '2026-08-22' },
     )
@@ -113,7 +113,7 @@ describe('running performance', () => {
       [
         fastest,
         confirmation,
-        performance('run-3', 'run', 'track', 2_500, 10_000),
+        performance('run-3', 'run', 'treadmill', 2_500, 10_000),
       ],
       { context: 'road', asOfLocalDate: '2026-08-22' },
     )

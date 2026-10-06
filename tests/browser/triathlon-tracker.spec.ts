@@ -125,14 +125,21 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   const actual = page.getByRole('dialog', { name: 'Training eintragen' })
   await actual.getByRole('combobox', { name: 'Disziplin' }).click()
   await page.getByRole('option', { name: 'Schwimmen', exact: true }).click()
-  await expect(actual.getByRole('combobox', { name: 'Kontext' })).toContainText(
-    '50-m-Becken',
-  )
+  await expect(
+    actual.getByRole('radio', { name: '50-m-Becken', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
   await actual.getByRole('combobox', { name: 'Disziplin' }).click()
   await page.getByRole('option', { name: 'Laufen', exact: true }).click()
-  await expect(actual.getByRole('combobox', { name: 'Kontext' })).toContainText(
-    'Straße',
-  )
+  const runContext = actual.getByRole('radiogroup', { name: 'Kontext', exact: true })
+  await expect(runContext.getByRole('radio')).toHaveText(['Straße', 'Laufband'])
+  await expect(
+    runContext.getByRole('radio', { name: 'Straße', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
+  await runContext.getByRole('radio', { name: 'Straße', exact: true }).press('ArrowRight')
+  await expect(
+    runContext.getByRole('radio', { name: 'Laufband', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
+  await expect(runContext.getByRole('radio', { name: 'Laufband', exact: true })).toBeFocused()
   await actual.getByRole('button', { name: 'Speichern' }).click()
   await expect(actual.getByRole('alert')).toContainText(
     'Trage mindestens Dauer oder Distanz ein.',
@@ -157,6 +164,7 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(page.locator('[data-journal-training]')).toHaveCount(1)
   await expect(page.locator('[data-journal-training]')).toContainText('50 min')
   await expect(page.locator('[data-journal-training]')).toContainText('155')
+  await expect(page.locator('[data-journal-training]')).toContainText('Laufband')
   await page.getByRole('button', { name: 'Bearbeiten: Laufen' }).click()
   const edit = page.getByRole('dialog', { name: 'Training bearbeiten' })
   await expect(edit.getByLabel('Ø Herzfrequenz (bpm)')).toHaveValue('155')
@@ -399,8 +407,8 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await expect(
     page
       .getByRole('dialog', { name: 'Training bearbeiten' })
-      .getByRole('combobox', { name: 'Kontext' }),
-  ).toContainText('Straße')
+      .getByRole('radio', { name: 'Straße', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
   await app.expectHealthy()
 })
 
@@ -521,14 +529,14 @@ test('Rekorde lassen sich sekundengenau anlegen und bleiben nach Kontextwechsel 
   await expect(
     page.locator('[data-record-card="run"] [data-record-distance="42195"]'),
   ).not.toContainText(/\d:\d\d/)
-  await page.getByRole('combobox', { name: 'Kontext: Schwimmen' }).click()
-  await page.getByRole('option', { name: '25-m-Becken', exact: true }).click()
+  const swimContext = page.getByRole('radiogroup', { name: 'Kontext: Schwimmen' })
+  await swimContext.getByRole('radio', { name: '25-m-Becken', exact: true }).click()
   await page
     .getByRole('button', { name: 'Schwimmen · 200 m eintragen', exact: true })
     .click()
-  await expect(form.getByRole('combobox', { name: 'Kontext' })).toContainText(
-    '25-m-Becken',
-  )
+  await expect(
+    form.getByRole('radio', { name: '25-m-Becken', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
   await expect(form.getByLabel('Distanz (km)')).toHaveValue('0.2')
   await form.getByLabel('Dauer (m:ss / h:mm:ss)').fill('3:10')
   await form.getByRole('button', { name: 'Speichern', exact: true }).click()
@@ -552,10 +560,9 @@ test('Rekorde lassen sich sekundengenau anlegen und bleiben nach Kontextwechsel 
   ])
   await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await expect(
-    page.getByRole('combobox', { name: 'Kontext: Schwimmen' }),
-  ).toContainText('25-m-Becken')
-  await page.getByRole('combobox', { name: 'Kontext: Schwimmen' }).click()
-  await page.getByRole('option', { name: '50-m-Becken', exact: true }).click()
+    swimContext.getByRole('radio', { name: '25-m-Becken', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
+  await swimContext.getByRole('radio', { name: '50-m-Becken', exact: true }).click()
   await expect(
     swim.getByRole('button', { name: 'Rekord bearbeiten: Schwimmen · 200 m' }),
   ).toHaveCount(0)

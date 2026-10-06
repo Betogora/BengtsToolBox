@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { trainingContexts } from './types'
 
 import type {
   ActualTraining,
@@ -106,21 +108,6 @@ function getDisciplineLabel(
   t: ReturnType<typeof useI18n>['t'],
 ) {
   return t(`triathlon.discipline.${discipline}`)
-}
-
-function getContextLabel(
-  context: TrainingContext | null,
-  t: ReturnType<typeof useI18n>['t'],
-) {
-  return context === null
-    ? t('triathlon.context.none')
-    : t(`triathlon.context.${context}`)
-}
-
-function contextsForDiscipline(discipline: Discipline): TrainingContext[] {
-  if (discipline === 'swim') return ['pool-25', 'pool-50', 'open-water']
-  if (discipline === 'bike') return ['indoor', 'outdoor']
-  return ['road', 'track', 'treadmill']
 }
 
 type DefaultTrainingContexts = {
@@ -585,7 +572,7 @@ function ActualTrainingDialogContent({
     minutesToTime(initial?.startMinutes ?? null),
   )
   const [discipline, setDiscipline] = useState<Discipline>(initialDiscipline)
-  const [context, setContext] = useState<TrainingContext | null>(
+  const [context, setContext] = useState<TrainingContext>(
     initial?.context ?? defaultContext(initialDiscipline, defaultContexts),
   )
   const [metrics, setMetrics] = useState<TrainingMetricDraft>(() => ({
@@ -763,34 +750,28 @@ function ActualTrainingDialogContent({
             value={startTime}
             onValueChange={setStartTime}
           />
-          <DisciplineSelect
-            value={discipline}
-            onValueChange={handleDisciplineChange}
-          />
-          <Select
-            key={discipline}
-            value={context ?? 'none'}
-            onValueChange={(value) =>
-              setContext(value === 'none' ? null : (value as TrainingContext))
-            }
-          >
-            <IftaSelectTrigger
-              className="min-w-0 gap-1 [&_[data-slot=select-value]]:truncate"
-              label={t('triathlon.form.context')}
-            >
-              <SelectValue />
-            </IftaSelectTrigger>
-            <SelectContent className="triathlon-tracker">
-              <SelectItem value="none">
-                {t('triathlon.context.none')}
-              </SelectItem>
-              {contextsForDiscipline(discipline).map((option) => (
-                <SelectItem key={option} value={option}>
-                  {getContextLabel(option, t)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="col-span-2">
+            <DisciplineSelect
+              value={discipline}
+              onValueChange={handleDisciplineChange}
+            />
+          </div>
+          <div className="col-span-2 grid min-w-0 gap-1">
+            <span className="type-field-label text-muted-foreground">
+              {t('triathlon.form.context')}
+            </span>
+            <SegmentedControl
+              key={discipline}
+              className="tri-context-control"
+              aria-label={t('triathlon.form.context')}
+              value={context}
+              onValueChange={(value) => setContext(value as TrainingContext)}
+              options={trainingContexts[discipline].map((option) => ({
+                value: option,
+                label: t(`triathlon.context.${option}`),
+              }))}
+            />
+          </div>
         </fieldset>
         <fieldset className="grid grid-cols-2 gap-2">
           <legend className="sr-only">{t('triathlon.form.metrics')}</legend>

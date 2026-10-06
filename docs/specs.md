@@ -416,6 +416,8 @@ Pairings tragen harte oder weiche Warnungen. Abgedeckt werden unter anderem fehl
 
 **Zweck:** Bestleistungen für Schwimmen, Radfahren und Laufen verfolgen, Training manuell planen und seine Entwicklung nachvollziehen.
 
+- Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Segmented Controls. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.
+
 - Die Tabs Rekorde, Planung, Tagebuch und Verlauf trennen Rekorde, Planung, Erfassung und Auswertung; Rekorde ist die Einstiegsansicht. Das optionale aktuelle Gewicht wird dort für Critical Power in W/kg gepflegt. Die App verwendet metrische Einheiten, `Europe/Berlin` und Montag als Wochenbeginn.
 - Gemessene Rekorde verwenden die gesamte bisherige Historie im gewählten Kontext, standardmäßig nur markierte Maximaltests, umschaltbar auf alle Trainings. Sie benötigen exakt die Zieldistanz: Schwimmen 200/400/750/1.500 m, Rad 20/40 km, Laufen 1/5/10 km/Halbmarathon/Marathon. Radleistungsrekorde benötigen exakt 5 oder 20 Minuten. Intervalle und hochgerechnete Teilstrecken sind keine gemessenen Rekorde. Jede Zielzeile bietet eine vorausgefüllte Testeingabe; bestehende Rekorde öffnen ihren ursprünglichen Eintrag.
 - Geplante Einheiten enthalten Datum, optionale Zeit, Disziplin, optionale Dauer und Distanz sowie ein kurzes Label. Sie sind passive Kalendereinträge ohne Status, Plan-Ist-Verknüpfung oder Erfüllungswertung. Eine Woche kann nach Vorschau einschließlich möglicher Duplikate kopiert werden.

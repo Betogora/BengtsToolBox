@@ -1,3 +1,15 @@
+.triathlon-tracker .tri-context-control {
+  width: 100%;
+}
+
+.triathlon-tracker .tri-context-control .selection-item {
+  padding-inline: 0.5rem;
+}
+
+.triathlon-tracker .tri-context-control .selection-label {
+  white-space: normal;
+}
+
 .triathlon-tracker [data-discipline='swim'] {
   --sport-ink: #205a80;
   --sport-wash: #e6f0f7;

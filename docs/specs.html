@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:3e1a8bc26858a9b1e45adab0356c61030ef6d3be4d46e01069995d693fcbd14a">
+  <meta name="specs-source-sha256" content="sha256:902688857751741e9dcf339670c7ca90dbda0704ecf00141c04d9814236ce839">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -815,6 +815,7 @@
           <summary><span class="app-number">10</span><span><span class="app-summary-title">Triathlon-Tracker</span><span class="app-summary-route">/apps/triathlon-tracker</span></span></summary>
           <div class="app-body">
             <ul>
+              <li>Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Segmented Controls. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.</li>
               <li>Bestleistungen für Schwimmen, Radfahren und Laufen, manuelle Planung und Erfassung. Die Tabs Rekorde, Planung, Tagebuch und Verlauf trennen die Aufgaben; Rekorde ist die Einstiegsansicht. Das optionale Gewicht wird dort für Critical Power in W/kg gepflegt. Metrische Einheiten, Europe/Berlin und Montag als Wochenbeginn gelten durchgehend.</li>
               <li>Gemessene Rekorde verwenden die gesamte bisherige Historie im gewählten Kontext, standardmäßig nur Maximaltests, umschaltbar auf alle Trainings. Erforderlich sind exakte Zieldistanzen: Schwimmen 200/400/750/1.500 m, Rad 20/40 km, Laufen 1/5/10 km/Halbmarathon/Marathon. Radleistungsrekorde benötigen exakt 5 oder 20 Minuten. Intervalle und hochgerechnete Teilstrecken sind keine gemessenen Rekorde. Zielzeilen bieten vorausgefüllte Testeingaben; Rekorde öffnen ihren ursprünglichen Eintrag.</li>
               <li>Planungen sind passive Kalendereinträge ohne Status oder Plan-Ist-Wertung. Eine Woche kann nach Vorschau einschließlich möglicher Duplikate kopiert werden.</li>

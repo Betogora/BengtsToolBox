@@ -8,6 +8,12 @@ import type {
   TrackerSettings,
 } from '@/apps/triathlon-tracker/types'
 import { getCurrentLocalDate } from '@/apps/triathlon-tracker/domain/dates'
+import { getPersonalRecords } from '@/apps/triathlon-tracker/domain/personalRecords'
+import { analyzeRun } from '@/apps/triathlon-tracker/domain/performance'
+
+type StoredActualTraining = Omit<ActualTraining, 'context'> & {
+  context: ActualTraining['context'] | 'track'
+}
 
 const stores = vi.hoisted(() => {
   const action = () => vi.fn(() => Promise.resolve({ ok: true }))
@@ -40,7 +46,7 @@ const stores = vi.hoisted(() => {
       setItem: action(),
     },
     actual: {
-      data: [] as ActualTraining[],
+      data: [] as StoredActualTraining[],
       error: null,
       isLoading: false,
       isPending: false,
@@ -174,6 +180,47 @@ describe('useTriathlonTracker', () => {
       'lobbies/ABC234/apps/triathlon-tracker/planned-trainings',
       'lobbies/ABC234/apps/triathlon-tracker/actual-trainings',
     ])
+  })
+
+  it('ordnet gespeicherte Bahn-Einträge der Straße zu und erhält sie beim Bearbeiten', async () => {
+    stores.actual.data = [{
+      id: 'track-run',
+      position: 1,
+      localDate: getCurrentLocalDate(),
+      startMinutes: null,
+      analyticsAvailableFromLocalDate: '2026-08-17',
+      discipline: 'run',
+      context: 'track',
+      durationSeconds: 1_800,
+      distanceMeters: 5_000,
+      averageHeartRateBpm: null,
+      averagePowerWatts: null,
+      rpe: null,
+      intervals: [],
+    }]
+    const tracker = renderHook()
+    const options = {
+      discipline: 'run',
+      context: 'road',
+      asOfLocalDate: getCurrentLocalDate(),
+    } as const
+    expect(tracker.actualTrainings[0].context).toBe('road')
+    expect(
+      getPersonalRecords(tracker.actualTrainings, options).distanceRecords[1].record?.trainingId,
+    ).toBe('track-run')
+    expect(analyzeRun(tracker.actualTrainings, options).status).toBe('ready')
+    expect(
+      getPersonalRecords(tracker.actualTrainings, { ...options, context: 'treadmill' }).distanceRecords[1].record,
+    ).toBeNull()
+
+    await tracker.updateActualTraining('track-run', { rpe: 4 })
+    expect(stores.actual.setItem).toHaveBeenCalledWith('track-run', expect.objectContaining({
+      context: 'road',
+      durationSeconds: 1_800,
+      distanceMeters: 5_000,
+      rpe: 4,
+      analyticsAvailableFromLocalDate: '2026-08-17',
+    }))
   })
 
   it('speichert fachliche CRUD-Aktionen mit Position und Gerätekennung', async () => {

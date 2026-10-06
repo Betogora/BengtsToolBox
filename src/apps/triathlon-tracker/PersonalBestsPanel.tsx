@@ -10,7 +10,7 @@ import {
 import { formatPace, formatTrainingDurationInput } from './domain/units'
 import type { ActualTrainingInput } from './hooks/useTriathlonTracker'
 import { disciplineIcons, disciplines } from './presentation'
-import { defaultTrainingContexts } from './types'
+import { defaultTrainingContexts, trainingContexts } from './types'
 import type {
   ActualTraining,
   Discipline,
@@ -25,16 +25,10 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
-
-const contexts = {
-  swim: ['pool-50', 'pool-25', 'open-water'],
-  bike: ['outdoor', 'indoor'],
-  run: ['road', 'track', 'treadmill'],
-} as const
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 function WeightInput({
   weightKg,
@@ -120,7 +114,7 @@ export function PersonalBestsPanel({
         targetDistancesMeters: personalRecordDistances.bike,
       }),
       run: analyzeRun(actualTrainings, {
-        context: selectedContexts.run as 'road' | 'track' | 'treadmill',
+        context: selectedContexts.run as 'road' | 'treadmill',
         asOfLocalDate: today,
         targetDistancesMeters: personalRecordDistances.run,
       }),
@@ -212,7 +206,9 @@ export function PersonalBestsPanel({
                   <Icon className="size-5" aria-hidden="true" />
                   {t(`triathlon.discipline.${discipline}`)}
                 </h3>
-                <Select
+                <SegmentedControl
+                  className="tri-context-control"
+                  aria-label={`${t('triathlon.form.context')}: ${t(`triathlon.discipline.${discipline}`)}`}
                   value={selectedContexts[discipline]}
                   onValueChange={(value) =>
                     setSelectedContexts((current) => ({
@@ -220,21 +216,11 @@ export function PersonalBestsPanel({
                       [discipline]: value as TrainingContext,
                     }))
                   }
-                >
-                  <SelectTrigger
-                    className="h-8 w-auto min-w-0 max-w-full text-xs"
-                    aria-label={`${t('triathlon.form.context')}: ${t(`triathlon.discipline.${discipline}`)}`}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="triathlon-tracker">
-                    {contexts[discipline].map((context) => (
-                      <SelectItem key={context} value={context}>
-                        {t(`triathlon.context.${context}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={trainingContexts[discipline].map((context) => ({
+                    value: context,
+                    label: t(`triathlon.context.${context}`),
+                  }))}
+                />
               </div>
               <table className="w-full table-fixed text-sm">
                 <colgroup>

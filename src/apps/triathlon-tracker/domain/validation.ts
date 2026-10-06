@@ -1,18 +1,11 @@
 import type {
   ActualTraining,
-  Discipline,
   PlannedTraining,
   TrackerSettings,
-  TrainingContext,
   ValidationIssue,
 } from '@/apps/triathlon-tracker/types'
+import { trainingContexts } from '@/apps/triathlon-tracker/types'
 import { isValidLocalDate } from './dates'
-
-const contextsByDiscipline: Record<Discipline, readonly TrainingContext[]> = {
-  swim: ['pool-25', 'pool-50', 'open-water'],
-  bike: ['indoor', 'outdoor'],
-  run: ['road', 'track', 'treadmill'],
-}
 
 function rangeIssue(
   field: string,
@@ -81,7 +74,7 @@ export function validateActualTraining(
   }
   if (
     training.context !== null &&
-    !contextsByDiscipline[training.discipline].includes(training.context)
+    !trainingContexts[training.discipline].some((context) => context === training.context)
   ) {
     issues.push({ field: 'context', code: 'context-mismatch', severity: 'error' })
   }

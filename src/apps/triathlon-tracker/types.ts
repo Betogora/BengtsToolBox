@@ -1,8 +1,14 @@
 export type Discipline = 'swim' | 'bike' | 'run'
 
-export type SwimmingContext = 'pool-25' | 'pool-50' | 'open-water'
-export type CyclingContext = 'indoor' | 'outdoor'
-export type RunningContext = 'road' | 'track' | 'treadmill'
+export const trainingContexts = {
+  swim: ['pool-50', 'pool-25', 'open-water'],
+  bike: ['outdoor', 'indoor'],
+  run: ['road', 'treadmill'],
+} as const
+
+export type SwimmingContext = (typeof trainingContexts.swim)[number]
+export type CyclingContext = (typeof trainingContexts.bike)[number]
+export type RunningContext = (typeof trainingContexts.run)[number]
 export type TrainingContext =
   | SwimmingContext
   | CyclingContext

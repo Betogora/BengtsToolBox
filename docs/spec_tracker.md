@@ -13,6 +13,8 @@ Trainingspläne werden manuell angelegt. Die App generiert keine Pläne, gibt ke
 
 ## Betriebsmodell
 
+- Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Segmented Controls. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.
+
 - Ein Tracker-Datensatz gehört zum aktuellen globalen beziehungsweise Lobby-Datenraum.
 - Alle anonym angemeldeten Geräte einer Lobby dürfen denselben Datensatz bearbeiten.
 - Die App verwendet die vorhandenen Firestore-Hooks, Firebase-Authentifizierung und den vorhandenen LocalStorage-Fallback.
@@ -24,7 +26,7 @@ Trainingspläne werden manuell angelegt. Die App generiert keine Pläne, gibt ke
 ### Leistungsoptionen
 
 - Optionales aktuelles Gewicht in Kilogramm wird in der Rekordansicht gepflegt und für die Anzeige von Critical Power in W/kg verwendet.
-- Schwimmen wird dort nach 25-m-Becken, 50-m-Becken oder Freiwasser, Radfahren nach Indoor oder Outdoor und Laufen nach Straße, Bahn oder Laufband getrennt betrachtet. Vorausgewählt sind 50-m-Becken, Outdoor und Straße. Die zielbezogene Testeingabe übernimmt den aktiven Rekordkontext; die allgemeine Trainingseingabe startet mit dem Standardkontext. Beim Bearbeiten eines älteren Eintrags ohne Kontext wird dieser Standard ebenfalls vorausgewählt und erst mit dem Speichern übernommen.
+- Schwimmen wird dort nach 25-m-Becken, 50-m-Becken oder Freiwasser, Radfahren nach Indoor oder Outdoor und Laufen nach Straße oder Laufband getrennt betrachtet. Vorausgewählt sind 50-m-Becken, Outdoor und Straße. Die zielbezogene Testeingabe übernimmt den aktiven Rekordkontext; die allgemeine Trainingseingabe startet mit dem Standardkontext. Beim Bearbeiten eines älteren Eintrags ohne Kontext wird dieser Standard ebenfalls vorausgewählt und erst mit dem Speichern übernommen.
 - Es gibt keinen separaten Einstellungsdialog.
 - Keine Gewichtshistorie und keine weiteren Körper- oder Wearable-Messwerte.
 
@@ -62,7 +64,7 @@ Eine absolvierte Einheit benötigt Datum, Disziplin und mindestens Dauer oder Di
 - disziplinspezifischer Kontext:
   - Schwimmen: 25-m-Becken, 50-m-Becken oder Freiwasser,
   - Radfahren: Indoor oder Outdoor,
-  - Laufen: Straße, Bahn oder Laufband,
+  - Laufen: Straße oder Laufband,
 - strukturierte Intervalle mit Belastungs- und Pausenabschnitten; je Abschnitt optional Dauer, Distanz, Durchschnittspuls und Durchschnittsleistung.
 
 Intervalle werden ausschließlich über Eingabefelder aufgebaut. Es gibt keinen Textparser. Einheiten lassen sich nachträglich bearbeiten und löschen.
