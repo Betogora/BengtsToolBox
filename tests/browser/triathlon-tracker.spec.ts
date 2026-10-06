@@ -337,6 +337,10 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await page.getByLabel('Aktuelles Gewicht (kg)').fill('79.5')
   await page.getByLabel('Aktuelles Gewicht (kg)').blur()
   await expect(page.getByText('Gewicht gespeichert.')).toBeVisible()
+  await page.mouse.move(1, 1)
+  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
+    timeout: 6000,
+  })
   await expect(page.getByText(/W\/kg/)).toBeVisible()
   await expect(page.locator('[data-record-card="run"]')).toContainText(
     'Critical Speed',
@@ -397,10 +401,6 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
       .getByRole('dialog', { name: 'Training bearbeiten' })
       .getByRole('combobox', { name: 'Kontext' }),
   ).toContainText('Straße')
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
   await app.expectHealthy()
 })
 
