@@ -250,14 +250,14 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 **Zweck:** Personen und Teams während eines Spieleabends bewerten.
 
 - Der erste Start erzeugt ein direkt nutzbares Einzel-Scoring mit zwei Spielern sowie zwei vorbereiteten Teams. Spieler-, Team-, Scoring- und Ereignis-IDs sind stabil und nicht aus Namen oder Positionen abgeleitet.
-- Ein Scoring wertet entweder Spieler oder Teams. Die Wertungsart bleibt bis zur ersten Buchung umschaltbar und ist danach für dieses Scoring gesperrt.
-- Im Teammodus können Punkte direkt auf Teams oder auf einzelne Spieler gebucht werden. Spielerbuchungen erhöhen zugleich den persönlichen Score und den Score des zum Buchungszeitpunkt zugeordneten Teams; spätere Teamwechsel verschieben frühere Punkte nicht. Direkte Teambuchungen bleiben als nicht personengebundene Korrekturen möglich.
+- Ein Scoring wertet entweder Spieler oder Teams. Die Wertungsart bleibt auch nach Buchungen ohne Punktverlust umschaltbar.
+- Im Teammodus können Punkte direkt auf Teams oder auf einzelne Spieler gebucht werden. Alle Spielerpunkte zählen zum aktuell zugeordneten Team, auch nach späterer Zuordnung oder einem Teamwechsel. Ohne Team bleiben sie nur persönlich gespeichert. Direkte Teambuchungen bleiben als nicht personengebundene Korrekturen beim jeweiligen Team.
 - Scores sind ganze Zahlen und dürfen negativ werden. Änderungen um `0` sowie Dezimalwerte werden blockiert.
 - Jede erfolgreiche Buchung ist ein eigenes Collection-Dokument mit Scoring, Ziel-ID, Zieltyp, Name/Farbe als Snapshot, optional gutgeschriebener Team-ID, Delta und Clientzeit. Scores und Verlauf werden ausschließlich daraus abgeleitet.
 - Die Eingabereihenfolge bleibt stabil. Die Spielerliste gruppiert nach fester Teamreihenfolge, sortiert innerhalb der Teams nach persönlichem Score und führt nicht zugeordnete Spieler zuletzt. Ranglisten sortieren nach Score und vergeben geteilte Ränge nach `1, 1, 3`; ab drei Zielen zeigt die UI zusätzlich relative Rangbalken mit Nullachse.
 - Namen, Farben und Teamzuordnungen bleiben editierbar. Bewertete Score-Ziele können im aktiven Scoring nicht gelöscht werden; Einzel- und Teamwertung behalten jeweils mindestens zwei Ziele.
-- Der vollständige Verlauf ist vollbreit und eingeklappt. Die jüngste Buchung kann rückgängig gemacht werden.
-- „Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei `0`. Archive sind umbenennbar, lesbar und samt Ereignissen löschbar.
+- Der vollständige Verlauf ist vollbreit und eingeklappt. Die jüngste Buchung kann im Verlauf sowie neben der Wertungsart rückgängig gemacht werden.
+- „Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei `0`. Archive zeigen auch die persönlichen Spielerpunkte, werten Teams anhand der eingefrorenen Aufstellung und sind umbenennbar, lesbar und samt Ereignissen löschbar.
 - Automatische Scoringnamen verwenden den lokalen Starttag ohne Uhrzeit. Mehrere Scorings desselben Tages werden appweit chronologisch mit römischen Suffixen nummeriert; manuelle Namen bleiben unverändert.
 - Der Presenter ist read-only und zeigt bei zwei Zielen eine große Gegenüberstellung, ab drei Zielen die Rangansicht.
 - Schema-Version `2` ist ein bewusster destruktiver Schnitt: Beim ersten Öffnen pro globalem oder Lobby-Datenraum werden der alte State und die alte Spieler-Collection gelöscht und durch die neue Initialbelegung ersetzt.

@@ -86,7 +86,7 @@ describe('scoreboard v2 logic', () => {
     ])
   })
 
-  it('credits player events to both the player and the team captured at booking time', () => {
+  it('projects personal and team scores and excludes undone player events', () => {
     const scoringEvents = [
       event('event-1', 'player-alex', 5, 1, 'team-one'),
       event('event-2', 'team-one', 2, 2),
@@ -110,9 +110,11 @@ describe('scoreboard v2 logic', () => {
       ['team-three', 0],
       ['team-two', -3],
     ])
+    expect(getScoreboardStandings(getScoreboardTargets('teams', players, teams), scoringEvents.slice(0, -1))
+      .find(({ target }) => target.id === 'team-two')?.score).toBe(0)
   })
 
-  it('keeps credited team scores stable when a player changes teams', () => {
+  it('moves player points with the current assignment and aligns history and deletion protection', () => {
     const teamEvents = [event('event-1', 'player-alex', 7, 1, 'team-one')]
     const before = getScoreboardStandings(
       getScoreboardTargets('teams', players, teams),
@@ -127,22 +129,31 @@ describe('scoreboard v2 logic', () => {
     )
 
     expect(before.find(({ target }) => target.id === 'team-one')?.score).toBe(7)
-    expect(after.find(({ target }) => target.id === 'team-one')?.score).toBe(7)
+    expect(after.find(({ target }) => target.id === 'team-one')?.score).toBe(0)
+    expect(after.find(({ target }) => target.id === 'team-two')?.score).toBe(7)
+    expect(hasTeamEvents(teamEvents, 'team-two', movedPlayers)).toBe(true)
+    expect(hasTeamEvents(teamEvents, 'team-one', movedPlayers)).toBe(false)
+    const history = getScoreboardHistory(
+      [...teamEvents, event('event-2', 'team-two', 2, 2)],
+      getScoreboardTargets('teams', movedPlayers, teams),
+    )
+    expect(history[0].resultingScore).toBe(9)
   })
 
-  it('does not add unassigned or legacy player events to a team score', () => {
-    const teamStandings = getScoreboardStandings(
-      getScoreboardTargets('teams', players, teams),
-      [
-        event('event-1', 'player-alex', 4, 1, null),
-        {
-          ...event('event-2', 'player-bela', 3, 2),
-          creditedTeamId: undefined,
-        },
-      ],
-    )
-
+  it('includes earlier unassigned points after late entry and assignment to a new team', () => {
+    const latePlayer = { ...createScoreboardPlayer(players, () => 'late'), teamId: null }
+    const roster = [...players, latePlayer]
+    const scoringEvents = [event('event-1', latePlayer.id, 4, 1, null)]
+    const teamStandings = getScoreboardStandings(getScoreboardTargets('teams', roster, teams), scoringEvents)
     expect(teamStandings.every(({ score }) => score === 0)).toBe(true)
+    const newTeam = { ...teams[0], id: 'team-late', position: 4 }
+    const updatedTeams = [...teams, newTeam]
+    const assignedRoster = roster.map((player) => player.id === latePlayer.id
+      ? { ...player, teamId: newTeam.id } : player)
+    expect(getScoreboardStandings(getScoreboardTargets('teams', assignedRoster, updatedTeams), scoringEvents)
+      .find(({ target }) => target.id === newTeam.id)?.score).toBe(4)
+    expect(getScoreboardStandings(getScoreboardTargets('individual', assignedRoster, updatedTeams), scoringEvents)
+      .find(({ target }) => target.id === latePlayer.id)?.score).toBe(4)
   })
 
   it('builds a latest-first history with personal and complete team totals', () => {
@@ -150,7 +161,7 @@ describe('scoreboard v2 logic', () => {
       event('event-1', 'player-alex', 5, 1, 'team-one'),
       event('event-2', 'team-one', 2, 2),
       event('event-3', 'player-alex', -1, 3, 'team-one'),
-    ])
+    ], getScoreboardTargets('teams', players, teams))
 
     expect(history.map(({ event: entry, resultingScore }) => [entry.id, resultingScore])).toEqual([
       ['event-3', 4],
@@ -160,16 +171,17 @@ describe('scoreboard v2 logic', () => {
   })
 
   it('recognizes direct and player-attributed team events', () => {
-    expect(hasTeamEvents([event('event-1', 'team-one', 1, 1)], 'team-one')).toBe(true)
+    expect(hasTeamEvents([event('event-1', 'team-one', 1, 1)], 'team-one', players)).toBe(true)
     expect(
       hasTeamEvents(
         [event('event-2', 'player-alex', 1, 2, 'team-one')],
         'team-one',
+        players,
       ),
     ).toBe(true)
     expect(
-      hasTeamEvents([event('event-3', 'player-alex', 1, 3, null)], 'team-one'),
-    ).toBe(false)
+      hasTeamEvents([event('event-3', 'player-alex', 1, 3, null)], 'team-one', players),
+    ).toBe(true)
   })
 
   it('sorts players by fixed team order, score, stable position, and unassigned last', () => {

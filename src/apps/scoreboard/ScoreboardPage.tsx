@@ -142,6 +142,10 @@ export function ScoreboardPage() {
     }
   }
 
+  const handleUndo = async () => {
+    if (await scoreboard.undoLastScore()) toast.success(t('scoreboard.undoSuccess'))
+  }
+
   return (
     <AppPage width="wide">
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -182,21 +186,28 @@ export function ScoreboardPage() {
               onSave={(name) => scoreboard.updateScoringName(scoreboard.activeScoring.id, name)}
             />
           </div>
-          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
             {(scoreboard.isLoading || scoreboard.isPending) && (
               <Badge variant="outline">{t('common.syncing')}</Badge>
             )}
+            <Button
+              variant="outline"
+              disabled={scoreboard.activeEvents.length === 0}
+              onClick={handleUndo}
+            >
+              <Undo2 className="size-4" />
+              {t('scoreboard.undo')}
+            </Button>
             <SegmentedControl
               aria-label={t('scoreboard.modeAria')}
               value={scoreboard.activeScoring.mode}
               options={(['individual', 'teams'] as const).map((value) => ({
                 value,
                 label: value === 'individual' ? t('scoreboard.modeIndividual') : t('scoreboard.modeTeams'),
-                disabled: scoreboard.activeEvents.length > 0,
               }))}
               onValueChange={async (mode) => {
                 const didChange = await scoreboard.changeMode(mode as ScoreboardMode)
-                if (!didChange) toast.error(t('scoreboard.error.modeLocked'))
+                if (!didChange) toast.error(t('common.syncError'))
               }}
             />
           </div>
@@ -226,7 +237,7 @@ export function ScoreboardPage() {
             </h2>
             <Badge variant="outline">{scoreboard.players.length}</Badge>
           </div>
-          <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {scoreboard.rosterPlayers.map((player) => (
               <RosterPlayerCard
                 key={player.id}
@@ -260,7 +271,7 @@ export function ScoreboardPage() {
           </h2>
           <Badge variant="outline">{scoreboard.targets.length}</Badge>
         </div>
-        <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {scoreboard.targets.map((target) => {
             const memberNames = target.memberIds
               .map((memberId) => scoreboard.players.find((player) => player.id === memberId)?.name)
@@ -332,10 +343,7 @@ export function ScoreboardPage() {
               <Button
                 variant="outline"
                 disabled={scoreboard.activeEvents.length === 0}
-                onClick={async () => {
-                  const didUndo = await scoreboard.undoLastScore()
-                  if (didUndo) toast.success(t('scoreboard.undoSuccess'))
-                }}
+                onClick={handleUndo}
               >
                 <Undo2 className="size-4" />
                 {t('scoreboard.undo')}

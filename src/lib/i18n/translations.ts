@@ -418,7 +418,6 @@ export const de = {
   'scoreboard.error.invalidDelta': 'Bitte eine ganze Zahl ungleich 0 eingeben.',
   'scoreboard.error.minimumPlayers': 'Ein Einzel-Scoring benötigt mindestens zwei Spieler.',
   'scoreboard.error.minimumTeams': 'Ein Team-Scoring benötigt mindestens zwei Teams.',
-  'scoreboard.error.modeLocked': 'Die Wertungsart ist nach der ersten Buchung gesperrt.',
   'scoreboard.error.targetHasBookings':
     'Spieler oder Teams mit Buchungen können im aktiven Scoring nicht entfernt werden.',
   'scoreboard.incrementAria': '{name} einen Punkt hinzufügen',
@@ -1356,7 +1355,6 @@ export const en: Record<TranslationKey, string> = {
   'scoreboard.error.invalidDelta': 'Enter a whole number other than 0.',
   'scoreboard.error.minimumPlayers': 'An individual scoring needs at least two players.',
   'scoreboard.error.minimumTeams': 'A team scoring needs at least two teams.',
-  'scoreboard.error.modeLocked': 'The scoring type is locked after the first booking.',
   'scoreboard.error.targetHasBookings':
     'Players or teams with bookings cannot be removed from the active scoring.',
   'scoreboard.incrementAria': 'Add one point to {name}',

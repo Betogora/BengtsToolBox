@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:a6f01b62b3870efb8a46f486563179fb314b8b02ee0aa4e6eb250d74a12c6846">
+  <meta name="specs-source-sha256" content="sha256:c3faad71d47d559cb40ba1a74328626b34ecd4caff815224ea65b99ae048b52d">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -670,11 +670,11 @@
           <summary><span class="app-number">5</span><span><span class="app-summary-title">Scoreboard</span><span class="app-summary-route">/apps/scoreboard</span></span></summary>
           <div class="app-body">
             <ul>
-              <li>Direkt nutzbarer Start mit zwei Spielern; ein Scoring wertet fest Spieler oder Teams.</li>
-              <li>Im Teammodus können Punkte direkt auf Teams oder einzelne Spieler gebucht werden. Spielerpunkte zählen zugleich für das bei der Buchung zugeordnete Team; spätere Teamwechsel verschieben keine früheren Punkte.</li>
+              <li>Direkt nutzbarer Start mit zwei Spielern; Einzel- und Teamwertung bleiben auch nach Buchungen ohne Punktverlust umschaltbar.</li>
+              <li>Im Teammodus können Punkte direkt auf Teams oder auf einzelne Spieler gebucht werden. Alle Spielerpunkte zählen zum aktuell zugeordneten Team, auch nach späterer Zuordnung oder einem Teamwechsel. Ohne Team bleiben sie nur persönlich gespeichert. Direkte Teambuchungen bleiben als nicht personengebundene Korrekturen beim jeweiligen Team.</li>
               <li>Positive und negative Ganzzahlbuchungen werden mit optional gutgeschriebener Team-ID als einzelne Ereignisse gespeichert; persönliche Scores, Teamscores und Verlauf sind vollständig daraus abgeleitet.</li>
               <li>Die Spielerliste folgt der festen Teamreihenfolge, sortiert innerhalb der Teams nach persönlichem Score und führt Nichtzugeordnete zuletzt. Ranglisten vergeben geteilte Ränge und zeigen ab drei Zielen eine Rangansicht mit Nullachse.</li>
-              <li>Vollbreiter Verlauf mit Undo sowie umbenennbare, lesbare und löschbare Scoring-Archive.</li>
+              <li>Vollbreiter Verlauf mit Undo im Verlauf und neben der Wertungsart sowie umbenennbare, lesbare und löschbare Scoring-Archive. Archive zeigen persönliche Spielerpunkte und werten Teams anhand der beim Archivieren eingefrorenen Aufstellung.</li>
               <li>Automatische Scoringnamen enthalten nur den lokalen Starttag; mehrere Scorings desselben Tages erhalten chronologische römische Suffixe.</li>
               <li>Der einmalige V2-Start löscht den alten Scoreboard-State und die alte Spieler-Collection des aktuellen Datenraums.</li>
             </ul>

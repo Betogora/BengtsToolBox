@@ -36,7 +36,12 @@ export function WinnerAnnouncement({ result, open, onClose }: WinnerAnnouncement
   const textColor = getReadableTextColor(result.color)
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/20 px-4 py-6">
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/20 px-4 py-6"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
       <section
         className="relative grid max-h-[calc(100svh-3rem)] min-h-56 w-full max-w-6xl content-center rounded-lg border p-6 pr-14 shadow-[0_32px_100px_-40px_rgba(6,34,48,0.85)] sm:min-h-64 sm:p-10 sm:pr-20"
         style={{ backgroundColor: result.color, color: textColor }}

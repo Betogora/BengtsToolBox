@@ -333,7 +333,7 @@ export function useScoreboard(lobbyId?: string) {
     () => sortScoreboardPlayers(players, teams, playerStandings),
     [playerStandings, players, teams],
   )
-  const history = useMemo(() => getScoreboardHistory(activeEvents), [activeEvents])
+  const history = useMemo(() => getScoreboardHistory(activeEvents, teamTargets), [activeEvents, teamTargets])
   const archivedScorings = useMemo(
     () =>
       scorings
@@ -349,17 +349,26 @@ export function useScoreboard(lobbyId?: string) {
     () =>
       archivedScorings.map((scoring) => {
         const scoringEvents = getScoringEvents(events, scoring.id)
-        const scoringTargets = getScoreboardTargets(
-          scoring.mode,
+        const scoringPlayerTargets = getScoreboardTargets(
+          'individual',
           scoring.playerSnapshot,
           scoring.teamSnapshot,
         )
+        const scoringTeamTargets = getScoreboardTargets(
+          'teams',
+          scoring.playerSnapshot,
+          scoring.teamSnapshot,
+        )
+        const scoringPlayerStandings = getScoreboardStandings(scoringPlayerTargets, scoringEvents)
 
         return {
           scoring,
           events: scoringEvents,
-          history: getScoreboardHistory(scoringEvents),
-          standings: getScoreboardStandings(scoringTargets, scoringEvents),
+          history: getScoreboardHistory(scoringEvents, scoringTeamTargets),
+          standings: scoring.mode === 'teams'
+            ? getScoreboardStandings(scoringTeamTargets, scoringEvents)
+            : scoringPlayerStandings,
+          playerStandings: scoringPlayerStandings,
         }
       }),
     [archivedScorings, events],
@@ -452,7 +461,7 @@ export function useScoreboard(lobbyId?: string) {
 
   const removeTeam = async (teamId: string) => {
     if (teams.length <= 2) return 'minimum' as const
-    if (hasTeamEvents(activeEvents, teamId)) return 'scored' as const
+    if (hasTeamEvents(activeEvents, teamId, players)) return 'scored' as const
 
     const result = await commitSyncBatch((batch) => {
       playersStore.saveItems(
@@ -469,8 +478,6 @@ export function useScoreboard(lobbyId?: string) {
   }
 
   const changeMode = async (mode: ScoreboardMode) => {
-    if (activeEvents.length > 0) return false
-
     const result = await scoringsStore.mergeItem(activeScoring.id, {
       mode,
       lastUpdatedBy: session.userId,

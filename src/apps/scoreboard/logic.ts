@@ -124,19 +124,17 @@ export function getScoreboardStandings(
   events: ScoreboardScoreEvent[],
 ): ScoreboardStanding[] {
   const scores = new Map(targets.map((target) => [target.id, 0]))
+  const teamByPlayerId = new Map(
+    targets.flatMap((target) => target.memberIds.map((playerId) => [playerId, target.id] as const)),
+  )
 
   events.forEach((event) => {
-    if (scores.has(event.targetId)) {
-      scores.set(event.targetId, (scores.get(event.targetId) ?? 0) + event.delta)
-    } else if (
-      event.targetType === 'player' &&
-      event.creditedTeamId &&
-      scores.has(event.creditedTeamId)
-    ) {
-      scores.set(
-        event.creditedTeamId,
-        (scores.get(event.creditedTeamId) ?? 0) + event.delta,
-      )
+    const targetId = scores.has(event.targetId)
+      ? event.targetId
+      : event.targetType === 'player' ? teamByPlayerId.get(event.targetId) : undefined
+
+    if (targetId) {
+      scores.set(targetId, (scores.get(targetId) ?? 0) + event.delta)
     }
   })
 
@@ -157,18 +155,23 @@ export function getScoreboardStandings(
 
 export function getScoreboardHistory(
   events: ScoreboardScoreEvent[],
+  teamTargets: ScoreboardTarget[],
 ): ScoreboardHistoryEntry[] {
   const playerScores = new Map<string, number>()
   const teamScores = new Map<string, number>()
+  const teamByPlayerId = new Map(
+    teamTargets.flatMap((target) => target.memberIds.map((playerId) => [playerId, target.id] as const)),
+  )
   const entries = events.map((event) => {
     if (event.targetType === 'player') {
       const resultingScore = (playerScores.get(event.targetId) ?? 0) + event.delta
       playerScores.set(event.targetId, resultingScore)
 
-      if (event.creditedTeamId) {
+      const teamId = teamByPlayerId.get(event.targetId)
+      if (teamId) {
         teamScores.set(
-          event.creditedTeamId,
-          (teamScores.get(event.creditedTeamId) ?? 0) + event.delta,
+          teamId,
+          (teamScores.get(teamId) ?? 0) + event.delta,
         )
       }
 
@@ -192,11 +195,16 @@ export function hasTargetEvents(events: ScoreboardScoreEvent[], targetId: string
   return events.some((event) => event.targetId === targetId)
 }
 
-export function hasTeamEvents(events: ScoreboardScoreEvent[], teamId: string) {
+export function hasTeamEvents(
+  events: ScoreboardScoreEvent[],
+  teamId: string,
+  players: ScoreboardPlayer[],
+) {
   return events.some(
     (event) =>
       (event.targetType === 'team' && event.targetId === teamId) ||
-      event.creditedTeamId === teamId,
+      (event.targetType === 'player' &&
+        players.some((player) => player.id === event.targetId && player.teamId === teamId)),
   )
 }
 

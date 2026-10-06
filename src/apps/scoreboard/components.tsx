@@ -256,7 +256,6 @@ export function RosterPlayerCard({
 
   return (
     <Card
-      className="self-start"
       style={teamColor ? { backgroundColor: `color-mix(in srgb, ${teamColor} 12%, var(--card))` } : undefined}
     >
       <CardHeader className="p-4 pb-2">
@@ -387,17 +386,23 @@ export function ArchiveCard({
   onDelete: () => void | Promise<unknown>
   onRename: (name: string) => void | Promise<unknown>
 }) {
-  const { formatDateTime, t } = useI18n()
+  const { formatDateTime, formatNumber, t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const roster = useMemo(
-    () =>
-      archive.scoring.playerSnapshot.map((player) => ({
+    () => {
+      const scoresByPlayerId = new Map(
+        archive.playerStandings.map((standing) => [standing.target.id, standing.score]),
+      )
+
+      return archive.scoring.playerSnapshot.map((player) => ({
         ...player,
+        score: scoresByPlayerId.get(player.id) ?? 0,
         teamName:
           archive.scoring.teamSnapshot.find((team) => team.id === player.teamId)?.name ??
           t('scoreboard.unassigned'),
-      })),
-    [archive.scoring.playerSnapshot, archive.scoring.teamSnapshot, t],
+      }))
+    },
+    [archive.playerStandings, archive.scoring.playerSnapshot, archive.scoring.teamSnapshot, t],
   )
 
   return (
@@ -457,14 +462,19 @@ export function ArchiveCard({
           <RankingBars standings={archive.standings} />
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {roster.map((player) => (
-              <div key={player.id} className="rounded-md border bg-card p-3">
-                <div className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full" style={{ backgroundColor: player.color }} />
-                  <span className="type-label min-w-0 truncate">{player.name}</span>
+              <div key={player.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-card p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: player.color }} />
+                    <span className="type-label min-w-0 truncate">{player.name}</span>
+                  </div>
+                  {archive.scoring.mode === 'teams' && (
+                    <div className="type-caption mt-1 truncate text-muted-foreground">{player.teamName}</div>
+                  )}
                 </div>
-                {archive.scoring.mode === 'teams' && (
-                  <div className="type-caption mt-1 text-muted-foreground">{player.teamName}</div>
-                )}
+                <span className="type-metric-sm leading-4 tabular-nums" aria-label={t('scoreboard.points')}>
+                  {formatNumber(player.score)}
+                </span>
               </div>
             ))}
           </div>
@@ -483,9 +493,9 @@ export function AddCard({
   onClick: () => void | Promise<unknown>
 }) {
   return (
-    <Card className="min-h-[13.25rem] border-dashed">
-      <CardContent className="flex h-full items-center justify-center p-6">
-        <Button className="h-24 w-full flex-col gap-2" variant="outline" onClick={() => void onClick()}>
+    <Card className="border-dashed">
+      <CardContent className="flex h-full items-center justify-center p-4">
+        <Button className="h-full min-h-24 w-full flex-col gap-2" variant="outline" onClick={() => void onClick()}>
           <Plus className="size-6" />
           {label}
         </Button>
