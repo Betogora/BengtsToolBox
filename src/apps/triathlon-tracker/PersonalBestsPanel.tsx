@@ -25,10 +25,10 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 function WeightInput({
   weightKg,
@@ -206,9 +206,7 @@ export function PersonalBestsPanel({
                   <Icon className="size-5" aria-hidden="true" />
                   {t(`triathlon.discipline.${discipline}`)}
                 </h3>
-                <SegmentedControl
-                  className="tri-context-control"
-                  aria-label={`${t('triathlon.form.context')}: ${t(`triathlon.discipline.${discipline}`)}`}
+                <Select
                   value={selectedContexts[discipline]}
                   onValueChange={(value) =>
                     setSelectedContexts((current) => ({
@@ -216,11 +214,21 @@ export function PersonalBestsPanel({
                       [discipline]: value as TrainingContext,
                     }))
                   }
-                  options={trainingContexts[discipline].map((context) => ({
-                    value: context,
-                    label: t(`triathlon.context.${context}`),
-                  }))}
-                />
+                >
+                  <SelectTrigger
+                    className="w-auto min-w-32"
+                    aria-label={`${t('triathlon.form.context')}: ${t(`triathlon.discipline.${discipline}`)}`}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="triathlon-tracker">
+                    {trainingContexts[discipline].map((context) => (
+                      <SelectItem key={context} value={context}>
+                        {t(`triathlon.context.${context}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <table className="w-full table-fixed text-sm">
                 <colgroup>

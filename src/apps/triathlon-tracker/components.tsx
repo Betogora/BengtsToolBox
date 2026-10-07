@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { trainingContexts } from './types'
 
 import type {
@@ -750,28 +749,26 @@ function ActualTrainingDialogContent({
             value={startTime}
             onValueChange={setStartTime}
           />
-          <div className="col-span-2">
-            <DisciplineSelect
-              value={discipline}
-              onValueChange={handleDisciplineChange}
-            />
-          </div>
-          <div className="col-span-2 grid min-w-0 gap-1">
-            <span className="type-field-label text-muted-foreground">
-              {t('triathlon.form.context')}
-            </span>
-            <SegmentedControl
-              key={discipline}
-              className="tri-context-control"
-              aria-label={t('triathlon.form.context')}
-              value={context}
-              onValueChange={(value) => setContext(value as TrainingContext)}
-              options={trainingContexts[discipline].map((option) => ({
-                value: option,
-                label: t(`triathlon.context.${option}`),
-              }))}
-            />
-          </div>
+          <DisciplineSelect
+            value={discipline}
+            onValueChange={handleDisciplineChange}
+          />
+          <Select
+            key={discipline}
+            value={context}
+            onValueChange={(value) => setContext(value as TrainingContext)}
+          >
+            <IftaSelectTrigger label={t('triathlon.form.context')}>
+              <SelectValue />
+            </IftaSelectTrigger>
+            <SelectContent className="triathlon-tracker">
+              {trainingContexts[discipline].map((option) => (
+                <SelectItem key={option} value={option}>
+                  {t(`triathlon.context.${option}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </fieldset>
         <fieldset className="grid grid-cols-2 gap-2">
           <legend className="sr-only">{t('triathlon.form.metrics')}</legend>

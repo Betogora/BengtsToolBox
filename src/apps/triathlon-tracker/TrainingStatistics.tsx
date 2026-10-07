@@ -29,7 +29,8 @@ import type {
   ProgressChartPoint,
   WeeklyVolumeChartPoint,
 } from './TrainingCharts'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { IftaSelectTrigger } from '@/components/ui/ifta-field'
+import { Select, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
 import { formatTrainingDuration } from './presentation'
 const TrainingCharts = lazy(() => import('./TrainingCharts'))
@@ -462,52 +463,52 @@ export default function TrainingStatistics({
     </dl>
   )
   const performanceControls = (
-    <div className="grid gap-3 lg:grid-cols-3">
-      <div className="grid min-w-0 gap-1">
-        <span className="type-field-label text-muted-foreground">
-          {t('triathlon.discipline.swim')}
-        </span>
-        <SegmentedControl
-          className="tri-context-control"
-          aria-label={`${t('triathlon.form.context')}: ${t('triathlon.discipline.swim')}`}
-          value={swimContext}
-          onValueChange={(value) => setSwimContext(value as SwimmingContext)}
-          options={trainingContexts.swim.map((context) => ({
-            value: context,
-            label: t(`triathlon.context.${context}`),
-          }))}
-        />
-      </div>
-      <div className="grid min-w-0 gap-1">
-        <span className="type-field-label text-muted-foreground">
-          {t('triathlon.discipline.bike')}
-        </span>
-        <SegmentedControl
-          className="tri-context-control"
-          aria-label={`${t('triathlon.form.context')}: ${t('triathlon.discipline.bike')}`}
-          value={bikeContext}
-          onValueChange={(value) => setBikeContext(value as CyclingContext)}
-          options={trainingContexts.bike.map((context) => ({
-            value: context,
-            label: t(`triathlon.context.${context}`),
-          }))}
-        />
-      </div>
-      <div className="grid min-w-0 gap-1">
-        <span className="type-field-label text-muted-foreground">
-          {t('triathlon.discipline.run')}
-        </span>
-        <SegmentedControl
-          className="tri-context-control"
-          aria-label={`${t('triathlon.form.context')}: ${t('triathlon.discipline.run')}`}
-          value={runContext}
-          onValueChange={(value) => setRunContext(value as RunningContext)}
-          options={trainingContexts.run.map((context) => ({
-            value: context,
-            label: t(`triathlon.context.${context}`),
-          }))}
-        />
-      </div>
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Select
+        value={swimContext}
+        onValueChange={(value) => setSwimContext(value as SwimmingContext)}
+      >
+        <IftaSelectTrigger label={t('triathlon.discipline.swim')}>
+          <SelectValue />
+        </IftaSelectTrigger>
+        <SelectContent className="triathlon-tracker">
+          {trainingContexts.swim.map((context) => (
+            <SelectItem key={context} value={context}>
+              {t(`triathlon.context.${context}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={bikeContext}
+        onValueChange={(value) => setBikeContext(value as CyclingContext)}
+      >
+        <IftaSelectTrigger label={t('triathlon.discipline.bike')}>
+          <SelectValue />
+        </IftaSelectTrigger>
+        <SelectContent className="triathlon-tracker">
+          {trainingContexts.bike.map((context) => (
+            <SelectItem key={context} value={context}>
+              {t(`triathlon.context.${context}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={runContext}
+        onValueChange={(value) => setRunContext(value as RunningContext)}
+      >
+        <IftaSelectTrigger label={t('triathlon.discipline.run')}>
+          <SelectValue />
+        </IftaSelectTrigger>
+        <SelectContent className="triathlon-tracker">
+          {trainingContexts.run.map((context) => (
+            <SelectItem key={context} value={context}>
+              {t(`triathlon.context.${context}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 

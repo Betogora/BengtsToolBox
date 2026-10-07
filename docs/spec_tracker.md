@@ -13,7 +13,7 @@ Trainingspläne werden manuell angelegt. Die App generiert keine Pläne, gibt ke
 
 ## Betriebsmodell
 
-- Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Segmented Controls. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.
+- Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Dropdowns. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.
 
 - Ein Tracker-Datensatz gehört zum aktuellen globalen beziehungsweise Lobby-Datenraum.
 - Alle anonym angemeldeten Geräte einer Lobby dürfen denselben Datensatz bearbeiten.
