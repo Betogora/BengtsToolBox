@@ -1104,6 +1104,7 @@ export function PlayerCard({
             />
           </div>
           <ConfirmButton
+            mode="popover"
             title={t('progress.playerDeleteTitle')}
             description={t('progress.playerDeleteDescription', {
               name: player.name,
@@ -1353,6 +1354,7 @@ export function EventTable({
   )
   const renderDeleteButton = (event: ProgressEvent) => (
     <ConfirmButton
+      mode="popover"
       title={t('common.event.delete')}
       description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}
@@ -1500,6 +1502,7 @@ export function EventTable({
               </TableCell>
               <TableCell className="text-right">
                 <ConfirmButton
+                  mode="popover"
                   title={t('common.event.delete')}
                   description={t('common.event.deleteDescription')}
                   onConfirm={() => onDeleteEvent(event.id)}
@@ -1564,6 +1567,7 @@ export function ArchiveDatasetCard({
           </button>
         </div>
         <ConfirmButton
+          mode="popover"
           title={t('common.dataset.delete')}
           description={t('common.dataset.deleteArchivedDescription')}
           onConfirm={() => onDelete(dataset.id)}

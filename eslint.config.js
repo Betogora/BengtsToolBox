@@ -20,6 +20,19 @@ export default defineConfig([
     },
   },
   {
+    files: ['tests/browser/**/*.ts'],
+    ignores: ['tests/browser/browserApp.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: '@playwright/test',
+          importNames: ['test'],
+          message: 'Browsertests importieren test aus ./browserApp, damit produktives Firebase gesperrt bleibt.',
+        }],
+      }],
+    },
+  },
+  {
     files: ['scripts/**/*.mjs'],
     extends: [js.configs.recommended],
     languageOptions: {

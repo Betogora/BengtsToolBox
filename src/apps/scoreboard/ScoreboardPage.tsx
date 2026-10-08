@@ -44,7 +44,7 @@ function ScoreboardPresenter({ standings }: { standings: ScoreboardStanding[] })
 
   if (standings.length >= 3) {
     return (
-      <section className="rounded-lg border bg-card p-5 shadow-sm">
+      <section className="rounded-lg border bg-card p-5 shadow-xs">
         <h2 className="type-section-title flex items-center gap-2">
           <Trophy className="size-5 text-primary" />
           {t('scoreboard.currentStand')}
@@ -343,6 +343,7 @@ export function ScoreboardPage() {
                 {t('scoreboard.undo')}
               </Button>
               <ConfirmButton
+                mode="dialog"
                 title={t('scoreboard.archiveRestartTitle')}
                 description={t('scoreboard.archiveRestartDescription')}
                 confirmLabel={t('scoreboard.archiveRestartConfirm')}

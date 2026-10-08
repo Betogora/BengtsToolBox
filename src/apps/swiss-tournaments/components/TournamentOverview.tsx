@@ -234,6 +234,7 @@ export function ArchivedTournamentsList({
         CSV
       </Button>
       <ConfirmButton
+        mode="popover"
         title={t('swiss.archived.deleteTitle')}
         description={t('swiss.archived.deleteDescription', { name: tournament.name })}
         confirmLabel={t('common.delete')}

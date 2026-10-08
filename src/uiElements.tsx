@@ -110,7 +110,7 @@ import { dashboardApps } from '@/apps/registry'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Toaster } from '@/components/ui/sonner'
@@ -127,7 +127,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog'
 import { LanguageProvider } from '@/lib/i18n/LanguageProvider'
 import { useI18n } from '@/lib/i18n'
 import '@/styles/globals.css'
@@ -203,19 +203,28 @@ function FieldDemo({ kind }: { kind: string }) {
     <Input aria-label="Spielername" value={value} onChange={event => setValue(event.target.value)} />
     <div className="grid gap-1.5">
       <Label htmlFor="catalog-invalid-name">Name</Label>
-      <Input id="catalog-invalid-name" aria-invalid="true" aria-describedby="catalog-name-error" defaultValue="" />
+      <Input id="catalog-invalid-name" aria-invalid="true" aria-describedby="catalog-name-error" placeholder="z. B. Paul" defaultValue="" />
       <p id="catalog-name-error" className="type-caption text-destructive">Bitte einen Namen eingeben.</p>
     </div>
     <Input aria-label="Deaktiviertes Feld" value="Deaktiviert" disabled />
   </div>
 }
 
+function LabelDemo() {
+  const [value, setValue] = useState('Sommerturnier')
+  return <div className="grid gap-1.5">
+    <div className="flex items-center justify-between gap-3"><Label htmlFor="catalog-tournament-name">Turniername</Label><span className="type-caption text-subtle-foreground tabular-nums">{value.length}/40</span></div>
+    <Input id="catalog-tournament-name" maxLength={40} value={value} onChange={event => setValue(event.target.value)} />
+  </div>
+}
+
 function TableDemo() {
   return <Table aria-label="Beispielrangliste">
-    <TableHeader>{['Rang', 'Spieler', 'Punkte', 'Status'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableHeader>
+    <TableHeader><TableHead>#</TableHead><TableHead>Spieler</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Punkte</TableHead></TableHeader>
     <TableBody>{['Paul', 'Kim'].map((name, index) => <TableRow key={name}>
-      <TableCell>{index + 1}</TableCell><TableCell>{name}</TableCell><TableCell>{index ? 9 : 12}</TableCell>
-      <TableCell><Badge variant={index ? 'outline' : 'default'}>{index ? 'Bereit' : 'Aktiv'}</Badge></TableCell>
+      <TableCell className="text-muted-foreground tabular-nums">{index + 1}</TableCell><TableCell className="font-semibold">{name}</TableCell>
+      <TableCell>{index ? <Badge variant="outline">Bereit</Badge> : <Badge variant="success" dot>Aktiv</Badge>}</TableCell>
+      <TableCell className="text-right font-semibold tabular-nums">{index ? 9 : 12}</TableCell>
     </TableRow>)}</TableBody>
   </Table>
 }
@@ -240,18 +249,18 @@ function FeedbackDemo() {
     </div>
     <div className="grid content-start gap-2">
       <Label htmlFor="catalog-retry-name">{saved ? 'Gespeichert' : 'Fehlgeschlagen'}</Label>
-      <Input id="catalog-retry-name" aria-label="Name nach fehlgeschlagenem Speichern" aria-describedby="catalog-save-status" value={name} onChange={event => { setName(event.target.value); setSaved(false) }} />
-      <p id="catalog-save-status" role="status" className={`type-caption ${saved ? 'text-primary' : 'text-destructive'}`}>
-        {saved ? 'Name gespeichert.' : 'Name konnte nicht gespeichert werden. Dein Entwurf bleibt erhalten.'}
+      <Input id="catalog-retry-name" aria-label="Name nach fehlgeschlagenem Speichern" aria-describedby="catalog-save-status" aria-invalid={!saved} value={name} onChange={event => { setName(event.target.value); setSaved(false) }} />
+      <p id="catalog-save-status" role="status" className={`type-caption flex items-start gap-2 rounded-md px-3 py-2.5 ${saved ? 'bg-success-soft text-success' : 'bg-destructive-soft text-destructive'}`}>
+        {saved ? <CheckCircle2 aria-hidden="true" className="mt-px size-4 shrink-0" /> : <TriangleAlert aria-hidden="true" className="mt-px size-4 shrink-0" />}
+        <span>{saved ? 'Name gespeichert.' : <>Nicht gespeichert. Dein Entwurf bleibt erhalten. <button type="button" className="font-semibold underline underline-offset-2" onClick={() => setSaved(true)}>Erneut versuchen</button></>}</span>
       </p>
-      <Button variant="outline" disabled={saved} onClick={() => setSaved(true)}>Erneut versuchen</Button>
     </div>
     <div className="grid content-start gap-2">
-      <IftaInput label="Langer Name" value={longName} onChange={event => setLongName(event.target.value)} />
-      <p className="type-ui break-words">{longName}</p>
+      <IftaInput label="Langer Name" value={longName} onChange={event => setLongName(event.target.value)} className="truncate" />
+      <p className="type-ui break-words text-muted-foreground">{longName}</p>
     </div>
     <div className="grid content-start gap-2">
-      <Badge variant="secondary"><Check aria-hidden="true" />Gespeichert</Badge>
+      <p className="type-ui flex items-center gap-1.5 font-medium text-success"><CheckCircle2 aria-hidden="true" className="size-4" />Gespeichert</p>
       <EmptyState>Noch keine Einträge</EmptyState>
     </div>
   </div>
@@ -259,12 +268,17 @@ function FeedbackDemo() {
 
 function InteractionDemo() {
   const [active, setActive] = useState(false)
-  return <div className="flex flex-wrap items-center gap-3">
-    <Button>Bereit</Button>
-    <Button variant={active ? 'secondary' : 'outline'} aria-pressed={active} onClick={() => setActive(!active)}>Auswahl</Button>
-    <Button variant="outline">Tastaturfokus</Button>
-    <Button disabled>Gesperrt</Button>
-    <Button variant="destructive"><Trash2 />Löschen</Button>
+  const states: [string, ReactNode][] = [
+    ['Ruhe', <Button>Bereit</Button>],
+    ['Hover', <Button className="bg-primary/90">Bereit</Button>],
+    ['Gedrückt', <Button className="translate-y-px bg-primary/90">Bereit</Button>],
+    ['Fokus', <Button variant="outline" className="ring-2 ring-ring ring-offset-2">Tastaturfokus</Button>],
+    ['Aktiv', <Button variant={active ? 'secondary' : 'outline'} aria-pressed={active} className={active ? 'bg-primary-soft text-primary hover:bg-primary-soft' : undefined} onClick={() => setActive(!active)}>{active && <Check />}Auswahl</Button>],
+    ['Disabled', <Button disabled>Gesperrt</Button>],
+    ['Destruktiv', <Button variant="destructive"><Trash2 />Löschen</Button>],
+  ]
+  return <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
+    {states.map(([label, control]) => <div key={label} className="grid justify-items-center gap-2">{control}<span className="type-caption text-subtle-foreground">{label}</span></div>)}
   </div>
 }
 
@@ -300,7 +314,10 @@ function ConfirmationDemo({ reset = false }: { reset?: boolean }) {
   const [count, setCount] = useState(0)
   return <div className="grid justify-items-start gap-3">
     {reset ? <AppResetButton title="Beispiel zurücksetzen?" description="Nur dieser Beispielzähler wird zurückgesetzt." onConfirm={() => setCount(count + 1)} /> :
-      <ConfirmButton title="Beispiel löschen?" description="Hier werden nur Beispieldaten verwendet." onConfirm={() => setCount(count + 1)} trigger={<Button variant="destructive"><Trash2 />Löschen</Button>} />}
+      <div className="flex flex-wrap items-center gap-3">
+        <ConfirmButton title="Beispiel löschen?" description="Hier werden nur Beispieldaten verwendet." onConfirm={() => setCount(count + 1)} trigger={<Button variant="destructive"><Trash2 />Löschen</Button>} />
+        <ConfirmButton mode="popover" title="Zeile löschen?" description="Icon-Auslöser bestätigen im Popover." onConfirm={() => setCount(count + 1)} trigger={<Button variant="destructive" size="icon" aria-label="Zeile löschen"><Trash2 /></Button>} />
+      </div>}
     <span role="status">{count > 0 && `${count}× bestätigt`}</span>
   </div>
 }
@@ -320,22 +337,26 @@ function DashboardArtworkDemo() {
 }
 
 const demos: Record<string, ReactNode> = {
-  'Card-Familie': <Card><CardHeader><CardTitle>Aktuelle Runde</CardTitle><CardDescription>Drei Paarungen sind bereit.</CardDescription></CardHeader><CardContent><Badge variant="secondary">Runde 5</Badge></CardContent><CardFooter><Button variant="outline">Runde ansehen</Button></CardFooter></Card>,
-  Label: <div className="grid gap-2"><Label htmlFor="catalog-tournament-name">Turniername</Label><Input id="catalog-tournament-name" defaultValue="Sommerturnier" /></div>,
-  Separator: <div className="grid gap-3"><span>Spieler</span><Separator /><span>Ergebnisse</span></div>,
+  'Card-Familie': <Card className="w-full max-w-sm"><CardHeader><div className="flex items-center justify-between gap-3"><Badge>Runde 5</Badge><span className="type-caption text-subtle-foreground">vor 2 Min.</span></div><CardTitle className="mt-1.5">Aktuelle Runde</CardTitle><CardDescription>Drei Paarungen sind bereit.</CardDescription></CardHeader><CardFooter><Button variant="outline" size="sm">Runde ansehen</Button></CardFooter></Card>,
+  Label: <LabelDemo />,
+  Separator: <div className="grid gap-3.5">
+    <span className="type-action">Spieler</span><Separator /><span className="type-action">Ergebnisse</span>
+    <div className="flex items-center gap-3"><Separator className="flex-1" /><span className="type-caption text-subtle-foreground">Runde 6</span><Separator className="flex-1" /></div>
+    <div className="flex h-4 items-center gap-3 type-ui"><span>Paul</span><Separator orientation="vertical" /><span>Kim</span><Separator orientation="vertical" /><span>Alex</span></div>
+  </div>,
   'Toaster / Sonner': <ToastDemo />,
   'Table-Familie': <TableDemo />,
   'Responsive Tabelle': <TableDemo />,
   'HTML-Formular': <form className="flex flex-wrap items-end gap-3" onSubmit={event => event.preventDefault()}><IftaInput label="Eingabe" defaultValue="Eingabe" /><Button type="submit">Aktion</Button></form>,
   'Laufzeit- und Rückmeldungszustände': <FeedbackDemo />,
   'Interaktionszustände als visuelle Reihe': <InteractionDemo />,
-  Badge: <div className="flex flex-wrap gap-2"><Badge>Aktiv</Badge><Badge variant="secondary">Team A</Badge><Badge variant="outline">Runde 5</Badge><Badge variant="destructive">Fehler</Badge></div>,
+  Badge: <div className="flex flex-wrap gap-2"><Badge variant="success" dot>Aktiv</Badge><Badge>Team A</Badge><Badge variant="outline">Runde 5</Badge><Badge variant="destructive"><TriangleAlert aria-hidden="true" />Fehler</Badge><Badge variant="secondary">Entwurf</Badge><Badge variant="outline" className="tabular-nums">12</Badge></div>,
   Button: <div className="flex flex-wrap justify-center gap-3"><Button><Plus />Primär</Button><Button variant="outline">Outline</Button><Button variant="secondary">Sekundär</Button><Button variant="ghost">Ghost</Button><Button variant="destructive"><Trash2 />Löschen</Button><Button size="icon" aria-label="Hinzufügen"><Plus /></Button><Button disabled>Disabled</Button></div>,
-  'Dialog-Familie': <Dialog><DialogTrigger asChild><Button>Dialog öffnen</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Beispieldialog</DialogTitle><DialogDescription>Ein Name für die nächste Runde.</DialogDescription></DialogHeader><Input aria-label="Rundenname" defaultValue="Runde 5" /><DialogClose asChild><Button>Schließen</Button></DialogClose></DialogContent></Dialog>,
+  'Dialog-Familie': <Dialog><DialogTrigger asChild><Button>Dialog öffnen</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Beispieldialog</DialogTitle><DialogDescription>Ein Name für die nächste Runde.</DialogDescription></DialogHeader><div className="grid gap-1.5"><Label htmlFor="catalog-round-name">Rundenname</Label><Input id="catalog-round-name" defaultValue="Runde 5" /></div><DialogFooter><DialogClose asChild><Button variant="outline">Abbrechen</Button></DialogClose><DialogClose asChild><Button>Speichern</Button></DialogClose></DialogFooter></DialogContent></Dialog>,
   'DropdownMenu-Familie': <MenuDemo />,
   Input: <FieldDemo kind="Input" />,
   'Ifta-Felder': <FieldDemo kind="Ifta-Felder" />,
-  'Popover-Familie': <Popover><PopoverTrigger asChild><Button variant="outline">Popover öffnen</Button></PopoverTrigger><PopoverContent className="max-w-[calc(100vw-2rem)]"><IftaInput label="Kurznotiz" defaultValue="Nächste Runde" /></PopoverContent></Popover>,
+  'Popover-Familie': <Popover><PopoverTrigger asChild><Button variant="outline">Popover öffnen</Button></PopoverTrigger><PopoverContent className="grid max-w-[calc(100vw-2rem)] gap-3"><div className="grid gap-1.5"><Label htmlFor="catalog-short-note">Kurznotiz</Label><Input id="catalog-short-note" defaultValue="Nächste Runde" /></div><div className="flex justify-end gap-1.5"><Button variant="ghost" size="sm">Leeren</Button><Button size="sm">Übernehmen</Button></div></PopoverContent></Popover>,
   'Select-Familie': <SelectDemo />,
   'Tabs-Familie': <SelectionDemo tabs />,
   SegmentedControl: <SelectionDemo />,
@@ -344,9 +365,13 @@ const demos: Record<string, ReactNode> = {
   ColorPicker: <FieldDemo kind="ColorPicker" />,
   InlineTextEdit: <FieldDemo kind="InlineTextEdit" />,
   'Shared PlayerCard': <PlayerDemo />,
+  EmptyState: <EmptyState icon={Trophy} action={<Button variant="outline" size="sm"><Plus />Erste Runde starten</Button>}>Noch keine Ergebnisse</EmptyState>,
   ConfirmButton: <ConfirmationDemo />,
   AppResetButton: <ConfirmationDemo reset />,
-  Aufklappen: <details className="group rounded-lg border bg-card p-3"><DisclosureSummary>Zusatzangaben</DisclosureSummary><div className="mt-3"><IftaInput label="Notiz" defaultValue="Nächste Runde" /></div></details>,
+  Aufklappen: <div className="w-full max-w-sm divide-y rounded-lg border bg-card">
+    <details open className="group px-3.5"><DisclosureSummary>Zusatzangaben</DisclosureSummary><div className="pb-3.5"><IftaInput label="Notiz" defaultValue="Nächste Runde" /></div></details>
+    <details className="group px-3.5"><DisclosureSummary>Intervalle <span className="type-caption font-medium text-subtle-foreground">· 3</span></DisclosureSummary><p className="type-ui pb-3.5 text-muted-foreground">6 × 400 m · 90″ Pause</p></details>
+  </div>,
   DisclosureIndicator: <DisclosureIndicator />,
   'Dashboard-Illustrationen': <DashboardArtworkDemo />,
 }

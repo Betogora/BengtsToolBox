@@ -37,7 +37,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        'fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out',
+        'fixed inset-0 z-50 bg-[rgb(17_24_39/0.32)] data-[state=open]:animate-in data-[state=closed]:animate-out',
         className,
       )}
       {...props}
@@ -61,14 +61,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border bg-background p-6 shadow-lg',
+          'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[16px] bg-card p-6 shadow-overlay',
           className,
         )}
         {...props}
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close className="absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-lg bg-[#f3f7fa] transition-colors hover:bg-secondary outline-none sm:right-2.5 sm:top-2.5 sm:size-9">
+          <DialogPrimitive.Close className="absolute right-1.5 top-1.5 grid size-11 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground outline-none sm:right-2.5 sm:top-2.5 sm:size-9">
             <XIcon className="size-4" />
             <span className="sr-only">{t('common.close')}</span>
           </DialogPrimitive.Close>

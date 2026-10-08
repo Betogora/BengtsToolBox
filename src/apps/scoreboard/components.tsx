@@ -40,7 +40,7 @@ export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) 
   const zeroPosition = ((0 - minScore) / range) * 100
 
   return (
-    <div className="grid gap-2">
+    <div className="grid divide-y">
       {standings.map((standing) => {
         const scorePosition = ((standing.score - minScore) / range) * 100
         const barStart = Math.min(zeroPosition, scorePosition)
@@ -49,7 +49,7 @@ export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) 
         return (
           <div
             key={`${standing.target.type}-${standing.target.id}`}
-            className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
+            className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 py-3 first:pt-0 last:pb-0"
           >
             <span className="type-card-title text-muted-foreground tabular-nums">
               {standing.rank}
@@ -62,7 +62,7 @@ export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) 
                 />
                 <span className="type-card-title truncate">{standing.target.name}</span>
               </div>
-              <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-muted">
+              <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
                 <span
                   aria-hidden="true"
                   className="absolute inset-y-0 w-px bg-border"
@@ -79,7 +79,7 @@ export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) 
                 />
               </div>
             </div>
-            <span className="type-metric-sm tabular-nums">
+            <span className="text-[1.625rem] leading-none font-semibold tracking-tight tabular-nums">
               {formatNumber(standing.score)}
             </span>
           </div>
@@ -146,6 +146,7 @@ export function ScoreTargetCard({
             onValueCommit={onColorChange}
           />
           <ConfirmButton
+            mode="popover"
             title={t('scoreboard.removeTitle')}
             description={t('scoreboard.removeDescription', { name: target.name })}
             onConfirm={onRemove}
@@ -270,6 +271,7 @@ export function RosterPlayerCard({
             />
           </div>
           <ConfirmButton
+            mode="popover"
             title={t('scoreboard.removeTitle')}
             description={t('scoreboard.removeDescription', { name: player.name })}
             onConfirm={onRemove}
@@ -445,6 +447,7 @@ export function ArchiveCard({
           </button>
         </div>
         <ConfirmButton
+          mode="popover"
           title={t('scoreboard.archiveDeleteTitle')}
           description={t('scoreboard.archiveDeleteDescription')}
           onConfirm={onDelete}

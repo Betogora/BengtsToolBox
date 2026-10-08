@@ -1,3 +1,5 @@
+// Eigene Kontexte mit erzwungener demo-*-Emulator-Konfiguration; produktives Firebase ist hier ausgeschlossen.
+// eslint-disable-next-line no-restricted-imports
 import { expect, test } from '@playwright/test'
 
 test('Zwei Geräte synchronisieren Buzz, Reload und Mobilfunk-Reconnect @desktop', async ({ browser }) => {

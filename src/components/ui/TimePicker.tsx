@@ -1,5 +1,12 @@
 import { Clock3 } from 'lucide-react'
-import { useId, useRef, useState } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 
 import { Button } from '@/components/ui/button'
 import { IftaInput } from '@/components/ui/ifta-field'
@@ -9,6 +16,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 type TimePickerProps = {
   label: string
@@ -19,6 +27,12 @@ type TimePickerProps = {
 }
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/
+const quickTimes = ['06:00', '08:00', '12:00', '18:00']
+const rowHeight = 34
+const visibleRows = 5
+const columnPadding = ((visibleRows - 1) / 2) * rowHeight
+
+const pad = (number: number) => String(number).padStart(2, '0')
 
 export function TimePicker({
   label,
@@ -29,19 +43,15 @@ export function TimePicker({
 }: TimePickerProps) {
   const { t } = useI18n()
   const titleId = useId()
-  const hourRef = useRef<HTMLInputElement>(null)
+  const hourRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
-  const [hours, setHours] = useState('08')
-  const [minutes, setMinutes] = useState('00')
-  const valid =
-    /^\d{1,2}$/.test(hours) &&
-    Number(hours) < 24 &&
-    /^\d{1,2}$/.test(minutes) &&
-    Number(minutes) < 60
+  const [hours, setHours] = useState(8)
+  const [minutes, setMinutes] = useState(0)
   const selectTime = (time: string) => {
     onValueChange(time)
     setOpen(false)
   }
+  const applySelection = () => selectTime(`${pad(hours)}:${pad(minutes)}`)
 
   return (
     <Popover
@@ -49,11 +59,11 @@ export function TimePicker({
       open={open}
       onOpenChange={(next) => {
         if (next) {
-          const parts = timePattern.test(value)
-            ? value.split(':')
-            : ['08', '00']
-          setHours(parts[0])
-          setMinutes(parts[1])
+          const [nextHours, nextMinutes] = timePattern.test(value)
+            ? value.split(':').map(Number)
+            : [8, 0]
+          setHours(nextHours)
+          setMinutes(nextMinutes)
         }
         setOpen(next)
       }}
@@ -100,72 +110,54 @@ export function TimePicker({
         data-time-picker
         onOpenAutoFocus={(event) => {
           event.preventDefault()
-          hourRef.current?.focus()
-          hourRef.current?.select()
+          hourRef.current?.focus({ preventScroll: true })
         }}
       >
-        <h3 id={titleId} className="type-action mb-3">
+        <h3 id={titleId} className="type-action mb-2">
           {label}
         </h3>
         <div
-          className="grid grid-cols-[1fr_auto_1fr] items-start gap-2"
+          className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-1"
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && valid) {
+            if (event.key === 'Enter') {
               event.preventDefault()
-              selectTime(
-                `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`,
-              )
+              applySelection()
             }
           }}
         >
-          <label className="grid gap-1 text-center">
-            <span className="type-caption text-muted-foreground">
-              {t('ui.picker.hours')}
-            </span>
-            <input
-              ref={hourRef}
-              aria-label={t('ui.picker.hours')}
-              inputMode="numeric"
-              pattern="([01]?[0-9]|2[0-3])"
-              maxLength={2}
-              value={hours}
-              onChange={(event) =>
-                setHours(event.currentTarget.value.replace(/\D/g, ''))
-              }
-              className="h-16 w-full rounded-lg border bg-muted/50 text-center text-3xl font-semibold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-[8px] bg-muted"
+            style={{ height: rowHeight }}
+          />
+          <TimeColumn
+            count={24}
+            label={t('ui.picker.hours')}
+            listRef={hourRef}
+            value={hours}
+            onValueChange={setHours}
+          />
           <span
             aria-hidden="true"
-            className="pt-8 text-3xl text-muted-foreground"
+            className="relative text-base font-semibold text-muted-foreground"
           >
             :
           </span>
-          <label className="grid gap-1 text-center">
-            <span className="type-caption text-muted-foreground">
-              {t('ui.picker.minutes')}
-            </span>
-            <input
-              aria-label={t('ui.picker.minutes')}
-              inputMode="numeric"
-              pattern="[0-5]?[0-9]"
-              maxLength={2}
-              value={minutes}
-              onChange={(event) =>
-                setMinutes(event.currentTarget.value.replace(/\D/g, ''))
-              }
-              className="h-16 w-full rounded-lg border bg-muted/50 text-center text-3xl font-semibold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
+          <TimeColumn
+            count={60}
+            label={t('ui.picker.minutes')}
+            value={minutes}
+            onValueChange={setMinutes}
+          />
         </div>
-        <div className="my-3 grid grid-cols-4 gap-1">
-          {['06:00', '08:00', '12:00', '18:00'].map((time) => (
+        <div className="my-3 grid grid-cols-4 gap-1.5">
+          {quickTimes.map((time) => (
             <Button
               type="button"
               key={time}
               size="sm"
               variant="outline"
-              className="px-1 tabular-nums"
+              className="h-[30px] rounded-full px-0 tabular-nums shadow-none"
               onClick={() => selectTime(time)}
             >
               {time}
@@ -188,17 +180,134 @@ export function TimePicker({
             type="button"
             size="sm"
             className="ml-auto"
-            disabled={!valid}
-            onClick={() =>
-              selectTime(
-                `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`,
-              )
-            }
+            onClick={applySelection}
           >
             {t('ui.picker.apply')}
           </Button>
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+function TimeColumn({
+  count,
+  label,
+  listRef,
+  value,
+  onValueChange,
+}: {
+  count: number
+  label: string
+  listRef?: RefObject<HTMLDivElement | null>
+  value: number
+  onValueChange: (value: number) => void
+}) {
+  const optionIdPrefix = useId()
+  const ownRef = useRef<HTMLDivElement>(null)
+  const ref = listRef ?? ownRef
+  const settleTimer = useRef<number | undefined>(undefined)
+  const valueRef = useRef(value)
+  const scrolledValue = useRef<number | null>(null)
+
+  useLayoutEffect(() => {
+    valueRef.current = value
+  }, [value])
+
+  useLayoutEffect(() => {
+    if (ref.current) ref.current.scrollTop = valueRef.current * rowHeight
+  }, [ref])
+
+  useEffect(() => {
+    if (scrolledValue.current === value) {
+      scrolledValue.current = null
+      return
+    }
+    const list = ref.current
+    const top = value * rowHeight
+    if (!list || Math.abs(list.scrollTop - top) < 1) return
+    const reduceMotion = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (typeof list.scrollTo === 'function') {
+      list.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' })
+    } else {
+      list.scrollTop = top
+    }
+  }, [ref, value])
+
+  useEffect(() => () => window.clearTimeout(settleTimer.current), [])
+
+  const select = (next: number) => {
+    window.clearTimeout(settleTimer.current)
+    onValueChange((next + count) % count)
+  }
+
+  return (
+    <div
+      ref={ref}
+      role="listbox"
+      tabIndex={0}
+      aria-label={label}
+      aria-activedescendant={`${optionIdPrefix}-${value}`}
+      className="relative snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-[8px] outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-ring/50 [&::-webkit-scrollbar]:hidden"
+      style={{
+        height: rowHeight * visibleRows,
+        paddingBlock: columnPadding,
+      }}
+      onKeyDown={(event) => {
+        const step = {
+          ArrowDown: 1,
+          ArrowUp: -1,
+          PageDown: 5,
+          PageUp: -5,
+        }[event.key]
+        if (step !== undefined) {
+          event.preventDefault()
+          select(value + step)
+        } else if (event.key === 'Home' || event.key === 'End') {
+          event.preventDefault()
+          select(event.key === 'Home' ? 0 : count - 1)
+        }
+      }}
+      onScroll={() => {
+        window.clearTimeout(settleTimer.current)
+        settleTimer.current = window.setTimeout(() => {
+          const list = ref.current
+          if (!list) return
+          const index = Math.min(
+            count - 1,
+            Math.max(0, Math.round(list.scrollTop / rowHeight)),
+          )
+          if (index !== valueRef.current) {
+            scrolledValue.current = index
+            onValueChange(index)
+          }
+        }, 110)
+      }}
+    >
+      {Array.from({ length: count }, (_, index) => {
+        const distance = Math.abs(index - value)
+
+        return (
+          <div
+            key={index}
+            id={`${optionIdPrefix}-${index}`}
+            role="option"
+            aria-selected={index === value}
+            className={cn(
+              'flex cursor-pointer snap-center items-center justify-center tabular-nums transition-colors select-none',
+              distance === 0 && 'text-base font-[650] text-foreground',
+              distance === 1 && 'text-[15px] text-muted-foreground',
+              distance > 1 && 'text-[15px] text-subtle-foreground',
+            )}
+            style={{ height: rowHeight }}
+            onClick={() => select(index)}
+          >
+            {pad(index)}
+          </div>
+        )
+      })}
+    </div>
   )
 }

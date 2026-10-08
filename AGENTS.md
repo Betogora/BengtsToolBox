@@ -22,6 +22,7 @@ docs/                     Dauerhafte Architektur-, Entwicklungs- und Betriebsdok
 
 - BengtsToolBox immer auf Port `5180` öffnen und starten, zum Beispiel mit `npm run dev -- --host 127.0.0.1 --port 5180 --strictPort`. Nicht auf den Vite-Standardport `5173` ausweichen, damit die App nicht mit anderen lokalen Projekten konkurriert.
 - Falls ein Hintergrundstart Standardausgabe oder Fehlerausgabe in Dateien umleitet, diese ausschließlich unter `logs/` ablegen und das Verzeichnis bei Bedarf anlegen. Keine Laufzeit-Logs im Repository-Root erzeugen.
+- Automatisierte Abläufe (Playwright, Szenenaufnahmen, Screenshot- oder Klickskripte) dürfen nie echtes Firebase erreichen. Ein Server, der nur für solche Abläufe gestartet wird, läuft im lokalen Modus mit leeren `VITE_FIREBASE_*`-Werten; ein Server auf `5180` gilt als möglicherweise mit `.env.local` verbunden. Die Browsertests starten dafür immer frisch ihren eigenen lokalen Server auf `5288` (keine Wiederverwendung laufender Server), importieren `test` aus `tests/browser/browserApp.ts` und sperren produktive Firebase-Hosts; eigene Skripte sperren diese Hosts ebenso per `context.route`.
 
 ## Kontext gezielt laden
 

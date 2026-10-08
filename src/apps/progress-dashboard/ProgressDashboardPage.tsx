@@ -385,6 +385,7 @@ export function ProgressDashboardPage() {
               <DisclosureIndicator isOpen={isActiveDatasetOpen} className="ml-auto" />
             </button>
             <AppResetButton
+              mode="dialog"
               title={t('progress.archive.restartTitle')}
               description={t('progress.archive.restartDescription')}
               onConfirm={async () => {

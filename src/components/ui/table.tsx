@@ -12,7 +12,7 @@ function Table({
       data-slot="table-container"
       tabIndex={0}
       className={cn(
-        'w-full min-w-0 overflow-x-auto rounded-md border bg-card',
+        'w-full min-w-0 overflow-x-auto rounded-lg border bg-card',
         containerClassName,
       )}
     >
@@ -29,7 +29,7 @@ function TableHeader({ className, ...props }: ComponentProps<'tr'>) {
   return (
     <thead
       data-slot="table-header"
-      className="bg-muted/70 text-left"
+      className="text-left"
     >
       <TableRow className={className} {...props} />
     </thead>
@@ -60,7 +60,7 @@ function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       data-slot="table-head"
-      className={cn('type-action p-3', className)}
+      className={cn('type-caption px-3 py-2.5 font-semibold text-muted-foreground', className)}
       {...props}
     />
   )

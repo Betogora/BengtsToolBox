@@ -19,6 +19,14 @@ type BrowserFixtures = {
   app: BrowserApp
 }
 
+const productionFirebaseHost =
+  /(^|\.)(googleapis\.com|firebaseio\.com|firebasedatabase\.app|firebaseapp\.com)$/
+
+// Emulator-Projekte heißen demo-*; alles andere wäre ein echtes Firebase-Projekt.
+export function isProductionFirebaseRequest(url: URL) {
+  return productionFirebaseHost.test(url.hostname) && !url.hostname.startsWith('demo-')
+}
+
 function formatAxeViolations(
   violations: Awaited<ReturnType<AxeBuilder['analyze']>>['violations'],
 ) {
@@ -34,6 +42,20 @@ function formatAxeViolations(
 }
 
 export const test = base.extend<BrowserFixtures>({
+  // Browsertests dürfen nie echte Daten verändern, auch nicht über einen
+  // wiederverwendeten Server mit .env.local.
+  context: async ({ context }, provideContext) => {
+    const blockedRequests: string[] = []
+    await context.route(isProductionFirebaseRequest, (route) => {
+      blockedRequests.push(route.request().url())
+      return route.abort('blockedbyclient')
+    })
+    await provideContext(context)
+    expect(
+      blockedRequests,
+      'Browsertests haben produktives Firebase angesprochen; den Testserver ohne Firebase-Konfiguration starten',
+    ).toEqual([])
+  },
   app: async ({ page }, provideFixture) => {
     const runtimeErrors: string[] = []
 

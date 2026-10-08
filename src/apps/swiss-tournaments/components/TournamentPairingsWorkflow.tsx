@@ -609,6 +609,7 @@ export function TournamentPairingsWorkflow({
                             canGoBackToRound &&
                             currentRound && (
                               <ConfirmButton
+                                mode="dialog"
                                 title={t("swiss.backToRoundTitle", {
                                   number: round.roundNumber,
                                 })}
@@ -742,6 +743,7 @@ export function TournamentPairingsWorkflow({
                                 </Button>
                               )}
                               <ConfirmButton
+                                mode="dialog"
                                 title={t("swiss.deleteRoundTitle", {
                                   round: roundLabel,
                                 })}

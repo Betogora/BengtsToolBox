@@ -5,20 +5,20 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'type-action inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'type-action inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md transition-[color,background-color,transform] outline-none active:translate-y-px disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 disabled:bg-muted disabled:text-subtle-foreground disabled:shadow-none',
         destructive:
-          'bg-destructive text-white shadow-[0_12px_28px_-20px_rgba(217,77,67,0.9)] hover:bg-destructive/90',
+          'bg-destructive text-white shadow-xs hover:bg-destructive/90 disabled:bg-muted disabled:text-subtle-foreground disabled:shadow-none',
         outline:
-          'border bg-card shadow-xs hover:bg-secondary hover:text-primary',
+          'border bg-card shadow-xs hover:bg-muted disabled:bg-muted disabled:text-subtle-foreground disabled:shadow-none',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 hover:text-primary',
-        ghost: 'hover:bg-secondary hover:text-primary',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'bg-secondary text-secondary-foreground hover:bg-[#eceef1] disabled:text-subtle-foreground',
+        ghost: 'text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50',
+        link: 'text-primary underline-offset-4 hover:underline disabled:opacity-50',
       },
       size: {
         default: 'h-9 px-4 py-2',

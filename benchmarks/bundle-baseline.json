@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-02T11:53:32.391Z",
+  "generatedAt": "2026-10-08T08:25:45.279Z",
   "toolchain": {
     "node": "v24.15.0",
     "vite": "8.1.4",
@@ -8,48 +8,48 @@
   },
   "metrics": {
     "app:coinflip": {
-      "rawBytes": 8603,
-      "gzipBytes": 3104
+      "rawBytes": 8677,
+      "gzipBytes": 3135
     },
     "app:decision-wheel": {
-      "rawBytes": 22456,
-      "gzipBytes": 7361
+      "rawBytes": 21283,
+      "gzipBytes": 6853
     },
     "app:live-buzzer": {
-      "rawBytes": 20519,
-      "gzipBytes": 5938
+      "rawBytes": 26117,
+      "gzipBytes": 8249
     },
     "app:next-question": {
-      "rawBytes": 9679,
-      "gzipBytes": 3560
+      "rawBytes": 8882,
+      "gzipBytes": 3206
     },
     "app:progress-dashboard": {
-      "rawBytes": 42053,
-      "gzipBytes": 10780
+      "rawBytes": 43733,
+      "gzipBytes": 11209
     },
     "app:randomizer": {
-      "rawBytes": 5772,
-      "gzipBytes": 2037
+      "rawBytes": 5846,
+      "gzipBytes": 2067
     },
     "app:schlag-den-raab": {
-      "rawBytes": 20688,
-      "gzipBytes": 6046
+      "rawBytes": 20685,
+      "gzipBytes": 6072
     },
     "app:scoreboard": {
-      "rawBytes": 29985,
-      "gzipBytes": 7594
+      "rawBytes": 30565,
+      "gzipBytes": 7695
     },
     "app:swiss-tournaments": {
-      "rawBytes": 157167,
-      "gzipBytes": 38932
+      "rawBytes": 155954,
+      "gzipBytes": 38091
     },
     "app:territory-map": {
-      "rawBytes": 52197,
-      "gzipBytes": 15790
+      "rawBytes": 50143,
+      "gzipBytes": 14947
     },
     "app:triathlon-tracker": {
-      "rawBytes": 59098,
-      "gzipBytes": 15217
+      "rawBytes": 61664,
+      "gzipBytes": 15422
     },
     "dataset:next-question/questions.ndjson": {
       "rawBytes": 2139834,
@@ -64,16 +64,16 @@
       "gzipBytes": 37003
     },
     "entry:css": {
-      "rawBytes": 91228,
-      "gzipBytes": 16564
+      "rawBytes": 110892,
+      "gzipBytes": 20850
     },
     "entry:js": {
-      "rawBytes": 465351,
-      "gzipBytes": 143043
+      "rawBytes": 129730,
+      "gzipBytes": 42181
     },
     "firebase": {
-      "rawBytes": 493686,
-      "gzipBytes": 147552
+      "rawBytes": 494681,
+      "gzipBytes": 147334
     }
   }
 }

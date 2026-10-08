@@ -1,10 +1,12 @@
-import { Pencil } from 'lucide-react'
-import { useState } from 'react'
+import { Check, Pencil, X } from 'lucide-react'
+import { useRef, useState, type MouseEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+
+const keepInputFocus = (event: MouseEvent) => event.preventDefault()
 
 export function InlineTextEdit({
   ariaLabel,
@@ -25,24 +27,78 @@ export function InlineTextEdit({
 }) {
   const { t } = useI18n()
   const [isEditing, setIsEditing] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const isClosingRef = useRef(false)
   const displayValue = value.trim() || fallback
+
+  const startEditing = () => {
+    isClosingRef.current = false
+    setIsEditing(true)
+  }
+  const cancel = () => {
+    isClosingRef.current = true
+    setIsEditing(false)
+  }
+  const save = async () => {
+    if (isClosingRef.current) return
+    isClosingRef.current = true
+    try {
+      await onSave(inputRef.current?.value ?? displayValue)
+    } catch (error) {
+      isClosingRef.current = false
+      throw error
+    }
+    setIsEditing(false)
+  }
 
   if (isEditing) {
     return (
-      <Input
-        aria-label={ariaLabel}
-        autoFocus
-        className={inputClassName}
-        defaultValue={displayValue}
-        onBlur={async (event) => {
-          await onSave(event.currentTarget.value)
-          setIsEditing(false)
+      <div
+        className="flex min-w-0 items-center gap-1.5"
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) void save()
         }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur()
-          if (event.key === 'Escape') setIsEditing(false)
-        }}
-      />
+      >
+        <Input
+          ref={inputRef}
+          aria-label={ariaLabel}
+          autoFocus
+          className={cn('min-w-0 flex-1 bg-card', inputClassName)}
+          defaultValue={displayValue}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              void save()
+            }
+            if (event.key === 'Escape') {
+              event.preventDefault()
+              event.stopPropagation()
+              cancel()
+            }
+          }}
+        />
+        <Button
+          type="button"
+          size="icon"
+          aria-label={t('common.save')}
+          className="size-8"
+          onMouseDown={keepInputFocus}
+          onClick={() => void save()}
+        >
+          <Check />
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          aria-label={t('common.cancel')}
+          className="size-8 shadow-none"
+          onMouseDown={keepInputFocus}
+          onClick={cancel}
+        >
+          <X />
+        </Button>
+      </div>
     )
   }
 
@@ -52,14 +108,14 @@ export function InlineTextEdit({
         type="button"
         aria-label={t('common.editAria', { label: ariaLabel })}
         className={cn(
-          'inline-flex min-w-0 items-center rounded-sm leading-tight transition-colors hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          'inline-flex min-w-0 items-center rounded-[8px] px-2 py-1 leading-tight transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
           className,
         )}
-        onClick={() => setIsEditing(true)}
+        onClick={startEditing}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            setIsEditing(true)
+            startEditing()
           }
         }}
       >
@@ -69,21 +125,18 @@ export function InlineTextEdit({
   }
 
   return (
-    <div className="group flex min-w-0 items-center gap-2">
+    <div className="group -mx-2 -my-1 flex w-fit min-w-0 max-w-[calc(100%+1rem)] items-center gap-1 rounded-[8px] px-2 py-1 transition-colors hover:bg-muted has-[:focus-visible]:bg-muted">
       <span
-        className={cn(
-          'min-w-0 break-words rounded-sm leading-tight transition-colors group-hover:bg-accent/35',
-          className,
-        )}
+        className={cn('min-w-0 break-words leading-tight', className)}
       >
         {displayValue}
       </span>
       <Button
         aria-label={t('common.editAria', { label: ariaLabel })}
-        className="size-11 sm:size-9"
+        className="size-11 shrink-0 text-subtle-foreground opacity-0 transition-opacity hover:bg-transparent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 sm:size-8 [@media(hover:none)]:opacity-100"
         size="icon"
         variant="ghost"
-        onClick={() => setIsEditing(true)}
+        onClick={startEditing}
       >
         <Pencil className="size-4" />
       </Button>

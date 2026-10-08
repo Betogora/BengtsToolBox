@@ -2,6 +2,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Legend,
   Line,
@@ -29,6 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
+import { ModelBadge } from './PersonalBestsPanel'
 
 export type ChartRange = '4w' | '12w' | '6m' | '1y' | 'all'
 
@@ -101,12 +103,35 @@ function disciplineKey(value: unknown) {
 const tooltipContentStyle = {
   background: 'var(--popover)',
   border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)',
+  borderRadius: 10,
   color: 'var(--popover-foreground)',
   maxWidth: 'min(320px, calc(100vw - 32px))',
   fontSize: 12,
   whiteSpace: 'normal' as const,
-  boxShadow: '0 8px 24px #1b2d3b18',
+  boxShadow: 'var(--shadow-overlay)',
+}
+
+const gridStroke = 'var(--border)'
+/** Lighter sport tints mark measured history and secondary series. */
+const activityOpacity = 0.4
+const secondaryOpacity = 0.5
+
+function LegendDot({ color, opacity = 1 }: { color: string; opacity?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="size-2 shrink-0 rounded-full"
+      style={{ background: color, opacity }}
+    />
+  )
+}
+
+function LegendLine({ color, dash, opacity = 1 }: { color: string; dash: string; opacity?: number }) {
+  return (
+    <svg aria-hidden="true" className="h-2 w-5 shrink-0" viewBox="0 0 20 8">
+      <line x1="0" x2="20" y1="4" y2="4" stroke={color} strokeDasharray={dash} strokeOpacity={opacity} strokeWidth="2" />
+    </svg>
+  )
 }
 
 const tooltipItemStyle = {
@@ -211,11 +236,7 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
       <CardHeader className="tri-performance-heading p-4">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="size-2 rounded-full"
-              style={{ background: disciplineColor }}
-            />
+            <LegendDot color={disciplineColor} />
             {plot.title}
           </CardTitle>
           <span className="type-caption text-muted-foreground">
@@ -231,11 +252,12 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
         {latestModel && latestModel.primaryDisplayValue !== null && (
           <div className="mt-3 flex items-end justify-between gap-3">
             <div>
-              <p className="tri-plot-value tabular-nums">
+              <p className="tri-plot-value">
                 {modelValueFormatter(latestModel.primaryDisplayValue)}
               </p>
-              <p className="mt-1 text-xs">
-                {t('triathlon.charts.estimated')} · {plot.primaryLabel}
+              <p className="type-caption mt-1 flex items-center gap-1.5 text-muted-foreground">
+                <ModelBadge />
+                {plot.primaryLabel}
               </p>
             </div>
             <time
@@ -251,30 +273,18 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
         )}
       </CardHeader>
       <CardContent className="tri-performance-content p-3 pt-0 sm:p-4 sm:pt-0">
-        <div className="tri-chart-legend mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground min-[900px]:pt-0">
           <span className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="size-1.5 rounded-full"
-              style={{ background: 'var(--foreground)', opacity: 0.65 }}
-            />
+            <LegendDot color={disciplineColor} opacity={activityOpacity} />
             {plot.activityLabel}
           </span>
           <span className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="w-4 border-t-2"
-              style={{ borderColor: disciplineColor }}
-            />
+            <LegendLine color={disciplineColor} dash="6 4" />
             {t('triathlon.charts.estimated')} {plot.primaryLabel}
           </span>
           {plot.secondaryLabel && (
             <span className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className="w-4 border-t-2 border-dashed"
-                style={{ borderColor: disciplineColor }}
-              />
+              <LegendLine color={disciplineColor} dash="3 4" opacity={secondaryOpacity} />
               {plot.secondaryLabel}
             </span>
           )}
@@ -285,12 +295,7 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
               data={chartPoints.filter((point) => point.pointKind === 'model')}
               margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
             >
-              <CartesianGrid
-                stroke="var(--border)"
-                strokeOpacity={0.6}
-                strokeDasharray="0"
-                vertical={false}
-              />
+              <CartesianGrid stroke={gridStroke} vertical={false} />
               <XAxis
                 type="number"
                 dataKey="timestamp"
@@ -348,14 +353,16 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                 }
                 itemStyle={tooltipItemStyle}
               />
+              {/* Model estimates are dashed; measured sessions are dots. */}
               <Line
                 connectNulls={false}
                 dataKey="primaryValue"
-                dot={{ r: 2.5, fill: 'white', strokeWidth: 2 }}
+                dot={{ r: 2.5, fill: 'white', strokeWidth: 2, strokeDasharray: '0' }}
                 activeDot={{ r: 4, fill: 'white', strokeWidth: 2 }}
                 name={plot.primaryLabel}
                 stroke={disciplineColor}
-                strokeWidth={3}
+                strokeDasharray="6 4"
+                strokeWidth={2.5}
                 isAnimationActive={false}
                 type="linear"
               />
@@ -363,11 +370,11 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                 <Line
                   connectNulls={false}
                   dataKey="secondaryValue"
-                  dot={{ r: 2.5, fill: 'white', strokeWidth: 2 }}
+                  dot={{ r: 2, fill: 'white', strokeWidth: 1.5, strokeDasharray: '0' }}
                   name={plot.secondaryLabel}
                   stroke={disciplineColor}
-                  strokeDasharray="5 4"
-                  strokeOpacity={0.8}
+                  strokeDasharray="3 4"
+                  strokeOpacity={secondaryOpacity}
                   strokeWidth={2}
                   isAnimationActive={false}
                   type="linear"
@@ -379,8 +386,8 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                 )}
                 dataKey="actualValue"
                 isAnimationActive={false}
-                fill="var(--foreground)"
-                fillOpacity={0.65}
+                fill={disciplineColor}
+                fillOpacity={activityOpacity}
                 legendType="circle"
                 name={plot.activityLabel}
               />
@@ -522,12 +529,7 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
             }))}
             margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
           >
-            <CartesianGrid
-              stroke="var(--border)"
-              strokeOpacity={0.6}
-              strokeDasharray="2 6"
-              vertical={false}
-            />
+            <CartesianGrid stroke={gridStroke} vertical={false} />
             <XAxis
               type="number"
               dataKey="timestamp"
@@ -577,11 +579,13 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
               iconSize={8}
               height={36}
               wrapperStyle={{ fontSize: 12 }}
-              formatter={(value) =>
-                value === 'overall'
-                  ? t('triathlon.charts.overall')
-                  : t(disciplineKey(value))
-              }
+              formatter={(value) => (
+                <span style={{ color: 'var(--muted-foreground)' }}>
+                  {value === 'overall'
+                    ? t('triathlon.charts.overall')
+                    : t(disciplineKey(value))}
+                </span>
+              )}
             />
             <Line
               connectNulls={false}
@@ -687,7 +691,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
         { dataKey: 'runKilometers', discipline: 'run' },
       ] as const)
   return (
-    <Card className="tri-volume-card min-w-0 shadow-none" data-weekly-volume>
+    <Card className="min-w-0 shadow-none" data-weekly-volume>
       <CardHeader className="p-4 pb-2">
         <CardTitle>{t('triathlon.charts.weeklyVolume')}</CardTitle>
       </CardHeader>
@@ -710,11 +714,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
               {series.map(({ dataKey, discipline }) => (
                 <div className="flex items-baseline gap-2" key={discipline}>
                   <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span
-                      className="size-2 rounded-sm"
-                      aria-hidden="true"
-                      style={{ background: disciplineColors[discipline] }}
-                    />
+                    <LegendDot color={disciplineColors[discipline]} />
                     {t(disciplineKey(discipline))}
                   </dt>
                   <dd className="text-sm font-semibold tabular-nums">
@@ -734,12 +734,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                   barCategoryGap="25%"
                   margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
                 >
-                  <CartesianGrid
-                    stroke="var(--border)"
-                    strokeOpacity={0.6}
-                    strokeDasharray="2 6"
-                    vertical={false}
-                  />
+                  <CartesianGrid stroke={gridStroke} vertical={false} />
                   <XAxis
                     dataKey="label"
                     minTickGap={28}
@@ -785,7 +780,17 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                         index === series.length - 1 ? [3, 3, 0, 0] : undefined
                       }
                       stackId={volumeKind}
-                    />
+                    >
+                      {/* The current week keeps the full sport color. */}
+                      {points.map((point, pointIndex) => (
+                        <Cell
+                          key={point.weekStart}
+                          fillOpacity={
+                            pointIndex === points.length - 1 ? 1 : 0.55
+                          }
+                        />
+                      ))}
+                    </Bar>
                   ))}
                 </BarChart>
               </ResponsiveContainer>
@@ -856,14 +861,11 @@ export default function TrainingCharts({
         </details>
       )}
       {(hasPerformance || hasProgress) && (
-        <details
-          className="group min-w-0 rounded-lg border bg-card p-4"
-          data-chart-tables
-        >
-          <DisclosureSummary>
+        <details className="group min-w-0" data-chart-tables>
+          <DisclosureSummary className="type-ui min-h-8 w-fit justify-start gap-1.5 px-3 font-medium hover:bg-secondary">
             {t('triathlon.charts.table')}
           </DisclosureSummary>
-          <div className="mt-4 grid gap-5">
+          <div className="mt-2 grid gap-5 rounded-lg border bg-card p-4">
             {performancePlots.filter(hasPerformanceData).map((plot) => (
               <PerformanceDataTable key={plot.id} plot={plot} />
             ))}

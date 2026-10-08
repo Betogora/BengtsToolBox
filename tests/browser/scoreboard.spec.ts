@@ -1,10 +1,5 @@
 import { expect, test } from './browserApp'
 
-test.beforeEach(async ({ page }) => {
-  // These scenarios use local data, including when an existing server is reused.
-  await page.route('https://*.googleapis.com/**', (route) => route.abort())
-})
-
 test('Scoreboard erhält Buchungen bei Moduswechsel, später Zuordnung und Archivierung @desktop', async ({ app, page }) => {
   await app.open('/apps/scoreboard')
   const card = (name: string) => page.getByRole('button', { name: `${name} einen Punkt hinzufügen`, exact: true })

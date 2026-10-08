@@ -9,6 +9,11 @@ const localFirebaseEnvironment = {
   VITE_FIREBASE_APP_ID: ' ',
 }
 
+// Die Tests starten immer ihren eigenen Server im lokalen Modus und verwenden nie einen
+// laufenden wieder: 5180 kann mit .env.local echtes Firebase nutzen, und andere Projekte
+// belegen benachbarte Ports. Ist der Port belegt, bricht der Lauf ab.
+const testServerPort = 5288
+
 export default defineConfig({
   testDir: './tests/browser',
   outputDir: 'test-results',
@@ -24,7 +29,7 @@ export default defineConfig({
     timeout: 10_000,
   },
   use: {
-    baseURL: 'http://127.0.0.1:5180',
+    baseURL: `http://127.0.0.1:${testServerPort}`,
     colorScheme: 'light',
     locale: 'de-DE',
     reducedMotion: 'reduce',
@@ -68,10 +73,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5180 --strictPort',
+    command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${testServerPort} --strictPort`,
     env: localFirebaseEnvironment,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
-    url: 'http://127.0.0.1:5180',
+    url: `http://127.0.0.1:${testServerPort}`,
   },
 })

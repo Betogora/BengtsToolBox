@@ -2,10 +2,11 @@ import { Bike, Footprints, Waves } from 'lucide-react'
 import type { Discipline } from './types'
 import { formatTrainingDurationInput } from './domain/units'
 
+// Gleiche Werte wie --sport-color in triathlon-tracker.css; beide gemeinsam ändern.
 export const disciplineColors = {
-  swim: '#236492',
-  bike: '#94610c',
-  run: '#ad4938',
+  swim: '#2f7fb8',
+  bike: '#c58a12',
+  run: '#c4563d',
 } satisfies Record<Discipline, string>
 
 export const disciplineIcons = { swim: Waves, bike: Bike, run: Footprints }

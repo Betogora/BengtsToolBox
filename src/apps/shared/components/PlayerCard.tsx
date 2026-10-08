@@ -1,11 +1,13 @@
+import type { LucideIcon } from 'lucide-react'
 import { Minus, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-import { appTeams, type TeamId } from '@/apps/shared/teams'
+import { appTeams, isTeamId, type TeamId } from '@/apps/shared/teams'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +34,27 @@ type PlayerCardProps = {
   score?: number
 }
 
+function createTeamDotIcon(dotClassName: string) {
+  function TeamDotIcon({ className }: { className?: string }) {
+    return (
+      <span
+        aria-hidden="true"
+        className={cn(className, 'size-2 rounded-full', dotClassName)}
+      />
+    )
+  }
+
+  // SegmentedControl only passes className and aria-hidden to option icons.
+  return TeamDotIcon as unknown as LucideIcon
+}
+
+const teamDotIcons = new Map(
+  appTeams.map((team) => [team.id, createTeamDotIcon(team.dotClassName)]),
+)
+
+const counterButtonClassName =
+  'h-full w-11 rounded-none shadow-none hover:bg-muted hover:text-foreground'
+
 export function PlayerCard({
   player,
   buzzLabel,
@@ -49,7 +72,6 @@ export function PlayerCard({
 }: PlayerCardProps) {
   const { t } = useI18n()
   const [isEditingName, setIsEditingName] = useState(false)
-  const team = appTeams.find((entry) => entry.id === player.teamId)
   const saveName = (name: string) => {
     onNameChange(name)
     setIsEditingName(false)
@@ -58,148 +80,150 @@ export function PlayerCard({
   return (
     <Card
       className={cn(
-        'overflow-hidden transition-colors',
-        isHighlighted && 'border-primary/60 bg-primary/5',
+        'grid gap-4 p-[18px] transition-colors',
+        isHighlighted && 'border-primary/60 bg-primary-soft',
         isWinner && 'border-accent bg-accent/10',
       )}
     >
-      {team && <div className={cn('h-1 w-full', team.dotClassName)} />}
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            {isEditingName ? (
-              <Input
-                key={player.name}
-                aria-label={t('shared.playerCard.nameAria', {
-                  number: player.position,
-                })}
-                autoFocus
-                defaultValue={player.name}
-                onBlur={(event) => saveName(event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.currentTarget.blur()
-                  }
+      <div className="flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          {isEditingName ? (
+            <Input
+              key={player.name}
+              aria-label={t('shared.playerCard.nameAria', {
+                number: player.position,
+              })}
+              autoFocus
+              defaultValue={player.name}
+              onBlur={(event) => saveName(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur()
+                }
 
-                  if (event.key === 'Escape') {
-                    setIsEditingName(false)
-                  }
-                }}
-                className="type-page-title h-12"
-              />
-            ) : (
-              <h2 className="type-page-title break-words py-1">
-                {player.name}
-              </h2>
+                if (event.key === 'Escape') {
+                  setIsEditingName(false)
+                }
+              }}
+              className="h-10 text-[1.375rem] font-[650]"
+            />
+          ) : (
+            <h2
+              className="truncate text-[1.375rem] font-[650] leading-tight tracking-tight"
+              title={player.name}
+            >
+              {player.name}
+            </h2>
+          )}
+        </div>
+        {!isEditingName && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label={t('shared.playerCard.editAria', { name: player.name })}
+            onClick={() => setIsEditingName(true)}
+          >
+            <Pencil />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-destructive hover:bg-destructive-soft hover:text-destructive"
+          aria-label={t('shared.playerCard.removeAria', { name: player.name })}
+          onClick={onRemove}
+        >
+          <Trash2 />
+        </Button>
+      </div>
+
+      <SegmentedControl
+        aria-label={t('shared.playerCard.teamAria', { name: player.name })}
+        className="w-full"
+        value={player.teamId ?? ''}
+        options={appTeams.map((team) => ({
+          value: team.id,
+          label: t(team.buttonLabelKey),
+          icon: teamDotIcons.get(team.id),
+        }))}
+        onValueChange={(value) => {
+          const teamId = isTeamId(value) ? value : null
+          // Clicking the active team clears the assignment, as before.
+          onTeamChange(teamId === player.teamId ? null : teamId)
+        }}
+      />
+
+      {typeof score === 'number' && onIncrement && onDecrement && (
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground">
+              {t('common.points')}
+            </div>
+            <div
+              data-player-score
+              className="text-[52px] font-[650] leading-none tracking-tight tabular-nums"
+            >
+              {score}
+            </div>
+          </div>
+          <div className="flex h-10 shrink-0 divide-x overflow-hidden rounded-md border bg-card">
+            <Button
+              size="icon"
+              variant="ghost"
+              className={counterButtonClassName}
+              aria-label={t('shared.playerCard.decrementAria', {
+                name: player.name,
+              })}
+              disabled={score <= 0}
+              onClick={onDecrement}
+            >
+              <Minus />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className={counterButtonClassName}
+              aria-label={t('shared.playerCard.incrementAria', {
+                name: player.name,
+              })}
+              onClick={onIncrement}
+            >
+              <Plus />
+            </Button>
+            {onIncrementLarge && (
+              <Button
+                className="h-full rounded-none px-3.5 tabular-nums shadow-none"
+                aria-label={t('shared.playerCard.incrementLargeAria', {
+                  name: player.name,
+                })}
+                onClick={onIncrementLarge}
+              >
+                +5
+              </Button>
             )}
           </div>
-          {!isEditingName && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t('shared.playerCard.editAria', { name: player.name })}
-              onClick={() => setIsEditingName(true)}
-            >
-              <Pencil className="size-4" />
-            </Button>
-          )}
-          <Button
-            variant="destructive"
-            size="icon"
-            aria-label={t('shared.playerCard.removeAria', { name: player.name })}
-            onClick={onRemove}
-          >
-            <Trash2 className="size-4" />
-          </Button>
         </div>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <div className="grid grid-cols-2 gap-2">
-          {appTeams.map((teamOption) => {
-            const isSelected = player.teamId === teamOption.id
+      )}
 
-            return (
-              <Button
-                key={teamOption.id}
-                className={cn(
-                  'justify-start gap-2',
-                  isSelected && teamOption.className,
-                )}
-                variant={isSelected ? 'secondary' : 'outline'}
-                onClick={() => onTeamChange(isSelected ? null : teamOption.id)}
-              >
-                <span
-                  className={cn('size-3 rounded-full', teamOption.dotClassName)}
-                />
-                {t(teamOption.buttonLabelKey)}
-              </Button>
-            )
-          })}
-        </div>
-
-        {typeof score === 'number' && onIncrement && onDecrement && (
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="type-metric-lg">
-                {score}
-              </div>
-              <div className="type-caption text-muted-foreground">{t('common.score')}</div>
+      {buzzLabel && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
+          <div>
+            <div className="type-caption text-muted-foreground">
+              {t('shared.playerCard.buzz')}
             </div>
-            <div className="flex gap-2">
-              <Button
-                size="icon"
-                variant="outline"
-                aria-label={t('shared.playerCard.decrementAria', {
-                  name: player.name,
-                })}
-                disabled={score <= 0}
-                onClick={onDecrement}
-              >
-                <Minus className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                aria-label={t('shared.playerCard.incrementAria', {
-                  name: player.name,
-                })}
-                onClick={onIncrement}
-              >
-                <Plus className="size-4" />
-              </Button>
-              {onIncrementLarge && (
-                <Button
-                  aria-label={t('shared.playerCard.incrementLargeAria', {
-                    name: player.name,
-                  })}
-                  onClick={onIncrementLarge}
-                >
-                  <Plus className="size-4" />
-                  5
-                </Button>
-              )}
+            <div className="type-action mt-1 tabular-nums">
+              {buzzTime ?? '-'}
             </div>
           </div>
-        )}
-
-        {buzzLabel && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-            <div>
-              <div className="type-ui text-muted-foreground">
-                {t('shared.playerCard.buzz')}
-              </div>
-              <div className="type-action mt-1 tabular-nums">
-                {buzzTime ?? '-'}
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              {buzzRank && <Badge variant="secondary">#{buzzRank}</Badge>}
-              <Badge variant={isWinner ? 'default' : 'outline'}>
-                {buzzLabel}
-              </Badge>
-            </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            {buzzRank && <Badge variant="secondary">#{buzzRank}</Badge>}
+            <Badge variant={isWinner ? 'default' : 'outline'}>
+              {buzzLabel}
+            </Badge>
           </div>
-        )}
-      </CardContent>
+        </div>
+      )}
     </Card>
   )
 }

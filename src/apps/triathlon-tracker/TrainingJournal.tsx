@@ -1,7 +1,10 @@
 import {
   ArrowDownWideNarrow,
+  CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ListFilter,
   NotebookPen,
   Pencil,
   Plus,
@@ -11,7 +14,6 @@ import {
 import { useState } from 'react'
 import { averagePaceSeconds, formatPace } from './domain/units'
 import {
-  disciplineColors,
   disciplineIcons,
   disciplines,
   formatTrainingDuration,
@@ -19,23 +21,31 @@ import {
 import type { ActualTraining, Discipline } from './types'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Button } from '@/components/ui/button'
-import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { DatePicker } from '@/components/ui/DatePicker'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+
+const PAGE_SIZE = 20
+
+const chipClass = (active: boolean) =>
+  cn(
+    'inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium leading-none whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 [&_svg]:size-3.5 [&_svg]:shrink-0',
+    active
+      ? 'border-primary/30 bg-primary-soft text-primary'
+      : 'bg-card text-foreground hover:bg-muted',
+  )
 
 export function TrainingJournal({
   actualTrainings,
@@ -71,9 +81,12 @@ export function TrainingJournal({
           (a.startMinutes ?? 1440) - (b.startMinutes ?? 1440) ||
           a.position - b.position),
     )
-  const pageCount = Math.max(1, Math.ceil(filtered.length / 20))
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount - 1)
-  const visible = filtered.slice(currentPage * 20, (currentPage + 1) * 20)
+  const visible = filtered.slice(
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE,
+  )
   const duration = filtered.reduce(
     (sum, training) => sum + (training.durationSeconds ?? 0),
     0,
@@ -82,6 +95,15 @@ export function TrainingJournal({
     (sum, training) => sum + (training.distanceMeters ?? 0),
     0,
   )
+  const shortDate = (localDate: string) =>
+    formatDateTime(new Date(`${localDate}T12:00:00`), {
+      day: '2-digit',
+      month: '2-digit',
+    })
+  const rangeLabel =
+    from || to
+      ? `${from ? shortDate(from) : '…'}–${to ? shortDate(to) : '…'}`
+      : t('triathlon.journal.range')
 
   return (
     <section
@@ -90,7 +112,7 @@ export function TrainingJournal({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="type-section-title">{t('triathlon.journal.title')}</h2>
-        <span className="type-caption rounded-full bg-muted px-3 py-1.5 tabular-nums text-muted-foreground">
+        <span className="type-caption tabular-nums text-muted-foreground">
           {filtered.length === 1
             ? t('triathlon.summary.oneTraining')
             : t('triathlon.summary.trainingCount', {
@@ -105,7 +127,7 @@ export function TrainingJournal({
           )}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2 rounded-lg border bg-card p-3 lg:grid-cols-[1fr_1fr_1fr_auto]">
+      <div className="flex flex-wrap items-center gap-2">
         <Select
           value={discipline}
           onValueChange={(value) => {
@@ -113,12 +135,19 @@ export function TrainingJournal({
             setPage(0)
           }}
         >
-          <IftaSelectTrigger
-            containerClassName="col-span-2 lg:col-span-1"
-            label={t('triathlon.form.discipline')}
+          <SelectTrigger
+            aria-label={t('triathlon.form.discipline')}
+            className={cn(
+              chipClass(discipline !== 'all'),
+              'w-auto py-0 pr-3 shadow-none focus:ring-[3px] [&>svg]:hidden',
+            )}
           >
-            <SelectValue />
-          </IftaSelectTrigger>
+            <span className="inline-flex items-center gap-1.5">
+              <ListFilter aria-hidden="true" />
+              <SelectValue />
+              <ChevronDown aria-hidden="true" className="opacity-60" />
+            </span>
+          </SelectTrigger>
           <SelectContent className="triathlon-tracker">
             <SelectItem value="all">
               {t('triathlon.journal.allDisciplines')}
@@ -130,25 +159,72 @@ export function TrainingJournal({
             ))}
           </SelectContent>
         </Select>
-        <DatePicker
-          label={t('triathlon.journal.from')}
-          value={from}
-          onValueChange={(value) => {
-            setFrom(value)
+        <Popover>
+          <PopoverTrigger
+            className={chipClass(Boolean(from || to))}
+            aria-label={from || to ? `${t('triathlon.journal.range')}: ${rangeLabel}` : undefined}
+          >
+            <CalendarDays aria-hidden="true" />
+            <span className="tabular-nums">{rangeLabel}</span>
+            <ChevronDown aria-hidden="true" className="opacity-60" />
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="triathlon-tracker grid w-[min(18rem,calc(100vw-2rem))] gap-2"
+          >
+            <DatePicker
+              label={t('triathlon.journal.from')}
+              value={from}
+              onValueChange={(value) => {
+                setFrom(value)
+                setPage(0)
+              }}
+            />
+            <DatePicker
+              label={t('triathlon.journal.to')}
+              value={to}
+              onValueChange={(value) => {
+                setTo(value)
+                setPage(0)
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+        <label
+          className={cn(
+            chipClass(benchmarksOnly),
+            'cursor-pointer has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/45',
+          )}
+        >
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={benchmarksOnly}
+            onChange={(event) => {
+              setBenchmarksOnly(event.target.checked)
+              setPage(0)
+            }}
+          />
+          <Trophy aria-hidden="true" />
+          {t('triathlon.journal.benchmarksOnly')}
+        </label>
+        <button
+          type="button"
+          className={chipClass(ascending)}
+          aria-pressed={ascending}
+          onClick={() => {
+            setAscending(!ascending)
             setPage(0)
           }}
-        />
-        <DatePicker
-          label={t('triathlon.journal.to')}
-          value={to}
-          onValueChange={(value) => {
-            setTo(value)
-            setPage(0)
-          }}
-        />
+        >
+          <ArrowDownWideNarrow aria-hidden="true" />
+          {t('triathlon.form.date')}
+          <span aria-hidden="true">{ascending ? '↑' : '↓'}</span>
+        </button>
         <Button
           variant="ghost"
-          className="col-span-2 h-9 lg:col-span-1 lg:h-11"
+          size="sm"
+          className="h-[30px] px-2.5 text-[13px] text-muted-foreground"
           disabled={discipline === 'all' && !from && !to && !benchmarksOnly}
           onClick={() => {
             setDiscipline('all')
@@ -159,33 +235,6 @@ export function TrainingJournal({
           }}
         >
           {t('triathlon.journal.clearFilters')}
-        </Button>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="type-ui flex min-h-9 items-center gap-2">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={benchmarksOnly}
-            onChange={(event) => {
-              setBenchmarksOnly(event.target.checked)
-              setPage(0)
-            }}
-          />
-          {t('triathlon.journal.benchmarksOnly')}
-        </label>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-pressed={ascending}
-          onClick={() => {
-            setAscending(!ascending)
-            setPage(0)
-          }}
-        >
-          <ArrowDownWideNarrow aria-hidden="true" className="size-4" />
-          {t('triathlon.form.date')}
-          <span aria-hidden="true">{ascending ? '↑' : '↓'}</span>
         </Button>
       </div>
       {from && to && from > to && (
@@ -220,136 +269,114 @@ export function TrainingJournal({
         </div>
       ) : (
         <>
-          <Table
+          <ul
             aria-label={t('triathlon.journal.title')}
-            className="block md:table md:whitespace-nowrap"
-            containerClassName="overflow-x-visible md:overflow-x-auto"
+            className="divide-y rounded-lg border bg-card"
           >
-            <TableHeader className="hidden md:table-row">
-              <TableHead aria-sort={ascending ? 'ascending' : 'descending'}>
-                {t('triathlon.form.date')}
-              </TableHead>
-              <TableHead>{t('triathlon.form.discipline')}</TableHead>
-              <TableHead>{t('triathlon.journal.duration')}</TableHead>
-              <TableHead>{t('triathlon.journal.distance')}</TableHead>
-              <TableHead>{t('triathlon.journal.pace')}</TableHead>
-              <TableHead>{t('triathlon.form.metrics')}</TableHead>
-              <TableHead>{t('common.actions')}</TableHead>
-            </TableHeader>
-            <TableBody className="block md:table-row-group">
-              {visible.map((training) => {
-                const Icon = disciplineIcons[training.discipline]
-                const label = t(`triathlon.discipline.${training.discipline}`)
-                const pace =
-                  training.durationSeconds && training.distanceMeters
-                    ? formatPace(
-                        averagePaceSeconds(
-                          training.durationSeconds,
-                          training.distanceMeters,
-                          training.discipline,
-                        ),
-                      )
-                    : null
-                return (
-                  <TableRow
-                    key={training.id}
-                    className="grid grid-cols-3 items-center gap-x-2 px-3 py-2 hover:bg-muted/30 md:table-row md:p-0"
-                    data-journal-training={training.id}
-                  >
-                    <TableCell className="col-span-1 p-0 md:p-3">
+            {visible.map((training) => {
+              const Icon = disciplineIcons[training.discipline]
+              const label = t(`triathlon.discipline.${training.discipline}`)
+              const pace =
+                training.durationSeconds && training.distanceMeters
+                  ? formatPace(
+                      averagePaceSeconds(
+                        training.durationSeconds,
+                        training.distanceMeters,
+                        training.discipline,
+                      ),
+                    )
+                  : null
+              const meta = [
+                training.context
+                  ? t(`triathlon.context.${training.context}`)
+                  : null,
+                training.intervals.length > 0
+                  ? t('triathlon.journal.intervals', {
+                      count: training.intervals.length,
+                    })
+                  : null,
+                training.averageHeartRateBpm !== null
+                  ? `${training.averageHeartRateBpm} bpm`
+                  : null,
+                training.averagePowerWatts !== null
+                  ? `${training.averagePowerWatts} W`
+                  : null,
+                training.rpe !== null ? `RPE ${training.rpe}/10` : null,
+              ].filter((part) => part !== null)
+              const secondary = [
+                training.distanceMeters === null
+                  ? null
+                  : `${formatNumber(training.distanceMeters / 1000, { maximumFractionDigits: 2 })} km`,
+                pace
+                  ? `${pace} /${training.discipline === 'swim' ? '100 m' : 'km'}`
+                  : null,
+              ].filter((part) => part !== null)
+              return (
+                <li
+                  key={training.id}
+                  className="flex items-center gap-3 py-2.5 pl-3 pr-1.5 sm:pl-4 sm:pr-2"
+                  data-discipline={training.discipline}
+                  data-journal-training={training.id}
+                >
+                  <span className="tri-sport-icon" aria-hidden="true">
+                    <Icon className="size-[18px]" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="type-ui flex flex-wrap items-center gap-x-2 gap-y-0.5 font-semibold">
+                      {label}
+                      {training.isBenchmark && (
+                        <span
+                          title={t('triathlon.form.benchmark')}
+                          className="inline-flex h-[18px] items-center gap-1 rounded-full bg-primary-soft px-1.5 text-[11px] font-semibold text-primary"
+                        >
+                          <Trophy aria-hidden="true" className="size-3" />
+                          {t('triathlon.journal.benchmark')}
+                        </span>
+                      )}
+                    </p>
+                    <p className="type-caption text-muted-foreground tabular-nums">
                       <time dateTime={training.localDate}>
                         {formatDateTime(
                           new Date(`${training.localDate}T12:00:00`),
                           { day: '2-digit', month: 'short', year: '2-digit' },
                         )}
                       </time>
-                    </TableCell>
-                    <TableCell className="col-span-2 p-0 py-1 md:p-3">
-                      <span className="flex flex-wrap items-center gap-2 font-semibold">
-                        <Icon
-                          aria-hidden="true"
-                          className="size-4"
-                          style={{
-                            color: disciplineColors[training.discipline],
-                          }}
-                        />
-                        {label}
-                        {training.isBenchmark && (
-                          <span
-                            title={t('triathlon.form.benchmark')}
-                            className="type-caption inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-primary"
-                          >
-                            <Trophy aria-hidden="true" className="size-3" />
-                            {t('triathlon.journal.benchmark')}
-                          </span>
-                        )}
-                      </span>
-                      <span className="type-caption text-muted-foreground">
-                        {training.context
-                          ? t(`triathlon.context.${training.context}`)
-                          : '—'}
-                      </span>
-                      {training.intervals.length > 0 && (
-                        <span className="type-caption block text-muted-foreground">
-                          {t('triathlon.journal.intervals', {
-                            count: training.intervals.length,
-                          })}
+                      {meta.map((part, index) => (
+                        <span key={index}>
+                          {' · '}
+                          <span className="whitespace-nowrap">{part}</span>
                         </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="p-0 py-2 tabular-nums md:p-3">
-                      <span className="type-caption block text-muted-foreground md:hidden">
-                        {t('triathlon.journal.duration')}
-                      </span>
+                      ))}
+                    </p>
+                  </div>
+                  <div className="grid shrink-0 justify-items-end text-right tabular-nums">
+                    <span className="type-ui font-semibold">
                       {formatTrainingDuration(training.durationSeconds)}
-                    </TableCell>
-                    <TableCell className="p-0 py-2 tabular-nums md:p-3">
-                      <span className="type-caption block text-muted-foreground md:hidden">
-                        {t('triathlon.journal.distance')}
-                      </span>
-                      {training.distanceMeters === null
-                        ? '—'
-                        : `${formatNumber(training.distanceMeters / 1000, { maximumFractionDigits: 2 })} km`}
-                    </TableCell>
-                    <TableCell className="p-0 py-2 tabular-nums md:p-3">
-                      <span className="type-caption block text-muted-foreground md:hidden">
-                        {t('triathlon.journal.pace')}
-                      </span>
-                      {pace
-                        ? `${pace} /${training.discipline === 'swim' ? '100 m' : 'km'}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell className="col-span-2 p-0 tabular-nums md:p-3">
-                      <div className="type-caption flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground md:grid md:gap-1">
-                        {training.averageHeartRateBpm !== null && (
-                          <span title={t('triathlon.form.averageHeartRate')}>
-                            {training.averageHeartRateBpm} bpm
+                    </span>
+                    {secondary.length > 0 && (
+                      <span className="type-caption flex flex-col items-end text-muted-foreground sm:flex-row sm:gap-1">
+                        {secondary.map((part, index) => (
+                          <span key={index}>
+                            {index > 0 && (
+                              <span className="hidden sm:inline">· </span>
+                            )}
+                            {part}
                           </span>
-                        )}
-                        {training.averagePowerWatts !== null && (
-                          <span title={t('triathlon.form.averagePower')}>
-                            {training.averagePowerWatts} W
-                          </span>
-                        )}
-                        {training.rpe !== null && (
-                          <span>RPE {training.rpe}/10</span>
-                        )}
-                        {training.averageHeartRateBpm === null &&
-                          training.averagePowerWatts === null &&
-                          training.rpe === null && <span>—</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-0 md:p-3">
-                      <div className="flex justify-end gap-1 md:justify-start">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`${t('common.edit')}: ${label}`}
-                          onClick={() => onEdit(training)}
-                        >
-                          <Pencil aria-hidden="true" />
-                        </Button>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`${t('common.edit')}: ${label}`}
+                      onClick={() => onEdit(training)}
+                    >
+                      <Pencil aria-hidden="true" />
+                    </Button>
                         <ConfirmButton
+                          mode="popover"
                           title={t('triathlon.actual.deleteTitle')}
                           description={t('triathlon.actual.deleteDescription')}
                           trigger={
@@ -370,23 +397,24 @@ export function TrainingJournal({
                             }
                           }}
                         />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
           <div className="flex items-center justify-between gap-2">
             <p className="type-caption tabular-nums text-muted-foreground">
-              {currentPage * 20 + 1}–
-              {Math.min((currentPage + 1) * 20, filtered.length)} /{' '}
-              {filtered.length}
+              {t('triathlon.journal.pageRange', {
+                start: currentPage * PAGE_SIZE + 1,
+                end: Math.min((currentPage + 1) * PAGE_SIZE, filtered.length),
+                total: filtered.length,
+              })}
             </p>
             <div className="flex gap-2">
               <Button
                 size="icon"
                 variant="outline"
+                className="size-8"
                 disabled={currentPage === 0}
                 aria-label={t('common.back')}
                 onClick={() => setPage(currentPage - 1)}
@@ -396,6 +424,7 @@ export function TrainingJournal({
               <Button
                 size="icon"
                 variant="outline"
+                className="size-8"
                 disabled={currentPage + 1 === pageCount}
                 aria-label={t('common.next')}
                 onClick={() => setPage(currentPage + 1)}

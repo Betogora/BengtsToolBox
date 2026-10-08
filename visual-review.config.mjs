@@ -26,6 +26,11 @@ const review = {
   },
   settle: 700,
   setup: async (page, base) => {
+    // Aufnahmen verändern nie echte Daten, auch nicht über einen Server mit .env.local.
+    await page.context().route(
+      (url) => /(^|\.)(googleapis\.com|firebaseio\.com|firebasedatabase\.app|firebaseapp\.com)$/.test(url.hostname),
+      (route) => route.abort('blockedbyclient'),
+    )
     await page.goto(base + '/apps/triathlon-tracker')
     await page.addInitScript(() => {
       const dates = (daysAgo) => {

@@ -176,6 +176,7 @@ function ScoreOverview() {
               {t('raab.eveningScore')}
             </CardTitle>
             <ConfirmButton
+              mode="dialog"
               title={t('raab.archive.restartTitle')}
               description={t('raab.archive.restartDescription')}
               confirmLabel={t('raab.archive.restartConfirm')}
@@ -401,6 +402,7 @@ function ArchiveDatasetCard({
           <DisclosureIndicator isOpen={isOpen} className="ml-auto" />
         </button>
         <ConfirmButton
+          mode="popover"
           title={t('common.dataset.delete')}
           description={t('raab.archive.deleteDescription')}
           onConfirm={() => onDelete(dataset.id)}

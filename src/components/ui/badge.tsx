@@ -4,14 +4,15 @@ import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const badgeVariants = cva(
-  'type-caption inline-flex w-fit shrink-0 items-center justify-center gap-1 rounded-md border px-2 py-0.5 whitespace-nowrap',
+  'inline-flex h-[1.375rem] w-fit shrink-0 items-center justify-center gap-1.5 rounded-full px-2 text-xs leading-none font-semibold whitespace-nowrap [&>svg]:size-3.5',
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary text-primary-foreground',
-        secondary: 'border-transparent bg-secondary text-secondary-foreground',
-        destructive: 'border-transparent bg-destructive text-white',
-        outline: 'border-border bg-card text-foreground',
+        default: 'bg-primary-soft text-primary',
+        secondary: 'bg-muted text-muted-foreground',
+        success: 'bg-success-soft text-success',
+        destructive: 'bg-destructive-soft text-destructive',
+        outline: 'border bg-transparent text-muted-foreground',
       },
     },
     defaultVariants: {
@@ -23,14 +24,19 @@ const badgeVariants = cva(
 function Badge({
   className,
   variant,
+  dot = false,
+  children,
   ...props
-}: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants>) {
+}: React.ComponentProps<'span'> & VariantProps<typeof badgeVariants> & { dot?: boolean }) {
   return (
     <span
       data-slot="badge"
       className={cn(badgeVariants({ variant, className }))}
       {...props}
-    />
+    >
+      {dot && <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />}
+      {children}
+    </span>
   )
 }
 

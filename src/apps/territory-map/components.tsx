@@ -551,6 +551,7 @@ export function TerritoryEventTable({
   )
   const renderDeleteButton = (event: TerritoryVisitEvent) => (
     <ConfirmButton
+      mode="popover"
       title={t('territory.claimDeleteTitle')}
       description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}

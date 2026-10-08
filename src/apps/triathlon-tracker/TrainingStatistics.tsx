@@ -456,8 +456,10 @@ export default function TrainingStatistics({
         ],
       ].map(([label, value]) => (
         <div className="min-w-0 px-3 sm:px-4" key={label}>
-          <dt className="type-caption text-muted-foreground">{label}</dt>
-          <dd className="mt-1 font-semibold tabular-nums">{value}</dd>
+          <dt className="tri-stat-label text-muted-foreground">
+            {label}
+          </dt>
+          <dd className="mt-0.5 text-xl font-[650] tabular-nums">{value}</dd>
         </div>
       ))}
     </dl>

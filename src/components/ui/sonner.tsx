@@ -8,8 +8,11 @@ function Toaster({ ...props }: ToasterProps) {
       toastOptions={{
         classNames: {
           toast:
-            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
+            'group toast group-[.toaster]:rounded-[12px] group-[.toaster]:bg-card group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-overlay group-[.toaster]:font-medium',
           description: 'group-[.toast]:text-muted-foreground',
+          success: '[&_[data-icon]]:text-success',
+          error: '[&_[data-icon]]:text-destructive',
+          warning: '[&_[data-icon]]:text-warning',
           actionButton:
             'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
           cancelButton:

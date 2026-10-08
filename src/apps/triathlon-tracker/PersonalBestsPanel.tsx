@@ -17,6 +17,7 @@ import type {
   TrackerSettings,
   TrainingContext,
 } from './types'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisclosureSummary } from '@/components/ui/disclosure'
 import { Card } from '@/components/ui/card'
@@ -70,6 +71,15 @@ function WeightInput({
         if (event.key === 'Enter') event.currentTarget.blur()
       }}
     />
+  )
+}
+
+export function ModelBadge() {
+  const { t } = useI18n()
+  return (
+    <Badge variant="secondary" className="h-[18px] px-1.5 text-[11px]">
+      {t('triathlon.charts.model')}
+    </Badge>
   )
 }
 
@@ -201,9 +211,11 @@ export function PersonalBestsPanel({
               className="tri-record-card min-w-0 overflow-hidden"
               data-discipline={discipline}
             >
-              <div className="tri-record-header flex flex-wrap items-center justify-between gap-2 p-4 pb-3">
-                <h3 className="type-card-title flex items-center gap-2">
-                  <Icon className="size-5" aria-hidden="true" />
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+                <h3 className="type-card-title flex items-center gap-3">
+                  <span className="tri-sport-icon" aria-hidden="true">
+                    <Icon className="size-[18px]" />
+                  </span>
                   {t(`triathlon.discipline.${discipline}`)}
                 </h3>
                 <Select
@@ -230,144 +242,107 @@ export function PersonalBestsPanel({
                   </SelectContent>
                 </Select>
               </div>
-              <table className="w-full table-fixed text-sm">
-                <colgroup>
-                  <col className="w-[25%]" />
-                  <col className="w-[32%]" />
-                  <col className="w-[30%]" />
-                  <col className="w-[13%]" />
-                </colgroup>
-                <thead className="text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      {t('triathlon.journal.distance')}
-                    </th>
-                    <th scope="col" className="px-1 py-2 font-medium">
-                      {t('triathlon.records.measured')}
-                    </th>
-                    <th scope="col" className="px-1 py-2 font-medium">
-                      {t('triathlon.charts.estimated')}
-                    </th>
-                    <th scope="col">
-                      <span className="sr-only">
-                        {t('triathlon.actual.add')}
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.distanceRecords.map(
-                    ({ targetDistanceMeters, record }) => {
-                      const label = distanceLabel(
-                        targetDistanceMeters,
-                        discipline,
-                      )
-                      const estimate = estimates.find(
-                        (item) =>
-                          item.targetDistanceMeters === targetDistanceMeters,
-                      )
-                      return (
-                        <tr
-                          key={targetDistanceMeters}
-                          data-record-distance={targetDistanceMeters}
-                        >
-                          <th
-                            scope="row"
-                            className="px-3 py-3 text-left text-xs font-semibold"
-                          >
-                            {label}
-                          </th>
-                          <td className="px-1 py-2 tabular-nums">
-                            {record ? (
-                              <button
-                                className="rounded text-left hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
-                                aria-label={t('triathlon.records.edit', {
-                                  sport: t(
-                                    `triathlon.discipline.${discipline}`,
-                                  ),
-                                  distance: label,
-                                })}
-                                onClick={() => edit(record.trainingId)}
-                              >
-                                <span className="tri-record-value block text-base font-bold">
-                                  {formatTrainingDurationInput(
-                                    record.durationSeconds,
-                                  )}
-                                </span>
-                                <span className="type-caption block text-muted-foreground">
-                                  {formattedDate(record.localDate)}
-                                </span>
-                              </button>
-                            ) : (
-                              <span className="text-muted-foreground">
-                                —
-                                <span className="sr-only">
-                                  {' '}
-                                  {t('triathlon.records.unrecorded')}
-                                </span>
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-1 py-2 tabular-nums">
-                            {estimate ? (
-                              <>
-                                <span className="block font-medium">
-                                  {formatTrainingDurationInput(
-                                    estimate.predictedDurationSeconds,
-                                  )}
-                                  {estimate.extrapolated && (
-                                    <span
-                                      aria-label={t(
-                                        'triathlon.records.extrapolation',
-                                      )}
-                                    >
-                                      *
-                                    </span>
-                                  )}
-                                </span>
-                                <span className="type-caption block text-muted-foreground">
-                                  {formatPace(
-                                    (estimate.predictedDurationSeconds /
-                                      targetDistanceMeters) *
-                                      (discipline === 'swim' ? 100 : 1000),
-                                  )}{' '}
-                                  /{discipline === 'swim' ? '100 m' : 'km'}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="pr-2 text-right">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="size-8"
-                              aria-label={t('triathlon.records.add', {
+              <ul className="divide-y">
+                {records.distanceRecords.map(
+                  ({ targetDistanceMeters, record }) => {
+                    const label = distanceLabel(targetDistanceMeters, discipline)
+                    const estimate = estimates.find(
+                      (item) =>
+                        item.targetDistanceMeters === targetDistanceMeters,
+                    )
+                    return (
+                      <li
+                        key={targetDistanceMeters}
+                        className="flex min-h-16 items-center gap-2 py-2.5 pl-4 pr-2"
+                        data-record-distance={targetDistanceMeters}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="type-ui font-semibold">{label}</p>
+                          {record && (
+                            <p className="type-caption text-muted-foreground tabular-nums">
+                              {formattedDate(record.localDate)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="grid min-w-0 justify-items-end text-right">
+                          {record ? (
+                            <button
+                              className="tri-record-time rounded-sm hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
+                              aria-label={t('triathlon.records.edit', {
                                 sport: t(`triathlon.discipline.${discipline}`),
                                 distance: label,
                               })}
-                              title={t('triathlon.records.add', {
-                                sport: t(`triathlon.discipline.${discipline}`),
-                                distance: label,
-                              })}
-                              onClick={() =>
-                                add({ distanceMeters: targetDistanceMeters })
-                              }
+                              onClick={() => edit(record.trainingId)}
                             >
-                              <Plus className="size-4" aria-hidden="true" />
-                            </Button>
-                          </td>
-                        </tr>
-                      )
-                    },
-                  )}
-                </tbody>
-              </table>
+                              {formatTrainingDurationInput(
+                                record.durationSeconds,
+                              )}
+                            </button>
+                          ) : (
+                            <span className="tri-record-time text-subtle-foreground">
+                              —
+                              <span className="sr-only">
+                                {' '}
+                                {t('triathlon.records.unrecorded')}
+                              </span>
+                            </span>
+                          )}
+                          {estimate && (
+                            <span className="type-caption flex flex-wrap items-center justify-end gap-x-1.5 text-muted-foreground tabular-nums">
+                              <ModelBadge />
+                              <span>
+                                {formatTrainingDurationInput(
+                                  estimate.predictedDurationSeconds,
+                                )}
+                                {estimate.extrapolated && (
+                                  <span
+                                    aria-label={t(
+                                      'triathlon.records.extrapolation',
+                                    )}
+                                  >
+                                    *
+                                  </span>
+                                )}
+                              </span>
+                              <span>
+                                ·{' '}
+                                {formatPace(
+                                  (estimate.predictedDurationSeconds /
+                                    targetDistanceMeters) *
+                                    (discipline === 'swim' ? 100 : 1000),
+                                )}{' '}
+                                /{discipline === 'swim' ? '100 m' : 'km'}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-muted-foreground"
+                          aria-label={t('triathlon.records.add', {
+                            sport: t(`triathlon.discipline.${discipline}`),
+                            distance: label,
+                          })}
+                          title={t('triathlon.records.add', {
+                            sport: t(`triathlon.discipline.${discipline}`),
+                            distance: label,
+                          })}
+                          onClick={() =>
+                            add({ distanceMeters: targetDistanceMeters })
+                          }
+                        >
+                          <Plus className="size-4" aria-hidden="true" />
+                        </Button>
+                      </li>
+                    )
+                  },
+                )}
+              </ul>
               {analysis.status === 'ready' &&
                 analysis.model === 'critical-power' &&
                 analysis.distanceAnalysis && (
-                  <p className="border-t bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                  <p className="type-caption border-t px-4 py-2 text-muted-foreground">
                     {t('triathlon.records.timeModel')} ·{' '}
                     {t('triathlon.performance.method.power-law')} ·{' '}
                     {t(
@@ -380,97 +355,108 @@ export function PersonalBestsPanel({
                   </p>
                 )}
               {discipline === 'bike' && (
-                <div className="border-t bg-muted/20 p-3">
-                  <h4 className="mb-2 text-xs font-semibold">
+                <div className="border-t">
+                  <h4 className="type-caption px-4 pt-3 font-semibold text-muted-foreground">
                     {t('triathlon.records.power')}
                   </h4>
-                  {records.powerRecords.map(
-                    ({ targetDurationSeconds, record }) => {
-                      const cp =
-                        analysis.status === 'ready' &&
-                        analysis.model === 'critical-power'
-                          ? analysis
+                  <ul className="divide-y">
+                    {records.powerRecords.map(
+                      ({ targetDurationSeconds, record }) => {
+                        const cp =
+                          analysis.status === 'ready' &&
+                          analysis.model === 'critical-power'
+                            ? analysis
+                            : null
+                        const predictedPower = cp
+                          ? cp.criticalPowerWatts +
+                            cp.workCapacityJoules / targetDurationSeconds
                           : null
-                      const predictedPower = cp
-                        ? cp.criticalPowerWatts +
-                          cp.workCapacityJoules / targetDurationSeconds
-                        : null
-                      return (
-                        <div
-                          className="flex items-center justify-between gap-2 py-1 text-sm"
-                          key={targetDurationSeconds}
-                        >
-                          <span className="w-12 text-xs font-medium">
-                            {targetDurationSeconds / 60} min
-                          </span>
-                          <span className="flex-1 tabular-nums">
-                            {record ? (
-                              <button
-                                className="font-bold hover:text-primary"
-                                onClick={() => edit(record.trainingId)}
-                                aria-label={t('triathlon.records.edit', {
-                                  sport: t('triathlon.discipline.bike'),
-                                  distance: `${targetDurationSeconds / 60} min`,
-                                })}
-                              >
-                                {Math.round(record.averagePowerWatts)} W{' '}
-                                <span className="type-caption font-normal text-muted-foreground">
-                                  {formattedDate(record.localDate)}
-                                </span>
-                              </button>
-                            ) : (
-                              '—'
-                            )}
-                          </span>
-                          <span className="text-muted-foreground tabular-nums">
-                            {predictedPower
-                              ? `≈ ${Math.round(predictedPower)} W`
-                              : '—'}
-                          </span>
-                          <Button
-                            className="size-8"
-                            size="icon"
-                            variant="ghost"
-                            aria-label={t('triathlon.records.add', {
-                              sport: t('triathlon.discipline.bike'),
-                              distance: `${targetDurationSeconds / 60} min`,
-                            })}
-                            onClick={() =>
-                              add({ durationSeconds: targetDurationSeconds })
-                            }
+                        const durationLabel = `${targetDurationSeconds / 60} min`
+                        return (
+                          <li
+                            className="flex min-h-16 items-center gap-2 py-2.5 pl-4 pr-2"
+                            key={targetDurationSeconds}
                           >
-                            <Plus className="size-4" aria-hidden="true" />
-                          </Button>
-                        </div>
-                      )
-                    },
-                  )}
-                  {analysis.status === 'ready' &&
-                    analysis.model === 'critical-power' && (
-                      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t pt-2">
-                        <span className="text-xs font-semibold">
-                          {t('triathlon.performance.bikeCp')}
-                        </span>
-                        <span className="font-bold tabular-nums">
-                          {Math.round(analysis.criticalPowerWatts)} W
-                        </span>
-                        {analysis.criticalPowerWattsPerKg !== null && (
-                          <span className="text-xs text-muted-foreground">
-                            {analysis.criticalPowerWattsPerKg.toLocaleString(
-                              locale,
-                              { maximumFractionDigits: 2 },
-                            )}{' '}
-                            W/kg
-                          </span>
-                        )}
-                      </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="type-ui font-semibold">
+                                {durationLabel}
+                              </p>
+                              {record && (
+                                <p className="type-caption text-muted-foreground tabular-nums">
+                                  {formattedDate(record.localDate)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="grid min-w-0 justify-items-end text-right">
+                              {record ? (
+                                <button
+                                  className="tri-record-time rounded-sm hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
+                                  onClick={() => edit(record.trainingId)}
+                                  aria-label={t('triathlon.records.edit', {
+                                    sport: t('triathlon.discipline.bike'),
+                                    distance: durationLabel,
+                                  })}
+                                >
+                                  {Math.round(record.averagePowerWatts)} W
+                                </button>
+                              ) : (
+                                <span className="tri-record-time text-subtle-foreground">
+                                  —
+                                </span>
+                              )}
+                              {predictedPower !== null && (
+                                <span className="type-caption flex items-center justify-end gap-x-1.5 text-muted-foreground tabular-nums">
+                                  <ModelBadge />
+                                  {Math.round(predictedPower)} W
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              className="size-8 text-muted-foreground"
+                              size="icon"
+                              variant="ghost"
+                              aria-label={t('triathlon.records.add', {
+                                sport: t('triathlon.discipline.bike'),
+                                distance: durationLabel,
+                              })}
+                              onClick={() =>
+                                add({ durationSeconds: targetDurationSeconds })
+                              }
+                            >
+                              <Plus className="size-4" aria-hidden="true" />
+                            </Button>
+                          </li>
+                        )
+                      },
                     )}
+                    {analysis.status === 'ready' &&
+                      analysis.model === 'critical-power' && (
+                        <li className="flex min-h-16 items-center gap-2 py-2.5 pl-4 pr-12">
+                          <p className="type-ui min-w-0 flex-1 font-semibold">
+                            {t('triathlon.performance.bikeCp')}
+                          </p>
+                          <div className="grid justify-items-end text-right">
+                            <span className="tri-record-time">
+                              {Math.round(analysis.criticalPowerWatts)} W
+                            </span>
+                            <span className="type-caption flex items-center justify-end gap-x-1.5 text-muted-foreground tabular-nums">
+                              <ModelBadge />
+                              {analysis.criticalPowerWattsPerKg !== null &&
+                                `${analysis.criticalPowerWattsPerKg.toLocaleString(
+                                  locale,
+                                  { maximumFractionDigits: 2 },
+                                )} W/kg`}
+                            </span>
+                          </div>
+                        </li>
+                      )}
+                  </ul>
                 </div>
               )}
-              <div className="tri-record-model grid gap-1 p-3 text-xs text-muted-foreground">
+              <div className="type-caption mt-auto grid gap-0.5 border-t bg-muted/50 px-4 py-3 text-muted-foreground">
                 {analysis.status === 'ready' ? (
                   <>
-                    <p className="font-medium text-foreground">
+                    <p className="font-semibold text-foreground">
                       {method} ·{' '}
                       {t(`triathlon.performance.basis.${analysis.basis}`)}
                     </p>
@@ -483,7 +469,7 @@ export function PersonalBestsPanel({
                   </>
                 ) : (
                   <>
-                    <p className="font-medium text-foreground">
+                    <p className="font-semibold text-foreground">
                       {t('triathlon.performance.anchors', {
                         count: analysis.availableAnchors,
                       })}

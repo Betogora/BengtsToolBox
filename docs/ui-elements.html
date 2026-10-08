@@ -15,30 +15,38 @@
 
     :root {
       color-scheme: light;
-      --radius: 0.85rem;
+      --radius: 14px;
       --font: "Manrope Variable", Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --regular: 400;
       --medium: 500;
       --strong: 650;
-      --display: 750;
+      --display: 700;
       --brand-primary: #236492;
       --brand-secondary: #c3d9e8;
       --brand-accent: #b55b43;
       --brand-surface: #fcf1d7;
       --brand-fog: #dce3e7;
       --brand-ink: #1b2d3b;
-      --background: #f6f9fa;
-      --foreground: var(--brand-ink);
+      --background: #f6f7f8;
+      --foreground: #111827;
       --card: #ffffff;
-      --muted: #edf1f3;
-      --muted-foreground: #53616d;
-      --secondary: #e6f0f7;
-      --destructive: #c83e35;
-      --border: #dce3e7;
-      --input: #dce3e7;
+      --muted: #f3f4f6;
+      --muted-foreground: #4b5563;
+      --subtle-foreground: #6b7280;
+      --secondary: #f3f4f6;
+      --primary-soft: #ebf3f9;
+      --destructive: #d92d20;
+      --destructive-soft: #fef3f2;
+      --success: #079455;
+      --success-soft: #ecfdf3;
+      --warning: #dc8a06;
+      --warning-soft: #fffaeb;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --input: #e5e7eb;
       --ring: var(--brand-primary);
-      --shadow: 0 1px 2px rgb(27 45 59 / 5%);
-      --shadow-lg: 0 24px 70px -42px rgba(6, 52, 79, .62);
+      --shadow: 0 1px 2px rgb(16 24 40 / 5%);
+      --shadow-lg: 0 16px 40px -12px rgb(16 24 40 / 18%), 0 0 0 1px rgb(16 24 40 / 5%);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -49,9 +57,7 @@
       overflow-x: clip;
       margin: 0;
       color: var(--foreground);
-      background:
-        radial-gradient(circle at 7% 7%, rgba(35, 100, 146, .10) 0 1.25px, transparent 1.4px) 0 0 / 16px 16px,
-        linear-gradient(180deg, #fff 0%, var(--background) 38%, #eef3f6 100%);
+      background: var(--background);
       font: 400 1rem/1.5 var(--font);
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
@@ -82,14 +88,13 @@
     .toolbar { position: sticky; top: 1rem; z-index: 20; margin-bottom: 1.5rem; padding: .4rem; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255,255,255,.94); box-shadow: 0 4px 18px rgb(27 45 59 / 7%); backdrop-filter: blur(14px); }
     .search { position: relative; display: block; min-width: 0; }
     .search svg { position: absolute; top: 50%; left: .75rem; width: 1rem; height: 1rem; transform: translateY(-50%); color: var(--muted-foreground); }
-    .search input { width: 100%; height: 2.75rem; padding: 1.2rem .75rem .3rem 2.4rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); color: var(--foreground); background: var(--card); font-size: .875rem; }
+    .search input { width: 100%; height: 2.75rem; padding: 1.2rem .75rem .3rem 2.4rem; border: 1px solid var(--input); border-radius: 10px; color: var(--foreground); background: var(--card); font-size: .875rem; }
     .search__label { position: absolute; z-index: 1; top: .3rem; left: 2.4rem; max-width: calc(100% - 3rem); color: var(--muted-foreground); font-size: .6875rem; line-height: .875rem; pointer-events: none; }
 
     .catalog-section { scroll-margin-top: 6.5rem; margin: 0 0 2.5rem; }
     .section-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem; margin: 0 0 1rem; padding: 0 .1rem .85rem; border-bottom: 2px solid var(--border); }
     .section-heading h2 { margin: 0; font-size: 1.5rem; line-height: 1.5rem; font-weight: var(--strong); }
     .section-heading p { max-width: 67ch; margin: .35rem 0 0; color: var(--muted-foreground); font-size: .88rem; }
-    .section-count { color: var(--brand-primary); font-size: .78rem; font-weight: var(--strong); white-space: nowrap; }
     .catalog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
     .catalog-grid--wide { grid-template-columns: 1fr; }
     .catalog-card { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255,255,255,.96); box-shadow: var(--shadow); }
@@ -98,106 +103,34 @@
     .preview { min-height: 8rem; overflow-x: clip; padding: 1rem; border-block: 1px solid var(--border); background: linear-gradient(135deg, var(--background), var(--card)); }
     .preview--center { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .65rem; }
 
-    .demo-button { display: inline-flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: .45rem; padding: .48rem .9rem; border: 1px solid transparent; border-radius: calc(var(--radius) - 2px); color: #fff; background: var(--brand-primary); font-size: .875rem; font-weight: var(--strong); box-shadow: 0 1px 2px rgb(27 45 59 / 5%); }
+    .demo-button { display: inline-flex; min-height: 2.25rem; align-items: center; justify-content: center; gap: .45rem; padding: .48rem .9rem; border: 1px solid transparent; border-radius: 10px; color: #fff; background: var(--brand-primary); font-size: .875rem; font-weight: var(--strong); box-shadow: 0 1px 2px rgb(27 45 59 / 5%); }
     .demo-button--outline { border-color: var(--border); color: var(--foreground); background: #fff; box-shadow: 0 1px 2px rgba(6,52,79,.08); }
-    .demo-button--secondary { color: var(--foreground); background: var(--secondary); }
-    .demo-button--ghost { color: var(--foreground); background: transparent; }
-    .demo-button--destructive { color: #fff; background: var(--destructive); }
-    .demo-button--icon { width: 2.25rem; padding: 0; }
     .demo-button:disabled { opacity: .5; }
-    .demo-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .22rem .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) - 2px); color: #fff; background: var(--brand-primary); font-size: .75rem; line-height: 1rem; font-weight: var(--medium); }
-    .demo-badge--secondary { color: var(--foreground); background: var(--secondary); }
-    .demo-badge--outline { border-color: var(--border); color: var(--foreground); background: #fff; }
-    .demo-badge--destructive { background: var(--destructive); }
-    .demo-card { width: min(100%, 23rem); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow); }
-    .demo-card__header { padding: 1rem 1rem .5rem; }
-    .demo-card__title { font-size: 1.125rem; font-weight: var(--strong); }
-    .demo-card__description { margin-top: .2rem; color: var(--muted-foreground); font-size: .78rem; }
-    .demo-card__content { padding: .5rem 1rem 1rem; font-size: .82rem; }
-    .demo-field { position: relative; width: min(100%, 16rem); }
-    .demo-field input, .demo-select { width: 100%; height: 2.75rem; padding: 1.25rem .75rem .375rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); color: var(--foreground); background: transparent; }
-    .demo-field label { position: absolute; top: .375rem; left: .75rem; color: var(--muted-foreground); font-size: var(--btb-text-field-label); line-height: var(--btb-leading-field-label); font-weight: var(--medium); pointer-events: none; }
-    .demo-color-wheel { position: relative; width: 7.5rem; aspect-ratio: 1; border: 1px solid var(--border); border-radius: 50%; background: radial-gradient(circle, #fff 0%, transparent 100%), conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00); box-shadow: inset 0 1px 4px rgba(6,52,79,.18); }
-    .demo-color-wheel::after { position: absolute; top: 18%; left: 69%; width: .85rem; aspect-ratio: 1; content: ""; border: 2px solid #fff; border-radius: 50%; background: #236492; box-shadow: 0 0 0 1px rgba(6,52,79,.8); }
-    .demo-dialog { width: min(100%, 25rem); padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; box-shadow: 0 20px 50px -25px rgba(6,52,79,.65); }
-    .demo-dialog h4 { margin: 0; font-size: 1.25rem; }
-    .demo-dialog p { margin: .3rem 0 .85rem; color: var(--muted-foreground); font-size: .78rem; }
     .demo-dialog__footer { display: flex; justify-content: flex-end; gap: .5rem; }
-    .demo-menu { width: 12rem; padding: .3rem; border: 1px solid var(--border); border-radius: .4rem; background: #fff; box-shadow: 0 10px 30px -18px rgba(6,52,79,.7); }
-    .demo-menu div { display: flex; align-items: center; gap: .5rem; padding: .42rem .5rem; border-radius: .28rem; font-size: .76rem; }
-    .demo-menu div:nth-child(2) { color: var(--brand-primary); background: var(--secondary); }
-    .role-grid { display: grid; width: min(100%, 34rem); grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .7rem; }
-    .state-preview-grid { display: grid; width: min(100%, 38rem); grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: .7rem; text-align: center; }
     .responsive-preview-grid { display: grid; width: min(100%, 36rem); grid-template-columns: minmax(0, 1fr) 8.5rem; align-items: start; gap: 1rem; }
-    .table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: .4rem; background: #fff; }
-    .demo-table { width: 100%; min-width: 28rem; border-collapse: collapse; font-size: .875rem; }
-    .demo-table th { padding: .65rem; background: color-mix(in srgb, var(--muted) 70%, transparent); text-align: left; }
-    .demo-table td { padding: .65rem; border-top: 1px solid var(--border); }
-    .demo-tabs { width: min(100%, 28rem); }
     .demo-tabs__list { display: flex; gap: .25rem; padding: .3rem; border: 1px solid var(--border); border-radius: var(--radius); background: #e9eef1; }
-    .demo-tabs__list span { flex: 1; min-width: 0; padding: .45rem .75rem; border-radius: calc(var(--radius) - .25rem); color: var(--muted-foreground); font-size: .875rem; font-weight: var(--strong); text-align: center; }
+    .demo-tabs__list span { flex: 1; min-width: 0; padding: .45rem .75rem; border-radius: 10px; color: var(--muted-foreground); font-size: .875rem; font-weight: var(--strong); text-align: center; }
     .demo-tabs__list span:first-child { color: var(--brand-primary); background: var(--card); box-shadow: 0 2px 6px rgb(27 45 59 / 7%); }
-    .demo-tabs__panel { padding: .8rem .2rem .1rem; color: var(--muted-foreground); font-size: .78rem; }
 
-    .swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
-    .swatch { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: .42rem; background: #fff; }
-    .swatch__color { height: 3.25rem; background: var(--swatch); }
-    .swatch__label { padding: .45rem .5rem; }
-    .swatch strong, .swatch code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .swatch strong { font-size: .68rem; }
-    .swatch code { margin-top: .1rem; color: var(--muted-foreground); font-size: .62rem; }
     .type-specimen { display: grid; grid-template-columns: 10rem minmax(0,1fr) auto; align-items: baseline; gap: .8rem; padding: .55rem 0; border-bottom: 1px solid var(--border); }
     .type-specimen:last-child { border: 0; }
     .type-specimen code, .type-specimen small { color: var(--muted-foreground); }
-    .shape-row { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
-    .shape { display: grid; width: 6.5rem; aspect-ratio: 1.25; place-items: center; border: 1px solid var(--border); background: #fff; color: var(--muted-foreground); font-size: .68rem; }
-    .shape--sm { border-radius: calc(var(--radius) - 4px); }
-    .shape--md { border-radius: calc(var(--radius) - 2px); }
-    .shape--lg { border-radius: var(--radius); box-shadow: var(--shadow); }
-    .spacing-scale { display: grid; gap: .5rem; }
-    .spacing-item { display: grid; grid-template-columns: 4rem minmax(0,1fr); align-items: center; gap: .65rem; font-size: .7rem; }
-    .spacing-bar { width: var(--space); max-width: 100%; height: .75rem; border-radius: .2rem; background: var(--brand-secondary); }
 
 
     .mini-page { width: min(100%, 30rem); overflow: hidden; border: 1px solid var(--border); border-radius: .55rem; background: var(--background); box-shadow: var(--shadow); }
     .mini-page__bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .55rem .7rem; border-bottom: 1px solid var(--border); background: #fff; }
-    .mini-page__brand { display: flex; align-items: center; gap: .45rem; font-size: .7rem; font-weight: var(--display); }
-    .mini-page__mark { display: grid; width: 1.6rem; aspect-ratio: 1; place-items: center; border-radius: .3rem; color: #fff; background: var(--brand-primary); }
-    .mini-page__nav { display: flex; gap: .35rem; color: var(--muted-foreground); font-size: .58rem; }
     .mini-page__body { display: grid; gap: .65rem; padding: .8rem; }
     .mini-page__title { display: flex; align-items: center; gap: .45rem; font-size: 1rem; font-weight: var(--display); }
     .mini-page__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .45rem; }
     .mini-tile { min-height: 4.2rem; padding: .55rem; border: 1px solid var(--border); border-radius: .4rem; background: #fff; font-size: .66rem; font-weight: var(--strong); }
     .mini-tile i { display: grid; width: 1.45rem; aspect-ratio: 1; place-items: center; margin-bottom: .35rem; border-radius: .28rem; color: #fff; background: var(--brand-primary); font-style: normal; }
-    .mini-status { padding: .55rem; border: 1px dashed var(--border); border-radius: .4rem; color: var(--muted-foreground); background: #fff; font-size: .65rem; text-align: center; }
 
-    .wheel { position: relative; width: 7rem; aspect-ratio: 1; border: 5px solid #fff; border-radius: 50%; background: conic-gradient(#63c6c4 0 28%, #fcf1d7 28% 55%, #b55b43 55% 78%, #c3d9e8 78%); box-shadow: 0 0 0 1px var(--border), 0 14px 28px -18px rgba(6,52,79,.65); }
-    .wheel::before { position: absolute; inset: 40%; content: ""; border: 4px solid #fff; border-radius: 50%; background: var(--brand-ink); }
-    .wheel::after { position: absolute; top: -.55rem; left: 50%; width: 1rem; height: 1.8rem; content: ""; transform: translateX(-50%); clip-path: polygon(0 0,100% 0,50% 100%); background: var(--brand-accent); }
-    .coin { display: grid; width: 7rem; aspect-ratio: 1; place-items: center; border: .45rem solid #ebc375; border-radius: 50%; color: #b67720; background: #f6e3a5; font-size: 2.6rem; font-weight: var(--display); box-shadow: inset 0 0 0 .25rem #f8d88f, 0 14px 30px -20px rgba(6,52,79,.65); }
-    .chart { display: flex; width: 9rem; height: 6.5rem; align-items: end; gap: .42rem; padding: .65rem; border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    .chart i { flex: 1; height: var(--h); border-radius: .3rem .3rem 0 0; background: var(--brand-secondary); }
-    .chart i:last-child { background: var(--brand-primary); }
-    .map-demo { position: relative; width: 9rem; height: 6.5rem; overflow: hidden; border: 1px solid var(--border); border-radius: .4rem; background: linear-gradient(28deg, transparent 45%, var(--brand-secondary) 46% 48%, transparent 49%), linear-gradient(90deg,#f2f8f7 48%,#fff 49%); }
-    .map-demo::before, .map-demo::after { position: absolute; content: ""; border: 2px solid #fff; background: var(--brand-primary); opacity: .7; }
-    .map-demo::before { top: 20%; left: 23%; width: 34%; height: 45%; clip-path: polygon(12% 8%,90% 0,76% 100%,0 76%); }
-    .map-demo::after { right: 8%; bottom: 15%; width: 35%; height: 38%; clip-path: polygon(10% 0,100% 18%,80% 100%,0 75%); background: var(--brand-accent); }
-    .score-bars { display: grid; width: min(100%, 10rem); gap: .55rem; }
-    .score-bar { display: grid; grid-template-columns: 3rem minmax(0,1fr) auto; align-items: center; gap: .4rem; font-size: .65rem; }
-    .score-bar span:nth-child(2) { height: .8rem; border-radius: .25rem; background: linear-gradient(90deg,var(--brand-primary) var(--score),var(--muted) var(--score)); }
-    .score-bar strong { font-variant-numeric: tabular-nums; }
-    .question-card { display: grid; width: 9rem; aspect-ratio: 1.55; place-items: center; border: 1px solid var(--border); border-radius: .55rem; background: #fff; box-shadow: .6rem .55rem 0 -2px var(--secondary), 1.15rem 1rem 0 -4px var(--muted); font-size: 3rem; font-weight: var(--display); color: var(--muted-foreground); }
-    .score-pie { width: 7.5rem; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(var(--brand-primary) 0 57%, var(--brand-accent) 57% 82%, var(--muted) 82%); box-shadow: inset 0 0 0 2px rgba(6,52,79,.18); }
-    .score-pie::after { display: grid; width: 52%; aspect-ratio: 1; margin: 24%; place-items: center; content: "21"; border-radius: 50%; background: #fff; font-weight: var(--display); }
 
-    .icon-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem; margin: 0; padding: 0; list-style: none; }
-    .icon-grid li { display: grid; min-width: 0; grid-template-columns: 1.65rem minmax(0,1fr) auto; align-items: center; gap: .4rem; padding: .45rem .5rem; border: 1px solid var(--border); border-radius: .35rem; background: #fff; }
-    .icon-grid .icon, .icon-grid [data-icon-preview] { width: 1.25rem; height: 1.25rem; color: var(--brand-primary); }
-    .icon-grid code { min-width: 0; overflow: hidden; font-size: .66rem; text-overflow: ellipsis; white-space: nowrap; }
+    .icon-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .15rem .5rem; margin: 0; padding: 0; list-style: none; }
+    .icon-grid li { display: grid; min-width: 0; grid-template-columns: 1.5rem minmax(0,1fr); align-items: center; gap: .55rem; padding: .45rem .5rem; border-radius: 8px; }
+    .icon-grid .icon, .icon-grid [data-icon-preview] { width: 1.25rem; height: 1.25rem; color: var(--foreground); }
+    .icon-grid code { min-width: 0; overflow: hidden; color: var(--muted-foreground); font: 500 .75rem var(--font); text-overflow: ellipsis; white-space: nowrap; }
     .icon-grid small { color: var(--muted-foreground); font-size: .62rem; }
-    .asset-list { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
-    .asset-list li { display: grid; grid-template-columns: 9rem minmax(0,1fr); gap: .7rem; padding: .65rem; border: 1px solid var(--border); border-radius: .4rem; background: #fff; font-size: .74rem; }
-    .asset-list span { color: var(--muted-foreground); }
 
     .empty-results { padding: 2rem; border: 1px dashed var(--border); border-radius: .75rem; color: var(--muted-foreground); background: rgba(255,255,255,.8); text-align: center; }
     .footer { padding: 2rem 1rem 4rem; color: var(--muted-foreground); font-size: .76rem; text-align: center; }
@@ -211,8 +144,7 @@
     }
     @media (max-width: 760px) {
       .catalog-grid { grid-template-columns: 1fr; }
-      .swatches { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .icon-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .icon-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
       .type-specimen { grid-template-columns: 8.5rem minmax(0,1fr); }
       .type-specimen small { grid-column: 2; }
     }
@@ -221,51 +153,23 @@
       .catalog-shell { padding-inline: .6rem; }
       .toolbar { padding: .4rem; }
       .catalog-card__header { grid-template-columns: 1fr; }
-      .asset-list li { grid-template-columns: 1fr; }
       .mini-page__grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .icon-grid { grid-template-columns: 1fr; }
       .type-specimen { grid-template-columns: 1fr; }
       .type-specimen small { grid-column: auto; }
-      .role-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .state-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .responsive-preview-grid { grid-template-columns: 1fr; }
-      .popover-demo { padding-top: 0 !important; }
-      .popover-demo .demo-menu { position: static !important; width: auto !important; margin-top: .5rem; }
     }
 
-    .picker-demo { display: grid; width: min(100%, 19rem); gap: .65rem; }
-    .picker-demo .demo-field { width: 100%; }
-    .picker-demo__icon { position: absolute; right: .75rem; top: 1rem; color: var(--muted-foreground); }
-    .picker-demo__heading, .picker-demo__footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .8rem; }
-    .picker-demo__footer { margin-top: .75rem; padding-top: .65rem; border-top: 1px solid var(--border); color: var(--brand-primary); }
-    .calendar-demo { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .125rem; margin-top: .75rem; text-align: center; }
-    .calendar-demo span { display: grid; height: 2.25rem; place-items: center; border-radius: calc(var(--radius) - 2px); font-size: .875rem; }
-    .calendar-demo small { color: var(--muted-foreground); }
-    .calendar-demo .is-selected { background: var(--brand-primary); color: white; }
-    .time-demo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .5rem; margin: .75rem 0; text-align: center; }
-    .time-demo strong { display: block; padding: .5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--muted); font-size: 1.875rem; font-variant-numeric: tabular-nums; }
-    .time-demo small { color: var(--muted-foreground); }
-    .sport-swim { color: #205a80; background: #e6f0f7; border-color: #c3d9e8; }
-    .sport-bike { color: #755015; background: #fcf1d7; border-color: #e7d7b3; }
-    .sport-run { color: #924331; background: #f9e9e2; border-color: #e7cabe; }
-    .sport-card { width: min(100%, 24rem); padding: 1rem; border: 1px solid; border-radius: var(--radius); }
-    .sport-card h4 { margin: 0 0 .75rem; }
-    .record-demo { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: .5rem; }
-    .record-demo strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
-    .record-demo small { grid-column: 1 / -1; color: var(--muted-foreground); }
-    .summary-demo { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
-    .summary-demo > div { padding: .8rem; border: 1px solid var(--border); border-radius: var(--radius); }
-    .summary-demo strong, .summary-demo small { display: block; }
-    .summary-demo strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
-    .plan-entry { display: grid; gap: .25rem; padding: .7rem; margin-top: .7rem; border: 1px solid; border-radius: calc(var(--radius) - 2px); font-size: .8rem; }
-    .form-demo { display: grid; gap: .65rem; margin: .75rem 0; }
-    .form-demo .demo-field { width: 100%; }
+    :root { --swim: #2f7fb8; --swim-soft: #eef6fc; --bike: #c58a12; --bike-soft: #fdf6e7; --run: #c4563d; --run-soft: #fcf1ee; }
+    .cx-entry { display: grid; grid-template-columns: 3px minmax(0, 1fr) auto; align-items: center; gap: .75rem; padding: .6rem .75rem; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+    .cx-entry > i { align-self: stretch; border-radius: 3px; background: var(--c); }
+    .cx-chip { display: inline-flex; align-items: center; gap: .35rem; height: 1.875rem; padding: 0 .75rem; border: 1px solid var(--border); border-radius: 99px; background: #fff; color: var(--muted-foreground); font-size: .8125rem; font-weight: 550; }
+    .cx-chip .icon { width: .9rem; height: .9rem; }
+    .cx-badge { display: inline-flex; align-items: center; height: 1.125rem; padding: 0 .4rem; border-radius: 99px; background: var(--muted); color: var(--muted-foreground); font-size: .6875rem; font-weight: 600; }
+    .cx-field { display: grid; gap: .1rem; padding: .45rem .75rem; border: 1px solid var(--border); border-radius: 10px; background: #fff; font-size: .875rem; }
+    .cx-field small { color: var(--subtle-foreground); font-size: .72rem; }
     .search input:focus-visible, a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid color-mix(in srgb, var(--ring) 45%, transparent); outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-    .demo-tabs__list--icons { margin-top: .8rem; }
-    .demo-tabs__list--icons span { display: flex; flex: 0 0 2.5rem; align-items: center; justify-content: center; gap: .5rem; padding-inline: .5rem; }
-    .demo-tabs__list--icons span:first-child { flex: 1; }
-    .demo-buzz-button { min-height: 9rem; flex-direction: column; font-size: 1.6rem; border-radius: var(--radius); }
     .demo-buzz-button .icon { width: 2.5rem; height: 2.5rem; }
     .catalog-card h3 { font-weight: var(--display); }
     .live-demo { width: min(100%, 26rem); font-size: .875rem; }
@@ -275,15 +179,51 @@
     #primitive .catalog-card__header { padding: .25rem 0 .5rem; }
     #primitive .preview { min-height: 0; overflow: visible; padding: .375rem; border: 0; background: none; justify-content: flex-start; }
     .live-demo--artwork, .live-demo--wide { width: 100%; }
-    .artwork-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1.25rem; }
+    .artwork-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr)); gap: 1.25rem 1rem; }
     .artwork-gallery figure { min-width: 0; margin: 0; }
-    .artwork-image { display: flex; align-items: center; justify-content: center; height: 8rem; overflow: hidden; }
+    .artwork-image { display: flex; align-items: center; justify-content: center; height: 8.75rem; overflow: hidden; border-radius: 14px; background: var(--muted); }
     .artwork-image > svg { width: 18rem; height: 8rem; max-width: none; flex: none; transform: translateX(-3.333rem); }
-    .artwork-logo { width: 80%; height: 80%; object-fit: contain; }
-    .artwork-sample figcaption { padding-top: .4rem; text-align: center; font-size: .8rem; font-weight: var(--strong); }
+    .artwork-logo { width: 74%; height: 74%; object-fit: contain; mix-blend-mode: multiply; }
+    .artwork-sample figcaption { padding: .6rem .1rem 0; font-size: .85rem; font-weight: 600; }
     .catalog-disclosure { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; list-style: none; }
     .catalog-disclosure::-webkit-details-marker { display: none; }
     .catalog-disclosure > [data-demo] { display: inline-flex; }
+
+    .cx-scale { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+    .cx-scale span { height: 3.5rem; background: var(--c); }
+    .cx-scale-labels { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); margin-top: .4rem; }
+    .cx-accents { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .75rem; margin-top: 1.4rem; }
+    .cx-accents i { display: block; height: 4rem; border-radius: 12px; background: var(--c); box-shadow: inset 0 0 0 1px rgb(16 24 40 / 6%); }
+    .cx-accents strong { display: block; margin-top: .5rem; font-size: .875rem; font-weight: 600; }
+    .cx-meta { color: var(--subtle-foreground); font-size: .75rem; font-weight: 500; line-height: 1.35; }
+    .cx-label { color: var(--muted-foreground); font-size: .8125rem; font-weight: 550; }
+    .cx-panel { border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+    .cx-row { display: flex; align-items: center; gap: .65rem; }
+    .cx-ibox { display: grid; width: 2.25rem; height: 2.25rem; flex: none; place-items: center; border-radius: 10px; }
+    .cx-ibox .icon { width: 1.15rem; height: 1.15rem; stroke-width: 1.75; }
+    .cx-dot { display: inline-block; width: .5rem; height: .5rem; flex: none; border-radius: 50%; background: var(--c); }
+    .cx-num { font-variant-numeric: tabular-nums; font-weight: 650; letter-spacing: -.02em; }
+    .cx-levels { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1.25rem; }
+    .cx-levels > div { display: grid; justify-items: center; gap: .5rem; }
+    .cx-levels i { display: block; width: 6.5rem; height: 4.75rem; border: 1px solid var(--border); background: #fff; }
+    .cx-spacing { display: grid; flex: 1; justify-items: stretch !important; min-width: 14rem; gap: .5rem; padding-left: 1.25rem; border-left: 1px solid var(--border); }
+    .cx-spacing div { display: grid; grid-template-columns: 2.5rem auto; align-items: center; }
+    .cx-spacing b { display: block; width: var(--w); height: .75rem; border-radius: 3px; background: var(--brand-primary); }
+    .cx-roles { display: grid; width: 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1rem; }
+    .cx-roles div { display: flex; align-items: center; gap: .65rem; font-size: .875rem; font-weight: 550; }
+    .cx-bar { height: .625rem; overflow: hidden; border-radius: 99px; background: var(--muted); }
+    .cx-bar i { display: block; height: 100%; width: var(--w); border-radius: 99px; background: var(--c, var(--brand-primary)); }
+    .cx-wire { display: grid; width: 100%; grid-template-columns: 11rem minmax(0, 1fr) 12rem; gap: .6rem; color: var(--muted-foreground); font: 500 .75rem ui-monospace, Consolas, monospace; }
+    .cx-wire > div { padding: .8rem; border: 1px dashed var(--border-strong); border-radius: 10px; }
+    .cx-wire > .cx-solid { border-style: solid; border-color: var(--border); background: #fff; }
+    .cx-mobile-list > div { display: grid; grid-template-columns: 1rem minmax(0, 1fr) auto 1.75rem; align-items: center; gap: .6rem; padding: .6rem 0; border-bottom: 1px solid var(--border); font-size: .875rem; }
+    .cx-mobile-list > div:last-child { border-bottom: 0; }
+    @media (max-width: 760px) {
+      .cx-roles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cx-accents { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cx-wire { grid-template-columns: 1fr; }
+      .cx-scale-labels { display: none; }
+    }
   </style>
 </head>
 <body class="ui-catalog">
@@ -349,23 +289,16 @@
           <article class="catalog-card" data-catalog-item data-source="src/styles/globals.css">
             <div class="catalog-card__header"><div><h3>Farbrollen</h3></div></div>
             <div class="preview">
-              <div class="swatches">
-                <div class="swatch"><div class="swatch__color" style="--swatch:#236492"></div><div class="swatch__label"><strong>brand-primary</strong><code>#236492</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#c3d9e8"></div><div class="swatch__label"><strong>brand-secondary</strong><code>#c3d9e8</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#b55b43"></div><div class="swatch__label"><strong>brand-accent</strong><code>#b55b43</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#fcf1d7"></div><div class="swatch__label"><strong>brand-surface</strong><code>#fcf1d7</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#dce3e7"></div><div class="swatch__label"><strong>brand-fog</strong><code>#dce3e7</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#1b2d3b"></div><div class="swatch__label"><strong>brand-ink</strong><code>#1b2d3b</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#f6f9fa"></div><div class="swatch__label"><strong>background</strong><code>#f6f9fa</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#ffffff"></div><div class="swatch__label"><strong>card / popover</strong><code>#ffffff</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#e6f0f7"></div><div class="swatch__label"><strong>secondary</strong><code>#e6f0f7</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#edf1f3"></div><div class="swatch__label"><strong>muted</strong><code>#edf1f3</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#53616d"></div><div class="swatch__label"><strong>muted-foreground</strong><code>#53616d</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#c83e35"></div><div class="swatch__label"><strong>destructive</strong><code>#c83e35</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#dce3e7"></div><div class="swatch__label"><strong>border</strong><code>#dce3e7</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#dce3e7"></div><div class="swatch__label"><strong>input</strong><code>#dce3e7</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:#236492"></div><div class="swatch__label"><strong>ring</strong><code>primary</code></div></div>
-                <div class="swatch"><div class="swatch__color" style="--swatch:linear-gradient(180deg,#fff,#eef3f6)"></div><div class="swatch__label"><strong>body gradient</strong><code>white → fog</code></div></div>
+              <div class="cx-label" style="margin-bottom:.6rem">Neutral</div>
+              <div class="cx-scale"><span style="--c:#f6f7f8"></span><span style="--c:#f3f4f6"></span><span style="--c:#eceef1"></span><span style="--c:#e5e7eb"></span><span style="--c:#d1d5db"></span><span style="--c:#6b7280"></span><span style="--c:#4b5563"></span><span style="--c:#1f2937"></span><span style="--c:#111827"></span></div>
+              <div class="cx-scale-labels cx-meta"><span>background</span><span>muted</span><span>hover</span><span>border</span><span>border-strong</span><span>subtle-fg</span><span>muted-fg</span><span></span><span>foreground</span></div>
+              <div class="cx-accents">
+                <div><i style="--c:#236492"></i><strong>primary</strong><span class="cx-meta">#236492</span></div>
+                <div><i style="--c:#ebf3f9"></i><strong>primary-soft</strong><span class="cx-meta">#ebf3f9</span></div>
+                <div><i style="--c:#b55b43"></i><strong>brand-accent</strong><span class="cx-meta">#b55b43</span></div>
+                <div><i style="--c:#079455"></i><strong>success</strong><span class="cx-meta">#079455 · soft #ecfdf3</span></div>
+                <div><i style="--c:#dc8a06"></i><strong>warning</strong><span class="cx-meta">#dc8a06 · soft #fffaeb</span></div>
+                <div><i style="--c:#d92d20"></i><strong>destructive</strong><span class="cx-meta">#d92d20 · soft #fef3f2</span></div>
               </div>
             </div>
           </article>
@@ -374,35 +307,40 @@
             <div class="catalog-card__header"><div><h3>Typografierollen</h3></div></div>
             <div class="preview">
               <div class="type-specimen"><code>type-caption</code><span class="type-caption">Metadaten und kompakte Hinweise</span><small>12 / 16 · 500</small></div>
-              <div class="type-specimen"><code>type-label</code><span class="type-label">Sichtbares Standardlabel</span><small>12 / 16 · 500</small></div>
+              <div class="type-specimen"><code>type-label</code><span class="type-label">Sichtbares Standardlabel</span><small>13 / 18 · 550</small></div>
               <div class="type-specimen"><code>type-field-label</code><span class="type-field-label">Schwebendes Feldlabel</span><small>12 / 16 · 500</small></div>
               <div class="type-specimen"><code>type-ui</code><span class="type-ui">Lauftext in Controls und Karten</span><small>14 / 20 · 400</small></div>
               <div class="type-specimen"><code>type-control</code><span class="type-control">Eingabewert auf kleinen Breiten</span><small>16 / 24 → 14 / 20</small></div>
               <div class="type-specimen"><code>type-action</code><span class="type-action">Primäre Aktion</span><small>14 / 20 · 650</small></div>
-              <div class="type-specimen"><code>type-card-title</code><span class="type-card-title">Kartentitel</span><small>18 / 21.6 · 650</small></div>
-              <div class="type-specimen"><code>type-dialog-title</code><span class="type-dialog-title">Dialogtitel</span><small>20 / 24 · 650</small></div>
-              <div class="type-specimen"><code>type-section-title</code><span class="type-section-title">Abschnittstitel</span><small>20 / 24 · 650</small></div>
-              <div class="type-specimen"><code>type-page-title</code><span class="type-page-title">Seitentitel</span><small>30–36 · 650</small></div>
-              <div class="type-specimen"><code>type-dashboard-title</code><span class="type-dashboard-title">App-Hub</span><small>48–72 · 750</small></div>
-              <div class="type-specimen"><code>type-tile-title</code><span class="type-tile-title">App-Kachel</span><small>23.2–26.4 · 650</small></div>
-              <div class="type-specimen"><code>type-brand</code><span class="type-brand">BengtsToolBox</span><small>20 · 750</small></div>
-              <div class="type-specimen"><code>type-metric-sm</code><span class="type-metric-sm">12</span><small>24 / 30.4 · 650</small></div>
+              <div class="type-specimen"><code>type-card-title</code><span class="type-card-title">Kartentitel</span><small>16 / 24 · 650</small></div>
+              <div class="type-specimen"><code>type-dialog-title</code><span class="type-dialog-title">Dialogtitel</span><small>18 / 24 · 650</small></div>
+              <div class="type-specimen"><code>type-section-title</code><span class="type-section-title">Abschnittstitel</span><small>18 / 24 · 650</small></div>
+              <div class="type-specimen"><code>type-page-title</code><span class="type-page-title">Seitentitel</span><small>30 · 650</small></div>
+              <div class="type-specimen"><code>type-dashboard-title</code><span class="type-dashboard-title">App-Hub</span><small>48–56 · 700</small></div>
+              <div class="type-specimen"><code>type-tile-title</code><span class="type-tile-title">App-Kachel</span><small>20 · 650</small></div>
+              <div class="type-specimen"><code>type-brand</code><span class="type-brand">BengtsToolBox</span><small>17 · 700</small></div>
+              <div class="type-specimen"><code>type-metric-sm</code><span class="type-metric-sm">12</span><small>22 / 28 · 650</small></div>
               <div class="type-specimen"><code>type-metric-md</code><span class="type-metric-md">12 : 09</span><small>32 / 36.8 · 650</small></div>
-              <div class="type-specimen"><code>type-metric-lg</code><span class="type-metric-lg">42</span><small>52 / 1 · 650</small></div>
-              <div class="type-specimen"><code>type-metric-xl</code><span class="type-metric-xl">84</span><small>72–96 / 1 · 650</small></div>
+              <div class="type-specimen"><code>type-metric-lg</code><span class="type-metric-lg">42</span><small>48 / 1 · 650</small></div>
+              <div class="type-specimen"><code>type-metric-xl</code><span class="type-metric-xl">84</span><small>72–80 / 1 · 650</small></div>
             </div>
           </article>
 
           <article class="catalog-card" data-catalog-item>
             <div class="catalog-card__header"><div><h3>Radien, Schatten und Abstände</h3></div></div>
             <div class="preview">
-              <div class="shape-row">
-                <div class="shape shape--sm">radius-sm<br>9,6 px</div><div class="shape shape--md">radius-md<br>11,6 px</div><div class="shape shape--lg">radius-lg<br>13,6 px</div>
-                <div class="spacing-scale" style="flex:1;min-width:13rem">
-                  <div class="spacing-item"><code>gap-1</code><span class="spacing-bar" style="--space:.25rem"></span></div>
-                  <div class="spacing-item"><code>gap-2</code><span class="spacing-bar" style="--space:.5rem"></span></div>
-                  <div class="spacing-item"><code>gap-4</code><span class="spacing-bar" style="--space:1rem"></span></div>
-                  <div class="spacing-item"><code>gap-6</code><span class="spacing-bar" style="--space:1.5rem"></span></div>
+              <div class="cx-levels">
+                <div><i style="border-radius:6px"></i><span class="cx-meta">sm · 6</span></div>
+                <div><i style="border-radius:10px;box-shadow:var(--shadow)"></i><span class="cx-meta">md · 10 · shadow-xs</span></div>
+                <div><i style="border-radius:14px;box-shadow:0 1px 3px rgb(16 24 40 / 8%), 0 1px 2px rgb(16 24 40 / 4%)"></i><span class="cx-meta">lg · 14 · shadow-sm</span></div>
+                <div><i style="border:0;border-radius:18px;box-shadow:var(--shadow-lg)"></i><span class="cx-meta">xl · 18 · shadow-overlay</span></div>
+                <div class="cx-spacing">
+                  <div><span class="cx-meta">4</span><b style="--w:4px"></b></div>
+                  <div><span class="cx-meta">8</span><b style="--w:8px"></b></div>
+                  <div><span class="cx-meta">12</span><b style="--w:12px"></b></div>
+                  <div><span class="cx-meta">16</span><b style="--w:16px"></b></div>
+                  <div><span class="cx-meta">24</span><b style="--w:24px"></b></div>
+                  <div><span class="cx-meta">32</span><b style="--w:32px"></b></div>
                 </div>
               </div>
             </div>
@@ -527,7 +465,7 @@
             <div class="preview preview--center"><div style="display:flex;align-items:center;gap:.7rem"><span style="display:grid;width:2.5rem;aspect-ratio:1;place-items:center;color:var(--brand-primary)"><svg class="icon" style="font-size:2.1rem"><use href="#i-trophy"/></svg></span><strong style="font-size:1.9rem;line-height:1.1">Scoreboard</strong></div></div>
           </article>
 
-          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/AppResetButton.tsx">
+          <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/AppResetButton.tsx src/apps/shared/components/useHoldToConfirm.ts">
             <div class="catalog-card__header"><div><h3>AppResetButton</h3></div></div>
             <div class="preview preview--center"><div class="live-demo" data-demo="AppResetButton"></div></div>
           </article>
@@ -539,7 +477,7 @@
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/EmptyState.tsx">
             <div class="catalog-card__header"><div><h3>EmptyState</h3></div></div>
-            <div class="preview preview--center"><div class="mini-status" style="width:min(100%,24rem);padding:1.5rem">Noch keine Ergebnisse vorhanden.</div></div>
+            <div class="preview preview--center"><div class="live-demo" data-demo="EmptyState"></div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/InlineTextEdit.tsx">
@@ -554,7 +492,7 @@
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/shared/components/Presenter.tsx">
             <div class="catalog-card__header"><div><h3>PresenterLauncher &amp; PresenterStage</h3></div></div>
-            <div class="preview preview--center"><div class="mini-page"><div class="mini-page__bar"><div class="mini-page__brand"><span class="mini-page__mark"><svg class="icon"><use href="#i-monitor"/></svg></span><span><small style="display:block;color:var(--muted-foreground)">Scoreboard</small>Rangliste</span></div><button class="demo-button demo-button--outline" type="button">Beenden</button></div><div class="mini-page__body"><div class="score-bars"><div class="score-bar"><span>Paul</span><span style="--score:85%"></span><strong>12</strong></div><div class="score-bar"><span>Kim</span><span style="--score:64%"></span><strong>9</strong></div></div></div></div></div>
+            <div class="preview preview--center"><div class="cx-panel" style="width:min(100%,30rem)"><div class="cx-row" style="justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border)"><div class="cx-row"><span style="display:inline-flex;align-items:center;gap:.35rem;height:1.375rem;padding:0 .5rem;border-radius:99px;background:var(--destructive-soft);color:var(--destructive);font-size:.75rem;font-weight:600"><span class="cx-dot" style="--c:currentColor;width:.375rem;height:.375rem"></span>Live</span><strong style="font-size:1.0625rem;font-weight:650">Rangliste</strong></div><button class="demo-button demo-button--outline" type="button" style="min-height:2rem;padding:.3rem .75rem">Beenden</button></div><div style="display:grid;gap:.85rem;padding:1.1rem 1rem"><div style="display:grid;grid-template-columns:3.5rem 1fr 2.75rem;align-items:center;gap:.75rem"><strong style="font-weight:600">Paul</strong><span class="cx-bar"><i style="--w:85%"></i></span><span class="cx-num" style="font-size:1.625rem;text-align:right">12</span></div><div style="display:grid;grid-template-columns:3.5rem 1fr 2.75rem;align-items:center;gap:.75rem"><strong style="font-weight:600">Kim</strong><span class="cx-bar"><i style="--w:64%;--c:#7aa6c6"></i></span><span class="cx-num" style="font-size:1.625rem;text-align:right">9</span></div></div></div></div>
           </article>
         </div>
       </section>
@@ -564,32 +502,64 @@
         <div class="catalog-grid">
           <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/PersonalBestsPanel.tsx src/apps/triathlon-tracker/triathlon-tracker.css">
             <div class="catalog-card__header"><div><h3>Rekordkarten und Sportpalette</h3></div></div>
-            <div class="preview preview--center"><div class="sport-card sport-swim"><h4>Schwimmen</h4><div class="record-demo"><span>100 m</span><strong>1:42</strong><small>05.10.2026 · Becken</small><span>400 m</span><strong>7:12</strong><small>Modell und Messwerte</small></div><p class="note">Quellen und Modellhinweise aufklappbar</p></div></div>
+            <div class="preview preview--center"><div class="cx-panel" style="width:min(100%,24rem);padding:1rem 1.1rem">
+              <div class="cx-row" style="margin-bottom:.35rem"><span class="cx-ibox" style="background:var(--swim-soft);color:var(--swim)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12q2.5 2 5 0t5 0 5 0 5 0"></path><path d="M2 19q2.5 2 5 0t5 0 5 0 5 0"></path><path d="M2 5q2.5 2 5 0t5 0 5 0 5 0"></path></svg></span><strong style="font-weight:650">Schwimmen</strong></div>
+              <div style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:.7rem 0;border-bottom:1px solid var(--border)"><div><div style="font-weight:600">100 m</div><div class="cx-meta">05.10.2026 · Becken</div></div><span class="cx-num" style="font-size:1.5rem">1:42</span></div>
+              <div style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:.7rem 0 .2rem"><div><div style="font-weight:600">400 m <span class="cx-badge">Modell</span></div><div class="cx-meta">Hochrechnung aus Messwerten</div></div><span class="cx-num" style="font-size:1.5rem">7:12</span></div>
+            </div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/components.tsx">
             <div class="catalog-card__header"><div><h3>Wochenübersicht und Kennzahlen</h3></div></div>
-            <div class="preview preview--center"><div class="summary-demo"><div><strong>5:40 h</strong><small>Gesamt</small></div><div class="sport-swim"><strong>3,2 km</strong><small>Schwimmen</small></div><div class="sport-bike"><strong>62 km</strong><small>Rad</small></div><div class="sport-run"><strong>18 km</strong><small>Laufen</small></div></div></div>
+            <div class="preview preview--center"><div style="display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem">
+              <div class="cx-panel" style="padding:.85rem 1rem"><div class="cx-label">Gesamt</div><div class="cx-num" style="font-size:1.625rem">5:40 h</div><div class="cx-meta">7 Trainings</div></div>
+              <div class="cx-panel" style="padding:.85rem 1rem"><div class="cx-label cx-row" style="gap:.4rem"><span class="cx-dot" style="--c:var(--swim)"></span>Schwimmen</div><div class="cx-num" style="font-size:1.625rem">3,2 km</div><div class="cx-meta">2 Trainings</div></div>
+              <div class="cx-panel" style="padding:.85rem 1rem"><div class="cx-label cx-row" style="gap:.4rem"><span class="cx-dot" style="--c:var(--bike)"></span>Rad</div><div class="cx-num" style="font-size:1.625rem">62 km</div><div class="cx-meta">2 Trainings</div></div>
+              <div class="cx-panel" style="padding:.85rem 1rem"><div class="cx-label cx-row" style="gap:.4rem"><span class="cx-dot" style="--c:var(--run)"></span>Laufen</div><div class="cx-num" style="font-size:1.625rem">18 km</div><div class="cx-meta">3 Trainings</div></div>
+            </div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/PlanCalendar.tsx src/apps/triathlon-tracker/components.tsx">
             <div class="catalog-card__header"><div><h3>Plan-Kalender und Trainingseinträge</h3></div></div>
-            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header"><div class="demo-tabs__list"><span>Woche</span><span>Monat</span></div></div><div class="demo-card__content"><strong>Montag, 5. Oktober</strong><div class="plan-entry sport-run"><strong>Laufen</strong><span>08:30 · 45 min · Locker</span></div><div class="plan-entry sport-bike"><strong>Rad</strong><span>18:00 · 60 min</span></div></div></div></div>
+            <div class="preview preview--center"><div style="display:grid;width:min(100%,26rem);gap:.7rem">
+              <div class="demo-tabs__list" style="width:fit-content"><span>Woche</span><span>Monat</span></div>
+              <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.2rem;text-align:center"><div style="padding:.35rem 0;border-radius:10px;background:var(--brand-primary);color:#fff"><div class="cx-meta" style="color:#fff;opacity:.8">Mo</div><strong style="font-weight:650">5</strong></div><div style="padding:.35rem 0;border-radius:10px;"><div class="cx-meta" style="">Di</div><strong style="font-weight:650">6</strong></div><div style="padding:.35rem 0;border-radius:10px;"><div class="cx-meta" style="">Mi</div><strong style="font-weight:650">7</strong></div><div style="padding:.35rem 0;border-radius:10px;"><div class="cx-meta" style="">Do</div><strong style="font-weight:650">8</strong></div><div style="padding:.35rem 0;border-radius:10px;"><div class="cx-meta" style="">Fr</div><strong style="font-weight:650">9</strong></div><div style="padding:.35rem 0;border-radius:10px;"><div class="cx-meta" style="">Sa</div><strong style="font-weight:650">10</strong></div><div style="padding:.35rem 0;border-radius:10px;"><div class="cx-meta" style="">So</div><strong style="font-weight:650">11</strong></div></div>
+              <div class="cx-entry" style="--c:var(--run)"><i></i><div><strong style="font-weight:600">Laufen</strong><div class="cx-meta">08:30 · 45 min</div></div><span style="color:var(--subtle-foreground)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></span></div>
+              <div class="cx-entry" style="--c:var(--bike)"><i></i><div><strong style="font-weight:600">Rad</strong><div class="cx-meta">18:00 · 60 min</div></div><span style="color:var(--subtle-foreground)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></span></div>
+            </div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/components.tsx">
             <div class="catalog-card__header"><div><h3>Trainingsformulare und Intervalle</h3></div></div>
-            <div class="preview preview--center"><div class="demo-dialog"><h4>Training eintragen</h4><div class="form-demo"><div class="demo-field"><label for="demo-field-4">Dauer</label><input id="demo-field-4" value="45:00" readonly=""></div><div class="demo-field"><label for="demo-field-5">Distanz (km)</label><input id="demo-field-5" value="8,5" readonly=""></div><div class="demo-field"><label for="demo-field-6">Pace (/km)</label><input id="demo-field-6" value="5:18" readonly=""></div></div><details class="group"><summary class="catalog-disclosure">Intervalle und Zusatzangaben<span data-demo="DisclosureIndicator"></span></summary><p>Intervallwerte und Benchmark-Kennzeichnung</p></details><div class="demo-dialog__footer"><span class="demo-button demo-button--outline">Abbrechen</span><span class="demo-button">Speichern</span></div></div></div>
+            <div class="preview preview--center"><div style="display:grid;width:min(100%,26rem);gap:.8rem;padding:1.25rem;border-radius:16px;background:#fff;box-shadow:var(--shadow-lg)">
+              <strong style="font-size:1.125rem;font-weight:650">Training eintragen</strong>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem"><div class="cx-field"><small>Dauer</small>45:00</div><div class="cx-field"><small>Distanz (km)</small>8,5</div><div class="cx-field" style="background:var(--muted);color:var(--muted-foreground)"><small style="color:var(--muted-foreground)">Pace (/km)</small>5:18</div></div>
+              <details class="group" style="padding:.1rem .75rem;border-radius:10px;background:var(--muted)"><summary class="catalog-disclosure" style="min-height:2.5rem;font-weight:550">Intervalle und Zusatzangaben<span data-demo="DisclosureIndicator"></span></summary><p class="cx-meta">Intervallwerte und Benchmark-Kennzeichnung</p></details>
+              <div class="demo-dialog__footer"><span class="demo-button demo-button--outline">Abbrechen</span><span class="demo-button">Speichern</span></div>
+            </div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/TrainingJournal.tsx">
             <div class="catalog-card__header"><div><h3>Journal, Filter und Paginierung</h3></div></div>
-            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header"><span class="demo-badge demo-badge--outline">Oktober · Alle Sportarten</span></div><div class="demo-card__content"><div class="plan-entry sport-run"><strong>05.10.2026 · Laufen</strong><span>8,5 km · 45:00 · 5:18/km</span></div><div class="picker-demo__footer"><span>‹</span><small>1–10</small><span>›</span></div></div></div></div>
+            <div class="preview preview--center"><div style="display:grid;width:min(100%,26rem);gap:.7rem">
+              <div class="cx-row" style="flex-wrap:wrap;gap:.4rem"><span class="cx-chip">Alle Sportarten <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span><span class="cx-chip"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>Zeitraum</span><span class="cx-chip">Nur Maximaltests</span></div>
+              <div class="cx-panel">
+                <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.7rem;padding:.7rem .85rem;border-bottom:1px solid var(--border)"><span class="cx-ibox" style="background:var(--run-soft);color:var(--run)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"></path><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"></path><path d="M16 17h4"></path><path d="M4 13h4"></path></svg></span><div><strong style="font-weight:600">Laufen</strong><div class="cx-meta">05.10.2026 · Straße</div></div><div style="text-align:right"><div class="cx-num">45:00</div><div class="cx-meta">8,5 km · 5:18/km</div></div></div>
+                <div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.7rem;padding:.7rem .85rem"><span class="cx-ibox" style="background:var(--bike-soft);color:var(--bike)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"></circle><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="15" cy="5" r="1"></circle><path d="M12 17.5V14l-3-3 4-3 2 3h2"></path></svg></span><div><strong style="font-weight:600">Rad</strong><div class="cx-meta">04.10.2026 · Draußen</div></div><div style="text-align:right"><div class="cx-num">2:05 h</div><div class="cx-meta">62 km</div></div></div>
+              </div>
+              <div class="cx-row" style="justify-content:space-between"><span class="cx-meta">1–20 von 42</span><span class="cx-row" style="gap:.35rem"><span class="demo-button demo-button--outline" style="min-height:2rem;width:2rem;padding:0"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></span><span class="demo-button demo-button--outline" style="min-height:2rem;width:2rem;padding:0"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></span></span></div>
+            </div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/apps/triathlon-tracker/TrainingStatistics.tsx src/apps/triathlon-tracker/TrainingCharts.tsx">
             <div class="catalog-card__header"><div><h3>Diagramme, Legenden und Datentabellen</h3></div></div>
-            <div class="preview preview--center"><div class="demo-card"><div class="demo-card__header sport-bike"><div class="demo-card__title">Radleistung</div><strong style="font-size:1.9rem">235 W</strong></div><div class="demo-card__content"><div class="chart"><i style="--h:35%"></i><i style="--h:50%"></i><i style="--h:65%"></i><i style="--h:85%"></i></div><small>Messung · Modell · Unsicherheit</small><details class="group"><summary class="catalog-disclosure">Datentabellen<span data-demo="DisclosureIndicator"></span></summary><p>Werte aller Diagramme gemeinsam aufklappbar</p></details></div></div></div>
+            <div class="preview preview--center"><div class="cx-panel" style="width:min(100%,26rem);padding:1rem 1.1rem">
+              <div class="cx-label">Radleistung</div>
+              <div class="cx-row" style="align-items:baseline"><span class="cx-num" style="font-size:1.875rem">235 W</span><span class="cx-badge">Modell</span></div>
+              <div style="display:flex;align-items:flex-end;gap:.8rem;height:7rem;margin-top:.6rem;padding:0 .25rem;border-bottom:1px solid var(--border);background:repeating-linear-gradient(to top,transparent 0 34px,var(--border) 34px 35px)"><i style="flex:1;height:38%;border-radius:6px 6px 0 0;background:#ead9b0"></i><i style="flex:1;height:52%;border-radius:6px 6px 0 0;background:#ead9b0"></i><i style="flex:1;height:66%;border-radius:6px 6px 0 0;background:#ead9b0"></i><i style="flex:1;height:86%;border-radius:6px 6px 0 0;background:var(--bike)"></i><i style="flex:1;height:72%;border:1.5px dashed var(--bike);border-bottom:0;border-radius:6px 6px 0 0"></i></div>
+              <div class="cx-row" style="flex-wrap:wrap;gap:.9rem;margin-top:.7rem"><span class="cx-row cx-meta" style="gap:.35rem"><span class="cx-dot" style="--c:var(--bike)"></span>Aktuell</span><span class="cx-row cx-meta" style="gap:.35rem"><span class="cx-dot" style="--c:#ead9b0"></span>Verlauf</span><span class="cx-row cx-meta" style="gap:.35rem"><span class="cx-dot" style="--c:transparent;border:1.5px dashed var(--bike)"></span>Modell</span></div>
+              <details class="group" style="margin-top:.4rem"><summary class="catalog-disclosure" style="width:fit-content;gap:.4rem;font-size:.8125rem;font-weight:600;color:var(--muted-foreground)">Daten als Tabelle anzeigen<span data-demo="DisclosureIndicator"></span></summary><p class="cx-meta">Werte aller Diagramme gemeinsam aufklappbar</p></details>
+            </div></div>
           </article>
         </div>
       </section>
@@ -602,13 +572,13 @@
           <article class="catalog-card" data-catalog-item data-source="src/**/*.tsx src/apps/registry.ts">
             <div class="catalog-card__header"><div><h3>Häufige Icon-Rollen</h3></div></div>
             <div class="preview preview--center">
-              <div class="role-grid">
-                <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--brand-primary)"><use href="#i-plus"/></svg><small>Hinzufügen</small></div>
-                <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--destructive)"><use href="#i-trash"/></svg><small>Löschen</small></div>
-                <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--brand-primary)"><use href="#i-trophy"/></svg><small>Gewinner</small></div>
-                <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--brand-primary)"><use href="#i-users"/></svg><small>Personen</small></div>
-                <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--brand-primary)"><use href="#i-history"/></svg><small>Verlauf</small></div>
-                <div style="display:grid;place-items:center;gap:.3rem"><svg class="icon" style="font-size:1.5rem;color:var(--destructive)"><use href="#i-alert"/></svg><small>Warnung</small></div>
+              <div class="cx-roles">
+                <div><span class="cx-ibox" style="background:var(--primary-soft);color:var(--brand-primary)"><svg class="icon"><use href="#i-plus"/></svg></span>Hinzufügen</div>
+                <div><span class="cx-ibox" style="background:var(--destructive-soft);color:var(--destructive)"><svg class="icon"><use href="#i-trash"/></svg></span>Löschen</div>
+                <div><span class="cx-ibox" style="background:var(--warning-soft);color:var(--warning)"><svg class="icon"><use href="#i-trophy"/></svg></span>Gewinner</div>
+                <div><span class="cx-ibox" style="background:var(--muted);color:var(--muted-foreground)"><svg class="icon"><use href="#i-users"/></svg></span>Personen</div>
+                <div><span class="cx-ibox" style="background:var(--muted);color:var(--muted-foreground)"><svg class="icon"><use href="#i-history"/></svg></span>Verlauf</div>
+                <div><span class="cx-ibox" style="background:var(--warning-soft);color:var(--warning)"><svg class="icon"><use href="#i-alert"/></svg></span>Warnung</div>
               </div>
             </div>
           </article>
@@ -722,7 +692,13 @@
 
           <article class="catalog-card" data-catalog-item>
             <div class="catalog-card__header"><div><h3>Native HTML- und Landmark-Muster</h3></div></div>
-            <div class="preview"><div class="mini-page"><div class="mini-page__bar"><strong>&lt;header&gt;</strong><span>&lt;nav&gt;</span></div><div class="mini-page__body"><div class="mini-status">&lt;main&gt; · &lt;section&gt; · &lt;aside&gt;</div><div class="live-demo" data-demo="HTML-Formular"></div><div class="table-wrap"><table class="demo-table"><tbody><tr><td>&lt;table&gt;</td><td>&lt;details&gt; / &lt;summary&gt;</td></tr></tbody></table></div></div></div></div>
+            <div class="preview"><div class="cx-wire">
+              <div class="cx-solid" style="grid-column:1/-1;display:flex;justify-content:space-between">&lt;header&gt;<span>&lt;nav&gt;</span></div>
+              <div>&lt;nav&gt;</div>
+              <div class="cx-solid" style="display:grid;gap:.7rem">&lt;main&gt; · &lt;section&gt;<div class="live-demo" data-demo="HTML-Formular" style="width:100%;font-family:var(--font)"></div><div style="display:flex;gap:.5rem"><span style="flex:1;padding:.6rem;border-radius:8px;background:var(--muted)">&lt;table&gt;</span><span style="flex:1;padding:.6rem;border-radius:8px;background:var(--muted)">&lt;details&gt; / &lt;summary&gt;</span></div></div>
+              <div>&lt;aside&gt;</div>
+              <div style="grid-column:1/-1">&lt;footer&gt;</div>
+            </div></div>
           </article>
         </div>
       </section>
@@ -739,19 +715,19 @@
 
           <article class="catalog-card" data-catalog-item>
             <div class="catalog-card__header"><div><h3>Interaktionszustände als visuelle Reihe</h3></div></div>
-            <div class="preview preview--center"><div class="live-demo" data-demo="Interaktionszustände als visuelle Reihe"></div></div>
+            <div class="preview preview--center"><div class="live-demo live-demo--wide" data-demo="Interaktionszustände als visuelle Reihe"></div></div>
           </article>
 
           <article class="catalog-card" data-catalog-item data-source="src/styles/globals.css">
             <div class="catalog-card__header"><div><h3>Responsive Informationsdichte</h3></div></div>
-            <div class="preview preview--center"><div class="responsive-preview-grid"><div class="mini-page"><div class="mini-page__bar"><strong>Desktop</strong><span>Tabs + Tabelle</span></div><div class="mini-page__body"><div class="live-demo" data-demo="Responsive Tabelle"></div></div></div><div class="mini-page"><div class="mini-page__bar"><strong>Mobil</strong></div><div class="mini-page__body"><div class="score-bars"><div class="score-bar" style="grid-template-columns:2rem 1fr auto"><span>P</span><span style="--score:80%"></span><strong>12</strong></div><div class="score-bar" style="grid-template-columns:2rem 1fr auto"><span>K</span><span style="--score:60%"></span><strong>9</strong></div></div></div></div></div></div>
+            <div class="preview preview--center"><div class="responsive-preview-grid"><div class="mini-page"><div class="mini-page__bar"><strong>Desktop</strong><span class="cx-meta">Tabs + Tabelle</span></div><div class="mini-page__body"><div class="live-demo" data-demo="Responsive Tabelle"></div></div></div><div class="mini-page" style="background:#fff"><div class="mini-page__bar"><strong>Mobil</strong><span class="cx-meta">Liste</span></div><div class="cx-mobile-list" style="padding:.15rem .8rem"><div><span class="cx-meta">1</span><strong style="font-weight:600">Paul</strong><span class="cx-dot" style="--c:var(--success)"></span><span class="cx-num" style="text-align:right">12</span></div><div><span class="cx-meta">2</span><strong style="font-weight:600">Kim</strong><span class="cx-dot" style="--c:var(--border-strong)"></span><span class="cx-num" style="text-align:right">9</span></div></div></div></div></div>
           </article>
         </div>
       </section>
     </main>
   </div>
 
-  <footer class="footer">BengtsToolBox UI-Elemente-Katalog · Bestandsaufnahme 06.10.2026 · Diskussionsgrundlage, kein Laufzeitvertrag</footer>
+  <footer class="footer">BengtsToolBox UI-Elemente-Katalog · Bestandsaufnahme 08.10.2026 · Diskussionsgrundlage, kein Laufzeitvertrag</footer>
 
   <script>
     (() => {

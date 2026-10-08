@@ -190,6 +190,7 @@ export function LobbyAdminPage() {
                   </Button>
                   {lobby.kind !== 'default' && (
                     <ConfirmButton
+                      mode="popover"
                       confirmLabel={t('common.delete')}
                       description={t('lobbyAdmin.deleteDescription', { name: lobby.name })}
                       title={t('lobbyAdmin.deleteTitle')}

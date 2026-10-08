@@ -233,13 +233,71 @@ export function PlanCalendar({
             ))}
         </div>
       )}
-      <div className="overflow-hidden rounded-xl bg-card" aria-busy={moving}>
-        <div
-          className={cn(
-            'hidden grid-cols-[repeat(7,minmax(0,1fr))_9rem] border-b border-border/50 lg:grid',
-            view === 'week' && 'md:grid md:grid-cols-7 lg:grid-cols-7',
-          )}
-        >
+      <div
+        className="overflow-hidden rounded-lg border bg-card"
+        aria-busy={moving}
+      >
+        {view === 'week' && (
+          <div
+            className="grid grid-cols-7 gap-1 border-b p-2"
+            data-week-strip
+          >
+            {Array.from({ length: 7 }, (_, day) => {
+              const date = addDaysToLocalDate(firstDay, day)
+              const selected = date === activeLocalDate
+              return (
+                <button
+                  type="button"
+                  key={date}
+                  aria-label={dateLabel(date, { dateStyle: 'full' })}
+                  aria-pressed={selected}
+                  aria-current={date === today ? 'date' : undefined}
+                  className={cn(
+                    'grid min-h-12 w-full max-w-16 justify-items-center gap-0.5 justify-self-center rounded-[10px] py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    selected
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted',
+                  )}
+                  onClick={() => {
+                    onDateChange(date)
+                    if (!window.matchMedia('(min-width: 768px)').matches)
+                      document
+                        .querySelector(`[data-calendar-date="${date}"]`)
+                        ?.scrollIntoView({ block: 'nearest' })
+                  }}
+                >
+                  <span
+                    className={cn(
+                      'text-[11px] font-medium leading-4',
+                      selected
+                        ? 'text-primary-foreground/80'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {dateLabel(date, { weekday: 'short' })}
+                  </span>
+                  <span
+                    className={cn(
+                      'type-action tabular-nums',
+                      !selected && date === today && 'text-primary',
+                    )}
+                  >
+                    {Number(date.slice(-2))}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'size-1 rounded-full',
+                      byDate.has(date) ? 'bg-current' : 'bg-transparent',
+                    )}
+                  />
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {view === 'month' && (
+        <div className="hidden grid-cols-[repeat(7,minmax(0,1fr))_9rem] border-b lg:grid">
           {Array.from({ length: 7 }, (_, day) => (
             <div
               className="type-caption px-3 py-2 font-medium text-muted-foreground"
@@ -250,15 +308,11 @@ export function PlanCalendar({
               })}
             </div>
           ))}
-          <div
-            className={cn(
-              'type-caption hidden border-l px-3 py-3 font-semibold text-muted-foreground lg:block',
-              view === 'week' && 'lg:hidden',
-            )}
-          >
+          <div className="type-caption hidden border-l px-3 py-3 font-semibold text-muted-foreground lg:block">
             {t('triathlon.calendar.weekSummary')}
           </div>
         </div>
+        )}
         {weekStarts.map((weekStart) => {
           const days = Array.from({ length: 7 }, (_, day) =>
             addDaysToLocalDate(weekStart, day),
@@ -285,7 +339,7 @@ export function PlanCalendar({
                     key={date}
                     data-calendar-date={date}
                     className={cn(
-                      'tri-calendar-day min-w-0 border-b border-border/50 px-3 py-3 last:border-b-0 lg:block lg:min-h-40 lg:border-b-0 lg:border-r',
+                      'min-w-0 border-b border-border/50 px-3 py-3 last:border-b-0 lg:block lg:min-h-40 lg:border-b-0 lg:border-r',
                       view === 'month' && date !== activeLocalDate && 'hidden',
                       view === 'week' &&
                         'md:min-h-56 md:border-b-0 md:border-r lg:min-h-64',
@@ -347,8 +401,8 @@ export function PlanCalendar({
                         </span>
                         <span
                           className={cn(
-                            'hidden size-8 items-center justify-center rounded-lg text-lg lg:flex',
-                            view === 'week' && 'md:flex',
+                            'hidden size-8 items-center justify-center rounded-[10px] text-base tabular-nums lg:flex',
+                            view === 'week' && 'lg:hidden',
                             isToday && 'bg-primary text-primary-foreground',
                           )}
                         >
@@ -369,10 +423,27 @@ export function PlanCalendar({
                     </div>
                     <div className="grid gap-2.5">
                       {trainings.map((training) => {
-                        const Icon = disciplineIcons[training.discipline]
                         const label =
                           training.label ||
                           t(`triathlon.discipline.${training.discipline}`)
+                        const meta = [
+                          training.startMinutes === null
+                            ? null
+                            : `${Math.floor(training.startMinutes / 60)}`.padStart(
+                                2,
+                                '0',
+                              ) +
+                              ':' +
+                              `${training.startMinutes % 60}`.padStart(2, '0'),
+                          training.durationSeconds === null
+                            ? null
+                            : formatTrainingDuration(training.durationSeconds),
+                          training.distanceMeters === null
+                            ? null
+                            : `${formatNumber(training.distanceMeters / 1000, {
+                                maximumFractionDigits: 2,
+                              })} km`,
+                        ].filter((part) => part !== null)
                         return (
                           <article
                             key={training.id}
@@ -392,68 +463,46 @@ export function PlanCalendar({
                               setDropDate(null)
                             }}
                             className={cn(
-                              'tri-plan-entry group overflow-hidden rounded-lg bg-[var(--sport-wash)] text-[var(--sport-ink)] transition-colors',
+                              'tri-plan-entry @container group relative overflow-hidden rounded-lg border bg-card transition-colors hover:border-border-strong',
                               draggedId === training.id && 'opacity-50',
                             )}
                           >
                             <button
                               type="button"
-                              className="grid w-full gap-2 p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                              className="flex w-full items-center gap-2 p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                               onClick={() => onEdit(training)}
-                              aria-label={`${label} · ${t('common.edit')}`}
+                              aria-label={`${training.label ? `${label} · ${t(`triathlon.discipline.${training.discipline}`)}` : label} · ${t('common.edit')}`}
                             >
-                              <span className="flex items-center justify-between gap-1">
-                                <Icon
-                                  aria-hidden="true"
-                                  className="size-4 shrink-0"
-                                />
-                                <span className="type-caption">
-                                  {training.startMinutes === null
-                                    ? t(
-                                        `triathlon.discipline.${training.discipline}`,
-                                      )
-                                    : `${Math.floor(training.startMinutes / 60)}`.padStart(
-                                        2,
-                                        '0',
-                                      ) +
-                                      ':' +
-                                      `${training.startMinutes % 60}`.padStart(
-                                        2,
-                                        '0',
-                                      )}
+                              <span className="grid min-w-0 flex-1 gap-0.5 @3xs:pr-9">
+                                <span className="type-ui font-semibold leading-snug hyphens-auto [overflow-wrap:anywhere]">
+                                  {label}
+                                </span>
+                                <span className="type-caption flex flex-wrap gap-x-1 text-muted-foreground tabular-nums">
+                                  {meta.map((part, index) => (
+                                    <span
+                                      className="@3xs:whitespace-nowrap"
+                                      key={index}
+                                    >
+                                      {part}
+                                      {index < meta.length - 1 && ' ·'}
+                                    </span>
+                                  ))}
                                 </span>
                               </span>
-                              <span className="type-ui break-words font-semibold leading-snug">
-                                {label}
-                              </span>
-                              <span className="type-caption flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
-                                {training.durationSeconds !== null && (
-                                  <span>
-                                    {formatTrainingDuration(
-                                      training.durationSeconds,
-                                    )}
-                                  </span>
-                                )}
-                                {training.distanceMeters !== null && (
-                                  <span>
-                                    {formatNumber(
-                                      training.distanceMeters / 1000,
-                                      { maximumFractionDigits: 2 },
-                                    )}{' '}
-                                    km
-                                  </span>
-                                )}
-                              </span>
+                              <ChevronRight
+                                aria-hidden="true"
+                                className="hidden size-4 shrink-0 text-subtle-foreground @3xs:block"
+                              />
                             </button>
-                            <div className="flex justify-end px-1 pb-1">
+                            <div className="flex justify-end px-1 pb-1 @3xs:absolute @3xs:right-8 @3xs:top-1/2 @3xs:-translate-y-1/2 @3xs:p-0">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-7 text-inherit"
+                                className="size-7 text-muted-foreground"
                                 aria-label={`${t('triathlon.calendar.duplicate')}: ${label}`}
                                 onClick={() => onCopy(training)}
                               >
-                                <Copy aria-hidden="true" className="size-3" />
+                                <Copy aria-hidden="true" className="size-3.5" />
                               </Button>
                             </div>
                           </article>

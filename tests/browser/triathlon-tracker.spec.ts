@@ -91,9 +91,13 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await plan
     .getByRole('button', { name: 'Uhrzeit wählen: Uhrzeit (optional)' })
     .click()
-  await timePicker.getByLabel('Stunden', { exact: true }).fill('23')
-  await timePicker.getByLabel('Minuten', { exact: true }).fill('7')
-  await timePicker.getByLabel('Minuten', { exact: true }).press('Enter')
+  await timePicker
+    .getByRole('listbox', { name: 'Stunden' })
+    .getByRole('option', { name: '23', exact: true })
+    .click()
+  const minuteColumn = timePicker.getByRole('listbox', { name: 'Minuten' })
+  await minuteColumn.getByRole('option', { name: '07', exact: true }).click()
+  await minuteColumn.press('Enter')
   await expect(timeInput).toHaveValue('23:07')
   await plan.getByLabel('Kurzes Label').fill('Lockerer Lauf')
   await plan.getByLabel('Dauer (m:ss / h:mm:ss)').fill('30')
@@ -244,11 +248,24 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   })
   await app.expectHealthy()
   await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+  await page.getByRole('button', { name: 'Bearbeiten: Laufen' }).click()
+  const editBeforeDelete = page.getByRole('dialog', { name: 'Training bearbeiten' })
+  const inlineDelete = editBeforeDelete.getByRole('button', { name: 'Löschen', exact: true })
+  await inlineDelete.click()
+  await expect(
+    editBeforeDelete
+      .getByRole('group', { name: 'Training löschen?' })
+      .getByRole('button', { name: 'Bestätigen' }),
+  ).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(inlineDelete).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(editBeforeDelete).toBeHidden()
   await page.getByRole('button', { name: 'Löschen: Laufen' }).click()
-  await page
-    .getByRole('dialog', { name: 'Training löschen?' })
-    .getByRole('button', { name: 'Bestätigen' })
-    .click()
+  const deletePopover = page.getByRole('dialog', { name: 'Training löschen?' })
+  await expect(deletePopover).toHaveAccessibleDescription(/./)
+  await expect(deletePopover.getByRole('button', { name: 'Bestätigen' })).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(page.getByText('Noch keine Trainings erfasst')).toBeVisible()
 })
 
@@ -451,6 +468,7 @@ test(
     await page.getByRole('combobox', { name: 'Disziplin' }).click()
     await page.getByRole('option', { name: 'Schwimmen', exact: true }).click()
     await expect(page.locator('[data-journal-training]')).toHaveCount(12)
+    await page.getByRole('button', { name: 'Zeitraum', exact: true }).click()
     await page.getByLabel('Von', { exact: true }).fill('2026-08-10')
     await page.getByLabel('Bis', { exact: true }).fill('2026-08-14')
     await expect(page.locator('[data-journal-training]')).toHaveCount(3)

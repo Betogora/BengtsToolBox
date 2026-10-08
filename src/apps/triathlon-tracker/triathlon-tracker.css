@@ -1,119 +1,88 @@
+/* Sport palette: the strong color marks icons, dots and stripes; the soft
+   tint only backs small icon boxes. Cards themselves stay white.
+   --sport-color mirrors disciplineColors in presentation.ts. */
 .triathlon-tracker [data-discipline='swim'] {
-  --sport-ink: #205a80;
-  --sport-wash: #e6f0f7;
-  --sport-rule: #c3d9e8;
+  --sport-color: #2f7fb8;
+  --sport-soft: #eef6fc;
 }
 
 .triathlon-tracker [data-discipline='bike'] {
-  --sport-ink: #755015;
-  --sport-wash: #fcf1d7;
-  --sport-rule: #e7d7b3;
+  --sport-color: #c58a12;
+  --sport-soft: #fdf6e7;
 }
 
 .triathlon-tracker [data-discipline='run'] {
-  --sport-ink: #924331;
-  --sport-wash: #f9e9e2;
-  --sport-rule: #e7cabe;
+  --sport-color: #c4563d;
+  --sport-soft: #fcf1ee;
 }
 
 .triathlon-tracker > header {
   padding-bottom: 0.5rem;
 }
 
+.tri-sport-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: var(--sport-soft, var(--muted));
+  color: var(--sport-color, var(--muted-foreground));
+}
+
+.tri-sport-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--sport-color, var(--foreground));
+}
+
 .tri-record-card {
   display: flex;
   flex-direction: column;
-  background: var(--sport-wash);
-  border: 1px solid var(--sport-rule);
-  box-shadow: none;
-  color: var(--sport-ink);
-  --foreground: var(--sport-ink);
-  --card-foreground: var(--sport-ink);
-  --muted-foreground: #53616d;
 }
 
-.tri-record-header {
-  min-height: 5rem;
+.tri-record-time {
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
-.tri-record-header h3 {
-  font-size: 1.2rem;
-  letter-spacing: -0.025em;
+.tri-stat-label {
+  font-size: 0.8125rem;
+  font-weight: 550;
+  line-height: 1.25rem;
 }
 
-.tri-record-header [data-slot='select-trigger'] {
-  background: #ffffffa6;
-  border-color: var(--sport-rule);
+.tri-stat-value {
+  font-size: 1.625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 2rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.tri-record-card thead {
-  background: #ffffff66;
-}
-
-.tri-record-card tbody tr + tr {
-  border-top: 1px solid var(--sport-rule);
-}
-
-.tri-record-card tbody th {
-  font-size: 0.8rem;
-}
-
-.tri-record-value {
-  font-size: 1.25rem;
-  font-weight: 750;
-  letter-spacing: -0.04em;
-}
-
-.tri-record-model {
-  background: #ffffff55;
-  margin: 0.5rem;
-  margin-top: auto;
-  border-radius: 0.55rem;
-}
-
-.tri-week-summary {
-  gap: 0.65rem;
-}
-
-.tri-week-summary > div {
-  background: var(--sport-wash, #edf1f3);
-  color: var(--sport-ink, var(--foreground));
-  border: 1px solid var(--sport-rule, var(--border));
-  border-radius: 0.85rem;
+/* Computed form values sit on a muted surface; keep their label readable. */
+.triathlon-tracker input[data-computed]:not(:focus-visible) + label {
+  color: var(--muted-foreground);
 }
 
 .tri-plan-entry {
-  background: var(--sport-wash);
-  color: var(--sport-ink);
-  border-color: var(--sport-rule);
-  box-shadow: none;
-}
-
-.tri-calendar-day time {
-  font-weight: 700;
-}
-
-.tri-performance-card {
-  border-color: var(--sport-rule);
-  border-radius: 1rem;
-}
-
-.tri-performance-heading {
-  background: var(--sport-wash);
-  border-radius: 1rem 1rem 0 0;
-  color: var(--sport-ink);
+  border-left: 3px solid var(--sport-color);
 }
 
 .tri-plot-value {
-  font-size: 1.9rem;
-  font-weight: 750;
-  letter-spacing: -0.055em;
-  line-height: 1.1;
-}
-
-.tri-chart-legend {
-  font-size: 0.7rem;
-  padding-top: 0.85rem;
+  font-size: 1.875rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 2.25rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .triathlon-tracker details {
@@ -121,20 +90,12 @@
 }
 
 @media (max-width: 639px) {
-  .tri-record-value {
-    font-size: 1.15rem;
-  }
-  .tri-record-header {
-    min-height: 4.5rem;
+  .tri-record-time {
+    font-size: 1.375rem;
   }
   .triathlon-tracker [data-slot='tabs-trigger'] {
     font-size: 0.75rem;
   }
-}
-
-.tri-volume-card {
-  border: 0;
-  box-shadow: 0 3px 20px #1b2d3b08;
 }
 
 @media (min-width: 900px) {
@@ -145,20 +106,14 @@
   .tri-performance-heading {
     justify-content: center;
     padding: 1.5rem;
-    border-radius: 1rem 0 0 1rem;
+    border-right: 1px solid var(--border);
   }
   .tri-performance-heading > div:last-child {
     flex-wrap: wrap;
     align-items: start;
   }
-  .tri-performance-heading .tri-plot-value {
-    font-size: 2.7rem;
-  }
   .tri-performance-content {
     padding: 1rem 1.25rem;
-  }
-  .tri-chart-legend {
-    padding-top: 0;
   }
   .tri-performance-content > .tri-plot-canvas {
     height: 12.5rem;

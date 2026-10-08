@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:56f4bc46a0989923abe2941d77a3aa23b1ca8424a8c06f3f26ab80e735aa41b9">
+  <meta name="specs-source-sha256" content="sha256:036d000214381b81b57c48a0d5ed1c4500788fc860bb30096dfd7a9c7ff615cd">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -943,7 +943,7 @@ npm run test:browser
 npm run test:firebase</code></pre>
         <div class="card note" style="margin-top:1rem">
           <h3>Browser-Smoke-Suite</h3>
-          <p><code>npm run test:browser</code> startet Vite ohne Firebase auf Port <code>5180</code>. Dashboard, verschachteltes Scoreboard, Presenter, Sushi Map und der sichtbare Rollback bei voller LocalStorage-Quota werden mit Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA abgedeckt. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
+          <p><code>npm run test:browser</code> startet Vite ohne Firebase immer frisch auf dem eigenen Testport <code>5288</code> und verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard, verschachteltes Scoreboard, Presenter, Sushi Map und der sichtbare Rollback bei voller LocalStorage-Quota werden mit Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA abgedeckt. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
           <ul>
             <li>Vor neuen Tests vorhandene Verhaltensprüfungen erweitern oder mit fachlich anderen Eingaben parametrisieren; unabhängige Fehlerursachen getrennt lassen.</li>
             <li>Fachlogik in Vitest, Store-Aufrufe in gemockten Hooks, Rules und konkurrierende Clients im Emulator, Bedienung und Barrierefreiheit im Browser prüfen. Unterschiedliche Systemgrenzen sind keine Redundanz.</li>

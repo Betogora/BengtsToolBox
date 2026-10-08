@@ -30,10 +30,7 @@ import type {
   PlannedTrainingInput,
   PlannedWeekCopyPreview,
 } from '@/apps/triathlon-tracker/hooks/useTriathlonTracker'
-import {
-  disciplineIcons,
-  formatTrainingDuration as formatDuration,
-} from '@/apps/triathlon-tracker/presentation'
+import { formatTrainingDuration as formatDuration } from '@/apps/triathlon-tracker/presentation'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -406,7 +403,7 @@ function IntervalEditor({
     )
 
   return (
-    <section className="grid gap-3 rounded-md border bg-secondary/35 p-3">
+    <section className="grid gap-3 rounded-md border bg-card p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="type-action">{t('triathlon.intervals.title')}</h3>
@@ -423,14 +420,14 @@ function IntervalEditor({
         </Button>
       </div>
       {intervals.length === 0 ? (
-        <p className="type-ui rounded-md border border-dashed bg-background p-4 text-center text-muted-foreground">
+        <p className="type-ui rounded-md bg-muted p-4 text-center text-muted-foreground">
           {t('triathlon.intervals.empty')}
         </p>
       ) : (
         <div className="grid gap-3">
           {intervals.map((interval, index) => (
             <div
-              className="grid gap-2 rounded-md border bg-background p-3"
+              className="grid gap-2 rounded-md bg-muted p-3"
               key={interval.id}
             >
               <div className="flex items-center justify-between gap-2">
@@ -634,6 +631,13 @@ function ActualTrainingDialogContent({
       updateTrainingMetrics(current, field, value, discipline),
     )
   }
+  // The field outside the last two inputs is derived from the other two.
+  const isComputed = (field: TrainingMetricField) =>
+    !metrics.inputs.includes(field)
+  const computedClass = (field: TrainingMetricField) =>
+    isComputed(field)
+      ? 'bg-muted text-muted-foreground shadow-none'
+      : undefined
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -770,9 +774,11 @@ function ActualTrainingDialogContent({
             </SelectContent>
           </Select>
         </fieldset>
-        <fieldset className="grid grid-cols-2 gap-2">
+        <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <legend className="sr-only">{t('triathlon.form.metrics')}</legend>
           <IftaInput
+            className={computedClass('duration')}
+            data-computed={isComputed('duration') || undefined}
             label={t('triathlon.journal.duration')}
             aria-label={t('triathlon.form.durationClock')}
             title={t('triathlon.form.durationClock')}
@@ -783,6 +789,8 @@ function ActualTrainingDialogContent({
             }
           />
           <IftaInput
+            className={computedClass('distance')}
+            data-computed={isComputed('distance') || undefined}
             label={t('triathlon.form.distanceKilometers')}
             min="0"
             step="0.01"
@@ -792,15 +800,22 @@ function ActualTrainingDialogContent({
               updateMetric('distance', event.currentTarget.value)
             }
           />
-          <IftaInput
-            inputMode="text"
-            label={averagePaceLabel(discipline, t)}
-            placeholder="5:30"
-            value={averagePace}
-            onChange={(event) =>
-              updateMetric('pace', event.currentTarget.value)
-            }
-          />
+          <div className="col-span-2 sm:col-span-1">
+            <IftaInput
+              className={computedClass('pace')}
+              data-computed={isComputed('pace') || undefined}
+              inputMode="text"
+              label={averagePaceLabel(discipline, t)}
+              placeholder="5:30"
+              value={averagePace}
+              onChange={(event) =>
+                updateMetric('pace', event.currentTarget.value)
+              }
+            />
+          </div>
+          <p className="type-caption col-span-2 text-muted-foreground sm:col-span-3">
+            {t('triathlon.form.metricsDerived')}
+          </p>
           <IftaInput
             label={t('triathlon.form.averageHeartRate')}
             min="30"
@@ -811,9 +826,6 @@ function ActualTrainingDialogContent({
               setAverageHeartRateBpm(event.currentTarget.value)
             }
           />
-          <p className="type-caption col-span-2 text-muted-foreground">
-            {t('triathlon.form.metricsDerived')}
-          </p>
           <IftaInput
             label={t('triathlon.form.averagePower')}
             min="0"
@@ -824,15 +836,17 @@ function ActualTrainingDialogContent({
               setAveragePowerWatts(event.currentTarget.value)
             }
           />
-          <IftaInput
-            label={t('triathlon.form.rpe')}
-            min="1"
-            max="10"
-            type="number"
-            value={rpe}
-            onChange={(event) => setRpe(event.currentTarget.value)}
-          />
-          <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted/40 p-3">
+          <div className="col-span-2 sm:col-span-1">
+            <IftaInput
+              label={t('triathlon.form.rpe')}
+              min="1"
+              max="10"
+              type="number"
+              value={rpe}
+              onChange={(event) => setRpe(event.currentTarget.value)}
+            />
+          </div>
+          <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-3">
             <input
               type="checkbox"
               className="size-4 accent-primary"
@@ -843,23 +857,27 @@ function ActualTrainingDialogContent({
           </label>
         </fieldset>
 
-        <section className="overflow-hidden rounded-md border">
+        <section>
           <Button
             aria-controls="actual-training-details"
             aria-expanded={showDetails}
-            className="h-11 w-full justify-between rounded-none px-3"
+            className="h-11 w-full justify-between rounded-md bg-muted px-3 hover:bg-muted/70 hover:text-foreground"
             type="button"
             variant="ghost"
             onClick={() => setShowDetails((current) => !current)}
           >
-            {t('triathlon.intervals.title')}
+            <span className="flex items-center gap-2">
+              {t('triathlon.intervals.title')}
+              {intervals.length > 0 && (
+                <span className="type-caption text-muted-foreground tabular-nums">
+                  {intervals.length}
+                </span>
+              )}
+            </span>
             <DisclosureIndicator isOpen={showDetails} />
           </Button>
           {showDetails && (
-            <div
-              className="grid gap-4 border-t p-3"
-              id="actual-training-details"
-            >
+            <div className="grid gap-4 pt-2" id="actual-training-details">
               <IntervalEditor intervals={intervals} onChange={setIntervals} />
             </div>
           )}
@@ -1106,51 +1124,48 @@ export function CurrentWeekSummary({
 
   return (
     <section
-      className="tri-week-summary grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
       aria-labelledby="current-week-title"
     >
       <div
-        className="tri-week-total min-w-0 rounded-xl bg-muted p-3 sm:p-4"
+        className="tri-week-total min-w-0 rounded-lg border bg-card px-4 py-3.5"
         data-week-summary-item
       >
         <h2
           id="current-week-title"
-          className="type-caption font-medium text-muted-foreground"
+          className="tri-stat-label text-muted-foreground"
         >
           {t('triathlon.summary.thisWeek')}
         </h2>
-        <p className="mt-2 text-xl font-semibold leading-tight tabular-nums sm:text-3xl">
+        <p className="tri-stat-value mt-1">
           {formatDuration(totalDurationSeconds)}
         </p>
-        <p className="type-caption mt-2 text-muted-foreground">
+        <p className="type-caption mt-0.5 text-muted-foreground tabular-nums">
           {trainingCountLabel(actualCount)}
         </p>
       </div>
 
-      {disciplines.map(({ discipline, duration, distance, count }) => {
-        const Icon = disciplineIcons[discipline]
-        return (
-          <div
-            className="min-w-0 rounded-xl bg-[var(--sport-wash)] p-3 text-[var(--sport-ink)] sm:p-4"
-            data-discipline={discipline}
-            data-discipline-summary={discipline}
-            data-week-summary-item
-            key={discipline}
-          >
-            <p className="type-caption flex items-center gap-2 font-medium">
-              <Icon aria-hidden="true" className="size-4 shrink-0" />
-              {getDisciplineLabel(discipline, t)}
-            </p>
-            <p className="mt-2 text-xl font-semibold leading-tight tabular-nums sm:text-3xl">
-              {formatDuration(duration)}
-            </p>
-            <p className="type-caption mt-2 flex flex-wrap gap-x-1">
-              <span>{formatDistance(distance, locale)}</span>
-              <span>· {trainingCountLabel(count)}</span>
-            </p>
-          </div>
-        )
-      })}
+      {disciplines.map(({ discipline, duration, distance, count }) => (
+        <div
+          className="min-w-0 rounded-lg border bg-card px-4 py-3.5"
+          data-discipline={discipline}
+          data-discipline-summary={discipline}
+          data-week-summary-item
+          key={discipline}
+        >
+          <p className="tri-stat-label flex items-center gap-2 text-muted-foreground">
+            <span aria-hidden="true" className="tri-sport-dot" />
+            {getDisciplineLabel(discipline, t)}
+          </p>
+          <p className="tri-stat-value mt-1">{formatDuration(duration)}</p>
+          <p className="type-caption mt-0.5 flex flex-wrap gap-x-1 text-muted-foreground tabular-nums">
+            {distance > 0 && (
+              <span>{formatDistance(distance, locale)} ·</span>
+            )}
+            <span>{trainingCountLabel(count)}</span>
+          </p>
+        </div>
+      ))}
     </section>
   )
 }

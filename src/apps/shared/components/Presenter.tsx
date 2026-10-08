@@ -197,7 +197,6 @@ function PresenterStage({
 }) {
   const { t } = useI18n()
   const exitButtonRef = useRef<HTMLButtonElement>(null)
-  const ViewIcon = view.Icon
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow
@@ -220,26 +219,27 @@ function PresenterStage({
       }}
     >
       <div className="flex min-h-svh flex-col">
-        <header className="flex min-h-16 items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <ViewIcon className="size-5" />
+        <header className="flex min-h-14 items-center justify-between gap-3 border-b bg-background px-4 py-2.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-destructive-soft px-2 py-0.5 text-xs font-semibold text-[color-mix(in_srgb,var(--destructive)_82%,black)]">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-destructive" />
+              {t('presenter.live')}
             </span>
-            <div className="min-w-0">
-              <div className="type-label truncate text-muted-foreground">
-                {appTitle}
-              </div>
-              <DialogPrimitive.Title asChild>
-                <h1 className="type-card-title truncate">
-                  {view.label}
-                </h1>
-              </DialogPrimitive.Title>
-            </div>
+            <DialogPrimitive.Title asChild>
+              <h1 className="min-w-0 truncate text-[17px] font-[650] leading-tight">
+                {view.label}
+                <span className="hidden font-normal text-muted-foreground sm:inline">
+                  {' · '}
+                  {appTitle}
+                </span>
+              </h1>
+            </DialogPrimitive.Title>
           </div>
           <Button
             ref={exitButtonRef}
             aria-label={t('presenter.exitAria')}
             className="shrink-0"
+            size="sm"
             type="button"
             variant="outline"
             onClick={onExit}

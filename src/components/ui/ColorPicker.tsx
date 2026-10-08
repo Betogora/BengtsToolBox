@@ -151,27 +151,30 @@ export function ColorPicker({
           className={cn(
             'group relative shrink-0 rounded-md border bg-background shadow-xs outline-none transition-colors hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/45 disabled:pointer-events-none disabled:opacity-50',
             variant === 'field'
-              ? 'flex h-11 w-full items-end justify-between gap-3 px-3 pb-1.5 pt-5'
+              ? 'flex h-10 w-full items-center gap-2.5 bg-card px-3 text-left'
               : 'size-9 p-0.5',
             className,
           )}
           disabled={disabled}
         >
-          {variant === 'field' && (
-            <span className="type-field-label pointer-events-none absolute left-3 top-1.5 max-w-[calc(100%-1.5rem)] truncate text-muted-foreground">
-              {label}
-            </span>
-          )}
           <span
             aria-hidden="true"
             className={cn(
-              'block rounded-sm border border-black/10 shadow-inner',
-              variant === 'field' ? 'h-4 w-full' : 'size-full',
+              'block shrink-0 border border-black/10',
+              variant === 'field' ? 'size-[1.125rem] rounded-[5px]' : 'size-full rounded-sm shadow-inner',
             )}
             style={{
               backgroundColor: isOpen ? previewColor : normalizedValue,
             }}
           />
+          {variant === 'field' && (
+            <>
+              <span className="type-ui min-w-0 flex-1 truncate">{label}</span>
+              <span className="type-caption shrink-0 text-muted-foreground tabular-nums">
+                {isOpen ? previewColor : normalizedValue}
+              </span>
+            </>
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent

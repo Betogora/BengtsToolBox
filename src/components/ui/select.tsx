@@ -1,5 +1,5 @@
 import * as SelectPrimitive from '@radix-ui/react-select'
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, ListFilter } from 'lucide-react'
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import type * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -22,7 +22,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        'type-ui relative flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-[#f3f7fa] pl-3 pr-9 py-2 shadow-xs outline-none focus:ring-[3px] focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+        'group type-ui relative flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-card pl-3 pr-9 py-2 shadow-xs outline-none data-[state=open]:border-primary focus:ring-[3px] focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-muted disabled:text-subtle-foreground disabled:shadow-none',
         isInvalid && 'border-destructive! focus:ring-destructive/20',
         className,
       )}
@@ -30,7 +30,7 @@ function SelectTrigger({
     >
       <span className="min-w-0 flex-1 truncate text-left">{children}</span>
       <SelectPrimitive.Icon asChild>
-        <ListFilter aria-hidden="true" className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <ChevronDownIcon aria-hidden="true" className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-subtle-foreground transition-transform group-data-[state=open]:rotate-180" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -47,7 +47,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
+          'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[12px] border bg-popover text-popover-foreground shadow-overlay',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
           className,
@@ -80,14 +80,14 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        'type-ui relative flex min-h-10 w-full cursor-default items-center gap-2 rounded-[0.45rem] py-1.5 pl-8 pr-2 outline-none select-none focus:bg-accent focus:text-accent-foreground data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground data-[state=checked]:font-semibold data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'type-ui relative flex min-h-[2.125rem] w-full cursor-default items-center gap-2 rounded-[8px] py-1.5 pl-2.5 pr-8 outline-none select-none focus:bg-muted data-[state=checked]:bg-muted data-[state=checked]:font-semibold data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}
     >
-      <span className="absolute left-2 flex size-3.5 items-center justify-center">
+      <span className="absolute right-2.5 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
+          <CheckIcon className="size-4 text-primary" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
