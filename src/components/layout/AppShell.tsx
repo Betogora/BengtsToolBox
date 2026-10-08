@@ -1,5 +1,4 @@
 import {
-  BriefcaseBusiness,
   Home,
   Menu,
   Target,
@@ -59,17 +58,9 @@ export function AppShell() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 rounded-lg border bg-card/95 px-3 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:px-6">
           <Link
             to="/"
-            aria-label="BengtsToolBox"
-            className="flex min-w-0 items-center gap-3"
+            className="type-brand min-w-0 whitespace-nowrap rounded-md text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_14px_30px_-18px_rgba(13,142,144,0.9)]">
-              <BriefcaseBusiness className="size-5" />
-            </span>
-            <span className="hidden min-w-0 sm:block">
-              <span className="type-brand block whitespace-nowrap text-foreground">
-                BengtsToolBox
-              </span>
-            </span>
+            Bengts<span className="text-primary">Tool</span>Box
           </Link>
 
           <div className="flex shrink-0 items-center gap-2">

@@ -1,4 +1,7 @@
-import type { ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
+
+const canvasViewBox = '0 0 360 160'
+const IllustrationViewBox = createContext(canvasViewBox)
 
 const palette = {
   teal: 'var(--brand-primary)',
@@ -12,13 +15,11 @@ const palette = {
 const illustrationFontFamily = 'Manrope Variable, Manrope, ui-sans-serif, system-ui'
 const illustrationFontWeight = '750'
 
-function SvgShell({
-  children,
-  viewBox = '0 0 360 160',
-}: {
-  children: ReactNode
-  viewBox?: string
-}) {
+// Frames only the drawn motif on the right of the 360 x 160 canvas.
+const framedIllustrationViewBox = '146 -2 214 164'
+
+function SvgShell({ children }: { children: ReactNode }) {
+  const viewBox = useContext(IllustrationViewBox)
   return (
     <svg
       aria-hidden="true"
@@ -267,7 +268,23 @@ function SwissTournamentIllustration() {
   )
 }
 
-export function DashboardIllustration({ appId }: { appId: string }) {
+export function DashboardIllustration({
+  appId,
+  framed = false,
+}: {
+  appId: string
+  framed?: boolean
+}) {
+  return (
+    <IllustrationViewBox.Provider
+      value={framed ? framedIllustrationViewBox : canvasViewBox}
+    >
+      <IllustrationForApp appId={appId} />
+    </IllustrationViewBox.Provider>
+  )
+}
+
+function IllustrationForApp({ appId }: { appId: string }) {
   switch (appId) {
     case 'decision-wheel':
       return <WheelIllustration />

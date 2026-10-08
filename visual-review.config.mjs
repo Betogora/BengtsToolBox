@@ -260,6 +260,17 @@ Object.assign(review.scenes, {
   },
 })
 
+Object.assign(review.scenes, {
+  hub: { path: '/' },
+  'hub-qr': {
+    path: '/',
+    run: async ({ page }) => {
+      await page.getByRole('button', { name: 'QR-Code vergrößern' }).click()
+      await page.getByRole('dialog').waitFor()
+    },
+  },
+})
+
 for (const scene of Object.values(review.scenes)) {
   const run = scene.run
   scene.run = async (context) => {
