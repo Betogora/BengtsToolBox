@@ -72,6 +72,36 @@ describe('Swiss tournament golden cases', () => {
     ])
   })
 
+  it.each([
+    [12, false, ['p1/p2', 'p3/p4', 'p7/p5', 'p9/p6', 'p8/p10', 'p11/p12']],
+    [16, false, ['p12/p1', 'p11/p2', 'p3/p4', 'p5/p8', 'p6/p7', 'p9/p15', 'p10/p14', 'p13/p16']],
+    [12, true, ['p1/p2', 'p3/p4', 'p5/p6', 'p7/p8', 'p9/p10', 'p11/p12']],
+    [11, false, ['p11/p1', 'p2/p3', 'p4/p5', 'p6/p7', 'p8/p9']],
+  ] as const)('preserves tied-score pairings and colors for %i players (equal seeds: %s)',
+    (playerCount, equalSeeds, expectedPairs) => {
+      const tournament = makeTournament('swiss', playerCount, { numberOfRounds: 5 })
+      if (equalSeeds) {
+        tournament.players = tournament.players.map((player) => ({ ...player, initialSeed: 1 }))
+      }
+      const firstPairings = planNextTournamentPairings(tournament)
+      const pairings = planNextTournamentPairings({
+        ...tournament,
+        currentRound: 1,
+        rounds: [makeRound(1, firstPairings.map((pairing) =>
+          pairing.isBye ? pairing : { ...pairing, result: '0.5-0.5' },
+        ))],
+      })
+
+      expect(pairings.filter((pairing) => !pairing.isBye).map((pairing) =>
+        `${pairing.whitePlayerId}/${pairing.blackPlayerId}`,
+      )).toEqual(expectedPairs)
+      expect(pairings.find((pairing) => pairing.isBye)?.byePlayerId)
+        .toBe(playerCount === 11 ? 'p10' : undefined)
+      expect(pairings.flatMap((pairing) => pairing.warnings ?? []).map((warning) => warning.id))
+        .toEqual(playerCount === 11 ? ['forced-floater'] : [])
+    },
+  )
+
   it('assigns a fair bye and avoids repeats when another pairing is possible', () => {
     const tournament = makeTournament('swiss', 5)
     const firstPairings = planNextTournamentPairings(tournament)
@@ -110,6 +140,52 @@ describe('Swiss tournament golden cases', () => {
     expect(pairingKey(repeat)).toBe('p1::p2')
     expect(repeat.warnings).toContainEqual(
       expect.objectContaining({ id: 'non-fide-fallback', severity: 'hard' }),
+    )
+  })
+
+  it('preserves the fallback when non-repeat opponents form two odd-sized groups', () => {
+    const tournament = makeTournament('swiss', 6, {
+      numberOfRounds: 4,
+      currentRound: 3,
+      rounds: Array.from({ length: 3 }, (_, roundIndex) => makeRound(
+        roundIndex + 1,
+        Array.from({ length: 3 }, (_, playerIndex) => makeStandardPairing(
+          `r${roundIndex}-${playerIndex}`,
+          roundIndex + 1,
+          `p${playerIndex + 1}`,
+          `p${4 + (playerIndex + roundIndex) % 3}`,
+          '0.5-0.5',
+        )),
+      )),
+    })
+    const pairings = planNextTournamentPairings(tournament)
+
+    expect(pairings.map((pairing) => [pairing.whitePlayerId, pairing.blackPlayerId]))
+      .toEqual([['p1', 'p2'], ['p6', 'p3'], ['p4', 'p5']])
+    expect(pairings[1].warnings).toContainEqual(
+      expect.objectContaining({ id: 'non-fide-fallback', severity: 'hard' }),
+    )
+  })
+
+  it('covers more than 32 players when only one non-repeat matching remains', () => {
+    const tournament = makeTournament('swiss', 36, { numberOfRounds: 35, currentRound: 34 })
+    let slots = [...tournament.players]
+    tournament.rounds = Array.from({ length: 34 }, (_, roundIndex) => {
+      const pairings = Array.from({ length: 18 }, (_, boardIndex) => makeStandardPairing(
+        `r${roundIndex}-${boardIndex}`,
+        roundIndex + 1,
+        slots[boardIndex].id,
+        slots[35 - boardIndex].id,
+        '0.5-0.5',
+      ))
+      slots = [slots[0], slots.at(-1)!, ...slots.slice(1, -1)]
+      return makeRound(roundIndex + 1, pairings)
+    })
+
+    expect(planNextTournamentPairings(tournament).map(pairingKey)).toEqual(
+      Array.from({ length: 18 }, (_, index) =>
+        (index === 0 ? ['p1', 'p2'] : [`p${index + 2}`, `p${37 - index}`]).sort().join('::'),
+      ),
     )
   })
 

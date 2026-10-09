@@ -271,18 +271,14 @@ export function countGamesBetweenBeforeRound(
   rightId: string,
   beforeRoundNumber: number,
 ) {
-  return tournament.rounds
-    .filter((round) => round.roundNumber < beforeRoundNumber)
-    .reduce(
-      (count, round) =>
-        count +
-        round.pairings.filter(
-          (pairing) =>
-            !pairing.isBye &&
-            wereOpponents(pairing, leftId, rightId),
-        ).length,
-      0,
-    )
+  let count = 0
+  for (const round of tournament.rounds) {
+    if (!(round.roundNumber < beforeRoundNumber)) continue
+    for (const pairing of round.pairings) {
+      if (!pairing.isBye && wereOpponents(pairing, leftId, rightId)) count += 1
+    }
+  }
+  return count
 }
 
 export function countGamesBetween(

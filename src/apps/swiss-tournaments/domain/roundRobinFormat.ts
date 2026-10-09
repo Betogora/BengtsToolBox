@@ -352,6 +352,8 @@ function findExactRoundRobinPairings(
   let remainingStateBudget = maxExactRoundRobinRepairStates
   let didExhaustBudget = false
   const failedStates = new Set<string>()
+  const sortedPlayers = [...players].sort(seedOrder)
+  const candidatesByPlayerId = new Map<string, ReturnType<typeof roundRobinCandidate>[]>()
 
   function search(remainingPlayers: Player[]): PlannedPairing[] | null {
     if (remainingPlayers.length === 0) {
@@ -365,31 +367,37 @@ function findExactRoundRobinPairings(
 
     remainingStateBudget -= 1
 
-    const sortedPlayers = [...remainingPlayers].sort(seedOrder)
-    const stateKey = sortedPlayers.map((player) => player.id).join('|')
+    const stateKey = remainingPlayers.map((player) => player.id).join('|')
 
     if (failedStates.has(stateKey)) {
       return null
     }
 
-    const [first, ...rest] = sortedPlayers
-    const candidates = rest
-      .map((candidate) =>
-        roundRobinCandidate(
-          first,
-          candidate,
-          tournament,
-          summaries,
-          roundNumber,
-          targetGames,
-          scheduledPairKeys,
-          scheduledPairByKey,
-        ),
-      )
-      .filter((entry) => entry.gameCount < targetGames)
-      .sort((left, right) => compareNumberLists(left.score, right.score))
+    const [first, ...rest] = remainingPlayers
+    let candidates = candidatesByPlayerId.get(first.id)
+    if (!candidates) {
+      candidates = sortedPlayers
+        .filter((candidate) => candidate.id !== first.id)
+        .map((candidate) =>
+          roundRobinCandidate(
+            first,
+            candidate,
+            tournament,
+            summaries,
+            roundNumber,
+            targetGames,
+            scheduledPairKeys,
+            scheduledPairByKey,
+          ),
+        )
+        .filter((entry) => entry.gameCount < targetGames)
+        .sort((left, right) => compareNumberLists(left.score, right.score))
+      candidatesByPlayerId.set(first.id, candidates)
+    }
+    const remainingIds = new Set(rest.map((player) => player.id))
 
     for (const entry of candidates) {
+      if (!remainingIds.has(entry.candidate.id)) continue
       const tail = search(
         rest.filter((player) => player.id !== entry.candidate.id),
       )
@@ -414,7 +422,7 @@ function findExactRoundRobinPairings(
     return null
   }
 
-  return search(players)
+  return search(sortedPlayers)
 }
 
 function hasRoundRobinRepeatPairing(

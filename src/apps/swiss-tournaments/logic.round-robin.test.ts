@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  makePlayers,
   makeTournament,
   pairingKey,
   planNextTournamentRound,
@@ -83,6 +84,22 @@ describe('Round Robin golden cases', () => {
       rounds.map((round) => round.find((pairing) => pairing.isBye)?.byePlayerId).sort(),
     ).toEqual(['p1', 'p2', 'p3', 'p4', 'p5'])
     expect(rounds.every((round) => round.length === 3)).toBe(true)
+  })
+
+  it('preserves repair pairings and colors when two players join after round two', () => {
+    const { tournament } = playRounds(makeTournament('roundRobin', 6), 2)
+    const repaired = planNextTournamentRound({
+      ...tournament,
+      numberOfRounds: 7,
+      players: [
+        ...tournament.players,
+        ...makePlayers(8).slice(6).map((player) => ({ ...player, addedInRound: 3 })),
+      ],
+    }).rounds.at(-1)!.pairings
+
+    expect(repaired.map((pairing) => [pairing.whitePlayerId, pairing.blackPlayerId]))
+      .toEqual([['p2', 'p8'], ['p3', 'p1'], ['p4', 'p7'], ['p5', 'p6']])
+    expect(repaired.flatMap((pairing) => pairing.warnings ?? [])).toEqual([])
   })
 
   it('repeats every pairing with inverted colors in a second cycle', () => {

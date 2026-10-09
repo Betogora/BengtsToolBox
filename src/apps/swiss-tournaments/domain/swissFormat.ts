@@ -67,61 +67,66 @@ function findCompletePairing(
   roundNumber: number,
   allowRepeats: boolean,
 ): BracketPairingResult | null {
-  if (players.length === 0) {
-    return { pairs: [], floaters: [], score: 0 }
-  }
-
-  const [first, ...rest] = [...players].sort((left, right) =>
+  const sortedPlayers = [...players].sort((left, right) =>
     playerOrder(left, right, summaries),
   )
-  const candidates = rest
-    .filter(
-      (candidate) =>
-        allowRepeats ||
-        !hasPlayedEachOtherBeforeRound(tournament, first.id, candidate.id, roundNumber),
-    )
-    .map((candidate) => ({
-      candidate,
-      score: pairSearchScore(
-        first,
-        candidate,
-        tournament,
-        summaries,
-        roundNumber,
-        allowRepeats,
-      ),
-    }))
-    .sort((left, right) => left.score - right.score)
-    .slice(0, Math.min(10, rest.length))
+  const playerBits = new Map(sortedPlayers.map((player, index) => [player.id, 1n << BigInt(index)]))
+  const memo = new Map<bigint, BracketPairingResult | null>([
+    [0n, { pairs: [], floaters: [], score: 0 }],
+  ])
+  const candidatesByPlayerId = new Map<string, { candidate: Player; score: number }[]>()
 
-  let best: BracketPairingResult | null = null
+  function search(remainingPlayers: Player[], stateKey: bigint): BracketPairingResult | null {
+    const cached = memo.get(stateKey)
+    if (cached !== undefined) return cached
 
-  for (const entry of candidates) {
-    const tail = findCompletePairing(
-      rest.filter((player) => player.id !== entry.candidate.id),
-      tournament,
-      summaries,
-      roundNumber,
-      allowRepeats,
-    )
+    const [first, ...rest] = remainingPlayers
+    let candidates = candidatesByPlayerId.get(first.id)
+    if (!candidates) {
+      candidates = sortedPlayers
+        .filter((candidate) => candidate.id !== first.id && (
+          allowRepeats ||
+          !hasPlayedEachOtherBeforeRound(tournament, first.id, candidate.id, roundNumber)
+        ))
+        .map((candidate) => ({
+          candidate,
+          score: pairSearchScore(first, candidate, tournament, summaries, roundNumber, allowRepeats),
+        }))
+        .sort((left, right) => left.score - right.score)
+      candidatesByPlayerId.set(first.id, candidates)
+    }
+    const remainingIds = new Set(rest.map((player) => player.id))
+    const availableCandidates = candidates
+      .filter((entry) => remainingIds.has(entry.candidate.id))
+      .slice(0, Math.min(10, rest.length))
+    let best: BracketPairingResult | null = null
+    const restStateKey = stateKey & ~playerBits.get(first.id)!
 
-    if (!tail) {
-      continue
+    for (const entry of availableCandidates) {
+      const nextStateKey = restStateKey & ~playerBits.get(entry.candidate.id)!
+      let tail = memo.get(nextStateKey)
+      if (tail === undefined) {
+        tail = search(rest.filter((player) => player.id !== entry.candidate.id), nextStateKey)
+      }
+      if (!tail) continue
+
+      const score = entry.score + tail.score
+      const result = {
+        pairs: [{ left: first, right: entry.candidate }, ...tail.pairs],
+        floaters: [],
+        score,
+      }
+
+      if (!best || result.score < best.score) {
+        best = result
+      }
     }
 
-    const score = entry.score + tail.score
-    const result = {
-      pairs: [{ left: first, right: entry.candidate }, ...tail.pairs],
-      floaters: [],
-      score,
-    }
-
-    if (!best || result.score < best.score) {
-      best = result
-    }
+    memo.set(stateKey, best)
+    return best
   }
 
-  return best
+  return search(sortedPlayers, (1n << BigInt(sortedPlayers.length)) - 1n)
 }
 
 function findBestBracketPairing(
@@ -215,10 +220,14 @@ function findNonRepeatPerfectPairing(
   players: Player[],
   tournament: Tournament,
   roundNumber: number,
+  failedStates = new Set<string>(),
 ): PlannedPairing[] | null {
   if (players.length === 0) {
     return []
   }
+
+  const stateKey = JSON.stringify(players.map((player) => player.id))
+  if (failedStates.has(stateKey)) return null
 
   const [first, ...rest] = players
 
@@ -231,9 +240,11 @@ function findNonRepeatPerfectPairing(
       rest.filter((player) => player.id !== candidate.id),
       tournament,
       roundNumber,
+      failedStates,
     )
     if (tail) return [{ left: first, right: candidate }, ...tail]
   }
+  failedStates.add(stateKey)
   return null
 }
 

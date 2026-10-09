@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:770e176ecec5105ea5a6191f8c451655492e9eb9662bab3ef1f9125089ed1cd6">
+  <meta name="specs-source-sha256" content="sha256:eefa2ffab75ecd6471bae6c195dfa53727adcfcfd509418c605d4f8f944388c7">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -393,17 +393,16 @@
 
   <header class="hero">
     <div class="hero-inner">
-      <p class="eyebrow">BengtsToolBox · verbindliche Lesefassung</p>
+      <p class="eyebrow">BengtsToolBox · Lesefassung der zentralen Spezifikation</p>
       <h1>Produkt- und Systemspezifikation</h1>
       <p class="lede">Ein verifizierter Überblick über Produktumfang, Fachregeln, Datenhaltung, Architektur, Entwicklung und Betrieb der React-/Firebase-Toolbox.</p>
       <div class="hero-meta" aria-label="Dokumentstatus">
         <span class="chip live">Ist-Spezifikation</span>
-        <span class="chip">Stand 22. August 2026</span>
+        <span class="chip">Stand 5. Oktober 2026</span>
         <span class="chip">aus Laufzeitcode rekonstruiert</span>
       </div>
       <div class="hero-actions">
         <a class="button-link primary" href="specs.md">Markdown-Quelle</a>
-        <a class="button-link" href="todo.md">Nächste Schritte</a>
         <a class="button-link" href="../README.md">Repository-Einstieg</a>
       </div>
     </div>
@@ -444,7 +443,7 @@
       <section class="section" id="ueberblick">
         <p class="eyebrow">01 · Auftrag</p>
         <h2>Werkzeuge zuerst, Einrichtung zuletzt</h2>
-        <p class="section-intro">BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spieleabende, Gruppen, Quizrunden und kleine Turniere. Die Werkzeuge starten direkt, synchronisieren bei vorhandener Firebase-Konfiguration und bleiben sonst lokal nutzbar.</p>
+        <p class="section-intro">BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spieleabende, Gruppen, Quizrunden und kleine Turniere. Die Werkzeuge starten direkt, synchronisieren bei vorhandener Firebase-Konfiguration und bleiben sonst lokal nutzbar. Die einzige fachliche Produkt- und Systemspezifikation ist <code>docs/specs.md</code>; dieses eigenständig lesbare Dokument führt deren Vertrag nach. Separate App-Spezifikationen werden nicht gepflegt. Implementierungsdetails bleiben im Code maßgeblich.</p>
         <div class="stats" aria-label="Projektkennzahlen">
           <div class="stat"><strong>10</strong><span>registrierte Dashboard-Apps</span></div>
           <div class="stat"><strong>1</strong><span>bewusster Sonderbereich</span></div>
@@ -466,9 +465,9 @@
             <h3>Bewusste Grenzen</h3>
             <ul>
               <li>Kein Application Server und keine Cloud Functions; die Online-Funktionen bleiben Spark-kompatibel.</li>
-              <li>Keine Konten, Rollen oder Mandanten.</li>
+              <li>Keine persönlichen Konten, appübergreifenden Besitzerrollen oder Mandanten; ausschließlich Live-Buzzer bindet seine Rundensteuerung an eine Host-UID.</li>
               <li>Keine Offline-Konfliktauflösung.</li>
-              <li>Anonymous Auth ist keine fachliche Autorisierung.</li>
+              <li>Anonymous Auth identifiziert eine Browsersitzung; abgesehen vom Buzzer-Host entstehen keine fachlichen Rollen. Der Hub ist für private, vertrauensbasierte Nutzung vorgesehen.</li>
               <li>Client-PIN ist keine Sicherheitsgrenze.</li>
               <li>Öffentliche Lobbys besitzen keine Besitzer- oder Teilnehmerrollen.</li>
             </ul>
@@ -524,6 +523,7 @@
             <ul>
               <li>Deutsch <code>de-DE</code> als Standard, Englisch <code>en-GB</code>.</li>
               <li>Auswahl in <code>bengtstoolbox.language</code>.</li>
+              <li>Die aktive Sprache wird auf <code>document.documentElement.lang</code> gespiegelt. UI-, ARIA-, Dialog-, Toast- und Fehlertexte verwenden <code>useI18n()</code>; gespeicherte Eigennamen bleiben unverändert.</li>
               <li>Gleiche flache Keys in beiden Katalogen.</li>
               <li>Formatierung über <code>Intl</code>.</li>
             </ul>
@@ -535,6 +535,7 @@
               <li>View-Auswahl nur bei mehreren Ausgaben.</li>
               <li>Fallback als Overlay, wenn Fullscreen blockiert ist.</li>
               <li>Escape/Beenden stellt Fokus wieder her; Tastaturfokus und Bedienung bleiben im Presenter.</li>
+              <li>Verwendet von Glücksrad, Coinflip, Fortschritts-Dashboard, Scoreboard, Live-Buzzer, Sushi Map, Randomizer und Turnier-App.</li>
             </ul>
           </article>
           <article class="card">
@@ -544,12 +545,12 @@
               <li>Ab 320 px; breite Tabellen in eigenem Scrollcontainer.</li>
               <li>Labels, ARIA-Namen, sichtbare Fokuszustände.</li>
               <li>Bestätigung destruktiver Aktionen; Farbe nie allein.</li>
-              <li>Freie App-Farben verwenden einen gemeinsamen Farbkreis; nur bestätigte <code>#RRGGBB</code>-Werte werden gespeichert.</li>
+              <li>Freie App-Farben verwenden einen gemeinsamen Farbkreis. Pointer-Bewegungen zeigen eine lokale Vorschau; Loslassen oder ein Pfeiltastenschritt speichert den kanonischen <code>#RRGGBB</code>-Wert direkt, ohne zusätzlichen Bestätigungsbutton.</li>
               <li>Icon-Tabs und segmentierte Auswahlen zeigen unter 430 px nur das aktive Label, ab 430 px alle Labels. Die Gesamtbreite bleibt beim Wechsel stabil; die kompakte Variante reserviert den längsten Namen. Zugängliche Namen und ein nach Größenänderungen ausgerichteter Auswahlindikator bleiben erhalten. Gemeinsame Datums-/Uhrzeitpicker bleiben per Tastatur eingebbar.</li>
               <li>Auswahlfelder unterscheiden sich durch eine dezente Fläche und ein Listenfilter-Icon von Texteingaben. Team Gelb verwendet eine eigene gelbe Teamfarbe.</li>
               <li>Aufklappbereiche teilen eine rechts angeordnete Chevron-Anzeige, die den geöffneten Zustand durch Drehung kennzeichnet.</li>
               <li>Tastaturfokus verwendet eine klare Kontur. Dialog-Schließen besitzt 44 px Bedienfläche mobil und 36 px ab 640 px.</li>
-              <li>Globale Typografie verwendet Manrope Variable und semantische <code>type-*</code>-Rollen; Feldlabels und kleine Hinweise teilen 12/16 px, Abschnitts- und Dialogtitel 20/24 px.</li>
+              <li>Lade-, Leer-, Fehler- und lokaler Modus müssen verständlich darstellbar sein. Globale Typografie verwendet Manrope Variable und semantische <code>type-*</code>-Rollen; Feldlabels und kleine Hinweise teilen 12/16 px, Abschnitts- und Dialogtitel 20/24 px.</li>
               <li>Kompakte Oberflächen; erklärende Untertitel nur auf ausdrücklichen Wunsch oder für notwendige Status- und Fehlermeldungen.</li>
             </ul>
           </article>
@@ -558,6 +559,7 @@
           <h3>Toolbox-weite Lobbys</h3>
           <p>Die globale Lobby behält alle bestehenden <code>apps/...</code>-Pfade. Benutzerdefinierte Räume speichern Metadaten unter <code>lobbies/{lobbyId}</code>, Geräte unter <code>devices/{uid}</code> und App-Zustände unter <code>lobbies/{lobbyId}/apps/{appId}/...</code>. Beim Anlegen einer Lobby werden keine App-Daten aus der globalen oder einer anderen Lobby kopiert; beim ersten Öffnen entsteht ausschließlich der spezifizierte Erstzustand der jeweiligen App.</p>
           <p>Anonymous Auth dient als Geräteidentität. Alle Teilnehmer bearbeiten denselben State; Clients dürfen nur den eigenen Gerätedatensatz schreiben und keine Lobby löschen. Ohne Firebase bleiben ausschließlich die globalen Apps lokal nutzbar.</p>
+          <p>Lobbycodes bestehen aus sechs Großbuchstaben/Ziffern ohne <code>0</code>, <code>O</code>, <code>1</code> und <code>I</code>; eine Transaktion verhindert Kollisionen. Namen sind auf 60 Zeichen, Gerätenamen auf 40 Zeichen begrenzt. Erster/letzter Zugriff werden gespeichert, letzter Zugriff höchstens alle fünf Minuten aktualisiert. Die globale Lobby <code>default</code> bleibt sichtbar und ist nicht löschbar. Benutzerdefinierte Räume werden mit einem Löschmarker deaktiviert; ihre Firestore-Unterdaten bleiben gespeichert, werden durch Rules gesperrt und ihr Code wird nicht wiederverwendet.</p>
         </div>
       </section>
 
@@ -581,6 +583,7 @@
           <article class="card">
             <h3>Lokaler Modus</h3>
             <p>Fehlt Firebase, bleiben Dokumente und Collections über LocalStorage nutzbar. Storage- und Serialisierungsfehler werfen nicht und rollen die sichtbare Änderung sofort zurück. Eine lokale ID bleibt bei fehlender Persistenz wenigstens für den Seitenlauf stabil.</p>
+            <p>Die lokale Nutzerkennung liegt unter <code>app-hub:local-user-id</code>. Cache-Schlüssel enthalten den vollständigen Pfad und beginnen mit <code>app-hub:doc:</code>, <code>app-hub:collection:</code> oder für Live-Buzzer mit <code>app-hub:realtime:</code>. Eine geräteübergreifende Synchronisation findet lokal nicht statt.</p>
           </article>
         </div>
         <div class="grid-2" style="margin-top:1rem">
@@ -593,21 +596,38 @@
             <p><code>merge</code>, <code>mergeItem</code> und <code>saveItems</code> akzeptieren feste Werte oder pure Updater. Updater lesen in Realtime den aktuellen Serverstand per Transaktion, lokal den lokalen Zustand. Listen-Updater verwenden stabile IDs und erkennen bereits angewendete Aktionen ohne Duplikate oder Umordnung. Updater-Merges legen fehlende Dokumente oder Collection-Elemente nicht erneut an; Pfade und gespeichertes Datenformat bleiben unverändert.</p>
             <p><code>SyncBatch</code> bündelt nur erkannte Fachinvarianten. Realtime verwendet einen Firestore-<code>writeBatch</code> mit Limit-Preflight, bei Updatern stattdessen eine Transaktion mit allen Lesezugriffen vor den Writes; lokal werden Serialisierung und Raw-Backup vorab geprüft, bei Fehlern kompensiert und erneut eingelesen. Ein gescheiterter Ausgleich heißt <code>rollback-failed</code>. Live-Buzzer erfasst Buzzes parallel je Spieler und entscheidet das Endergebnis transaktional; Rundenwechsel lesen den aktuellen Serverstand per Updater.</p>
             <p>Ereignislisten im Fortschritts-Dashboard und der Sushi Map sowie Optionen und Verläufe von Glücksrad, Coinflip und Randomizer werden auf dem aktuellen Serverstand geändert. Das Fortschritts-Dashboard archiviert und leert den aktuellen Datensatz atomar mit dessen neuesten Server-Ereignissen. Diese Aktionen benötigen in Realtime Internet; Offline-Lesen und der rein lokale Modus bleiben erhalten.</p>
+            <p>Der synchrone Stage-Callback von <code>commitSyncBatch</code> beginnt optimistische Änderungen erst nach Limit-/Serialisierungs-Preflight. Mehr als 500 Firestore-Writes werden vorher abgelehnt und nicht in Teilbatches zerlegt. Batches sichern Scoreboard- und Turnierlebenszyklus, Fortschrittsarchive sowie abhängige Spieler-/Eventänderungen der Sushi Map; andere Schreibfolgen prüfen jedes <code>SyncResult</code> sequenziell.</p>
           </article>
         </div>
+        <h3 style="margin:2rem 0 0.8rem">Gemeinsame Interfaces</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Bedarf</th><th>Interface</th><th>Verhalten</th></tr></thead>
+            <tbody>
+              <tr><td>Dokumentzustand</td><td><code>useFirestoreDoc&lt;T&gt;</code></td><td><code>data</code>, <code>save</code>, <code>merge</code>, Loading, Pending, typisierte Fehler und Realtime-Flag</td></tr>
+              <tr><td>Geordnete Elemente</td><td><code>useFirestoreCollection&lt;T&gt;</code></td><td>Setzen/Mergen, einzeln oder gesammelt Löschen, Sammelspeichern/Leeren; Standardreihenfolge <code>position</code></td></tr>
+              <tr><td>Nutzerkennung</td><td><code>useAnonymousSession</code></td><td>Firebase UID oder für den Seitenlauf stabile lokale Fallback-ID; typisierte Fehler</td></tr>
+              <tr><td>Lobby-Verzeichnis</td><td><code>useLobbyDirectory</code></td><td>Öffentliche Liste, Default-Lobby und transaktionssichere Erstellung</td></tr>
+              <tr><td>Aktive Lobby</td><td><code>useActiveLobby</code></td><td>Route-Kontext, außerhalb <code>default</code></td></tr>
+              <tr><td>Live-Buzzer</td><td><code>useRealtimeDatabaseDoc&lt;T&gt;</code></td><td>Abonnement, Cache, verbindungsabhängige Transaktionen und typisierte Fehler</td></tr>
+            </tbody>
+          </table>
+        </div>
         <h3 style="margin:2rem 0 0.8rem">Kanonische Datenräume</h3>
+        <p>Nur Live-Buzzer verwendet zusätzlich Realtime Database: <code>live-buzzer/lobbies/{lobbyId}</code> enthält Zustand und Spieler, <code>live-buzzer/clock/{uid}/{connectionId}</code> private Uhrmessungen. Der Transport verwendet <code>useRealtimeDatabaseDoc</code> und dieselbe Firebase-/Auth-Sitzung. Bestehende Firestore-Buzzer-Daten werden bei einem leeren Realtime-Bereich einmalig übernommen, ohne Originale zu löschen; danach gibt es keine parallelen Firestore-Writes. Fehlende Realtime-Konfiguration oder Zugriffsfehler lösen keinen stillen lokalen Fallback aus. Buzzer-Transaktionen brauchen eine Verbindung und verwenden keine Firestore-Offline-Queue.</p>
+        <p>Alle Pfade werden ausschließlich in <code>src/lib/firebase/paths.ts</code> definiert. Die folgende Tabelle zeigt globale Firestore-Pfade; in benutzerdefinierten Lobbys ersetzt <code>lobbies/{lobbyId}/apps/{appId}</code> den globalen App-/Session-Präfix.</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>App</th><th>State-Dokument</th><th>Collections</th></tr></thead>
             <tbody>
-              <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage</td><td><code>apps/{app}/state/{stateId}</code></td><td>–</td></tr>
-              <tr><td>Schlag den Raab</td><td><code>apps/schlag-den-raab/sessions/{id}/state/default</code></td><td>–</td></tr>
-              <tr><td>Live-Buzzer</td><td><code>.../state/default</code></td><td><code>players</code></td></tr>
-              <tr><td>Scoreboard</td><td><code>.../state/default</code></td><td><code>players</code>, <code>teams</code>, <code>scorings</code>, <code>events</code></td></tr>
-              <tr><td>Fortschritts-Dashboard</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
-              <tr><td>Sushi Map</td><td><code>.../state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
-              <tr><td>Turnier-App</td><td><code>.../state/default</code></td><td><code>tournaments</code></td></tr>
-              <tr><td>Triathlon-Tracker</td><td><code>.../state/default</code></td><td><code>planned-trainings</code>, <code>actual-trainings</code></td></tr>
+              <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage</td><td><code>apps/{appId}/state/default</code></td><td>–</td></tr>
+              <tr><td>Schlag den Raab</td><td><code>apps/schlag-den-raab/sessions/default/state/default</code></td><td>–</td></tr>
+              <tr><td>Live-Buzzer, nur Übernahmequelle</td><td><code>apps/live-buzzer/sessions/default/state/default</code></td><td><code>players</code></td></tr>
+              <tr><td>Scoreboard</td><td><code>apps/scoreboard/sessions/default/state/default</code></td><td><code>players</code>, <code>teams</code>, <code>scorings</code>, <code>events</code></td></tr>
+              <tr><td>Fortschritts-Dashboard</td><td><code>apps/progress-dashboard/sessions/default/state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
+              <tr><td>Sushi Map</td><td><code>apps/territory-map/sessions/default/state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
+              <tr><td>Turnier-App</td><td><code>apps/swiss-tournaments/sessions/default/state/default</code></td><td><code>tournaments</code></td></tr>
+              <tr><td>Triathlon-Tracker</td><td><code>apps/triathlon-tracker/sessions/default/state/default</code></td><td><code>planned-trainings</code>, <code>actual-trainings</code></td></tr>
             </tbody>
           </table>
         </div>
@@ -625,12 +645,18 @@
         <details class="app" open>
           <summary><span class="app-number">1</span><span><span class="app-summary-title">Glücksrad</span><span class="app-summary-route">/apps/decision-wheel</span></span></summary>
           <div class="app-body">
-            <p>Gewichtete Zufallsauswahl mit editierbaren Optionen, Farben und ganzzahligen Gewichten ab <code>1</code>.</p>
+            <p><strong>Zweck:</strong> Optionen verwalten und proportional zu einem Gewicht zufällig auswählen.</p>
             <ul>
-              <li>Drei gleich gewichtete Beispiele als Initialzustand; leere Texte fallen auf <code>Option {n}</code> zurück.</li>
-              <li>Gewinnchance proportional zum Gewicht; Ergebnis entsteht vor der 4,4-s-Animation.</li>
-              <li>Letztes Ergebnis und fünf Verlaufseinträge; Verlauf löschen oder Beispiele zurücksetzen.</li>
-              <li>Presenter zeigt Rad, Ergebnis und Verlaufsumfang.</li>
+            <li>Initial existieren drei Optionen mit Gewicht <code>1</code> und Farben aus der globalen Palette.</li>
+            <li>Optionen können hinzugefügt, umbenannt, eingefärbt, gewichtet und entfernt werden.</li>
+            <li>Gewichte werden auf ganze Zahlen gerundet und sind mindestens <code>1</code>.</li>
+            <li>Leere Anzeigetexte fallen auf <code>Option {n}</code> zurück.</li>
+            <li>Die Gewinnchance entspricht <code>Gewicht / Summe aller Gewichte</code>.</li>
+            <li>Das Drehergebnis wird vor der Animation erzeugt und nach dem visuellen Abschluss gespeichert.</li>
+            <li>Eine Drehung dauert 4,4 Sekunden plus 150 Millisekunden Settle-Zeit.</li>
+            <li>Letztes Ergebnis und maximal fünf Verlaufseinträge werden gespeichert.</li>
+            <li>Der Verlauf kann gelöscht; alle Optionen können auf die drei Beispiele zurückgesetzt werden.</li>
+            <li>Der Presenter zeigt Rad, Ergebnis und Verlaufsumfang.</li>
             </ul>
           </div>
         </details>
@@ -638,11 +664,14 @@
         <details class="app">
           <summary><span class="app-number">2</span><span><span class="app-summary-title">Coinflip</span><span class="app-summary-route">/apps/coinflip</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> fairer Zwei-Seiten-Münzwurf mit sichtbarer Animation.</p>
             <ul>
-              <li>Kopf/Zahl; <code>crypto.getRandomValues</code> mit <code>Math.random</code>-Fallback.</li>
-              <li>Sechs volle Rotationen, 1,7 s Animation plus Settle-Zeit.</li>
-              <li>Letztes Ergebnis und zehn Verlaufseinträge; vollständiger Reset.</li>
-              <li>Read-only Presenter für Ergebnis und die fünf neuesten Verlaufseinträge.</li>
+            <li>Seiten sind <code>Kopf</code> und <code>Zahl</code>.</li>
+            <li>Wenn verfügbar, wird <code>crypto.getRandomValues</code> verwendet; andernfalls <code>Math.random</code>.</li>
+            <li>Die Münze absolviert sechs volle Rotationen; die Animation dauert 1,7 Sekunden plus 120 Millisekunden Settle-Zeit.</li>
+            <li>Ergebnis, Zeitstempel, letztes Ergebnis und maximal zehn Verlaufseinträge werden gespeichert.</li>
+            <li>Der Verlauf kann vollständig zurückgesetzt werden.</li>
+            <li>Der Presenter zeigt das letzte Ergebnis und die fünf neuesten Verlaufseinträge.</li>
             </ul>
           </div>
         </details>
@@ -650,11 +679,16 @@
         <details class="app">
           <summary><span class="app-number">3</span><span><span class="app-summary-title">Random Number Generator</span><span class="app-summary-route">/apps/randomizer</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> zufällige Ganzzahl in einem frei wählbaren inklusiven Bereich.</p>
             <ul>
-              <li>Standardbereich 1–6; Ganzzahlen, vertauschte Grenzen werden normalisiert.</li>
-              <li>Inklusive Ziehung über <code>Math.random</code>.</li>
-              <li>Letztes Ergebnis und fünf Verlaufseinträge; Verlauf löschen erhält den Bereich.</li>
-              <li>Presenter zeigt Bereich, Ergebnis und Verlauf.</li>
+            <li>Standardbereich ist <code>1</code> bis <code>6</code>.</li>
+            <li>Eingaben werden auf Ganzzahlen abgerundet; ungültige Werte fallen auf <code>1</code> beziehungsweise <code>6</code> zurück.</li>
+            <li>Vertauschte Grenzen werden automatisch als kleinere und größere Grenze gespeichert.</li>
+            <li>Die Ziehung ist inklusiv: Minimum und Maximum können beide auftreten.</li>
+            <li>Die Zufallsquelle ist <code>Math.random</code>.</li>
+            <li>Letztes Ergebnis und maximal fünf Verlaufseinträge werden gespeichert.</li>
+            <li>Der Verlauf kann gelöscht werden, ohne den Bereich zurückzusetzen.</li>
+            <li>Der Presenter zeigt Bereich, letztes Ergebnis und Verlauf.</li>
             </ul>
           </div>
         </details>
@@ -662,12 +696,17 @@
         <details class="app">
           <summary><span class="app-number">4</span><span><span class="app-summary-title">Nächste Frage</span><span class="app-summary-route">/apps/next-question</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> Quizkarten nacheinander präsentieren, ohne die Antwort vorzeitig zu zeigen.</p>
             <ul>
-              <li>5.044 Fragen in zehn Kategorien; jede braucht ID, Kategorie, Frage und Antwort.</li>
-              <li>Der Katalog wird beim Öffnen als gehashtes NDJSON-Asset geladen und langfristig per HTTP sowie für die laufende Sitzung im Speicher gecacht. Offline bleibt nach erfolgreichem Abruf best-effort; Ladefehler können sichtbar wiederholt werden.</li>
-              <li>Zyklische Vor-/Zurücknavigation und direkter 1-basierter Sprung.</li>
-              <li>Jeder Kartenwechsel verbirgt die Antwort.</li>
-              <li>Primäraktion: Antwort zeigen, danach zur nächsten Frage.</li>
+            <li>Der statische NDJSON-Datensatz enthält 5.044 Fragen in zehn Kategorien.</li>
+            <li>Jede Frage benötigt ID, Kategorie, Frage und Antwort; ungültige Datensätze verhindern das Laden.</li>
+            <li>Der Katalog wird beim Öffnen der App als gehashtes NDJSON-Asset geladen und langfristig per HTTP sowie für die laufende Sitzung im Speicher gecacht. Ohne Service Worker bleibt Offline-Nutzung nach einem erfolgreichen Abruf best-effort; ein nicht verfügbarer Katalog zeigt einen wiederholbaren Fehlerzustand.</li>
+            <li>Gespeichert werden Kartenposition und Sichtbarkeit der Antwort, nicht der Fragenkatalog.</li>
+            <li>Vor und Zurück laufen zyklisch über Anfang und Ende des Katalogs.</li>
+            <li>Ein direkter Sprung verwendet eine 1-basierte Kartennummer und begrenzt sie auf den gültigen Bereich.</li>
+            <li>Jeder Kartenwechsel verbirgt die Antwort wieder.</li>
+            <li>Die primäre Aktion zeigt zuerst die Antwort und wechselt beim nächsten Auslösen zur folgenden Frage.</li>
+            <li>Pfeil links wechselt zurück; Pfeil rechts führt die primäre Aktion aus. Andere editierbare Felder und Tastenkombinationen mit Modifiern bleiben von diesen Shortcuts ausgenommen.</li>
             </ul>
           </div>
         </details>
@@ -675,14 +714,20 @@
         <details class="app">
           <summary><span class="app-number">5</span><span><span class="app-summary-title">Scoreboard</span><span class="app-summary-route">/apps/scoreboard</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> Personen und Teams während eines Spieleabends bewerten.</p>
             <ul>
-              <li>Direkt nutzbarer Start mit zwei Spielern; Einzel- und Teamwertung bleiben auch nach Buchungen ohne Punktverlust umschaltbar.</li>
-              <li>Im Teammodus können Punkte direkt auf Teams oder auf einzelne Spieler gebucht werden. Alle Spielerpunkte zählen zum aktuell zugeordneten Team, auch nach späterer Zuordnung oder einem Teamwechsel. Ohne Team bleiben sie nur persönlich gespeichert. Direkte Teambuchungen bleiben als nicht personengebundene Korrekturen beim jeweiligen Team.</li>
-              <li>Positive und negative Ganzzahlbuchungen werden mit optional gutgeschriebener Team-ID als einzelne Ereignisse gespeichert; persönliche Scores, Teamscores und Verlauf sind vollständig daraus abgeleitet.</li>
-              <li>Die Spielerliste folgt der festen Teamreihenfolge, sortiert innerhalb der Teams nach persönlichem Score und führt Nichtzugeordnete zuletzt. Ranglisten vergeben geteilte Ränge und zeigen ab drei Zielen eine Rangansicht mit Nullachse.</li>
-              <li>Vollbreiter Verlauf mit Undo im Verlauf und neben der Wertungsart sowie umbenennbare, lesbare und löschbare Scoring-Archive. Archive zeigen persönliche Spielerpunkte und werten Teams anhand der beim Archivieren eingefrorenen Aufstellung.</li>
-              <li>Automatische Scoringnamen enthalten nur den lokalen Starttag; mehrere Scorings desselben Tages erhalten chronologische römische Suffixe.</li>
-              <li>Der einmalige V2-Start löscht den alten Scoreboard-State und die alte Spieler-Collection des aktuellen Datenraums.</li>
+            <li>Der erste Start erzeugt ein direkt nutzbares Einzel-Scoring mit zwei Spielern sowie zwei vorbereiteten Teams. Spieler-, Team-, Scoring- und Ereignis-IDs sind stabil und nicht aus Namen oder Positionen abgeleitet.</li>
+            <li>Ein Scoring wertet entweder Spieler oder Teams. Die Wertungsart bleibt auch nach Buchungen ohne Punktverlust umschaltbar.</li>
+            <li>Im Teammodus können Punkte direkt auf Teams oder auf einzelne Spieler gebucht werden. Alle Spielerpunkte zählen zum aktuell zugeordneten Team, auch nach späterer Zuordnung oder einem Teamwechsel. Ohne Team bleiben sie nur persönlich gespeichert. Direkte Teambuchungen bleiben als nicht personengebundene Korrekturen beim jeweiligen Team.</li>
+            <li>Scores sind ganze Zahlen und dürfen negativ werden. Änderungen um <code>0</code> sowie Dezimalwerte werden blockiert.</li>
+            <li>Jede erfolgreiche Buchung ist ein eigenes Collection-Dokument mit Scoring, Ziel-ID, Zieltyp, Name/Farbe als Snapshot, optional gutgeschriebener Team-ID, Delta und Clientzeit. Scores und Verlauf werden ausschließlich daraus abgeleitet.</li>
+            <li>Die Eingabereihenfolge bleibt stabil. Die Spielerliste gruppiert nach fester Teamreihenfolge, sortiert innerhalb der Teams nach persönlichem Score und führt nicht zugeordnete Spieler zuletzt. Ranglisten sortieren nach Score und vergeben geteilte Ränge nach <code>1, 1, 3</code>; ab drei Zielen zeigt die UI zusätzlich relative Rangbalken mit Nullachse.</li>
+            <li>Namen, Farben und Teamzuordnungen bleiben editierbar. Bewertete Score-Ziele können im aktiven Scoring nicht gelöscht werden; Einzel- und Teamwertung behalten jeweils mindestens zwei Ziele.</li>
+            <li>Der vollständige Verlauf ist vollbreit und eingeklappt. Die jüngste Buchung kann im Verlauf sowie neben der Wertungsart rückgängig gemacht werden.</li>
+            <li>„Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei <code>0</code>. Archive zeigen auch die persönlichen Spielerpunkte, werten Teams anhand der eingefrorenen Aufstellung und sind umbenennbar, lesbar und samt Ereignissen löschbar.</li>
+            <li>Automatische Scoringnamen verwenden den lokalen Starttag ohne Uhrzeit. Mehrere Scorings desselben Tages werden appweit chronologisch mit römischen Suffixen nummeriert; manuelle Namen bleiben unverändert.</li>
+            <li>Der Presenter ist read-only und zeigt bei zwei Zielen eine große Gegenüberstellung, ab drei Zielen die Rangansicht.</li>
+            <li>Schema-Version <code>2</code> ist ein bewusster destruktiver Schnitt: Ein erkannter Altbestand wird im aktuellen Datenraum atomar durch Initial-State, Spieler, Teams und Scoring ersetzt; alte Ereignisse werden geleert. Ein bereits gültiger V2-Bestand wird beim Öffnen erhalten.</li>
             </ul>
           </div>
         </details>
@@ -690,19 +735,20 @@
         <details class="app">
           <summary><span class="app-number">6</span><span><span class="app-summary-title">Live-Buzzer</span><span class="app-summary-route">/apps/live-buzzer</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> mehrere Geräte als Quiz-Buzzer mit eindeutiger automatischer Gewinnerermittlung verwenden.</p>
             <ul>
-              <li>Nur Live-Buzzer nutzt zusätzlich Realtime Database unter <code>live-buzzer/lobbies/{lobbyId}</code>. Bestehende Firestore-Buzzer-Daten werden einmalig kopiert; Originale und andere Apps bleiben unverändert. Kein allgemeiner Cutover.</li>
-              <li>Der Einstieg fragt Namen, optional Team Blau/Gelb/Rot und Spielen oder Spielleitung ab. Danach erscheinen Rollenauswahl und Namensfeld nur noch über das Profil; das Rundenboard zeigt Ergebnis, kompakte Teamspalten und eigenen Buzzer. Der Verlauf ist einklappbar.</li>
-              <li>Genau ein ausdrücklich gewähltes Gerät beansprucht die freie Spielleitung atomar über seine anonyme Firebase-Auth-UID, unabhängig von der Beitrittsreihenfolge. Realtime-Regeln verhindern Übernahme oder Löschen der belegten Host-UID und beschränken Rundenfreigabe, Sperre und globalen Uhrabgleich auf diese UID. Die Rolle bleibt bei Reload im selben Browser erhalten; es gibt keinen PIN oder Gerätewechsel.</li>
-              <li>Die Spielleitung spielt zunächst nicht mit. „Auch mitspielen“ aktiviert ihren eigenen Spieler und erfordert einen neuen globalen Uhrabgleich. Andere Teilnehmer spielen; solange die Leitung noch frei ist, können sie diese auch nach dem Einstieg über ihr Profil beanspruchen.</li>
-              <li>Vor der ersten Freigabe startet die Spielleitung den gemeinsamen Uhrabgleich. Aktive Geräte messen drei Server-Timestamps; die kürzeste Messung verankert ihre monotone Zeit an der geschätzten Serverzeit. Alle aktiven Teilnehmer müssen den aktuellen Abgleich bestätigen, bevor eine neue Runde freigegeben wird. Neue Spieler und Rückkehrer ohne Messung innerhalb der letzten 90 Sekunden warten auf einen neuen, ausdrücklich gestarteten globalen Abgleich. Innerhalb einer freigegebenen Abgleichgeneration erfolgen regelmäßige Messungen und Erneuerung nach Verbindungswechsel.</li>
-              <li>Jede neue Runde besitzt eine eindeutige Kennung und eine erhöhte Rundennummer. Touch/Maus erfasst den Buzz beim Drücken, Tastatur bei Enter/Leertaste. Pro aktivem Spieler wird höchstens ein Buzz gespeichert. Der eigene Button sperrt während des Sendens und nach erfolgreicher Registrierung; bei Speicher- oder Netzwerkfehler kann erneut gedrückt werden.</li>
-              <li>Im Firebase-Modus schreibt jeder Spieler seinen Buzz transaktional in einen eigenen Eintrag unter <code>state/buzzes/{playerId}</code>. Serverregeln prüfen Auth-UID, aktive Teilnahme, Rundenkennung, Abgleichgeneration und Server-Eingangszeit. Alte Rundenzustände und Einträge bleiben nach Reload lesbar.</li>
-              <li>Ab dem ersten Server-Eingang gilt ein festes Sammelfenster von 800 ms. Verbundene Clients legen den Startzeitpunkt gemeinsam fest und entscheiden anschließend transaktional einmalig anhand der frühesten geschätzten Druckzeit unter den rechtzeitig eingegangenen Buzzes. Exakt gleiche Schätzungen entscheidet die Player-ID deterministisch. Der Sieger wird ohne vorläufigen Sieger, Unsicherheitswarnung oder manuelle Bestätigung angezeigt und nicht mehr geändert.</li>
-              <li>Der Wettbewerb ist nach Ablauf des Sammelfensters gesperrt; die Anzeige folgt beim Empfang des Endergebnisses. Noch nicht erfasste Spieler können anschließend nachbuzzern. Nach dem Fenster eingegangene Buzzes stehen unter einer einzigen Trennlinie „Nach Sperre“ und können nicht gewinnen, auch wenn die Ergebnisübermittlung selbst verzögert ist. Nur Rang 1 erhält „Sieger“.</li>
-              <li>Unterschiedliche Mobilfunklatenzen und asymmetrische Verbindungen verhindern eine garantierte physische Reihenfolge bei knappen Buzzes. Das Verfahren entscheidet automatisch mit geschätzten Druckzeiten und vertraut den Clients; es ist keine manipulationssichere Wettkampfwertung.</li>
-              <li>Lokal wird der globale Abgleichschritt zur Freigabe ebenfalls durchlaufen, aber keine Serveruhr gemessen und kein zweites Gerät synchronisiert. Ein deutlicher Hinweis bleibt sichtbar. Maximal fünf entschiedene Runden bleiben im Verlauf; Leeren erhält das aktuelle Ergebnis und die Rundennummer. Sound und Presenter sind reine UI-Zustände.</li>
-              <li>Spark erlaubt insgesamt 100 gleichzeitige Realtime-Database-Verbindungen inklusive Tabs, Zuschauern und Spielleitung. Vier Lobbys mit jeweils 20 Spielern plus Spielleitung passen in dieses Verbindungslimit; Speicher- und Übertragungskontingente gelten zusätzlich. Kontingentüberschreitung aktiviert keine kostenpflichtige Subscription.</li>
+            <li>Nur Live-Buzzer nutzt zusätzlich Realtime Database unter <code>live-buzzer/lobbies/{lobbyId}</code>. Bestehende Firestore-Buzzer-Daten werden einmalig kopiert; Originale und andere Apps bleiben unverändert. Kein allgemeiner Cutover.</li>
+            <li>Der Einstieg fragt Namen, optional Team Blau/Gelb/Rot und Spielen oder Spielleitung ab. Danach erscheinen Rollenauswahl und Namensfeld nur noch über das Profil; das Rundenboard zeigt Ergebnis, kompakte Teamspalten und eigenen Buzzer. Der Verlauf ist einklappbar.</li>
+            <li>Genau ein ausdrücklich gewähltes Gerät beansprucht die freie Spielleitung atomar über seine anonyme Firebase-Auth-UID, unabhängig von der Beitrittsreihenfolge. Realtime-Regeln verhindern Übernahme oder Löschen der belegten Host-UID und beschränken Rundenfreigabe, Sperre und globalen Uhrabgleich auf diese UID. Die Rolle bleibt bei Reload im selben Browser erhalten; es gibt keinen PIN oder Gerätewechsel.</li>
+            <li>Die Spielleitung spielt zunächst nicht mit. „Auch mitspielen“ aktiviert ihren eigenen Spieler und erfordert einen neuen globalen Uhrabgleich. Andere Teilnehmer spielen; solange die Leitung noch frei ist, können sie diese auch nach dem Einstieg über ihr Profil beanspruchen.</li>
+            <li>Vor der ersten Freigabe startet die Spielleitung den gemeinsamen Uhrabgleich. Aktive Geräte messen drei Server-Timestamps; die kürzeste Messung verankert ihre monotone Zeit an der geschätzten Serverzeit. Alle aktiven Teilnehmer müssen den aktuellen Abgleich bestätigen, bevor eine neue Runde freigegeben wird. Neue Spieler und Rückkehrer ohne Messung innerhalb der letzten 90 Sekunden warten auf einen neuen, ausdrücklich gestarteten globalen Abgleich. Innerhalb einer freigegebenen Abgleichgeneration erfolgen regelmäßige Messungen und Erneuerung nach Verbindungswechsel.</li>
+            <li>Jede neue Runde besitzt eine eindeutige Kennung und eine erhöhte Rundennummer. Touch/Maus erfasst den Buzz beim Drücken, Tastatur bei Enter/Leertaste. Pro aktivem Spieler wird höchstens ein Buzz gespeichert. Der eigene Button sperrt während des Sendens und nach erfolgreicher Registrierung; bei Speicher- oder Netzwerkfehler kann erneut gedrückt werden.</li>
+            <li>Im Firebase-Modus schreibt jeder Spieler seinen Buzz transaktional in einen eigenen Eintrag unter <code>state/buzzes/{playerId}</code>. Serverregeln prüfen Auth-UID, aktive Teilnahme, Rundenkennung, Abgleichgeneration und Server-Eingangszeit. Alte Rundenzustände und Einträge bleiben nach Reload lesbar.</li>
+            <li>Ab dem ersten Server-Eingang gilt ein festes Sammelfenster von 800 ms. Verbundene Clients legen den Startzeitpunkt gemeinsam fest und entscheiden anschließend transaktional einmalig anhand der frühesten geschätzten Druckzeit unter den rechtzeitig eingegangenen Buzzes. Exakt gleiche Schätzungen entscheidet die Player-ID deterministisch. Der Sieger wird ohne vorläufigen Sieger, Unsicherheitswarnung oder manuelle Bestätigung angezeigt und nicht mehr geändert.</li>
+            <li>Der Wettbewerb ist nach Ablauf des Sammelfensters gesperrt; die Anzeige folgt beim Empfang des Endergebnisses. Noch nicht erfasste Spieler können anschließend nachbuzzern. Nach dem Fenster eingegangene Buzzes stehen unter einer einzigen Trennlinie „Nach Sperre“ und können nicht gewinnen, auch wenn die Ergebnisübermittlung selbst verzögert ist. Nur Rang 1 erhält „Sieger“.</li>
+            <li>Unterschiedliche Mobilfunklatenzen und asymmetrische Verbindungen verhindern eine garantierte physische Reihenfolge bei knappen Buzzes. Das Verfahren entscheidet automatisch mit geschätzten Druckzeiten und vertraut den Clients; es ist keine manipulationssichere Wettkampfwertung.</li>
+            <li>Lokal wird der globale Abgleichschritt zur Freigabe ebenfalls durchlaufen, aber keine Serveruhr gemessen und kein zweites Gerät synchronisiert. Ein deutlicher Hinweis bleibt sichtbar. Maximal fünf entschiedene Runden bleiben im Verlauf; Leeren erhält das aktuelle Ergebnis und die Rundennummer. Sound und Presenter sind reine UI-Zustände.</li>
+            <li>Spark erlaubt insgesamt 100 gleichzeitige Realtime-Database-Verbindungen inklusive Tabs, Zuschauern und Spielleitung. Vier Lobbys mit jeweils 20 Spielern plus Spielleitung passen in dieses Verbindungslimit; Speicher- und Übertragungskontingente gelten zusätzlich. Kontingentüberschreitung aktiviert keine kostenpflichtige Subscription.</li>
             </ul>
           </div>
         </details>
@@ -710,13 +756,22 @@
         <details class="app">
           <summary><span class="app-number">7</span><span><span class="app-summary-title">Fortschritts-Dashboard</span><span class="app-summary-route">/apps/progress-dashboard</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> wiederkehrende Ereignisse pro Person erfassen und als Stand sowie Zeitreihe darstellen.</p>
             <ul>
-              <li>Fünf Initialpersonen mit Farbe und Standard-Getränkeicon.</li>
-              <li>Plus, Minus, Wein, Bier, Schnaps und Trichter; Schnaps zählt 0,5, andere Getränke 1.</li>
-              <li>Chronologische Scoreberechnung mit Untergrenze 0; Eventkorrektur und -löschung.</li>
-              <li>Editierbare Metadaten sowie ein responsives Zeitdiagramm mit gemeinsamer Rangliste: Top 3 als farbige Detailverläufe, weitere Personen als kompakte Zeilen ohne Aufklappsteuerung.</li>
-              <li>Archivieren startet einen leeren aktiven Datensatz; Archive sind umbenennbar/löschbar.</li>
-              <li>Automatische Archivnamen enthalten nur den lokalen Archivtag; mehrere Archive desselben Tages erhalten chronologische römische Suffixe.</li>
+            <li>Initial existieren fünf Personen mit stabiler Position, Farbe und Standardereignis <code>Bier</code>.</li>
+            <li>Ereignistypen sind Plus, Minus, Wein, Bier, Schnaps und Trichter.</li>
+            <li>Wein, Bier und Trichter zählen standardmäßig <code>1</code>; Schnaps zählt <code>0,5</code>.</li>
+            <li>Events speichern Personensnapshot, Farbe, Delta, Icon, Zeit und Position.</li>
+            <li>Der Score wird chronologisch aus Events berechnet und niemals unter <code>0</code> abgesenkt.</li>
+            <li>Namen, Farben und Standard-Getränkeicon einer Person sind editierbar.</li>
+            <li>Das Entfernen einer Person löscht vorhandene Events nicht; Archive können Personen daraus rekonstruieren.</li>
+            <li>Eventzeit, Icon und Wert können korrigiert; Events können gelöscht werden.</li>
+            <li>Ein Datensatz besitzt Name, Diagrammtitel, Einheit, Status und Events.</li>
+            <li>Änderungen der Einheit aktualisieren einen noch automatisch abgeleiteten Diagrammtitel mit.</li>
+            <li>„Archivieren und neu starten“ kopiert den aktiven Datensatz mit Datumsnamen ins Archiv und erzeugt einen leeren aktiven Datensatz. Mehrere Archive desselben lokalen Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.</li>
+            <li>Archive können umbenannt und gelöscht werden.</li>
+            <li>Die aktive Seite zeigt Desktop und mobil ein interaktives Zeitdiagramm mit einer gemeinsamen Rangliste darunter. Die ersten drei Personen besitzen dauerhaft sichtbare, farbige Detailverläufe; weitere Personen erscheinen als kompakte Zeilen mit Mini-Verlauf und ohne Aufklappsteuerung.</li>
+            <li>Der Presenter zeigt Stand, Führung, Eventzahl und Gesamtscore.</li>
             </ul>
           </div>
         </details>
@@ -724,15 +779,26 @@
         <details class="app">
           <summary><span class="app-number">8</span><span><span class="app-summary-title">Sushi Map</span><span class="app-summary-route">/apps/sushi</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> Sushi-Besuche in Weltländern und deutschen Bundesländern Personen zuordnen.</p>
             <ul>
-              <li>244 Weltterritorien und 16 Bundesländer; England, Nordirland, Schottland und Wales sind eigenständig. Die ersten drei Personen der sortierten Spielerliste sind auch bei Positionslücken nicht löschbar, ihre Farben bleiben änderbar; weitere Touristen sind löschbar.</li>
-              <li>Je Lobby genau ein veränderlicher Event-Datensatz <code>dataset-current</code>; keine Archive oder weiteren aktiven Datensätze.</li>
-              <li>Nur ein bestätigt leerer Snapshot erzeugt den leeren Datensatz; bis zum bestätigten Dokument bleiben Claims, Events und Spieleränderungen gesperrt und es wird kein Ersatzdatensatz gespeichert.</li>
-              <li>Frühere Welt-Events für <code>gb</code> werden lobbyweise einmalig zu England (<code>gb-eng</code>) migriert; bis zum erfolgreichen Schreibvorgang bleibt der Datensatz gesperrt.</li>
-              <li>Claims stammen aus dem jüngsten lokalen Kalendertag; mehrere Owner am selben Tag erhalten adaptive diagonale Streifen mit vollständigem Farbzyklus und höchstens etwa drei Pixel breiten Einzelstreifen.</li>
-              <li>„Unbesucht“ löscht nur die Events des jüngsten Claim-Tages.</li>
-              <li>Rangliste über aktuelle Welt-/Deutschland-Claims; zehn historische Achievements für alle Personen. Die Punktzahl ist initial offen, die Achievements sind initial geschlossen; beide Zustände werden je Lobby synchronisiert.</li>
-              <li>Tastatur, Drag, Pinch und Zoomstufen 1/2/4/8/16/32/64/128/256/512/1024; Karten-Presenter.</li>
+            <li>Kartenräume sind Weltkarte mit 244 Territorien und Deutschlandkarte mit 16 Bundesländern. England, Nordirland, Schottland und Wales sind eigenständige Weltterritorien; das Vereinigte Königreich ist nicht zusätzlich auswählbar.</li>
+            <li>Initial existieren Bengt, Paul und <code>Sushi-Tourist 3</code> mit unterschiedlichen Farben.</li>
+            <li>Die ersten drei Personen der sortierten Spielerliste können unabhängig von Positionslücken nicht entfernt werden; weitere Touristen sind anleg- und löschbar. Farben bleiben für alle Personen änderbar.</li>
+            <li>Je Lobby existiert genau ein veränderlicher Event-Datensatz mit der festen Dokument-ID <code>dataset-current</code>; es gibt weder Archive noch weitere aktive Datensätze.</li>
+            <li>Eine bestätigte leere Datensatz-Collection erzeugt genau diesen leeren <code>dataset-current</code>. Während der initiale Snapshot lädt, fehlschlägt oder das Dokument fehlt, bleiben Claims, Events und Spieleränderungen gesperrt; ein lokaler Ersatzdatensatz wird niemals gespeichert.</li>
+            <li>Vorhandene Welt-Events mit der früheren Territoriums-ID <code>gb</code> werden nach dem Laden des jeweiligen Lobby-Datensatzes einmalig zu England (<code>gb-eng</code>) migriert. Bis zum erfolgreichen Migrationsschreibvorgang bleiben Datensatzänderungen gesperrt.</li>
+            <li>Ein Besuch speichert Karte, Territorium, Personensnapshot, Farbe, Zeit und Position als Event.</li>
+            <li>Der aktuelle Claim eines Territoriums stammt aus dessen jüngstem lokalen Kalendertag.</li>
+            <li>Mehrere Personen können am selben jüngsten Tag gemeinsame Owner desselben Territoriums sein.</li>
+            <li>Gemeinsame Owner werden in stabiler Reihenfolge durch adaptive diagonale Farbstreifen dargestellt. Pro Territorium passt mindestens ein vollständiger Owner-Zyklus; sichtbare Einzelstreifen sind höchstens etwa drei Pixel breit.</li>
+            <li>„Unbesucht“ löscht alle Events des jüngsten Claim-Tages dieses Territoriums, nicht die ältere Historie.</li>
+            <li>Eventdatum, Person und Territorium können korrigiert; einzelne Events können gelöscht werden.</li>
+            <li>Namens- und bestätigte Farbänderungen aktualisieren die Events von <code>dataset-current</code>.</li>
+            <li>Die Rangliste zählt pro Person alle aktuell gehaltenen Welt- und Deutschland-Claims.</li>
+            <li>Zehn Achievements werden für alle Personen aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.</li>
+            <li>Die Punktzahl ist initial ausgeklappt, die Achievements sind initial eingeklappt; beide Zustände werden je Lobby im App-State synchronisiert.</li>
+            <li>Die Karte unterstützt Tastaturauswahl, Pointer-Drag, Pinch/Zoom und Zoomstufen <code>1</code>, <code>2</code>, <code>4</code>, <code>8</code>, <code>16</code>, <code>32</code>, <code>64</code>, <code>128</code>, <code>256</code>, <code>512</code>, <code>1024</code>.</li>
+            <li>Der Presenter zeigt aktive Karte, Claims, Legende und Rangliste.</li>
             </ul>
           </div>
         </details>
@@ -743,27 +809,31 @@
             <p>Turnierverwaltung mit Spielern, Draft-/Completed-Runden, Archiv, Presenter, CSV und Druck-PDF.</p>
             <h4>Gemeinsam</h4>
             <ul>
+              <li>Spieler besitzen Namen, optionales Rating, initialen Seed und Eintrittsrunde. Rating-Seeding sortiert absteigend; der Modus „zufällig“ verwendet eine stabile Hash-Reihenfolge aus Name und Rating.</li>
               <li>Spielerstatus aktiv/inaktiv/zurückgezogen, frei in alle Richtungen wechselbar; nur aktive Spieler werden neu ausgelost.</li>
+              <li>Status-Overrides können ab einer bestimmten Runde gelten. Eine Runde wird erst abgeschlossen, wenn sämtliche Pairings gewertet sind.</li>
               <li>Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate bearbeiten nur die jüngste Draft-Runde.</li>
-              <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie.</li>
+              <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie und setzt Runden, Fortschritt und Spielerstatus zurück. Ranglisten sind als CSV und über die Druckansicht als PDF exportierbar; der Presenter zeigt die aktuelle Rangliste.</li>
               <li>Automatische Turniernamen enthalten nur den lokalen Starttag; mehrere Turniere desselben Tages werden formatübergreifend römisch nummeriert.</li>
               <li>Bye-Wertungen 1, 0,5 oder 0 sind im Kopf einer Draft-Runde überschreibbar und ändern vorhandene Byes sofort. Abgeschlossene Runden müssen zuerst wieder geöffnet werden.</li>
               <li>Eine Draft-Runde beeinflusst die Rangliste erst ab dem ersten eingetragenen Partieergebnis. Automatische Bye-Wertungen allein aktivieren sie nicht; danach wird die gesamte Runde einschließlich offener Pairings und Byes berücksichtigt.</li>
               <li>Nicht-Mario-Rangfolge: Punkte, Buchholz, SB, Siege, direkter Vergleich, Seed.</li>
+              <li>Standardresultate sind <code>1-0</code>, <code>0-1</code>, <code>½-½</code> und kampflose Siege.</li>
               <li>Ergebniskorrektur kann eine ungewertete aktuelle Draft-Runde neu generieren.</li>
+              <li>Die UI warnt vor Regenerierung. Gültige manuell fixierte Pairings bleiben erhalten; Mario-Kart-Fixierungen gelten für eine zukünftige, noch nicht erzeugte Lobby.</li>
             </ul>
             <div class="grid-2">
               <article class="card">
                 <h4>Swiss</h4>
-                <p>Obere gegen untere Seed-Hälfte in Runde 1; danach Scoregruppen, Floater, Wiederholungsvermeidung, faire Byes und Farbausgleich.</p>
+                <p>Obere gegen untere Seed-Hälfte in Runde 1; danach Scoregruppen, Floater und kleine Punktdifferenzen. Eine separate vollständige Suche sichert eine wiederholungsfreie Paarung ab, sofern sie existiert, unabhängig von der begrenzten Scoregruppenoptimierung. Andernfalls entstehen Vereins-Fallbacks mit harten Warnungen. Bei ungerader Zahl bevorzugt das Bye wenige Härten, niedrigen Score und niedrigen Seed; die Policy kann Neueinsteiger schützen. Farben optimieren Wechsel, Dreierserien und Gesamtdifferenz.</p>
               </article>
               <article class="card">
                 <h4>Round Robin</h4>
-                <p>Berger-System mit Durchgängen, Farbinvertierung, Dummy-Bye bei ungerader Zahl und Reparatur nach Spieleränderungen. Nach den geplanten Durchgängen bleiben einzelne zusätzliche Runden oder weitere vollständige Durchgänge möglich; innerhalb eines Durchgangs wird jedes Paar höchstens einmal angesetzt.</p>
+                <p>Berger-System mit Durchgängen, Farbinvertierung, Dummy-Bye bei ungerader Zahl und Reparatur nach Spieleränderungen; bis 16 Spieler kann eine begrenzte exakte Suche verwendet werden. Die geplante Rundenzahl folgt aktiven Spielern und Durchgängen. Danach bleiben einzelne zusätzliche Runden oder weitere vollständige Durchgänge möglich; innerhalb eines Durchgangs wird jedes Paar höchstens einmal angesetzt, beim Weiterspielen steigt die Zielzahl der Begegnungen.</p>
               </article>
               <article class="card">
                 <h4>Hand and Brain</h4>
-                <p>Vier Personen pro Brett; Optimierung von Score, Teams, Rollen und Farbe. Restklassen erzeugen Bye oder Einzelpartie.</p>
+                <p>Vier verschiedene Personen pro Brett: je Hand und Brain auf Weiß/Schwarz. Der Generator optimiert Score, Teams, Rollen und Farbe. Team-gegen-Team-Wiederholungen sind harte Warnungen, Partner-/Rollenwiederholungen Hinweise. Rest 1/3 erzeugt ein Bye, Rest 2 zusätzlich eine Einzelpartie; beides wird als Härte fair verteilt.</p>
               </article>
               <article class="card">
                 <h4>Mario Kart</h4>
@@ -800,50 +870,92 @@
             <ul>
               <li>Labels wie <code>Lobby 2.1</code> trennen fachliche Wertungsrunde und laufende Lobby. Jede Lobby enthält exakt vier Fahrer.</li>
               <li>Aktive Wertungszuweisungen beeinflussen die nächste Planung, sportliche Statistiken aber erst nach Abschluss.</li>
+              <li>Auswahl priorisiert die älteste offene Wertungsrunde, ähnliche Turnierpunkte, wenige Gegnerwiederholungen, faire Füllereinsätze und ähnliche Durchschnittsplätze; der Seed stabilisiert zuletzt die Sortierung.</li>
               <li>Füller werten bereits für die nächste geplante Runde; echte Extras bleiben mit <code>scoringCycleNumber: null</code> zunächst ungewertet.</li>
-              <li>Eine zukünftige Lobby kann mit zwei bis vier Fahrern fixiert werden. Sie warten aufeinander, werden vor optionalen Füllern berücksichtigt und erhalten dadurch weder Extra-Rennen noch doppelte Wertungen.</li>
+              <li>Genau eine zukünftige Lobby kann mit zwei bis vier eindeutigen Fahrern fixiert werden. Sie warten aufeinander, bis sie aktiv und nicht reserviert sind; andere Lobbys laufen weiter, freie Plätze werden regulär ergänzt. Die Fixierung erzeugt keine Zusatzwertung; ein Füller-Hinweis gilt nur beim tatsächlichen Vorziehen einer späteren Wertungsrunde.</li>
               <li>Bonusrunden lassen die konfigurierte Rundenzahl unverändert und können frühere Extras chronologisch rückwirkend werten.</li>
               <li>Vier eindeutige Eingaben von 1 bis 24 schließen automatisch und aktualisieren Ranglisten sowie Abschlussstatus. Turnierpunkte und Siege folgen der relativen Reihenfolge der vier menschlichen Fahrer; der tatsächliche Platz bleibt für den Durchschnitt erhalten. Geschlossene Lobbys können atomar korrigiert werden, ohne spätere Aufstellungen zu verändern.</li>
-              <li>„Neu erzeugen“ übernimmt Neuzugänge und Statusänderungen in die jüngste vollständig ergebnislose Lobby; enthaltene Fixierungen bleiben erhalten.</li>
+              <li>Nur die jüngste vollständig ergebnislose aktive Lobby darf neu erzeugt oder gelöscht werden. Neu erzeugen übernimmt Neuzugänge und Statusänderungen; enthaltene Fixierungen bleiben erhalten. Bereits aktive Lobbys bleiben bis dahin unverändert.</li>
               <li>Inaktive und zurückgezogene Fahrer überspringen nicht zugewiesene Wertungsrunden und holen sie bei Reaktivierung nicht nach. Späteinsteiger erhalten höchstens eine Wertung je verbleibender konfigurierter Runde; der Abschluss benötigt keine Bonus-Lobby.</li>
               <li>Mario-Kart-Rangfolge: Turnierpunkte, Siege, Durchschnittsplatzierung, direkter Vergleich. Seed und Name sortieren nur vollständige Gleichstände stabil.</li>
               <li>Biermarkierungen bleiben auch nach Lobbyabschluss direkt änderbar und beeinflussen weder Platzierung noch Lobby-Lebenszyklus. Sportliche und Bier-Rangliste teilen gleiche Ränge nach <code>1, 1, 3</code>; physische und wertende Rennen werden getrennt ausgewiesen.</li>
             </ul>
+            <h4>Warnmodell</h4>
+            <p>Harte und weiche Warnungen decken fehlende/inaktive/mehrfach verwendete Spieler, Wiederholungen, Floater, Punktdifferenzen, Farben, Hand-and-Brain-Teams/Rollen, unausgeglichene Mario-Kart-Lobbys und erneute Bye-Zyklen ab. Rangliste, Presenter, Druck und CSV verwenden dieselbe sportliche Reihenfolge.</p>
           </div>
         </details>
 
         <details class="app">
           <summary><span class="app-number">10</span><span><span class="app-summary-title">Triathlon-Tracker</span><span class="app-summary-route">/apps/triathlon-tracker</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> Bestleistungen für Schwimmen, Radfahren und Laufen verfolgen, Training manuell planen und seine Entwicklung nachvollziehen.</p>
+            <h4>Betriebsmodell und Ansichten</h4>
             <ul>
-              <li>Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Dropdowns. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.</li>
-              <li>Bestleistungen für Schwimmen, Radfahren und Laufen, manuelle Planung und Erfassung. Die Tabs Rekorde, Planung, Tagebuch und Verlauf trennen die Aufgaben; Rekorde ist die Einstiegsansicht. Das optionale Gewicht wird dort für Critical Power in W/kg gepflegt. Metrische Einheiten, Europe/Berlin und Montag als Wochenbeginn gelten durchgehend.</li>
-              <li>Gemessene Rekorde verwenden die gesamte bisherige Historie im gewählten Kontext, standardmäßig nur Maximaltests, umschaltbar auf alle Trainings. Erforderlich sind exakte Zieldistanzen: Schwimmen 200/400/750/1.500 m, Rad 20/40 km, Laufen 1/5/10 km/Halbmarathon/Marathon. Radleistungsrekorde benötigen exakt 5 oder 20 Minuten. Intervalle und hochgerechnete Teilstrecken sind keine gemessenen Rekorde. Zielzeilen bieten vorausgefüllte Testeingaben; Rekorde öffnen ihren ursprünglichen Eintrag.</li>
-              <li>Planungen sind passive Kalendereinträge ohne Status oder Plan-Ist-Wertung. Eine Woche kann nach Vorschau einschließlich möglicher Duplikate kopiert werden.</li>
-              <li>Absolvierte Einheiten benötigen Datum, Disziplin sowie Dauer oder Distanz. Je zwei Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe; Pace gilt pro 100 m beim Schwimmen, sonst pro km. Dauer akzeptiert sekundengenaue Uhrnotation und Dezimalminuten. Zeit, Kontext, Puls, Leistung, RPE, Testmarkierung und manuell aufgebaute Intervalle sind optional. Hauptmesswerte stehen direkt im kompakten Dialog; Intervalle sind aufklappbar.</li>
-              <li>Monats- und Wochenkalender enthalten ausschließlich geplante Tageskarten mit Wochensummen; die Woche ist vorausgewählt. Einzelne Pläne lassen sich kopieren oder per Drag-and-drop verschieben; alternativ wird das Datum im Editor geändert. Mobil zeigt der Monat ein Datumsgitter mit Tagesagenda, die Woche eine vertikale Agenda. Ab 768 Pixeln stehen die sieben Wochentage nebeneinander, die Wochensumme darunter.</li>
-              <li>Das Tagebuch bietet eine verdichtete Desktop-Tabelle und mobile Karten, Kontext, sämtliche Messwerte, Testmarkierung, Disziplin-/Datums-/Maximaltestfilter, Datumssortierung und Seiten zu 20 Einträgen. Anzahl und Zeit werden zusammengefasst; Summendistanz nur bei gewählter Disziplin.</li>
-              <li>Die aktuelle Woche fasst Zeit, Distanz und Anzahl je Disziplin über den Tabs zusammen. Verlauf ergänzt Zeitraumkennzahlen, standardmäßig Wochenzeit, umschaltbare Wochendistanz sowie Trainingspunkte und Modellkurven. Diagramme bieten 4W-, 12W-, 6M-, 1J- und Gesamtbereiche; Leistungs- und Indexdiagramme zusätzlich Tabellenalternativen.</li>
-              <li>Hochrechnungen stehen getrennt neben gemessenen Rekorden und verwenden kontinuierliche, kontextgleiche Einheiten aus höchstens drei Monaten. Intervalle sind keine Modellanker. Individuelle Modelle benötigen drei Anker; Ausnahmen sind Riegel aus einem Lauf von 5–21,1 km und CSS aus zwei maximalen 200-/400-m-Tests. Markierte Tests werden bevorzugt, sonst werden Trainingsäquivalente ausgewiesen. Modell und Datenbasis bleiben sichtbar. Extrapolationen tragen eine Markierung; nicht gestützte Ziele bleiben leer.</li>
-              <li>Laufen nutzt Critical Speed nur mit 2–20-Minuten-Ankern oder ein Potenzgesetz. Zusätzliche Ziele liegen höchstens beim Doppelten der längsten Ankerstrecke; Critical Speed schätzt keine Ziele über 10 km und Marathon wird nicht aus kürzeren Distanzen extrapoliert. Schwimmen nutzt CSS oder Potenzgesetz bis höchstens zum Vierfachen der längsten Ankerstrecke. Rad zeigt CP mit W′, modellierte 5-/20-Minuten-Leistung und optional W/kg; unabhängige 20-/40-km-Zeiten benötigen passende Distanz-Zeit-Anker. CP wird nicht in Geschwindigkeit umgerechnet.</li>
-              <li>Der aufklappbare Fortschrittsindex beginnt je Disziplin bei 100; ein geometrischer Gesamtindex existiert nur bei verfügbaren Werten aller drei Disziplinen. Historische Punkte verwenden keine späteren Daten. Wissenschaftliche Quellen und Produktgrenzen sind in der Rekordansicht zugänglich.</li>
-              <li>Es gibt weder Datenimport noch Datenexport noch einen globalen Reset.</li>
+            <li>Ein Tracker gehört zum globalen oder aktuellen Lobby-Datenraum und verwendet die gemeinsamen Firestore-Hooks samt lokalem Fallback. Das optionale Gewicht liegt im State-Dokument; Planungen und absolvierte Einheiten liegen in getrennten Collections. Rekorde und Hochrechnungen werden aus Rohdaten abgeleitet und nicht gespeichert.</li>
+            <li>Die Tabs <code>Rekorde</code>, <code>Planung</code>, <code>Tagebuch</code> und <code>Verlauf</code> trennen Bestleistungen, Planung, Erfassung und Auswertung. <code>Rekorde</code> ist die Einstiegsansicht; dort liegen Kontextfilter, aktuelles Gewicht und aufklappbare Quellen. Diagramme werden lazy geladen.</li>
+            <li>Metrische Einheiten, <code>Europe/Berlin</code> und Montag als Wochenbeginn gelten durchgehend. Schwimmen trennt 25-m-Becken, 50-m-Becken und Freiwasser; Radfahren Indoor/Outdoor; Laufen Straße und Laufband. Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen. Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Dropdowns. Standards sind 50-m-Becken, Outdoor und Straße. Ältere Einträge ohne Kontext werden diesen Standards zugeordnet.</li>
             </ul>
-            <p>Die ausführliche Produktspezifikation steht in <a href="spec_tracker.md"><code>spec_tracker.md</code></a>.</p>
+            <h4>Gemessene Rekorde</h4>
+            <ul>
+            <li>Rekorde verwenden die gesamte bisherige Historie im gewählten Kontext, standardmäßig nur markierte Maximaltests oder Wettkämpfe, umschaltbar auf alle Trainings. Diese Auswahl verändert nicht die automatische Modellwahl für Hochrechnungen.</li>
+            <li>Zeitrekorde erfordern positive Dauer und exakt die Zieldistanz: Schwimmen 200/400/750/1.500 m, Rad 20/40 km, Laufen 1/5/10 km, Halbmarathon (21.097,5 m) und Marathon (42.195 m). Radleistungsrekorde benötigen positive Durchschnittsleistung über exakt 5 oder 20 Minuten.</li>
+            <li>Ganze Einheiten liefern keine Bestzeiten beliebiger Teilstrecken. Intervalle und hochgerechnete Teilstrecken sind keine gemessenen Rekorde; fehlende Werte erscheinen als <code>—</code>.</li>
+            <li>Jede Zielzeile bietet eine Testeingabe mit vorausgewählter Disziplin, Kontext, Distanz oder Dauer und Testmarkierung. Bestehende Rekorde öffnen ihren ursprünglichen Eintrag; nach dem Speichern geht es mit erhaltenem Rekordkontext zurück zu <code>Rekorde</code>.</li>
+            </ul>
+            <h4>Planung und Trainingseingabe</h4>
+            <ul>
+            <li>Planungen enthalten Datum, optionale Startzeit, Disziplin, optionale Dauer/Distanz und ein Label mit höchstens 40 Zeichen. Sie bleiben passive Kalendereinträge ohne Erledigt-Status, Plan-Ist-Verknüpfung oder Erfüllungswertung.</li>
+            <li>Monats- und Wochenkalender zeigen ausschließlich geplante Einheiten; die Woche ist vorausgewählt. Einzelne Pläne lassen sich als bearbeitbare Kopie übernehmen oder per Drag-and-drop verschieben. Das Datumsfeld ermöglicht dieselbe Verschiebung per Tastatur und mobil. Wochenkopien erhalten den Wochentag, benötigen eine Vorschau und dürfen vorhandene Einheiten duplizieren.</li>
+            <li>Mobil zeigt der Monat ein Datumsgitter mit Tagesagenda und die Woche eine vertikale Agenda. Ab 768 Pixeln stehen sieben Wochentage nebeneinander mit Wochensumme darunter; im Desktop-Monat liegt die Wochensumme neben der Woche. Heute, Vor/Zurück und Datumsauswahl steuern die Navigation.</li>
+            <li>Absolvierte Einheiten benötigen Datum, Disziplin und mindestens positive Dauer oder Distanz. Optional sind Startzeit, Kontext, Durchschnittspuls, Durchschnittsleistung, RPE von 1 bis 10 und Testmarkierung. Manuell aufgebaute Intervalle enthalten Belastungs-/Pausenabschnitte mit Dauer/Distanz und optional Puls/Leistung; sie werden nicht per Textparser erzeugt.</li>
+            <li>Je zwei positive Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe. Die beiden zuletzt manuell bearbeiteten Felder sind maßgeblich; unvollständige Eingaben leeren den abgeleiteten Wert. Pace gilt beim Schwimmen pro 100 Meter, sonst pro Kilometer; gespeichert werden Dauer und Distanz.</li>
+            <li>Dauer akzeptiert <code>m:ss</code>, <code>h:mm:ss</code> und Dezimalminuten, auch für Planungen und Intervalle. Bearbeiten erhält die Sekunden. Hauptmesswerte stehen direkt im kompakten Dialog, Intervalle sind aufklappbar. Normale Trainingseinträge öffnen nach dem Speichern das Tagebuch; allgemeine Neueingaben verwenden den Standardkontext.</li>
+            <li>Ungültige Eingaben verhindern das Speichern. Abweichende Intervallsummen gegenüber Gesamtdauer/-distanz sind ein Hinweis und blockieren nicht. Einheiten bleiben bearbeitbar und löschbar.</li>
+            </ul>
+            <h4>Tagebuch, Volumen und Verlauf</h4>
+            <ul>
+            <li>Das Tagebuch zeigt eine verdichtete Desktop-Tabelle und mobile Karten mit Hauptmesswerten, Kontext, Puls, Leistung, RPE, Testmarkierung und Intervallanzahl. Filter für Disziplin, Datumsbereich und Maximaltests, umkehrbare Datumssortierung und Seiten zu 20 Einträgen erschließen die Historie. Summen zeigen Anzahl und Zeit; Summendistanz nur bei gewählter Disziplin.</li>
+            <li>Bei vorhandenen Trainings fasst die aktuelle Woche Zeit, Distanz und Anzahl je Disziplin über den Tabs zusammen. <code>Verlauf</code> ergänzt Zeitraumkennzahlen, standardmäßig Wochenzeit und umschaltbare Wochendistanz; das Volumendiagramm hat keine zusätzliche Tabelle.</li>
+            <li>Leistungsdiagramme zeigen kontinuierliche Trainingspunkte und Modellkurven auf tatsächlichen Datumsabständen; Laufen und Schwimmen verwenden Pace. Bereiche sind 4 Wochen, 12 Wochen, 6 Monate, 1 Jahr und Gesamt, vorausgewählt sind 12 Wochen. Leistungs- und Indexdiagramme besitzen zugängliche Tabellenalternativen.</li>
+            <li>Der aufklappbare Fortschrittsindex beginnt je Disziplin in der ersten berechenbaren Woche bei 100. Ein gleich gewichtetes geometrisches Gesamtmittel existiert nur bei Werten aller drei Disziplinen.</li>
+            <li>Historische Auswertungen verwenden nur bis zum Stichtag verfügbare Einheiten. Nachträgliche Erfassung oder Änderungen leistungsrelevanter Daten verschieben deren Verfügbarkeit auf den Erfassungs-/Änderungstag; Distanz und Leistung werden dabei getrennt berücksichtigt. Die App speichert keine vollständigen früheren Versionen bearbeiteter Trainings.</li>
+            </ul>
+            <h4>Hochrechnungen und Produktgrenzen</h4>
+            <ul>
+            <li>Aktuelle Hochrechnungen stehen getrennt neben Rekorden und verwenden höchstens drei Monate kontinuierlicher, kontextgleicher Einheiten. Intervalle sind keine Modellanker. Markierte Maximaltests werden bevorzugt; ohne solche Daten werden Trainingsäquivalente statt zugesicherter Wettkampfzeiten ausgewiesen.</li>
+            <li>Die stärkste Einheit je Distanz beziehungsweise Leistungsdauer bildet die obere Leistungshülle; gleichartige Einheiten können die Datenbasis stützen, ersetzen aber keine unterschiedlichen Anker. Individuell angepasste Distanzmodelle benötigen mindestens drei Anker mit ausreichender Distanz- und Dauerstreuung. Modell, Datenbasis, Extrapolation und unzureichende Daten bleiben sichtbar; nicht gestützte Ziele bleiben leer.</li>
+            <li><strong>Laufen:</strong> Potenzgesetz oder Critical Speed, letzteres nur mit Ankerdauern von 2 bis 20 Minuten. Unter gültigen Kandidaten gewinnt der kleinere mittlere Leave-one-out-Fehler bis höchstens 10 %. Als Ersatz genügt ein Lauf von 5 bis 21,1 km mit Riegel-Exponent 1,06; der stärkste auf 5 km normierte Lauf wird Anker. Durchschnittspuls korrigiert die Hochrechnung nicht. Rekordziele liegen höchstens beim Doppelten der längsten Ankerstrecke; Ziele unter 5 km benötigen einen Anker von höchstens doppelter Zieldistanz. Critical Speed schätzt keine Ziele über 10 km, Marathon wird nicht aus kürzeren Distanzen extrapoliert.</li>
+            <li><strong>Schwimmen:</strong> Critical Swim Speed aus starken 200-/400-m-Leistungen, bei zwei markierten Maximaltests direkt, sonst mit mindestens einer zusätzlichen Stützeinheit. Stützwerte müssen innerhalb von 10 % der CSS-Schätzung liegen. Ersatzweise gilt ein individuelles Potenzgesetz mit mindestens drei gestreuten Ankern und höchstens 10 % Leave-one-out-Fehler. Rekordziele liegen höchstens beim Vierfachen der längsten Ankerstrecke; CSS über 1.500 m aus 400-m-Ankern bleibt ausdrücklich eine Extrapolation.</li>
+            <li><strong>Radfahren:</strong> Critical Power und W′ aus mindestens drei unterschiedlichen Leistungs-Dauer-Ankern zwischen 2 und 20 Minuten mit ausreichender Dauerstreuung und höchstens 10 % Modellabweichung. Angezeigt werden CP in Watt, optional W/kg und modellierte 5-/20-Minuten-Leistung. CP wird nicht in Geschwindigkeit umgerechnet. Unabhängige 20-/40-km-Zeiten verwenden ein Potenzgesetz aus vergleichbaren Distanz-Zeit-Ankern mit höchstens 10 % Leave-one-out-Fehler; Rekordziele liegen höchstens beim Doppelten der längsten Ankerstrecke.</li>
+            <li>Der Verlauf verwendet als Hauptkennzahlen Laufen 5/10 km, Schwimmen 750/1.500 m und Rad CP, ersatzweise 20-km-Zeit. Dreimonatsfenster, Fehlergrenzen und Extrapolationslimits sind konservative Produktregeln, keine statistischen Konfidenzintervalle.</li>
+            <li>Es gibt keine Gewichtshistorie, automatische Trainingsplanung, wiederkehrenden Termine, Planerfüllungs-/Belastungsmodelle, zusätzlichen Disziplinen, Coaching-/Gesundheitsempfehlungen, Wearable-/Strava-Anbindung, Live-Tracking, Datenimport/-export oder globalen Reset.</li>
+            </ul>
+            <h4>Quellen der Leistungsmodelle</h4>
+            <p>Die Rekordansicht verlinkt dieselben fachlichen Grundlagen:</p>
+            <ul>
+            <li><a href="https://pubmed.ncbi.nlm.nih.gov/27570626/">Vickers &amp; Vertosick (2016)</a>: begrenzte Laufzeitübertragung nach Riegel.</li>
+            <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10875687/">Scott et al. (2024)</a>: Critical Swim Speed aus maximalen Schwimmtests.</li>
+            <li><a href="https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.613151/full">Karsten et al. (2021)</a>: Critical Power und W′ aus Leistungs-Dauer-Daten; Distanzschätzungen beim Rad benötigen unabhängig davon vergleichbare Fahrbedingungen.</li>
+            </ul>
           </div>
         </details>
 
         <details class="app">
           <summary><span class="app-number">11</span><span><span class="app-summary-title">Schlag den Raab</span><span class="app-summary-route">/schlag-den-raab</span></span></summary>
           <div class="app-body">
+            <p><strong>Zweck:</strong> zwei Personen über 15 aufsteigend gewichtete Spiele und bei Bedarf ein Stechen bewerten.</p>
             <ul>
-              <li>Zwei Personen, 15 Spiele mit Punkten 1–15 sowie ein optionales Stechen, das den Abend per Kreuz entscheidet, aber keine Punkte vergibt und nicht als gewonnenes Spiel zählt.</li>
-              <li>Regulärer Sieg bei Führung über 60 Punkten; Gleichstand nach 15 Spielen erzwingt Stechen.</li>
-              <li>Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht.</li>
-              <li>Spiel- und Spielernamen sind editierbar; Siegerklick ist umschaltbar.</li>
-              <li>Reset archiviert den Abend, erhält Namen und startet leere Ergebnisse.</li>
-              <li>Automatische Archivnamen enthalten nur den lokalen Archivtag; mehrere Archive desselben Tages erhalten chronologische römische Suffixe.</li>
-              <li>Client-PIN gilt nur für die aktuelle Session und ist keine technische Autorisierung.</li>
+            <li>Der Bereich liegt außerhalb der Dashboard-Registry und ist über <code>/schlag-den-raab</code> erreichbar.</li>
+            <li>Eine clientseitig fest codierte PIN schaltet die Route für die aktuelle <code>sessionStorage</code>-Sitzung frei. Dies verhindert keine technische Umgehung.</li>
+            <li>Es existieren genau zwei Personen; Namen sind editierbar.</li>
+            <li>Die 15 regulären Spiele tragen die Punkte <code>1</code> bis <code>15</code>; Titel sind editierbar.</li>
+            <li>Ein Klick setzt oder entfernt den Gewinner eines Spiels und berechnet den kumulierten Score.</li>
+            <li>Ein regulärer Sieger steht fest, sobald eine führende Person mehr als 60 Punkte besitzt.</li>
+            <li>Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht.</li>
+            <li>Sind nach allen 15 Spielen beide Scores gleich, erscheint Spiel 16 als Stechen. Es entscheidet den Abend per Kreuz, vergibt aber keine Punkte und zählt nicht als gewonnenes Spiel.</li>
+            <li>Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.</li>
+            <li>Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.</li>
+            <li>Archive sind umbenennbar, lesbar und löschbar.</li>
             </ul>
           </div>
         </details>
@@ -873,18 +985,22 @@
               <tr><td><code>src/lib/firebase</code></td><td>Client, Auth, Pfade, Sync, Cache</td><td>UI und App-Regeln</td></tr>
               <tr><td><code>src/lib/i18n</code></td><td>Sprache und Formatierung</td><td>fachliche Migration</td></tr>
               <tr><td><code>src/lib/colorScheme</code></td><td>globales Farbschema und Persistenz</td><td>Farbwerte und App-Regeln</td></tr>
+              <tr><td><code>src/lobbies</code></td><td>Lobby-Domain, Context, Verzeichnis, Geräte-Tracking und clientseitige Verwaltungs-UI</td><td>App-Fachlogik</td></tr>
+              <tr><td><code>src/styles</code></td><td>Globale Tokens, Typografie und Druckregeln</td><td>Feature-Zustand</td></tr>
             </tbody>
           </table>
         </div>
         <div class="grid-2" style="margin-top:1rem">
-          <article class="card"><h3>Entscheidungen</h3><ul><li>Kein globaler State-Manager.</li><li>Keine app-eigenen Firebase-Clients.</li><li>Registry für reguläre Apps.</li><li>Explizite Sonderrouten.</li></ul></article>
+          <article class="card"><h3>Entscheidungen</h3><ul><li>Kein globaler State-Manager.</li><li>Keine app-eigenen Firebase-Clients.</li><li>Registry für reguläre Apps.</li><li>Explizite Sonderrouten.</li><li>TypeScript bleibt die gemeinsame Sprache. Eine zweite Sprache oder WebAssembly erfordert einen in der Performance-Baseline nachgewiesenen isolierten Hotspot, für den TypeScript einschließlich Web Worker nicht genügt; weniger Quellzeilen allein rechtfertigen keine zusätzliche Toolchain.</li></ul></article>
           <article class="card"><h3>Modulregeln</h3><ul><li>Feature-lokale Wiederverwendung zuerst.</li><li>Pure Fachlogik außerhalb React.</li><li>Page → Hook → Infrastruktur.</li><li>Code bleibt Detailquelle.</li></ul></article>
         </div>
+        <p>Vite baut statische Dateien, Firebase Hosting liefert sie aus. Online-Persistenz und Lobby-Verwaltung greifen direkt auf Firestore zu; nur Live-Buzzer verwendet zusätzlich Realtime Database, mit derselben Anonymous-Auth-Sitzung. Pages senden fachliche Aktionen an Feature-Hooks; zentrale Sync-Hooks schreiben Cache und Remote-Zustand und liefern Snapshots zurück. Infrastruktur importiert keine App.</p>
       </section>
 
       <section class="section" id="entwicklung">
         <p class="eyebrow">07 · Änderungen</p>
         <h2>Entwicklungsvertrag</h2>
+        <p>Ein Feature besitzt nur benötigte Dateien: Page für UI und Interaktion, Hook für Zustand/Aktionen/Persistenz, Typen für den Datenvertrag, optionale pure Fachmodule und feature-nahe Tests sowie <code>index.ts</code> als öffentliche Exportfläche. Feature-lokale Komponenten und Daten bleiben lokal, bis mehrere aktuelle Apps davon profitieren.</p>
         <div class="grid-2">
           <article class="card accent">
             <h3>Neue App</h3>
@@ -892,10 +1008,12 @@
               <li>Kernaktion, Datenmodell und Zustände klären.</li>
               <li>Page, Hook, Typen und optionale pure Module lokal anlegen.</li>
               <li>UI-Primitiven und echte Shared Modules wiederverwenden.</li>
+              <li>Persistenz als Dokument, geordnete Collection oder flüchtigen React State einordnen.</li>
               <li>Firestore-Pfade zentral ergänzen.</li>
               <li>Texte in Deutsch und Englisch anlegen.</li>
               <li>Einmal in der Registry registrieren.</li>
               <li>Mobil, Tastatur, Fehler und lokalen Modus prüfen.</li>
+              <li>Lint, Dokumentationscheck, Tests, Build und risikogerechte Laufzeittests ausführen.</li>
             </ol>
           </article>
           <article class="card">
@@ -905,11 +1023,12 @@
               <li>Persistenz ausschließlich zentral.</li>
               <li>Kein vorsorglich abstrahierter Shared Code.</li>
               <li>Lade-, Leer-, Fehler- und Destruktivzustände verständlich.</li>
-              <li><code>npm run lint</code>, <code>npm run docs:check</code>, <code>npm test</code>, <code>npm run test:browser</code> und <code>npm run build</code> grün.</li>
-              <li>Bei Sync: lokal, zwei Fenster, Reload und Fehler testen.</li>
+              <li>Bei Codeänderungen mindestens <code>npm run lint</code>, <code>npm run docs:check</code>, <code>npm test</code> und <code>npm run build</code> grün.</li>
+              <li>Bei Firebase/Sync zusätzlich <code>npm run test:firebase</code>, lokalen Modus, zwei Fenster, Reload und Auth-/Rules-/Netzwerkfehler prüfen. Bei UI-Änderungen betroffene Browserabläufe mit <code>npm run test:browser</code> prüfen.</li>
             </ul>
           </article>
         </div>
+        <p>Aktionen heißen fachlich und geben keine Speicheroperationen an die Page weiter. Initialwerte der Sync-Hooks bleiben referenziell stabil. Firestore-Serverzeit wird zentral geschrieben; ergänzende Client-ISO-Zeiten dienen Anzeige/Fallback. Globale Tokens, Lucide und gemeinsame Controls werden bevorzugt; Feature-Layouts bleiben lokal. Presenter sind read-only, komplexe Regeln werden über öffentliche Interfaces geprüft. Dokumentation ändert sich bei dauerhaftem Kontext oder spezifiziertem Verhalten.</p>
         <ul>
           <li>UI-Katalog: Name und kompakte Vorschau; Quellenpfade im HTML ohne Dateilinks. Keine Untertitel, Metadatenblöcke oder Prioritätswertung.</li>
           <li>Gemeinsame Controls im Katalog verwenden interaktive Originalkomponenten; das Icon-Inventar zeigt echte SVGs. Zustandsbeispiele zeigen ungültige Eingaben, Speichern, erhaltene Entwürfe nach Fehlern, erneuten Versuch, lange Texte und Erfolg ausschließlich mit lokalen Beispieldaten. Große Fachvorschauen bleiben statisch; Suche bleibt beim Scrollen sichtbar und die Navigation markiert den aktuellen Abschnitt.</li>
@@ -918,13 +1037,16 @@
         <h3 style="margin:2rem 0 0.8rem">Testsystem</h3>
         <div class="grid-2">
           <article class="card accent">
-            <h3>P0-Testoberfläche</h3>
+            <h3>Kern-Testoberfläche</h3>
             <ul>
               <li>Vitest in einer Node-Umgebung mit isolierten Workerthreads; Fachlogik und gemockte Hook-Verträge mit React-Serverrendering.</li>
               <li>Feature-nahe <code>*.test.ts</code>-Dateien.</li>
               <li>Öffentliche Fachinterfaces statt interner Details.</li>
               <li>Registry-Vertrag für eindeutige und dokumentierte App-Routen.</li>
               <li>Golden Cases für alle vier Turnierformate.</li>
+              <li>Scoreboard, Fortschrittsereignisse, Karten-Claims/Achievements, Quizkatalog und Schlag-den-Raab-Wertung.</li>
+              <li>Triathlon-Eingaben, Rekorde, Modelle, historische Verfügbarkeit, Wochenstatistik und Hooks; Buzzer-Uhrschätzung, Entscheidung und Hooks.</li>
+              <li>Lobby-/Pfadverträge, Cache, Mutationen, Batch-Rollback und Snapshots; Bundle-Budgets, Spark-Prüfung, Specs-Fingerprint und Benchmark-Szenarien.</li>
               <li>Feste IDs und Ergebnisse statt zufälliger Golden Values.</li>
             </ul>
           </article>
@@ -933,8 +1055,8 @@
             <ul>
               <li>Randomizer, Glücksrad und Münzwurf akzeptieren testbare Zufallsquellen.</li>
               <li>Produktion verwendet weiterhin Math.random beziehungsweise Web Crypto.</li>
-              <li>Coverage erscheint als Text- und HTML-Bericht ohne Prozent-Gate.</li>
-              <li>Browser-Smokes laufen mit Chromium und Axe auf 320, 390, 768 und 1440 Pixel Breite; Komponenten folgen in späteren Schnitten.</li>
+              <li>Coverage erscheint unter <code>coverage/</code> als Text- und HTML-Bericht ohne Prozent-Gate. Die auf ausgewählte Module beschränkte Konfiguration belegt keine appweite Abdeckung.</li>
+              <li>Browserfälle laufen mit Chromium und Axe auf 320, 390, 768 und 1440 Pixel Breite.</li>
             </ul>
           </article>
         </div>
@@ -945,29 +1067,31 @@ npm run test:browser
 npm run test:firebase</code></pre>
         <div class="card note" style="margin-top:1rem">
           <h3>Browser-Smoke-Suite</h3>
-          <p><code>npm run test:browser</code> startet Vite ohne Firebase immer frisch auf dem eigenen Testport <code>5288</code> und verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard, verschachteltes Scoreboard, Presenter, Sushi Map und der sichtbare Rollback bei voller LocalStorage-Quota werden mit Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA abgedeckt. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
+          <p><code>npm run test:browser</code> startet Vite ohne Firebase immer frisch auf dem eigenen Testport <code>5288</code> und verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard/Navigation, Scoreboard, Presenter/Fokus, Fortschrittsdiagramme, Sushi-Karte samt Touch-Panning/UK-Migration, Turnierablauf, Buzzer-Profil/Runden und Triathlon-Planung/Rekorde/Modelle/Tagebuch sind abgedeckt. Gemeinsame Controls sowie Storage-/Syncfehler ergänzen Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA. Der zusätzliche Buzzer-Mehrgerätefall benötigt Auth-, Firestore- und Realtime-Emulatoren und wird ohne <code>FIREBASE_DATABASE_EMULATOR_HOST</code> übersprungen; die normale lokale Suite belegt ihn nicht. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert.</p>
           <ul>
             <li>Vor neuen Tests vorhandene Verhaltensprüfungen erweitern oder mit fachlich anderen Eingaben parametrisieren; unabhängige Fehlerursachen getrennt lassen.</li>
             <li>Fachlogik in Vitest, Store-Aufrufe in gemockten Hooks, Rules und konkurrierende Clients im Emulator, Bedienung und Barrierefreiheit im Browser prüfen. Unterschiedliche Systemgrenzen sind keine Redundanz.</li>
             <li>Responsive Browserabläufe laufen unmarkiert auf allen vier Viewports. <code>@desktop</code> führt größenunabhängige Fälle einmal auf Desktop aus; <code>@touch</code> läuft auf den drei Touch-Projekten. Keine Screenshot-Vorschauen ohne zusätzlichen Prüfzweck.</li>
             <li>Keine dauerhaften Abwesenheitsprüfungen für erledigte Datei-/Codeentfernungen oder Selbsttests einmaliger Reparatur-Fixtures. Laufende Löschaktionen, Datenverlustschutz und Migrationen noch möglicher Speicherstände bleiben abgesichert.</li>
             <li>Testisolation erhalten. Gleiche Node-Version, Reporterwahl und Workerzahl verwenden; Vitest nach einem Warmup mindestens dreimal messen. Bei Browsermessungen keine Quelldateien ändern oder für beide Stände denselben Server ohne Dateiwatcher nutzen. Timeouts, Wiederholungen und abgebrochene Läufe separat ausweisen.</li>
+            <li>Für angeforderte UI-/Screenshot-Reviews gilt die CSS-Pixel-Matrix 320, 360, 375, 390, 393, 412, 430, 440; Tablet 768, 820, 1024; Desktop 1280, 1440, 1920. Betroffene Breakpoints unmittelbar darunter/darüber, Zustände und getrennte Rollenansichten prüfen. Das erweitert nicht automatisch die reguläre Suite.</li>
           </ul>
         </div>
         <div class="card note" style="margin-top:1rem">
           <h3>Performance-Baseline</h3>
           <p>Der Produktions-Build misst Einstieg, Styles, Firebase, App-Chunks sowie große Fragen- und Gebietsdaten. <code>npm run build</code> vergleicht Roh- und gzip-Größen mit <code>benchmarks/bundle-baseline.json</code>; das Budget beträgt 20 Prozent, mindestens 16 KiB roh beziehungsweise 4 KiB gzip.</p>
-          <p><code>npm run perf:tournament</code> misst fünf deterministische Turnierszenarien in Playwright-Chromium mit drei Warmups und zehn Läufen. Median, p95, Maximum und Long Tasks ab 50 Millisekunden werden gegen keinen CI-Zeitwert gegatet. <code>npm run perf:baseline:update</code> erneuert beide Referenzen nur ausdrücklich.</p>
+          <p><code>npm run perf:tournament</code> misst deterministische Paarungs-/Ranglistenszenarien für Swiss, Round Robin, Hand and Brain und Mario Kart in Playwright-Chromium mit drei Warmups und zehn Läufen. Median, p95, Maximum und Long Tasks ab 50 Millisekunden werden mit Umgebung in <code>benchmarks/tournament-baseline.json</code> referenziert, ohne verpflichtendes CI-Zeitbudget. Bundle-Berichte liegen unter <code>dist/performance/</code>. Neue/verschwundene Kategorien sind bewusste Baseline-Änderungen; normale Builds ändern die Referenzen nie. <code>npm run perf:baseline:update</code> erneuert beide Referenzen nur ausdrücklich.</p>
           <pre><code>npx playwright install chromium
 npm run perf:tournament
 npm run perf:baseline:update</code></pre>
         </div>
-        <p><code>npm run docs:check</code> prüft lokale Markdown-Links und den bestätigten SHA-256-Stand der kuratierten HTML-Lesefassung; <code>npm test</code> sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der Lesefassung bestätigt <code>npm run docs:acknowledge</code> den aktuellen Markdown-Stand. <code>npm run test:firebase</code> prüft Firestore- und Realtime-Database-Regeln, atomare Ablehnungen, Datenübernahme sowie vier parallele Buzzer-Lobbys mit jeweils 20 Spielern im Emulator mit Java 21.</p>
+        <p><code>npm run docs:check</code> prüft lokale Markdown-Dateien und Überschriftenziele offline sowie genau einen SHA-256-Fingerprint der normalisierten Markdown-Spezifikation. <code>npm test</code> sichert die Registry-Routen gegen beide Fassungen ab. Nach dem manuellen Inhaltsabgleich bestätigt <code>npm run docs:acknowledge</code> den Markdown-Stand; der Fingerprint belegt diese Bestätigung, keine automatisch geprüfte semantische Gleichheit. <code>npm run test:firebase</code> benötigt Java 21 und prüft Firestore-/Realtime-Regeln, konkurrierende Clients, Offline/Reconnect, atomare Ablehnungen, Datenübernahme und vier Buzzer-Lobbys mit je 20 Kandidaten.</p>
         <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
         <pre><code>npm ci
 Copy-Item .env.example .env.local
 npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
         <p>Node.js 22 oder neuer ist erforderlich. Port <code>5180</code> ist für Entwicklung, Browser-Smokes und lokale Performance-Messungen reserviert. Der Server bindet an <code>127.0.0.1</code>; für Anonymous Auth und Realtime-Sync wird er unter <code>http://localhost:5180</code> geöffnet, weil <code>localhost</code> als lokale Auth-Domain autorisiert ist. Vor dem ersten Browserlauf wird Chromium einmalig mit <code>npx playwright install chromium</code> installiert. Der Build umfasst den Bundle-Budgetcheck und überträgt dieses Gate ohne zusätzlichen Workflow in Pull Requests und Deployments.</p>
+        <p>Ohne ausgefüllte <code>.env.local</code> startet die App absichtlich lokal. <code>npm run test:watch</code> beobachtet Kern-Tests, <code>npm run test:coverage</code> erstellt den lokalen Bericht, <code>npm run preview</code> zeigt den Build. <code>npm run build</code> führt <code>tsc -b</code>, Vite und den Bundle-Budgetcheck aus. Umgeleitete Laufzeit-Logs liegen ausschließlich unter <code>logs/</code>; <code>dist/</code>, <code>node_modules/</code>, Logs und <code>.env.local</code> werden nicht committet.</p>
       </section>
 
       <section class="section" id="betrieb">
@@ -992,18 +1116,58 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
           <table>
             <thead><tr><th>Wert</th><th>Quelle</th><th>Zweck</th></tr></thead>
             <tbody>
-              <tr><td><code>VITE_FIREBASE_*</code> (6 Werte)</td><td><code>.env.local</code> / GitHub Secrets</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>VITE_FIREBASE_API_KEY</code></td><td><code>.env.local</code> / GitHub Secret</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>VITE_FIREBASE_AUTH_DOMAIN</code></td><td><code>.env.local</code> / GitHub Secret</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>VITE_FIREBASE_PROJECT_ID</code></td><td><code>.env.local</code> / GitHub Secret</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>VITE_FIREBASE_STORAGE_BUCKET</code></td><td><code>.env.local</code> / GitHub Secret</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>VITE_FIREBASE_MESSAGING_SENDER_ID</code></td><td><code>.env.local</code> / GitHub Secret</td><td>Firebase Web-App</td></tr>
+              <tr><td><code>VITE_FIREBASE_APP_ID</code></td><td><code>.env.local</code> / GitHub Secret</td><td>Firebase Web-App</td></tr>
               <tr><td><code>VITE_FIREBASE_DATABASE_URL</code></td><td><code>.env.local</code> / GitHub Variable</td><td>Live-Buzzer: <code>https://bengtstoolbox-default-rtdb.europe-west1.firebasedatabase.app</code> (Belgien)</td></tr>
               <tr><td><code>FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX</code></td><td>GitHub Secret</td><td>Hosting-Deploy</td></tr>
               <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>GitHub Variable</td><td>Projektziel</td></tr>
             </tbody>
           </table>
         </div>
+        <p>In ein Secret gehört nur der Wert, nicht <code>NAME=value</code>. Das Projektziel ist <code>bengtstoolbox</code>. Live-Buzzer verwendet <code>bengtstoolbox-default-rtdb</code> in <code>europe-west1</code> (Belgien); seine Regeln liegen in <code>firebase/database.rules.json</code>.</p>
         <div class="card note" style="margin-top:1rem">
           <h3>Spark-kompatibler Backend-Deploy</h3>
-          <p>Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Alle drei Deploy-Pipelines prüfen mit <code>scripts/checkFirebaseSpark.mjs</code> den Abrechnungsstatus und brechen bei aktivierter Abrechnung, verknüpftem Konto oder fehlender Prüfbarkeit ab. Die Prüfung benötigt einen kurzlebigen <code>GOOGLE_ACCESS_TOKEN</code>, <code>FIREBASE_PROJECT_ID</code> sowie eine aktivierte Cloud Billing API und Leserechte dafür. Die Pipelines beziehen den Token über die Google Cloud CLI mit dem bestehenden Deployment-Servicekonto; zusätzliche Token-Creator-Rechte sind nicht erforderlich. Die Prüfung aktiviert keine APIs oder Abrechnung. Mehr Nutzer und volle Kontingente aktivieren keine Subscription. Eine spätere manuelle Tarifänderung durch Administratoren verhindert die Prüfung nicht. <code>firebase-backend.yml</code> deployt Firestore Rules, Indizes und Realtime-Database-Regeln; der einfache PIN <code>5340</code> ist bewusst nur eine clientseitige Bedienbarriere.</p>
+          <p><code>.github/workflows/firebase-backend.yml</code> läuft manuell oder bei Änderungen unter <code>firebase/**</code>, an <code>firebase.json</code> oder Paketdateien auf <code>main</code>. Nach <code>npm ci</code> und Emulator-Regeltests mit Java 21 deployt er Firestore-/Realtime-Database-Regeln und Firestore-Indizes getrennt vom Hosting. Live-Hosting verwendet <code>firebase-hosting.yml</code>, Pull Requests <code>firebase-hosting-pull-request.yml</code>.</p>
+          <p>Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Alle drei Deploy-Pipelines prüfen mit <code>scripts/checkFirebaseSpark.mjs</code> den Abrechnungsstatus und brechen bei aktivierter Abrechnung, verknüpftem Konto oder fehlender Prüfbarkeit ab. Die Prüfung benötigt einen kurzlebigen <code>GOOGLE_ACCESS_TOKEN</code>, <code>FIREBASE_PROJECT_ID</code> sowie eine aktivierte Cloud Billing API und Leserechte dafür. Die Pipelines beziehen den Token über die Google Cloud CLI mit dem bestehenden Deployment-Servicekonto; zusätzliche Token-Creator-Rechte sind nicht erforderlich. Die Prüfung aktiviert keine APIs oder Abrechnung. Mehr Nutzer und volle Kontingente aktivieren keine Subscription. Eine spätere manuelle Tarifänderung durch Administratoren verhindert die Prüfung nicht.</p>
           <pre><code>node scripts/checkFirebaseSpark.mjs
 npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --project bengtstoolbox</code></pre>
+        </div>
+        <h3 style="margin:2rem 0 0.8rem">Manuelles Hosting und Erstverknüpfung</h3>
+        <pre><code>node scripts/checkFirebaseSpark.mjs
+npx firebase-tools deploy --only hosting</code></pre>
+        <p>Auch manuelle Deploys benötigen die vorherige Spark-Prüfung mit kurzlebigem Google-Token. Nur für eine neue Einrichtung:</p>
+        <pre><code>npx firebase-tools login
+npx firebase-tools use bengtstoolbox
+npx firebase-tools init hosting:github</code></pre>
+        <p>Erwartet werden Repository <code>Betogora/BengtsToolBox</code>, Build <code>npm ci &amp;&amp; npm run build</code>, Public Directory <code>dist</code>, SPA-Rewrite und Produktionsbranch <code>main</code>. Bestehende Konfiguration wird nicht blind überschrieben.</p>
+        <h3 style="margin:2rem 0 0.8rem">Nach dem Deploy</h3>
+        <ol>
+          <li>Live-/Preview-URL und eine verschachtelte Route direkt öffnen.</li>
+          <li>Dieselbe App in zwei Fenstern ändern, Reload und Persistenz prüfen.</li>
+          <li>Browser-Konsole auf Auth-, Rules- und Netzwerkfehler prüfen.</li>
+          <li>Testlobby in zwei Fenstern, Isolation zum globalen State und Deaktivierung über <code>/lobby-admin</code> prüfen.</li>
+        </ol>
+        <h3 style="margin:2rem 0 0.8rem">Fehlerdiagnose</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Symptom</th><th>Wahrscheinliche Ursache</th><th>Prüfung</th></tr></thead>
+            <tbody>
+              <tr><td><code>npm ci</code> schlägt fehl</td><td>Lockfile/Paketdatei divergieren</td><td>Lokal <code>npm ci</code></td></tr>
+              <tr><td>Build schlägt fehl</td><td>TypeScript-/Bundlefehler</td><td><code>npm run build</code></td></tr>
+              <tr><td>Projekt im Workflow fehlt</td><td>Repository Variable fehlt/falsch</td><td><code>FIREBASE_PROJECT_ID</code></td></tr>
+              <tr><td>Hosting nicht autorisiert</td><td>Servicekonto/Rechte</td><td>Secret und Firebase IAM</td></tr>
+              <tr><td><code>auth/api-key-not-valid</code></td><td>Web-Konfiguration fehlt/mit Zusatztext</td><td><code>VITE_FIREBASE_API_KEY</code></td></tr>
+              <tr><td><code>Missing or insufficient permissions</code></td><td>Anonymous Auth aus/Rules fehlen</td><td>Auth-Anbieter und Rules-Deploy</td></tr>
+              <tr><td>Direkte Unterseite liefert 404</td><td>SPA-Rewrite fehlt</td><td><code>firebase.json</code> und Hosting-Ziel</td></tr>
+              <tr><td>App synchronisiert nicht</td><td>Firebase beim Build unvollständig</td><td>Workflow-Environment/Browserkonsole</td></tr>
+              <tr><td>Lobby-Verwaltung lädt nicht</td><td>Firebase fehlt/Auth aus/Rules veraltet</td><td>Web-Konfiguration, Auth-Anbieter, Rules-Deploy</td></tr>
+              <tr><td>Rules-Emulator startet nicht</td><td>Java älter als 21</td><td><code>java -version</code> und JDK aktualisieren</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -1014,7 +1178,7 @@ npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --pr
           <h3>Vertrauensbasierter privater Hub</h3>
           <p>Die globalen Legacy-Pfade unter <code>apps/{appId}/...</code> bleiben für alle authentifizierten Clients offen. Lobby-Metadaten sind lesbar, aktive Lobby-App-Zustände gemeinsam bearbeitbar und Geräte-Dokumente beim Schreiben auf die eigene UID begrenzt.</p>
           <p>Gerätehistorie und Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich. Der PIN <code>5340</code> verhindert versehentliche Nutzung, ist im Web-Bundle aber auslesbar und keine Sicherheitsgrenze. Entfernte Lobbys werden im App-Verzeichnis deaktiviert. Live-Buzzer-Daten sind gemeinsam lesbar; Rundensteuerung und globaler Uhrabgleich sind an eine unveränderliche Host-UID gebunden. Neue Buzzes prüfen die eigene Spieler-UID. Lobby-Pfade trennen die Daten logisch, ohne vertrauliche Mitgliederräume. Uhrmessungen sind auf die eigene Auth-UID beschränkt. Realtime-Regeln können den Firestore-Löschmarker nicht direkt prüfen.</p>
-          <p><a href="todo.md">Priorisierte Sicherheits- und Qualitätsarbeiten ansehen →</a></p>
+          <p>Vor öffentlicher Nutzung mit sensiblen Daten, echten Besitzerrollen oder Mandantentrennung müssen Datenräume, Identitäten und Besitzer-/Teilnehmer-Claims modelliert, globale Legacy-Pfade migriert und Rules verengt werden. Client-PINs müssen durch serverseitig prüfbare Autorisierung ersetzt und erlaubte, abgewiesene sowie migrationsbezogene Zugriffe mit Emulator-/Rules-Tests abgesichert werden.</p>
         </div>
       </section>
     </main>

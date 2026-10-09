@@ -191,6 +191,10 @@ function pairingSignature(pairings: Pairing[]) {
         pairing.whitePlayerId,
         pairing.blackPlayerId,
         pairing.byePlayerId,
+        pairing.handBrainSides?.white.brainPlayerId,
+        pairing.handBrainSides?.white.handPlayerId,
+        pairing.handBrainSides?.black.brainPlayerId,
+        pairing.handBrainSides?.black.handPlayerId,
         ...(pairing.marioKartRacers?.map((racer) => racer.playerId) ?? []),
       ]
         .filter(Boolean)
@@ -236,6 +240,15 @@ function planNextPairings(tournament: Tournament) {
 }
 
 export function getTournamentBenchmarkScenarios(): TournamentBenchmarkScenario[] {
+  const tiedSwissPlayers = makePlayers(16)
+  const tiedSwissRounds = makeCircleRounds(tiedSwissPlayers, 1).map((round) => ({
+    ...round,
+    pairings: round.pairings.map((pairing) => ({
+      ...pairing,
+      result: '0.5-0.5' as const,
+    })),
+  }))
+  const tiedSwissTournament = makeTournament('swiss', tiedSwissPlayers, tiedSwissRounds, 5)
   const swissPlayers = makePlayers(32)
   const swissPairingTournament = makeTournament(
     'swiss',
@@ -258,11 +271,47 @@ export function getTournamentBenchmarkScenarios(): TournamentBenchmarkScenario[]
     8,
   )
   const marioKartHistoryTournament = makeMarioKartHistoryTournament()
+  const handBrainPlayers = makePlayers(32)
+  const handBrainTournament = makeTournament(
+    'handAndBrain',
+    handBrainPlayers,
+    Array.from({ length: 8 }, (_, roundIndex) => ({
+      id: `hand-brain-round-${roundIndex + 1}`,
+      roundNumber: roundIndex + 1,
+      status: 'completed' as const,
+      pairings: Array.from({ length: 8 }, (_, boardIndex) => {
+        const playerId = (offset: number) =>
+          handBrainPlayers[(boardIndex * 4 + roundIndex + offset) % 32].id
+        return {
+          id: `hand-brain-${roundIndex + 1}-${boardIndex + 1}`,
+          roundNumber: roundIndex + 1,
+          boardNumber: boardIndex + 1,
+          kind: 'handAndBrain' as const,
+          handBrainSides: {
+            white: { brainPlayerId: playerId(0), handPlayerId: playerId(1) },
+            black: { brainPlayerId: playerId(2), handPlayerId: playerId(3) },
+          },
+          result: resultFor(roundIndex, boardIndex),
+          isManual: false,
+          isBye: false,
+        }
+      }),
+    })),
+    9,
+  )
 
   return [
     {
       id: 'swiss-pairing-32-round-9',
       execute: () => pairingSignature(planNextPairings(swissPairingTournament).pairings),
+    },
+    {
+      id: 'swiss-pairing-16-tied-round-2',
+      execute: () => pairingSignature(planNextPairings(tiedSwissTournament).pairings),
+    },
+    {
+      id: 'hand-brain-planning-32-round-9',
+      execute: () => pairingSignature(planNextPairings(handBrainTournament).pairings),
     },
     {
       id: 'round-robin-repair-16-state-limit',

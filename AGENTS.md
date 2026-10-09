@@ -35,7 +35,6 @@ Diese kompakte Repository-Anleitung immer zuerst lesen. Danach nur die Quellen u
 | Persistenz, Lobby oder Firebase-Sync | betroffene Teile von Abschnitt 4 in `docs/specs.md` und die direkten Infrastrukturdateien |
 | Modulplatzierung, Schnittstellen, Importregeln oder Architekturänderung | betroffene Teile der Abschnitte 6 und 7 in `docs/specs.md` |
 | Hosting, Actions, Umgebungsvariablen oder Sicherheit | betroffene Teile der Abschnitte 9 und 10 in `docs/specs.md`, Workflows und Firebase-Konfiguration |
-| Scope, Priorität, Status oder Planung | `docs/todo.md`; den Abschnitt „Nicht als offene Spezifikation weiterführen“ nur für frühere Arbeit oder Evidenz |
 | bestehende oder schwer reversible Architekturentscheidung | Abschnitt 6.4 in `docs/specs.md` sowie vorhandene einschlägige Entscheidungsdokumente; derzeit gibt es kein separates ADR-Verzeichnis |
 | neue oder umzubenennende Datei | `docs/file-naming-conventions.md` |
 | Projektüberblick oder öffentliche Beschreibung | `README.md` |
@@ -104,6 +103,5 @@ Bei Firebase- oder Sync-Änderungen zusätzlich lokalen Modus ohne `.env.local`,
 - `docs/specs.md`: zentrale Produkt- und Systemspezifikation einschließlich Entwicklungs- und Betriebsvertrag
 - `docs/specs.html`: responsive Lesefassung derselben Spezifikation
 - `docs/file-naming-conventions.md`: verbindliche Konvention für neue und umbenannte Dateien
-- `docs/todo.md`: priorisierte, noch nicht spezifizierte oder umgesetzte Verbesserungen
 
 Wenn diese Dateien dem Code widersprechen, zuerst den aktuellen Laufzeitpfad verifizieren und die Dokumentation im selben Änderungssatz korrigieren.

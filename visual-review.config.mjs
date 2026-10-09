@@ -258,6 +258,105 @@ Object.assign(review.scenes, {
         .evaluate((el) => el.scrollIntoView({ block: 'center' }))
     },
   },
+  'planung-monat': {
+    path: '/apps/triathlon-tracker',
+    click: ['Planung'],
+    run: async ({ page }) => {
+      await page.getByRole('radio', { name: 'Monat', exact: true }).click()
+      await page.waitForTimeout(400)
+    },
+  },
+  'woche-kopieren': {
+    path: '/apps/triathlon-tracker',
+    click: ['Planung'],
+    run: async ({ page }) => {
+      await page
+        .getByRole('button', { name: 'Woche kopieren', exact: true })
+        .first()
+        .click()
+      await page.getByRole('dialog').waitFor()
+    },
+  },
+  'plan-eintragen': {
+    path: '/apps/triathlon-tracker',
+    run: async ({ page }) => {
+      await page.getByRole('button', { name: 'Planen', exact: true }).click()
+      await page.getByRole('dialog').waitFor()
+    },
+  },
+  'tagebuch-liste': {
+    path: '/apps/triathlon-tracker',
+    click: ['Tagebuch'],
+    run: async ({ page }) => {
+      await page
+        .locator('[data-journal-training]')
+        .nth(2)
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    },
+  },
+  'tagebuch-leer': {
+    path: '/apps/triathlon-tracker?review-empty=1',
+    click: ['Tagebuch'],
+  },
+  verlauf: { path: '/apps/triathlon-tracker', click: ['Verlauf'] },
+  'leistung-schwimmen': {
+    path: '/apps/triathlon-tracker',
+    click: ['Verlauf'],
+    run: async ({ page }) => {
+      await page
+        .locator('[data-performance-plot=swim]')
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    },
+  },
+  fortschritt: {
+    path: '/apps/triathlon-tracker',
+    click: ['Verlauf'],
+    run: async ({ page }) => {
+      const details = page
+        .locator('details')
+        .filter({ has: page.locator('summary', { hasText: 'Fortschrittsindex' }) })
+      if (await details.count()) {
+        await details.first().locator('summary').click()
+        await page.waitForTimeout(400)
+      }
+      await page
+        .getByText('Fortschrittsindex', { exact: true })
+        .first()
+        .evaluate((el) => el.scrollIntoView({ block: 'start' }))
+      await page.evaluate(() => scrollBy(0, -88))
+    },
+  },
+  datentabellen: {
+    path: '/apps/triathlon-tracker',
+    click: ['Verlauf'],
+    run: async ({ page }) => {
+      const tables = page.locator('[data-chart-tables]')
+      const summary = tables.locator('summary')
+      if (await summary.count()) await summary.first().click()
+      await page.waitForTimeout(400)
+      await tables.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+      await page.evaluate(() => scrollBy(0, -88))
+    },
+  },
+  'verlauf-leer': {
+    path: '/apps/triathlon-tracker?review-empty=1',
+    click: ['Verlauf'],
+  },
+  intervalle: {
+    path: '/apps/triathlon-tracker',
+    click: ['Training eintragen'],
+    run: async ({ page }) => {
+      const dialog = page.getByRole('dialog')
+      await dialog.getByRole('button', { name: 'Intervalle' }).click()
+      await dialog
+        .getByRole('button', { name: 'Abschnitt hinzufügen' })
+        .click()
+      await page.waitForTimeout(300)
+      await dialog
+        .getByText('Abschnitt 1', { exact: true })
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    },
+  },
 })
 
 Object.assign(review.scenes, {
@@ -271,9 +370,42 @@ Object.assign(review.scenes, {
   },
 })
 
+const triathlonTabs = new Set(['Rekorde', 'Planung', 'Tagebuch', 'Verlauf'])
+const disciplineLabels = { swim: 'Schwimmen', bike: 'Rad', run: 'Laufen' }
+const sceneDisciplines = {
+  rekorde: 'swim',
+  'rekorde-rad': 'bike',
+  'rekorde-laufen': 'run',
+  'record-empty': 'run',
+  leistung: 'run',
+  'leistung-rad': 'bike',
+  'leistung-schwimmen': 'swim',
+}
+for (const [name, discipline] of Object.entries(sceneDisciplines))
+  review.scenes[name].discipline = discipline
+
+// Layouts with a discipline switcher show one sport at a time.
+async function focusDiscipline(page, discipline) {
+  const switcher = page.locator('[data-discipline-switch]:visible')
+  if (!(await switcher.count())) return
+  await switcher
+    .first()
+    .getByRole('radio', { name: disciplineLabels[discipline], exact: true })
+    .click()
+  await page.waitForTimeout(400)
+}
+
 for (const scene of Object.values(review.scenes)) {
   const run = scene.run
+  // Mobile icon tabs show only the active label, so tabs are opened by role.
+  const tab = scene.click?.find((text) => triathlonTabs.has(text))
+  if (tab) scene.click = scene.click.filter((text) => text !== tab)
   scene.run = async (context) => {
+    if (tab) {
+      await context.page.getByRole('tab', { name: tab, exact: true }).click()
+      await context.page.waitForTimeout(review.settle)
+    }
+    if (scene.discipline) await focusDiscipline(context.page, scene.discipline)
     await run?.(context)
     await context.page.mouse.move(0, 0)
     await context.page.waitForTimeout(250)

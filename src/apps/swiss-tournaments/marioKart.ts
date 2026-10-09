@@ -697,11 +697,32 @@ function groupScore(
   candidates: PlanningCandidateScoreFacts[],
   repetitionsByScoreIndex: number[][],
 ): PlanningGroupScore {
-  const points = candidates.map((candidate) => candidate.points)
-  const averages = candidates.map((candidate) => candidate.averagePlacement)
+  let minimumPoints = Number.POSITIVE_INFINITY
+  let maximumPoints = Number.NEGATIVE_INFINITY
+  let minimumAverage = Number.POSITIVE_INFINITY
+  let maximumAverage = Number.NEGATIVE_INFINITY
+  let finiteAverageCount = 0
+  let cycleTotal = 0
+  let fillIns = 0
+  let fillInRecencyPenalty = 0
+  let avoided = 0
+  let initialSeedTotal = 0
   let repetitions = 0
 
   for (let left = 0; left < candidates.length; left += 1) {
+    const candidate = candidates[left]
+    minimumPoints = Math.min(minimumPoints, candidate.points)
+    maximumPoints = Math.max(maximumPoints, candidate.points)
+    if (Number.isFinite(candidate.averagePlacement)) {
+      minimumAverage = Math.min(minimumAverage, candidate.averagePlacement)
+      maximumAverage = Math.max(maximumAverage, candidate.averagePlacement)
+      finiteAverageCount += 1
+    }
+    cycleTotal += candidate.candidate.scoringCycleNumber
+    fillIns += candidate.fillIns
+    fillInRecencyPenalty += candidate.fillInRecencyPenalty
+    avoided += candidate.avoided
+    initialSeedTotal += candidate.initialSeed
     for (let right = left + 1; right < candidates.length; right += 1) {
       repetitions +=
         repetitionsByScoreIndex[candidates[left].scoreIndex][
@@ -710,25 +731,17 @@ function groupScore(
     }
   }
 
-  const finiteAverages = averages.filter(Number.isFinite)
-
   return [
-    candidates.reduce(
-      (sum, candidate) => sum + candidate.candidate.scoringCycleNumber,
-      0,
-    ),
-    Math.max(...points) - Math.min(...points),
+    cycleTotal,
+    maximumPoints - minimumPoints,
     repetitions,
-    candidates.reduce((sum, candidate) => sum + candidate.fillIns, 0),
-    candidates.reduce(
-      (sum, candidate) => sum + candidate.fillInRecencyPenalty,
-      0,
-    ),
-    finiteAverages.length > 1
-      ? Math.max(...finiteAverages) - Math.min(...finiteAverages)
+    fillIns,
+    fillInRecencyPenalty,
+    finiteAverageCount > 1
+      ? maximumAverage - minimumAverage
       : 0,
-    candidates.reduce((sum, candidate) => sum + candidate.avoided, 0),
-    candidates.reduce((sum, candidate) => sum + candidate.initialSeed, 0),
+    avoided,
+    initialSeedTotal,
   ]
 }
 

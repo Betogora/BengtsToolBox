@@ -1,12 +1,12 @@
 # BengtsToolBox – Produkt- und Systemspezifikation
 
-> **Stand:** 22. August 2026
+> **Stand:** 5. Oktober 2026
 > **Status:** aus dem aktuellen Laufzeitcode rekonstruiert  
 > **Geltungsbereich:** gesamtes Repository
 
-Diese Datei ist die zentrale Spezifikation von BengtsToolBox. Sie vereint Produktumfang, fachliches Ist-Verhalten, Architekturregeln, Entwicklungsvertrag und Betrieb. Der aktuelle Code bleibt für Implementierungsdetails maßgeblich. Abweichungen zwischen Code und dieser Datei müssen im selben Änderungssatz behoben werden.
+Diese Datei ist die einzige fachliche Produkt- und Systemspezifikation von BengtsToolBox. Sie vereint Produktumfang, fachliches Ist-Verhalten, Architekturregeln, Entwicklungsvertrag und Betrieb für alle Apps. Die HTML-Lesefassung wird aus diesem Vertrag nachgeführt; separate App-Spezifikationen werden nicht gepflegt. Der aktuelle Code bleibt für Implementierungsdetails maßgeblich. Abweichungen zwischen Code und dieser Datei müssen im selben Änderungssatz behoben werden.
 
-Die visuell aufbereitete Lesefassung steht in [`specs.html`](specs.html). Nachweisbare technische Lücken und sinnvolle nächste Schritte stehen getrennt in [`todo.md`](todo.md).
+Die visuell aufbereitete Lesefassung steht in [`specs.html`](specs.html).
 
 ## 1. Produktauftrag
 
@@ -24,8 +24,8 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 ### 1.2 Bewusste Grenzen
 
 - Es gibt keinen Application Server und keine Cloud Functions; Hosting, Anonymous Auth, Firestore und die Realtime Database des Live-Buzzers bleiben im Spark-Tarif nutzbar. Ein Abrechnungskonto darf nicht verknüpft werden.
-- Es gibt keine persönlichen Konten, Rollen oder Mandanten.
-- Anonymous Auth identifiziert eine Browsersitzung, autorisiert aber keine fachlichen Rollen.
+- Es gibt keine persönlichen Konten, appübergreifenden Besitzerrollen oder Mandanten. Live-Buzzer bindet ausschließlich seine Rundensteuerung an eine Host-UID.
+- Anonymous Auth identifiziert eine Browsersitzung. Abgesehen von der Host-UID des Live-Buzzers entstehen daraus keine fachlichen Rollen.
 - LocalStorage ist Fallback und Cache, keine vollständige Offline-Synchronisation oder Konfliktauflösung.
 - Die Anwendung ist in der aktuellen Sicherheitskonfiguration für einen privaten Hub gedacht, nicht für sensible oder mandantengetrennte Daten.
 - `Schlag den Raab` besitzt nur eine clientseitige Zugangsschranke; sie ist keine Sicherheitsgrenze.
@@ -94,7 +94,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 - Lade-, Leer-, Fehler- und lokaler Modus müssen verständlich darstellbar sein.
 - Destruktive Aktionen benötigen eine angemessene Bestätigung.
 - Farbe darf nie der einzige Informationsträger sein.
-- Frei wählbare App-Farben verwenden den gemeinsamen Farbkreis. Zwischenstände bleiben lokal; erst die bestätigte Farbe wird als kanonisches `#RRGGBB` an die jeweilige App übergeben.
+- Frei wählbare App-Farben verwenden den gemeinsamen Farbkreis. Pointer-Bewegungen zeigen eine lokale Vorschau; Loslassen beziehungsweise ein Pfeiltastenschritt übergibt den kanonischen `#RRGGBB`-Wert direkt an die App. Ein separater Bestätigungsbutton ist nicht erforderlich.
 - Gemeinsame Icon-Tabs und segmentierte Auswahlen zeigen unter 430 px nur das aktive Label, ab 430 px alle Labels. Die Gesamtbreite bleibt beim Wechsel stabil; die kompakte Variante reserviert den längsten Namen. Zugängliche Namen und ein nach Größenänderungen ausgerichteter Auswahlindikator bleiben erhalten. Datum und Uhrzeit verwenden die gemeinsamen Picker und bleiben per Tastatur eingebbar.
 - Auswahlfelder unterscheiden sich durch eine dezente Fläche und ein Listenfilter-Icon von Texteingaben. Team Gelb verwendet eine eigene gelbe Teamfarbe.
 - Aufklappbereiche teilen eine rechts angeordnete Chevron-Anzeige, die den geöffneten Zustand durch Drehung kennzeichnet.
@@ -134,8 +134,9 @@ Die Firebase-Initialisierung gilt als vollständig, wenn mindestens API-Key, Aut
 | Nutzerkennung | `useAnonymousSession` | Firebase UID oder für den Seitenlauf stabile lokale Fallback-ID sowie typisierter Fehler |
 | Lobby-Verzeichnis | `useLobbyDirectory` | Öffentliche Liste, Default-Lobby und transaktionssichere Erstellung |
 | Aktive Lobby | `useActiveLobby` | Lobby aus dem Route-Kontext; außerhalb immer `default` |
+| Live-Buzzer-Zustand | `useRealtimeDatabaseDoc<T>` | Realtime-Abonnement, lokaler Cache, verbindungsabhängige Transaktionen und typisierte Fehler; keine Firestore-Offline-Queue |
 
-LocalStorage-Schlüssel beginnen mit `app-hub:doc:` beziehungsweise `app-hub:collection:` und enthalten den vollständigen kanonischen Pfad.
+LocalStorage-Schlüssel beginnen mit `app-hub:doc:`, `app-hub:collection:` beziehungsweise für Live-Buzzer mit `app-hub:realtime:` und enthalten den vollständigen kanonischen Pfad.
 
 `merge`, `mergeItem` und `saveItems` akzeptieren neben festen Werten pure Updater. Im Realtime-Modus werden diese in einer Transaktion auf den aktuellen Serverstand angewendet, im lokalen Modus auf den lokalen Zustand. Listen-Updater verwenden stabile IDs und müssen bereits angewendete Aktionen ohne Duplikate oder Umordnung erkennen. Fehlende Dokumente beziehungsweise Collection-Elemente werden durch einen Updater-Merge nicht neu angelegt. Pfade und gespeichertes Datenformat bleiben unverändert.
 
@@ -157,17 +158,17 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 
 | App | Dokumente | Collections |
 | --- | --- | --- |
-| Randomizer | `apps/randomizer/state/{stateId}` | – |
-| Glücksrad | `apps/decision-wheel/state/{stateId}` | – |
-| Coinflip | `apps/coinflip/state/{stateId}` | – |
-| Nächste Frage | `apps/next-question/state/{stateId}` | – |
-| Schlag den Raab | `apps/schlag-den-raab/sessions/{sessionId}/state/default` | – |
-| Live-Buzzer | `apps/live-buzzer/sessions/{sessionId}/state/default` | `.../players` |
-| Scoreboard | `apps/scoreboard/sessions/{sessionId}/state/default` | `.../players`, `.../teams`, `.../scorings`, `.../events` |
-| Fortschritts-Dashboard | `apps/progress-dashboard/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
-| Sushi Map | `apps/territory-map/sessions/{sessionId}/state/default` | `.../players`, `.../datasets` |
-| Turnier-App | `apps/swiss-tournaments/sessions/{sessionId}/state/default` | `.../tournaments` |
-| Triathlon-Tracker | `apps/triathlon-tracker/sessions/{sessionId}/state/default` | `.../planned-trainings`, `.../actual-trainings` |
+| Randomizer | `apps/randomizer/state/default` | – |
+| Glücksrad | `apps/decision-wheel/state/default` | – |
+| Coinflip | `apps/coinflip/state/default` | – |
+| Nächste Frage | `apps/next-question/state/default` | – |
+| Schlag den Raab | `apps/schlag-den-raab/sessions/default/state/default` | – |
+| Live-Buzzer, nur Quelle der einmaligen Übernahme | `apps/live-buzzer/sessions/default/state/default` | `.../players` |
+| Scoreboard | `apps/scoreboard/sessions/default/state/default` | `.../players`, `.../teams`, `.../scorings`, `.../events` |
+| Fortschritts-Dashboard | `apps/progress-dashboard/sessions/default/state/default` | `.../players`, `.../datasets` |
+| Sushi Map | `apps/territory-map/sessions/default/state/default` | `.../players`, `.../datasets` |
+| Turnier-App | `apps/swiss-tournaments/sessions/default/state/default` | `.../tournaments` |
+| Triathlon-Tracker | `apps/triathlon-tracker/sessions/default/state/default` | `.../planned-trainings`, `.../actual-trainings` |
 
 Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In einer Lobby kapseln sie ihre Daten unter `lobbies/{lobbyId}/apps/{appId}/...`; Metadaten liegen in `lobbies/{lobbyId}`, Gerätezugriffe in `lobbies/{lobbyId}/devices/{uid}`. Beim Anlegen einer Lobby werden keine App-Daten aus der globalen oder einer anderen Lobby kopiert; beim ersten Öffnen entsteht ausschließlich der spezifizierte Erstzustand der jeweiligen App. Die globale Lobby behält bewusst alle bestehenden `apps/...`-Pfade und benötigt keine Datenmigration.
 
@@ -247,7 +248,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Ein direkter Sprung verwendet eine 1-basierte Kartennummer und begrenzt sie auf den gültigen Bereich.
 - Jeder Kartenwechsel verbirgt die Antwort wieder.
 - Die primäre Aktion zeigt zuerst die Antwort und wechselt beim nächsten Auslösen zur folgenden Frage.
-- Tastatursteuerung unterstützt die primäre Aktion und Navigation.
+- Pfeil links wechselt zurück; Pfeil rechts führt die primäre Aktion aus. Andere editierbare Felder und Tastenkombinationen mit Modifiern bleiben von diesen Shortcuts ausgenommen.
 
 ### 5.5 Scoreboard
 
@@ -264,7 +265,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - „Archivieren und neu starten“ friert Spieler, Teams und Ereignisse des alten Scorings ein und startet mit derselben Aufstellung bei `0`. Archive zeigen auch die persönlichen Spielerpunkte, werten Teams anhand der eingefrorenen Aufstellung und sind umbenennbar, lesbar und samt Ereignissen löschbar.
 - Automatische Scoringnamen verwenden den lokalen Starttag ohne Uhrzeit. Mehrere Scorings desselben Tages werden appweit chronologisch mit römischen Suffixen nummeriert; manuelle Namen bleiben unverändert.
 - Der Presenter ist read-only und zeigt bei zwei Zielen eine große Gegenüberstellung, ab drei Zielen die Rangansicht.
-- Schema-Version `2` ist ein bewusster destruktiver Schnitt: Beim ersten Öffnen pro globalem oder Lobby-Datenraum werden der alte State und die alte Spieler-Collection gelöscht und durch die neue Initialbelegung ersetzt.
+- Schema-Version `2` ist ein bewusster destruktiver Schnitt: Ein erkannter Altbestand wird im aktuellen Datenraum atomar durch Initial-State, Spieler, Teams und Scoring ersetzt; alte Ereignisse werden geleert. Ein bereits gültiger V2-Bestand wird beim Öffnen erhalten.
 
 ### 5.6 Live-Buzzer
 
@@ -357,7 +358,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 - Runde 1 paart obere gegen untere Seed-Hälfte.
 - Spätere Runden bilden Scoregruppen, verwenden bei Bedarf Floater und minimieren Punktdifferenzen.
-- Wiederholungen werden vermieden, solange eine vollständige wiederholungsfreie Paarung existiert.
+- Wiederholungen werden vermieden, solange eine vollständige wiederholungsfreie Paarung existiert. Eine separate vollständige Paarungssuche sichert dies unabhängig von der begrenzten Scoregruppenoptimierung ab.
 - Ist das nicht möglich, wird ein Vereins-Fallback mit harter Warnung erzeugt.
 - Bei ungerader Spielerzahl erhält eine Person ein Bye. Bevorzugt werden wenige bisherige Härten, niedriger Score und niedriger Seed; die Policy kann Neueinsteiger schützen.
 - Farben werden auf Wechsel, Serien von drei gleichen Farben und Gesamtdifferenz optimiert.
@@ -417,21 +418,54 @@ Pairings tragen harte oder weiche Warnungen. Abgedeckt werden unter anderem fehl
 
 **Zweck:** Bestleistungen für Schwimmen, Radfahren und Laufen verfolgen, Training manuell planen und seine Entwicklung nachvollziehen.
 
-- Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Dropdowns. Laufen unterscheidet nur Straße und Laufband; Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen.
+#### Betriebsmodell und Ansichten
 
-- Die Tabs Rekorde, Planung, Tagebuch und Verlauf trennen Rekorde, Planung, Erfassung und Auswertung; Rekorde ist die Einstiegsansicht. Das optionale aktuelle Gewicht wird dort für Critical Power in W/kg gepflegt. Die App verwendet metrische Einheiten, `Europe/Berlin` und Montag als Wochenbeginn.
-- Gemessene Rekorde verwenden die gesamte bisherige Historie im gewählten Kontext, standardmäßig nur markierte Maximaltests, umschaltbar auf alle Trainings. Sie benötigen exakt die Zieldistanz: Schwimmen 200/400/750/1.500 m, Rad 20/40 km, Laufen 1/5/10 km/Halbmarathon/Marathon. Radleistungsrekorde benötigen exakt 5 oder 20 Minuten. Intervalle und hochgerechnete Teilstrecken sind keine gemessenen Rekorde. Jede Zielzeile bietet eine vorausgefüllte Testeingabe; bestehende Rekorde öffnen ihren ursprünglichen Eintrag.
-- Geplante Einheiten enthalten Datum, optionale Zeit, Disziplin, optionale Dauer und Distanz sowie ein kurzes Label. Sie sind passive Kalendereinträge ohne Status, Plan-Ist-Verknüpfung oder Erfüllungswertung. Eine Woche kann nach Vorschau einschließlich möglicher Duplikate kopiert werden.
-- Absolvierte Einheiten benötigen Datum, Disziplin sowie Dauer oder Distanz. Je zwei Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe; die Pace gilt beim Schwimmen pro 100 Meter, sonst pro Kilometer. Dauer akzeptiert sekundengenaue Uhrnotation und Dezimalminuten. Optional sind Zeit, Kontext, Puls, Leistung, RPE, Testmarkierung und manuell aufgebaute Belastungs-/Pausenintervalle. Hauptmesswerte stehen direkt im kompakten Dialog; Intervalle sind aufklappbar.
-- Monats- und Wochenkalender enthalten ausschließlich geplante Tageskarten mit Wochensummen; die Woche ist vorausgewählt. Einzelne Pläne lassen sich kopieren oder per Drag-and-drop verschieben; das Datumsfeld im Editor bietet dieselbe Verschiebung per Tastatur und mobil. Mobil zeigt der Monat ein Datumsgitter mit Tagesagenda und die Woche eine vertikale Agenda. Ab 768 Pixeln stehen die sieben Wochentage nebeneinander, die Wochensumme darunter.
-- Das Tagebuch zeigt alle Datensätze als verdichtete Desktop-Tabelle und mobile Karten, mit Kontext, sämtlichen Messwerten, Testmarkierung, Disziplin-/Datums-/Maximaltestfiltern, Datumssortierung und Seiten zu 20 Einträgen. Anzahl und Zeit werden zusammengefasst; Summendistanz nur bei gewählter Disziplin.
-- Die aktuelle Woche fasst Zeit, Distanz und Anzahl je Disziplin über den Tabs zusammen. Die Verlaufsansicht ergänzt Zeitraumkennzahlen, standardmäßig Wochenzeit, umschaltbare Wochendistanz sowie Trainingspunkte und Modellkurven. Diagramme besitzen 4W-, 12W-, 6M-, 1J- und Gesamtbereiche; Leistungs- und Indexdiagramme besitzen zugängliche Tabellenalternativen.
-- Aktuelle Hochrechnungen stehen getrennt neben gemessenen Rekorden und verwenden höchstens drei Monate kontinuierlicher, kontextgleicher Einheiten. Intervalle sind keine Modellanker. Individuelle Modelle benötigen drei geeignete Anker; Ausnahmen sind Riegel aus einem Lauf von 5–21,1 km und CSS aus zwei maximalen 200-/400-m-Tests. Markierte Tests werden bevorzugt, sonst werden Trainingsäquivalente ausgewiesen; Modell und Datenbasis bleiben sichtbar. Extrapolationen tragen eine Markierung, nicht gestützte Ziele bleiben leer.
-- Laufen nutzt Critical Speed nur mit 2–20-Minuten-Ankern oder ein Potenzgesetz. Zusätzliche Ziele liegen höchstens beim Doppelten der längsten Ankerstrecke; Critical Speed schätzt keine Ziele über 10 km und Marathon wird nicht aus kürzeren Distanzen extrapoliert. Schwimmen nutzt CSS oder Potenzgesetz bis höchstens zum Vierfachen der längsten Ankerstrecke. Rad zeigt CP mit W′, modellierte 5-/20-Minuten-Leistung und optional W/kg; unabhängige 20-/40-km-Zeiten benötigen passende Distanz-Zeit-Anker. CP wird nicht in Geschwindigkeit umgerechnet.
-- Der aufklappbare Fortschrittsindex beginnt je Disziplin bei 100; ein geometrischer Gesamtindex existiert nur bei verfügbaren Werten aller drei Disziplinen. Historische Punkte verwenden keine späteren Daten. Wissenschaftliche Quellen und Produktgrenzen sind in der Rekordansicht zugänglich.
-- Es gibt weder Datenimport noch Datenexport noch einen globalen Reset.
+- Ein Tracker gehört zum globalen oder aktuellen Lobby-Datenraum und verwendet die gemeinsamen Firestore-Hooks samt lokalem Fallback. Das optionale Gewicht liegt im State-Dokument; Planungen und absolvierte Einheiten liegen in getrennten Collections. Rekorde und Hochrechnungen werden aus Rohdaten abgeleitet und nicht gespeichert.
+- Die Tabs `Rekorde`, `Planung`, `Tagebuch` und `Verlauf` trennen Bestleistungen, Planung, Erfassung und Auswertung. `Rekorde` ist die Einstiegsansicht; dort liegen Kontextfilter, aktuelles Gewicht und aufklappbare Quellen. Diagramme werden lazy geladen.
+- Metrische Einheiten, `Europe/Berlin` und Montag als Wochenbeginn gelten durchgehend. Schwimmen trennt 25-m-Becken, 50-m-Becken und Freiwasser; Radfahren Indoor/Outdoor; Laufen Straße und Laufband. Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen. Die Kontextauswahl in Trainingseingabe, Rekorden und Verlauf verwendet Dropdowns. Standards sind 50-m-Becken, Outdoor und Straße. Ältere Einträge ohne Kontext werden diesen Standards zugeordnet.
 
-Die ausführliche, iterierbare Produktspezifikation steht in [`spec_tracker.md`](spec_tracker.md).
+#### Gemessene Rekorde
+
+- Rekorde verwenden die gesamte bisherige Historie im gewählten Kontext, standardmäßig nur markierte Maximaltests oder Wettkämpfe, umschaltbar auf alle Trainings. Diese Auswahl verändert nicht die automatische Modellwahl für Hochrechnungen.
+- Zeitrekorde erfordern positive Dauer und exakt die Zieldistanz: Schwimmen 200/400/750/1.500 m, Rad 20/40 km, Laufen 1/5/10 km, Halbmarathon (21.097,5 m) und Marathon (42.195 m). Radleistungsrekorde benötigen positive Durchschnittsleistung über exakt 5 oder 20 Minuten.
+- Ganze Einheiten liefern keine Bestzeiten beliebiger Teilstrecken. Intervalle und hochgerechnete Teilstrecken sind keine gemessenen Rekorde; fehlende Werte erscheinen als `—`.
+- Jede Zielzeile bietet eine Testeingabe mit vorausgewählter Disziplin, Kontext, Distanz oder Dauer und Testmarkierung. Bestehende Rekorde öffnen ihren ursprünglichen Eintrag; nach dem Speichern geht es mit erhaltenem Rekordkontext zurück zu `Rekorde`.
+
+#### Planung und Trainingseingabe
+
+- Planungen enthalten Datum, optionale Startzeit, Disziplin, optionale Dauer/Distanz und ein Label mit höchstens 40 Zeichen. Sie bleiben passive Kalendereinträge ohne Erledigt-Status, Plan-Ist-Verknüpfung oder Erfüllungswertung.
+- Monats- und Wochenkalender zeigen ausschließlich geplante Einheiten; die Woche ist vorausgewählt. Einzelne Pläne lassen sich als bearbeitbare Kopie übernehmen oder per Drag-and-drop verschieben. Das Datumsfeld ermöglicht dieselbe Verschiebung per Tastatur und mobil. Wochenkopien erhalten den Wochentag, benötigen eine Vorschau und dürfen vorhandene Einheiten duplizieren.
+- Mobil zeigt der Monat ein Datumsgitter mit Tagesagenda und die Woche eine vertikale Agenda. Ab 768 Pixeln stehen sieben Wochentage nebeneinander mit Wochensumme darunter; im Desktop-Monat liegt die Wochensumme neben der Woche. Heute, Vor/Zurück und Datumsauswahl steuern die Navigation.
+- Absolvierte Einheiten benötigen Datum, Disziplin und mindestens positive Dauer oder Distanz. Optional sind Startzeit, Kontext, Durchschnittspuls, Durchschnittsleistung, RPE von 1 bis 10 und Testmarkierung. Manuell aufgebaute Intervalle enthalten Belastungs-/Pausenabschnitte mit Dauer/Distanz und optional Puls/Leistung; sie werden nicht per Textparser erzeugt.
+- Je zwei positive Angaben aus Dauer, Distanz und Durchschnittspace berechnen die dritte Größe. Die beiden zuletzt manuell bearbeiteten Felder sind maßgeblich; unvollständige Eingaben leeren den abgeleiteten Wert. Pace gilt beim Schwimmen pro 100 Meter, sonst pro Kilometer; gespeichert werden Dauer und Distanz.
+- Dauer akzeptiert `m:ss`, `h:mm:ss` und Dezimalminuten, auch für Planungen und Intervalle. Bearbeiten erhält die Sekunden. Hauptmesswerte stehen direkt im kompakten Dialog, Intervalle sind aufklappbar. Normale Trainingseinträge öffnen nach dem Speichern das Tagebuch; allgemeine Neueingaben verwenden den Standardkontext.
+- Ungültige Eingaben verhindern das Speichern. Abweichende Intervallsummen gegenüber Gesamtdauer/-distanz sind ein Hinweis und blockieren nicht. Einheiten bleiben bearbeitbar und löschbar.
+
+#### Tagebuch, Volumen und Verlauf
+
+- Das Tagebuch zeigt eine verdichtete Desktop-Tabelle und mobile Karten mit Hauptmesswerten, Kontext, Puls, Leistung, RPE, Testmarkierung und Intervallanzahl. Filter für Disziplin, Datumsbereich und Maximaltests, umkehrbare Datumssortierung und Seiten zu 20 Einträgen erschließen die Historie. Summen zeigen Anzahl und Zeit; Summendistanz nur bei gewählter Disziplin.
+- Bei vorhandenen Trainings fasst die aktuelle Woche Zeit, Distanz und Anzahl je Disziplin über den Tabs zusammen. `Verlauf` ergänzt Zeitraumkennzahlen, standardmäßig Wochenzeit und umschaltbare Wochendistanz; das Volumendiagramm hat keine zusätzliche Tabelle.
+- Leistungsdiagramme zeigen kontinuierliche Trainingspunkte und Modellkurven auf tatsächlichen Datumsabständen; Laufen und Schwimmen verwenden Pace. Bereiche sind 4 Wochen, 12 Wochen, 6 Monate, 1 Jahr und Gesamt, vorausgewählt sind 12 Wochen. Leistungs- und Indexdiagramme besitzen zugängliche Tabellenalternativen.
+- Der aufklappbare Fortschrittsindex beginnt je Disziplin in der ersten berechenbaren Woche bei 100. Ein gleich gewichtetes geometrisches Gesamtmittel existiert nur bei Werten aller drei Disziplinen.
+- Historische Auswertungen verwenden nur bis zum Stichtag verfügbare Einheiten. Nachträgliche Erfassung oder Änderungen leistungsrelevanter Daten verschieben deren Verfügbarkeit auf den Erfassungs-/Änderungstag; Distanz und Leistung werden dabei getrennt berücksichtigt. Die App speichert keine vollständigen früheren Versionen bearbeiteter Trainings.
+
+#### Hochrechnungen und Produktgrenzen
+
+- Aktuelle Hochrechnungen stehen getrennt neben Rekorden und verwenden höchstens drei Monate kontinuierlicher, kontextgleicher Einheiten. Intervalle sind keine Modellanker. Markierte Maximaltests werden bevorzugt; ohne solche Daten werden Trainingsäquivalente statt zugesicherter Wettkampfzeiten ausgewiesen.
+- Die stärkste Einheit je Distanz beziehungsweise Leistungsdauer bildet die obere Leistungshülle; gleichartige Einheiten können die Datenbasis stützen, ersetzen aber keine unterschiedlichen Anker. Individuell angepasste Distanzmodelle benötigen mindestens drei Anker mit ausreichender Distanz- und Dauerstreuung. Modell, Datenbasis, Extrapolation und unzureichende Daten bleiben sichtbar; nicht gestützte Ziele bleiben leer.
+- **Laufen:** Potenzgesetz oder Critical Speed, letzteres nur mit Ankerdauern von 2 bis 20 Minuten. Unter gültigen Kandidaten gewinnt der kleinere mittlere Leave-one-out-Fehler bis höchstens 10 %. Als Ersatz genügt ein Lauf von 5 bis 21,1 km mit Riegel-Exponent 1,06; der stärkste auf 5 km normierte Lauf wird Anker. Durchschnittspuls korrigiert die Hochrechnung nicht. Rekordziele liegen höchstens beim Doppelten der längsten Ankerstrecke; Ziele unter 5 km benötigen einen Anker von höchstens doppelter Zieldistanz. Critical Speed schätzt keine Ziele über 10 km, Marathon wird nicht aus kürzeren Distanzen extrapoliert.
+- **Schwimmen:** Critical Swim Speed aus starken 200-/400-m-Leistungen, bei zwei markierten Maximaltests direkt, sonst mit mindestens einer zusätzlichen Stützeinheit. Stützwerte müssen innerhalb von 10 % der CSS-Schätzung liegen. Ersatzweise gilt ein individuelles Potenzgesetz mit mindestens drei gestreuten Ankern und höchstens 10 % Leave-one-out-Fehler. Rekordziele liegen höchstens beim Vierfachen der längsten Ankerstrecke; CSS über 1.500 m aus 400-m-Ankern bleibt ausdrücklich eine Extrapolation.
+- **Radfahren:** Critical Power und W′ aus mindestens drei unterschiedlichen Leistungs-Dauer-Ankern zwischen 2 und 20 Minuten mit ausreichender Dauerstreuung und höchstens 10 % Modellabweichung. Angezeigt werden CP in Watt, optional W/kg und modellierte 5-/20-Minuten-Leistung. CP wird nicht in Geschwindigkeit umgerechnet. Unabhängige 20-/40-km-Zeiten verwenden ein Potenzgesetz aus vergleichbaren Distanz-Zeit-Ankern mit höchstens 10 % Leave-one-out-Fehler; Rekordziele liegen höchstens beim Doppelten der längsten Ankerstrecke.
+- Der Verlauf verwendet als Hauptkennzahlen Laufen 5/10 km, Schwimmen 750/1.500 m und Rad CP, ersatzweise 20-km-Zeit. Dreimonatsfenster, Fehlergrenzen und Extrapolationslimits sind konservative Produktregeln, keine statistischen Konfidenzintervalle.
+- Es gibt keine Gewichtshistorie, automatische Trainingsplanung, wiederkehrenden Termine, Planerfüllungs-/Belastungsmodelle, zusätzlichen Disziplinen, Coaching-/Gesundheitsempfehlungen, Wearable-/Strava-Anbindung, Live-Tracking, Datenimport/-export oder globalen Reset.
+
+#### Quellen der Leistungsmodelle
+
+Die Rekordansicht verlinkt dieselben fachlichen Grundlagen:
+
+- [Vickers & Vertosick (2016)](https://pubmed.ncbi.nlm.nih.gov/27570626/): begrenzte Laufzeitübertragung nach Riegel.
+- [Scott et al. (2024)](https://pmc.ncbi.nlm.nih.gov/articles/PMC10875687/): Critical Swim Speed aus maximalen Schwimmtests.
+- [Karsten et al. (2021)](https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.613151/full): Critical Power und W′ aus Leistungs-Dauer-Daten; Distanzschätzungen beim Rad benötigen unabhängig davon vergleichbare Fahrbedingungen.
 
 ### 5.11 Schlag den Raab
 
@@ -510,6 +544,7 @@ sequenceDiagram
 5. **Feature-lokale Wiederverwendung zuerst:** Shared Code entsteht erst bei echter Mehrfachnutzung.
 6. **Pure Fachlogik außerhalb React:** Besonders Turnier-, Zufalls- und Auswertungsregeln bleiben unabhängig von UI und Persistenz.
 7. **Code ist Detailquelle:** Dokumentation hält stabile Verträge fest und darf keine zweite, veraltete Implementierungserzählung werden.
+8. **TypeScript als gemeinsame Sprache:** Eine zweite Programmiersprache oder WebAssembly wird erst eingeführt, wenn die Performance-Baseline einen isolierten Hotspot nachweist und eine TypeScript-Lösung einschließlich Web Worker nicht genügt; weniger Quellzeilen allein rechtfertigen keine zusätzliche Toolchain.
 
 ## 7. Entwicklungsvertrag
 
@@ -563,12 +598,16 @@ src/apps/<app-id>/
 
 Vitest läuft in einer Node-Umgebung mit isolierten Workerthreads und prüft pure Fachlogik sowie Hook-Verträge mit React-Serverrendering und gemockter Infrastruktur, ohne Browser-DOM oder Firebase-Emulator. Tests liegen feature-nah als `*.test.ts`; ausschließlich gemeinsam genutzte feste Turnier-Fixtures liegen unter `src/apps/swiss-tournaments/__tests__`. Produktion und Tests verwenden dieselben öffentlichen Interfaces. Ein Registry-Vertragstest prüft zusätzlich eindeutige IDs und Routen, die Ableitung von `href` und `routePath` sowie den Gleichstand der dokumentierten App-Routen in beiden Spezifikationsfassungen.
 
-Der P0-Testschnitt umfasst:
+Die Kern-Suite umfasst:
 
 - Golden Cases für Swiss, Round Robin, Hand and Brain und Mario Kart;
 - Turnierlebenszyklus, Byes, Statuswechsel, Ergebniskorrekturen, Bonusrennen, Rangfolgen und Fortschritt;
 - Randomizer, Glücksrad und Münzwurf mit injizierbaren Zufallsquellen;
-- fachliche Utilities für wertende Teilnehmer und Glücksrad-Eingaben.
+- Scoreboard-Wertungen, Fortschrittsereignisse, Karten-Claims/Achievements, Quizkatalog und Schlag-den-Raab-Wertung;
+- Triathlon-Eingaben, Datum/Einheiten, Rekorde, Leistungsmodelle, historische Datenverfügbarkeit, Wochenstatistik und Hook-Aktionen;
+- Buzzer-Uhrschätzung, automatische Entscheidung und Hook-Aktionen;
+- zentrale Pfade, Lobby-Verträge, lokalen Cache, optimistische Mutationen, Batch-Rollback und Snapshot-/Transaktionsverträge;
+- Bundle-Messung, Budgetcheck, Spark-Abrechnungsprüfung, Specs-Fingerprint und deterministische Benchmark-Szenarien.
 
 Zufällige IDs und Zeitstempel sind keine Golden Values. Fixtures verwenden feste IDs und Ergebnisse; Assertions prüfen beobachtbare Paarungen, Rollen, Punkte, Warnungen und Zustandsübergänge. Neue Zufallslogik akzeptiert eine kleine feature-lokale Zufallsfunktion und behält `Math.random` beziehungsweise Web Crypto als Produktionsstandard.
 
@@ -580,9 +619,9 @@ npm run test:firebase
 npm run test:browser
 ```
 
-`npm test` läuft einmalig und ist der Befehl für die schnellen Kern-Tests in CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`. Es gibt zunächst kein prozentuales Coverage-Gate; die dokumentierte Szenariomatrix ist das Abnahmekriterium. `npm run test:firebase` prüft Rules und die atomare Ablehnung eines Firestore-Batches im lokalen Emulator.
+`npm test` läuft einmalig und ist der Befehl für die schnellen Kern-Tests in CI. `npm run test:watch` dient der lokalen Entwicklung. `npm run test:coverage` erzeugt einen nicht versionierten Text- und HTML-Bericht unter `coverage/`; seine auf ausgewählte Module beschränkte Konfiguration ist kein Nachweis appweiter Abdeckung. Es gibt kein prozentuales Coverage-Gate. `npm run test:firebase` prüft Firestore- und Realtime-Database-Regeln im Emulator: Lobby-/Gerätezugriffe, atomare Ablehnungen, konkurrierende Clients, Offline/Reconnect und einmalige Buzzer-Datenübernahme sowie vier parallele Buzzer-Lobbys mit je 20 Kandidaten.
 
-`npm run test:browser` startet Vite ohne Firebase-Konfiguration immer frisch auf dem eigenen Testport `127.0.0.1:5288` und verwendet nie einen laufenden Server wieder, weder einen Entwicklungsserver mit `.env.local` noch ein anderes Projekt; ist der Port belegt, bricht der Lauf ab. Die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts und lässt jeden Zugriffsversuch fehlschlagen. Die Suite führt eine kleine Playwright-Chromium-Suite bei 320, 390, 768 und 1440 Pixel Breite aus. Sie prüft Dashboard und responsive Navigation, eine verschachtelte Scoreboard-Route mit Tastatur und Bestätigungsdialog, Presenter und Fokuswiederherstellung sowie Karten- und Tabelleninteraktion der Sushi Map. Ein gemeinsamer Checkpoint lässt Browser- und Konsolenfehler, äußeren Horizontal-Overflow sowie Axe-Verstöße gegen WCAG 2.0 bis 2.2 A/AA fehlschlagen. Playwright-Bericht, Screenshots und Traces liegen ausschließlich in den nicht versionierten Verzeichnissen `playwright-report/` und `test-results/`.
+`npm run test:browser` startet Vite ohne Firebase-Konfiguration immer frisch auf dem eigenen Testport `127.0.0.1:5288` und verwendet nie einen laufenden Server wieder, weder einen Entwicklungsserver mit `.env.local` noch ein anderes Projekt; ist der Port belegt, bricht der Lauf ab. Die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts und lässt jeden Zugriffsversuch fehlschlagen. Die Suite führt Playwright-Chromium bei 320, 390, 768 und 1440 Pixel Breite aus. Sie prüft Dashboard/Navigation, Scoreboard, Presenter/Fokuswiederherstellung, Fortschrittsdiagramme, Sushi-Karte samt Touch-Panning und UK-Migration, Turnierablauf, Buzzer-Profil/Runden sowie Triathlon-Planung, Rekorde, Modelle und Tagebuch. Gemeinsame Controls, Tastatur und sichtbare Storage-/Syncfehler sind ebenfalls abgedeckt. Ein gemeinsamer Checkpoint lässt Browser-/Konsolenfehler, äußeren Horizontal-Overflow und Axe-Verstöße gegen WCAG 2.0 bis 2.2 A/AA fehlschlagen. Ein zusätzlicher Buzzer-Mehrgerätefall benötigt Auth-, Firestore- und Realtime-Emulatoren und wird ohne `FIREBASE_DATABASE_EMULATOR_HOST` übersprungen; er ist kein Nachweis der normalen lokalen Suite. Berichte, Screenshots und Traces bleiben unter `playwright-report/` und `test-results/` unversioniert.
 
 Für Erweiterungen gilt:
 
@@ -604,17 +643,17 @@ Mindestens für Codeänderungen:
 npm run lint
 npm run docs:check
 npm test
-npm run test:firebase
-npm run test:browser
 npm run build
 ```
 
 Bei Firebase- oder Sync-Änderungen zusätzlich:
 
-1. ohne `.env.local` im lokalen Modus prüfen;
+1. `npm run test:firebase` und ohne `.env.local` im lokalen Modus prüfen;
 2. mit Firebase dieselbe App in zwei Fenstern prüfen;
 3. Reload und Persistenz prüfen;
 4. Auth-, Rules-, Netzwerk- und sichtbare Fehlerzustände prüfen.
+
+Bei Änderungen der Bedienoberfläche zusätzlich die betroffenen Browserabläufe mit `npm run test:browser` prüfen. Für angeforderte UI-/Screenshot-Reviews gilt die CSS-Pixel-Matrix 320, 360, 375, 390, 393, 412, 430, 440; Tablet 768, 820, 1024; Desktop 1280, 1440, 1920. Betroffene Breakpoints werden unmittelbar darunter/darüber, relevante Zustände und getrennte Rollenansichten ausdrücklich geprüft. Diese Review-Matrix erweitert nicht automatisch die reguläre Testsuite.
 
 Eine Änderung ist fertig, wenn Registry oder Sonderroute korrekt, Persistenz zentral, gemeinsamer Code nicht dupliziert, UI-Zustände verständlich und Lint, Dokumentationscheck, Tests sowie Build erfolgreich sind. Dokumentation wird nur angepasst, wenn sich dauerhafter Kontext oder ein spezifiziertes Verhalten ändert.
 
@@ -665,14 +704,14 @@ Lobby-Infrastruktur ergänzt `npm run test:firebase`. Die Emulator-Suite benöti
 | `VITE_FIREBASE_APP_ID` | Firebase Web-App-Konfiguration |
 | `VITE_FIREBASE_DATABASE_URL` | Realtime Database nur für Live-Buzzer; lokal `.env.local`, in Actions Repository Variable |
 
-Lokal stehen Werte in der nicht versionierten `.env.local`; GitHub Actions liest sie aus Repository Secrets. In ein Secret gehört nur der Wert, nicht `NAME=value`.
+Lokal stehen Werte in der nicht versionierten `.env.local`; GitHub Actions liest die sechs Web-App-Werte aus Repository Secrets und die Realtime-Database-URL aus einer Repository Variable. In ein Secret gehört nur der Wert, nicht `NAME=value`.
 
 Zusätzlich benötigt GitHub:
 
 - Secret `FIREBASE_SERVICE_ACCOUNT_BENGTSTOOLBOX` für Hosting,
 - Repository Variable `FIREBASE_PROJECT_ID=bengtstoolbox`.
 
-Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Mehr Benutzer oder ausgeschöpfte Kontingente aktivieren keine Abrechnung; die betroffenen Dienste werden stattdessen begrenzt. Alle drei Deploy-Pipelines führen `scripts/checkFirebaseSpark.mjs` mit einem kurzlebigen Google-Token aus und brechen bei aktivierter Abrechnung, verknüpftem Konto oder fehlender Prüfbarkeit ab. Die Prüfung verhindert keine nachträgliche manuelle Tarifänderung durch Projektadministratoren. Der Verwaltungs-PIN `5340` ist bewusst im Web-Bundle enthalten und stellt nur eine Bedienbarriere, keine Sicherheitsgrenze dar.
+Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Mehr Benutzer oder ausgeschöpfte Kontingente aktivieren keine Abrechnung; die betroffenen Dienste werden stattdessen begrenzt. Alle drei Deploy-Pipelines führen `scripts/checkFirebaseSpark.mjs` mit einem kurzlebigen Google-Token aus und brechen bei aktivierter Abrechnung, verknüpftem Konto oder fehlender Prüfbarkeit ab. Die Prüfung verhindert keine nachträgliche manuelle Tarifänderung durch Projektadministratoren.
 
 ### 9.2 Deploy-Pfade
 
@@ -746,4 +785,4 @@ Die globalen Legacy-Pfade unter `apps/{appId}/...` bleiben für jeden authentifi
 
 Der vierstellige Lobby-Admin-PIN `5340` schützt vor normaler und versehentlicher Nutzung, kann im ausgelieferten JavaScript aber ausgelesen und umgangen werden. Er ist kein Hochsicherheits- oder Mehrbenutzermodell. Der PIN-Gate von `Schlag den Raab` hat dieselbe bewusste Grenze.
 
-Vor öffentlicher Nutzung mit sensiblen Daten müssen Datenräume, Identitäten, Claims und Rules enger modelliert und mit Emulator-/Rules-Tests abgesichert werden. Die priorisierten Arbeiten dazu stehen in [`todo.md`](todo.md).
+Vor öffentlicher Nutzung mit sensiblen Daten, echten Besitzerrollen oder Mandantentrennung müssen Datenräume, Identitäten und Besitzer-/Teilnehmer-Claims modelliert, globale Legacy-Pfade migriert und Rules verengt werden. Client-PINs müssen durch serverseitig prüfbare Autorisierung ersetzt und erlaubte, abgewiesene sowie migrationsbezogene Zugriffe mit Emulator-/Rules-Tests abgesichert werden.

@@ -127,7 +127,6 @@ src/
 
 - [Produkt- und Systemspezifikation](docs/specs.md) – Produktumfang, Fachregeln, Architektur, Entwicklung und Betrieb
 - [Visuelle Spezifikation](docs/specs.html) – responsive, menschenlesbare HTML-Fassung
-- [Nächste Schritte](docs/todo.md) – priorisierte, nachweisbare technische Arbeiten
 
 ## Lizenz
 
