@@ -896,7 +896,7 @@ function ActualTrainingDialogContent({
             {error}
           </p>
         )}
-        <DialogFooter className="sticky bottom-0 z-10 -mx-1 border-t bg-background/95 px-1 pt-3 backdrop-blur sm:justify-between">
+        <DialogFooter className="sticky -bottom-4 z-10 -mx-4 -mb-4 bg-card px-4 pt-1 pb-4 sm:-bottom-5 sm:-mx-5 sm:-mb-5 sm:justify-between sm:px-5 sm:pb-5">
           <div>
             {training && onDelete && (
               <ConfirmButton
