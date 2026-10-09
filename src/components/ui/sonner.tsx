@@ -1,9 +1,15 @@
+import { useContext } from 'react'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
 
+import { ColorSchemeContext } from '@/lib/colorScheme/context'
+
 function Toaster({ ...props }: ToasterProps) {
+  // The standalone UI catalog renders without ColorSchemeProvider and stays light.
+  const colorScheme = useContext(ColorSchemeContext)?.colorScheme ?? 'light'
+
   return (
     <Sonner
-      theme="light"
+      theme={colorScheme}
       className="toaster group"
       toastOptions={{
         classNames: {

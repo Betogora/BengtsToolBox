@@ -22,6 +22,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-hover: var(--secondary-hover);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -29,6 +30,12 @@
   --color-destructive: var(--destructive);
   --color-destructive-soft: var(--destructive-soft);
   --color-primary-soft: var(--primary-soft);
+  --color-podium-1: var(--podium-1);
+  --color-podium-2: var(--podium-2);
+  --color-podium-3: var(--podium-3);
+  --color-podium-1-strong: var(--podium-1-strong);
+  --color-podium-2-strong: var(--podium-2-strong);
+  --color-podium-3-strong: var(--podium-3-strong);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -124,6 +131,74 @@
   --border-strong: #d1d5db;
   --input: #e5e7eb;
   --ring: var(--brand-primary);
+  --secondary-hover: #eceef1;
+  --selection-track: #e9eef1;
+  --selection-indicator-shadow: 0 2px 6px rgb(27 45 59 / 7%);
+  --podium-1: rgb(246 227 165 / 65%);
+  --podium-2: rgb(230 232 235 / 70%);
+  --podium-3: rgb(232 192 160 / 55%);
+  --podium-1-strong: rgb(246 211 107 / 70%);
+  --podium-2-strong: rgb(216 221 227 / 80%);
+  --podium-3-strong: rgb(215 154 112 / 65%);
+}
+
+/* Print always uses the light tokens, independent of the chosen color scheme. */
+@media screen {
+  .dark {
+    color-scheme: dark;
+    --btb-shadow-overlay: 0 16px 40px -12px rgb(0 0 0 / 55%), 0 0 0 1px rgb(255 255 255 / 6%);
+    --brand-primary: #4f93c4;
+    --brand-secondary: #2b4a5e;
+    --brand-accent: #d7765c;
+    --brand-surface: #4a3e25;
+    --brand-fog: #2a333d;
+    --brand-ink: #dbe4ea;
+    --background: #0e141b;
+    --foreground: #e6eaee;
+    --card: #161d25;
+    --card-foreground: #e6eaee;
+    --popover: #1b232c;
+    --popover-foreground: #e6eaee;
+    --primary: #7ab8e3;
+    --primary-foreground: #0b1823;
+    --primary-soft: #182b3b;
+    --secondary: #212a33;
+    --secondary-foreground: #e6eaee;
+    --secondary-hover: #2a343f;
+    --muted: #1f2730;
+    --muted-foreground: #a7b1bc;
+    --subtle-foreground: #8b96a2;
+    --accent: #212a33;
+    --accent-foreground: #e6eaee;
+    --destructive: #e5534b;
+    --destructive-soft: #3a1c1c;
+    --success: #3cc27a;
+    --success-soft: #122a1e;
+    --warning: #eaa23a;
+    --warning-soft: #2f2511;
+    --border: #2a333d;
+    --border-strong: #3b4653;
+    --input: #333e4a;
+    --ring: #7ab8e3;
+    --selection-track: #0b1016;
+    --selection-indicator-shadow: 0 2px 6px rgb(0 0 0 / 45%);
+    --podium-1: rgb(201 150 26 / 20%);
+    --podium-2: rgb(170 176 184 / 14%);
+    --podium-3: rgb(184 121 79 / 20%);
+    --podium-1-strong: rgb(201 150 26 / 42%);
+    --podium-2-strong: rgb(170 176 184 / 32%);
+    --podium-3-strong: rgb(184 121 79 / 42%);
+  }
+
+  .dark .swiss-tournaments-page::before {
+    filter: invert(1);
+  }
+
+  .dark .swiss-tournaments-page--mario-kart::before {
+    filter: none;
+    mix-blend-mode: normal;
+    opacity: 0.18;
+  }
 }
 
 * {
@@ -214,7 +289,7 @@ svg.lucide {
   padding: 3px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #e9eef1;
+  background: var(--selection-track);
   color: var(--muted-foreground);
   isolation: isolate;
 }
@@ -226,7 +301,7 @@ svg.lucide {
   z-index: -1;
   border-radius: calc(var(--radius) - 0.25rem);
   background: var(--card);
-  box-shadow: 0 2px 6px rgb(27 45 59 / 7%);
+  box-shadow: var(--selection-indicator-shadow);
   pointer-events: none;
   transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), width 120ms cubic-bezier(0.22, 1, 0.36, 1), height 120ms ease;
 }
@@ -579,7 +654,7 @@ svg.lucide {
   border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   box-shadow: none !important;
-  background: #ffffff !important;
+  background: var(--card) !important;
 }
 
 .raab-score-card [data-slot="card-header"] {
@@ -656,13 +731,13 @@ svg.lucide {
 .raab-score-button:hover,
 .raab-score-button:focus-visible {
   border-color: var(--primary);
-  background: rgba(6, 56, 82, 0.07);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
   outline: none;
 }
 
 .raab-score-button-winner {
-  border-color: rgba(6, 56, 82, 0.25);
-  background: rgba(6, 56, 82, 0.1);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .raab-score-pill {
@@ -704,7 +779,7 @@ svg.lucide {
 }
 
 .raab-progress-slice {
-  stroke: #ffffff;
+  stroke: var(--card);
   stroke-width: 2;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -759,7 +834,7 @@ svg.lucide {
 .raab-progress-start-marker,
 .raab-progress-threshold-marker {
   fill: var(--foreground);
-  stroke: #ffffff;
+  stroke: var(--card);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }

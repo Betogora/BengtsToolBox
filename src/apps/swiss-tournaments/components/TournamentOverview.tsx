@@ -399,9 +399,9 @@ export function SwissStandingsPresenter({
                 <TableRow
                   key={row.playerId}
                   className={cn(
-                    row.rank === 1 && 'bg-[#f6e3a5]/65',
-                    row.rank === 2 && 'bg-[#e6e8eb]/70',
-                    row.rank === 3 && 'bg-[#e8c0a0]/55',
+                    row.rank === 1 && 'bg-podium-1',
+                    row.rank === 2 && 'bg-podium-2',
+                    row.rank === 3 && 'bg-podium-3',
                   )}
                 >
                   <TableCell className="tabular-nums">

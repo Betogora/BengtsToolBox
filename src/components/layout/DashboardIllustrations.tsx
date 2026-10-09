@@ -261,7 +261,7 @@ function SwissTournamentIllustration() {
     <div className="flex h-full items-center justify-end">
       <img
         alt=""
-        className="h-[72%] w-[82%] object-contain object-right opacity-72 drop-shadow-sm"
+        className="h-[72%] w-[82%] object-contain object-right opacity-72 drop-shadow-sm dark:invert"
         src="/sk-anderten-watermark.png"
       />
     </div>

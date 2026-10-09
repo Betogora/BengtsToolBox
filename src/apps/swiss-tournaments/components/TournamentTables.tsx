@@ -1220,17 +1220,17 @@ export function StandingsTable({
   type StandingTableRow = (typeof standings)[number]
   const podiumClass = (rank: number) =>
     rank === 1
-      ? 'swiss-podium-first bg-[#f6e3a5]/65'
+      ? 'swiss-podium-first bg-podium-1'
       : rank === 2
-        ? 'swiss-podium-second bg-[#e6e8eb]/70'
+        ? 'swiss-podium-second bg-podium-2'
         : rank === 3
-          ? 'swiss-podium-third bg-[#e8c0a0]/55'
+          ? 'swiss-podium-third bg-podium-3'
           : ''
   const roundCellClass = (cell: StandingHistoryCell) =>
     cn(
       'type-caption swiss-round-cell inline-flex h-7 min-w-11 items-center justify-start rounded px-2 tabular-nums',
-      cell.color === 'W' && 'border border-border bg-white text-foreground',
-      cell.color === 'B' && 'bg-primary text-primary-foreground',
+      cell.color === 'W' && 'border border-border bg-white text-[#111827]',
+      cell.color === 'B' && 'bg-[var(--brand-primary)] text-white',
       cell.outcome === 'bye' && 'border border-dashed border-border bg-muted text-muted-foreground',
       cell.outcome === 'open' && 'border border-border bg-background text-muted-foreground',
     )

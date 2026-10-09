@@ -48,7 +48,7 @@ export function LanguageSelector() {
     <div
       ref={listRef}
       aria-label={t('language.selectorLabel')}
-      className="selection-track h-11 gap-0 p-[3px]"
+      className="selection-track h-10 gap-0 p-[3px] sm:h-11"
       role="radiogroup"
     >
       <span ref={indicatorRef} className="selection-indicator" aria-hidden="true" />
@@ -61,7 +61,7 @@ export function LanguageSelector() {
             key={option.value}
             aria-checked={isActive}
             aria-label={t('language.switchTo', { language: label })}
-            className="selection-item size-9 flex-none px-1 py-0 leading-none"
+            className="selection-item size-8 flex-none px-1 py-0 leading-none sm:size-9"
             role="radio"
             title={label}
             type="button"

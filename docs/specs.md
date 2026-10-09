@@ -60,8 +60,9 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 
 ### 3.1 Shell und Navigation
 
-- Die Shell zeigt Branding, Dashboard, `Schlag den Raab`, Lobbys und Sprachauswahl. Die Lobby-Verwaltung ist als sekundäre Aktion im Kopf der Lobby-Seite erreichbar.
+- Die Shell zeigt Branding, Dashboard, `Schlag den Raab`, Lobbys, Farbschema- und Sprachauswahl. Die Lobby-Verwaltung ist als sekundäre Aktion im Kopf der Lobby-Seite erreichbar.
 - Auf mittleren und großen Breiten ist die Navigation direkt sichtbar; mobil liegt sie in einem Menü.
+- Das Farbschema (hell/dunkel) gilt global für Shell, Dashboard und alle Apps. Ohne gespeicherte Wahl folgt es `prefers-color-scheme`; eine Auswahl wird unter `bengtstoolbox.colorScheme` gespeichert und als Klasse `dark` auf `document.documentElement` gesetzt. Ein Inline-Skript in `index.html` setzt sie vor dem ersten Rendern. Unter 360 px Breite liegt die Auswahl im Navigationsmenü. Farben laufen über die Tokens in `src/styles/globals.css`; Druckausgaben bleiben hell.
 - Jede reguläre App erhält Titel, Beschreibung, Status, Icon, URL und Lazy Loader ausschließlich über die Registry.
 - Sonderrouten dürfen nur verwendet werden, wenn ein Bereich bewusst nicht als normale Dashboard-App erscheint.
 
@@ -476,6 +477,7 @@ Vite baut statische Dateien, Firebase Hosting liefert sie aus. Online-Persistenz
 | `src/components/ui` | generische UI-Primitiven | Geschäftslogik |
 | `src/lib/firebase` | Client, Auth, Pfade, Sync und lokaler Cache | UI oder App-Regeln |
 | `src/lib/i18n` | Sprache, Interpolation und Formatierung | fachliche Zustandsmigration |
+| `src/lib/colorScheme` | globales Farbschema und dessen Persistenz | Farbwerte oder App-Regeln |
 | `src/lobbies` | Lobby-Domain, Context, Verzeichnis, Geräte-Tracking und clientseitige Verwaltungs-UI | app-spezifische Fachlogik |
 | `src/styles` | globale Tokens, Typografie, Druckregeln | Feature-Zustand |
 

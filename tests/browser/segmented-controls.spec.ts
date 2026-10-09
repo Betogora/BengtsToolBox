@@ -63,3 +63,24 @@ test('Auswahlindikator gleitet und richtet sich nach Größenwechseln aus @deskt
   }
   await app.expectHealthy()
 })
+
+test('Farbschema wechselt global, wird gespeichert und ist im Dunkelmodus barrierefrei', async ({ app, page }) => {
+  await app.open('/')
+  const root = page.locator('html')
+  await expect(root).not.toHaveClass(/\bdark\b/)
+  const colorScheme = page.getByRole('radiogroup', { name: 'Farbschema auswählen' })
+  if (await colorScheme.isVisible()) {
+    await colorScheme.getByRole('radio', { name: 'Dunkel' }).click()
+  } else {
+    await page.getByRole('button', { name: 'Navigation' }).click()
+    await page.getByRole('menuitemradio', { name: 'Dunkel' }).click()
+  }
+  await expect(root).toHaveClass(/\bdark\b/)
+  expect(await page.evaluate(() => localStorage.getItem('bengtstoolbox.colorScheme'))).toBe('dark')
+  await app.expectHealthy()
+  // app.open() leert LocalStorage; clientseitige Navigation prüft, dass das Schema in Apps gilt.
+  await page.getByRole('link', { name: /Fortschritts-Dashboard/ }).first().click()
+  await expect(page.getByRole('heading', { name: 'Fortschritts-Dashboard' })).toBeVisible()
+  await expect(root).toHaveClass(/\bdark\b/)
+  await app.expectHealthy()
+})

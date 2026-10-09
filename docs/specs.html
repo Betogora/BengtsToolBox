@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:036d000214381b81b57c48a0d5ed1c4500788fc860bb30096dfd7a9c7ff615cd">
+  <meta name="specs-source-sha256" content="sha256:770e176ecec5105ea5a6191f8c451655492e9eb9662bab3ef1f9125089ed1cd6">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -512,8 +512,9 @@
           <article class="card">
             <h3>Shell & Routing</h3>
             <ul>
-              <li>Branding, Dashboard, Sonderbereiche, Lobbys und Sprachauswahl; die Lobby-Verwaltung liegt im Kopf der Lobby-Seite.</li>
+              <li>Branding, Dashboard, Sonderbereiche, Lobbys, Farbschema- und Sprachauswahl; die Lobby-Verwaltung liegt im Kopf der Lobby-Seite.</li>
               <li>Desktopnavigation direkt, mobile Navigation im Menü.</li>
+              <li>Globales Hell/Dunkel-Schema: Standard nach <code>prefers-color-scheme</code>, Auswahl in <code>bengtstoolbox.colorScheme</code>, Klasse <code>dark</code> auf <code>&lt;html&gt;</code> schon vor dem ersten Rendern; unter 360&nbsp;px im Menü. Farben nur über Tokens, Druck bleibt hell.</li>
               <li>Lazy Loading; Prefetch bei Fokus, Hover oder Touch.</li>
               <li>Hosting-Rewrite auf <code>/index.html</code> für Direktlinks.</li>
             </ul>
@@ -871,6 +872,7 @@
               <tr><td><code>src/components/ui</code></td><td>generische Controls</td><td>Geschäftslogik</td></tr>
               <tr><td><code>src/lib/firebase</code></td><td>Client, Auth, Pfade, Sync, Cache</td><td>UI und App-Regeln</td></tr>
               <tr><td><code>src/lib/i18n</code></td><td>Sprache und Formatierung</td><td>fachliche Migration</td></tr>
+              <tr><td><code>src/lib/colorScheme</code></td><td>globales Farbschema und Persistenz</td><td>Farbwerte und App-Regeln</td></tr>
             </tbody>
           </table>
         </div>

@@ -45,18 +45,18 @@ import { cn } from '@/lib/utils'
 function getPodiumRowClass(rank: number) {
   return cn(
     'grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3',
-    rank === 1 && 'border-[#c9961a]/45 bg-[#f6e3a5]/65',
-    rank === 2 && 'border-[#aab0b8]/50 bg-[#e6e8eb]/70',
-    rank === 3 && 'border-[#b8794f]/45 bg-[#e8c0a0]/55',
+    rank === 1 && 'border-[#c9961a]/45 bg-podium-1',
+    rank === 2 && 'border-[#aab0b8]/50 bg-podium-2',
+    rank === 3 && 'border-[#b8794f]/45 bg-podium-3',
   )
 }
 
 function getPodiumRankClass(rank: number) {
   return cn(
     'type-action inline-flex size-9 items-center justify-center rounded-md border bg-card tabular-nums',
-    rank === 1 && 'border-[#c9961a]/50 bg-[#f6d36b]/70',
-    rank === 2 && 'border-[#aab0b8]/60 bg-[#d8dde3]/80',
-    rank === 3 && 'border-[#b8794f]/50 bg-[#d79a70]/65',
+    rank === 1 && 'border-[#c9961a]/50 bg-podium-1-strong',
+    rank === 2 && 'border-[#aab0b8]/60 bg-podium-2-strong',
+    rank === 3 && 'border-[#b8794f]/50 bg-podium-3-strong',
   )
 }
 

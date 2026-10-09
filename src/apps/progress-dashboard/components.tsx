@@ -453,7 +453,7 @@ function PlayerTimeline({
       <rect
         width={mobileSparklineWidth}
         height={mobileSparklineHeight}
-        fill="#ffffff"
+        fill="var(--card)"
         rx="6"
       />
       <line
@@ -739,7 +739,7 @@ function MobileProgressChart({
   const { t } = useI18n()
 
   return (
-    <div className="rounded-lg border bg-white p-3 md:hidden">
+    <div className="rounded-lg border bg-card p-3 md:hidden">
       <Tabs defaultValue={defaultView} className="gap-3">
         <TabsList className="grid h-10 w-full grid-cols-2 border bg-muted/70">
           <TabsTrigger value="stand">{t('progress.tab.score')}</TabsTrigger>
@@ -844,7 +844,7 @@ export function ProgressChart({
       {chartData.hasValidEvents ? (
         <div
           className={cn(
-            'overflow-hidden rounded-lg border bg-white',
+            'overflow-hidden rounded-lg border bg-card',
             isDashboard ? 'block p-1.5 sm:p-3' : 'hidden p-3 md:block',
           )}
         >
@@ -856,7 +856,7 @@ export function ProgressChart({
             onClick={clearHighlightedPlayer}
             onPointerLeave={() => setHoveredPlayerId(null)}
           >
-            <rect width={chartWidth} height={chartHeight} fill="#ffffff" rx="8" />
+            <rect width={chartWidth} height={chartHeight} fill="var(--card)" rx="8" />
         {chartData.yTicks.map((tick) => (
           <g key={`y-${tick}`}>
             <line
@@ -950,7 +950,7 @@ export function ProgressChart({
                   fill="none"
                   opacity="0.95"
                   pointerEvents="none"
-                  stroke="#ffffff"
+                  stroke="var(--card)"
                   strokeLinecap="square"
                   strokeLinejoin="miter"
                   strokeWidth="12"
