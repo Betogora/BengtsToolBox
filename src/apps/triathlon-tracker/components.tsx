@@ -1,9 +1,10 @@
-import { Clock3, Copy, Plus, Trash2 } from 'lucide-react'
+import { Clock3, Copy, Footprints, PersonStanding, Plus, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { trainingContexts } from './types'
 
 import type {
@@ -158,6 +159,29 @@ function DisciplineSelect({
   )
 }
 
+function RunVariantControl({
+  isWalk,
+  onIsWalkChange,
+}: {
+  isWalk: boolean
+  onIsWalkChange: (isWalk: boolean) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <SegmentedControl
+      aria-label={t('triathlon.form.variant')}
+      className="col-span-2 w-full sm:col-span-full"
+      data-run-variant
+      value={isWalk ? 'walk' : 'run'}
+      onValueChange={(value) => onIsWalkChange(value === 'walk')}
+      options={[
+        { value: 'run', label: t('triathlon.variant.run'), icon: Footprints },
+        { value: 'walk', label: t('triathlon.variant.walk'), icon: PersonStanding },
+      ]}
+    />
+  )
+}
+
 type PlannedTrainingDialogProps = {
   initialDate: string
   open: boolean
@@ -208,6 +232,7 @@ function PlannedTrainingDialogContent({
     metersToKilometers((training ?? template)?.distanceMeters ?? null),
   )
   const [label, setLabel] = useState((training ?? template)?.label ?? '')
+  const [isWalk, setIsWalk] = useState((training ?? template)?.isWalk ?? false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -233,6 +258,7 @@ function PlannedTrainingDialogContent({
         localDate,
         startMinutes: timeToMinutes(startTime),
         discipline,
+        isWalk: discipline === 'run' && isWalk,
         durationSeconds: parsedDuration,
         distanceMeters:
           parsedDistance === null ? null : Math.round(parsedDistance * 1000),
@@ -285,6 +311,9 @@ function PlannedTrainingDialogContent({
             value={durationMinutes}
             onChange={(event) => setDurationMinutes(event.currentTarget.value)}
           />
+          {discipline === 'run' && (
+            <RunVariantControl isWalk={isWalk} onIsWalkChange={setIsWalk} />
+          )}
           <IftaInput
             inputMode="decimal"
             label={t('triathlon.form.distanceKilometers')}
@@ -591,6 +620,7 @@ function ActualTrainingDialogContent({
     pace: averagePace,
   } = metrics
   const [isBenchmark, setIsBenchmark] = useState(initial?.isBenchmark ?? false)
+  const [isWalk, setIsWalk] = useState(initial?.isWalk ?? false)
   const [averageHeartRateBpm, setAverageHeartRateBpm] = useState(
     initial?.averageHeartRateBpm == null
       ? ''
@@ -613,6 +643,7 @@ function ActualTrainingDialogContent({
 
   const handleDisciplineChange = (nextDiscipline: Discipline) => {
     setDiscipline(nextDiscipline)
+    setIsWalk(false)
     setContext(defaultContext(nextDiscipline, defaultContexts))
     setMetrics((current) => ({
       ...current,
@@ -684,6 +715,7 @@ function ActualTrainingDialogContent({
     )
     const nextTraining: ActualTrainingInput = {
       isBenchmark,
+      isWalk: discipline === 'run' && isWalk,
       localDate,
       startMinutes: timeToMinutes(startTime),
       discipline,
@@ -773,6 +805,9 @@ function ActualTrainingDialogContent({
               ))}
             </SelectContent>
           </Select>
+          {discipline === 'run' && (
+            <RunVariantControl isWalk={isWalk} onIsWalkChange={setIsWalk} />
+          )}
         </fieldset>
         <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <legend className="sr-only">{t('triathlon.form.metrics')}</legend>

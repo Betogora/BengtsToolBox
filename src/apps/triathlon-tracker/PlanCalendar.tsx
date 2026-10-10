@@ -1,4 +1,12 @@
-import { ChevronLeft, ChevronRight, Clock3, Copy, Plus } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  ClipboardCheck,
+  Clock3,
+  Copy,
+  Plus,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   addDaysToLocalDate,
@@ -11,6 +19,8 @@ import {
   disciplineIcons,
   disciplines,
   formatTrainingDuration,
+  trainingIcon,
+  trainingLabelKey,
 } from './presentation'
 import type { PlannedTraining } from './types'
 import { Button } from '@/components/ui/button'
@@ -46,14 +56,23 @@ function CalendarDateJump({
   )
 }
 
+/** Today is filled; a selected other day only gets an outlined tint. */
+function dayStateClass(isToday: boolean, selected: boolean) {
+  if (isToday) return 'bg-primary text-primary-foreground'
+  if (selected) return 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/40'
+  return 'hover:bg-muted'
+}
+
 type PlanCalendarProps = {
   activeLocalDate: string
   today: string
   plannedTrainings: PlannedTraining[]
+  completedIds: ReadonlySet<string>
   onDateChange: (date: string) => void
   onAdd: (date: string) => void
   onEdit: (training: PlannedTraining) => void
   onCopy: (training: PlannedTraining) => void
+  onLog: (training: PlannedTraining) => void
   onCopyWeek: () => void
   onMove: (training: PlannedTraining, date: string) => Promise<void>
 }
@@ -62,10 +81,12 @@ export function PlanCalendar({
   activeLocalDate,
   today,
   plannedTrainings,
+  completedIds,
   onDateChange,
   onAdd,
   onEdit,
   onCopy,
+  onLog,
   onCopyWeek,
   onMove,
 }: PlanCalendarProps) {
@@ -216,9 +237,7 @@ export function PlanCalendar({
                   'type-ui grid min-h-10 justify-items-center rounded-md py-1 focus-visible:outline-2 focus-visible:outline-ring',
                   date.slice(0, 7) !== activeLocalDate.slice(0, 7) &&
                     'text-muted-foreground',
-                  date === activeLocalDate
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted',
+                  dayStateClass(date === today, date === activeLocalDate),
                 )}
                 onClick={() => onDateChange(date)}
               >
@@ -245,6 +264,7 @@ export function PlanCalendar({
             {Array.from({ length: 7 }, (_, day) => {
               const date = addDaysToLocalDate(firstDay, day)
               const selected = date === activeLocalDate
+              const isToday = date === today
               return (
                 <button
                   type="button"
@@ -254,9 +274,7 @@ export function PlanCalendar({
                   aria-current={date === today ? 'date' : undefined}
                   className={cn(
                     'grid min-h-12 w-full max-w-16 justify-items-center gap-0.5 justify-self-center rounded-[10px] py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    selected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted',
+                    dayStateClass(isToday, selected),
                   )}
                   onClick={() => {
                     onDateChange(date)
@@ -269,19 +287,16 @@ export function PlanCalendar({
                   <span
                     className={cn(
                       'text-[11px] font-medium leading-4',
-                      selected
+                      isToday
                         ? 'text-primary-foreground/80'
-                        : 'text-muted-foreground',
+                        : selected
+                          ? 'text-primary/80'
+                          : 'text-muted-foreground',
                     )}
                   >
                     {dateLabel(date, { weekday: 'short' })}
                   </span>
-                  <span
-                    className={cn(
-                      'type-action tabular-nums',
-                      !selected && date === today && 'text-primary',
-                    )}
-                  >
+                  <span className="type-action tabular-nums">
                     {Number(date.slice(-2))}
                   </span>
                   <span
@@ -424,8 +439,9 @@ export function PlanCalendar({
                     <div className="grid gap-2.5">
                       {trainings.map((training) => {
                         const label =
-                          training.label ||
-                          t(`triathlon.discipline.${training.discipline}`)
+                          training.label || t(trainingLabelKey(training))
+                        const Icon = trainingIcon(training)
+                        const done = completedIds.has(training.id)
                         const meta = [
                           training.startMinutes === null
                             ? null
@@ -449,6 +465,7 @@ export function PlanCalendar({
                             key={training.id}
                             data-discipline={training.discipline}
                             data-planned-training={training.id}
+                            data-plan-done={done || undefined}
                             draggable={!moving}
                             onDragStart={(event) => {
                               event.dataTransfer.setData(
@@ -463,21 +480,25 @@ export function PlanCalendar({
                               setDropDate(null)
                             }}
                             className={cn(
-                              'tri-plan-entry @container group relative overflow-hidden rounded-lg border bg-card transition-colors hover:border-border-strong',
+                              'tri-plan-entry @container group relative overflow-hidden rounded-lg',
                               draggedId === training.id && 'opacity-50',
                             )}
                           >
                             <button
                               type="button"
-                              className="flex w-full items-center gap-2 p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                              className="flex w-full items-start gap-2 p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
                               onClick={() => onEdit(training)}
-                              aria-label={`${training.label ? `${label} · ${t(`triathlon.discipline.${training.discipline}`)}` : label} · ${t('common.edit')}`}
+                              aria-label={`${training.label ? `${label} · ${t(trainingLabelKey(training))}` : label}${done ? ` · ${t('triathlon.plan.done')}` : ''} · ${t('common.edit')}`}
                             >
-                              <span className="grid min-w-0 flex-1 gap-0.5 @3xs:pr-9">
+                              <Icon
+                                aria-hidden="true"
+                                className="mt-0.5 size-3.5 shrink-0 opacity-90"
+                              />
+                              <span className="grid min-w-0 flex-1 gap-0.5 @3xs:pr-16">
                                 <span className="type-ui font-semibold leading-snug hyphens-auto [overflow-wrap:anywhere]">
                                   {label}
                                 </span>
-                                <span className="type-caption flex flex-wrap gap-x-1 text-muted-foreground tabular-nums">
+                                <span className="tri-plan-meta type-caption flex flex-wrap gap-x-1 tabular-nums">
                                   {meta.map((part, index) => (
                                     <span
                                       className="@3xs:whitespace-nowrap"
@@ -489,17 +510,42 @@ export function PlanCalendar({
                                   ))}
                                 </span>
                               </span>
-                              <ChevronRight
-                                aria-hidden="true"
-                                className="hidden size-4 shrink-0 text-subtle-foreground @3xs:block"
-                              />
                             </button>
-                            <div className="flex justify-end px-1 pb-1 @3xs:absolute @3xs:right-8 @3xs:top-1/2 @3xs:-translate-y-1/2 @3xs:p-0">
+                            <div className="flex items-center justify-end gap-0.5 px-1 pb-1 @3xs:absolute @3xs:right-1 @3xs:top-1/2 @3xs:-translate-y-1/2 @3xs:p-0">
+                              {done ? (
+                                <span
+                                  className="tri-plan-action inline-flex size-7 items-center justify-center"
+                                  title={t('triathlon.plan.done')}
+                                >
+                                  <CircleCheck
+                                    aria-hidden="true"
+                                    className="size-4"
+                                  />
+                                  <span className="sr-only">
+                                    {t('triathlon.plan.done')}
+                                  </span>
+                                </span>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="tri-plan-action size-7"
+                                  aria-label={`${t('triathlon.plan.log')}: ${label}`}
+                                  title={t('triathlon.plan.log')}
+                                  onClick={() => onLog(training)}
+                                >
+                                  <ClipboardCheck
+                                    aria-hidden="true"
+                                    className="size-3.5"
+                                  />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-7 text-muted-foreground"
+                                className="tri-plan-action size-7"
                                 aria-label={`${t('triathlon.calendar.duplicate')}: ${label}`}
+                                title={t('triathlon.calendar.duplicate')}
                                 onClick={() => onCopy(training)}
                               >
                                 <Copy aria-hidden="true" className="size-3.5" />

@@ -1,19 +1,23 @@
 /* Sport palette: the strong color marks icons, dots and stripes; the soft
-   tint only backs small icon boxes. Cards themselves stay white.
+   tint only backs small icon boxes. --sport-fill is a darker shade that keeps
+   white text at WCAG AA (≥ 4.5:1) on filled plan entries.
    --sport-color mirrors disciplineColors in presentation.ts. */
 .triathlon-tracker [data-discipline='swim'] {
   --sport-color: #2f7fb8;
   --sport-soft: #eef6fc;
+  --sport-fill: #2a72a6;
 }
 
 .triathlon-tracker [data-discipline='bike'] {
   --sport-color: #c58a12;
   --sport-soft: #fdf6e7;
+  --sport-fill: #97680c;
 }
 
 .triathlon-tracker [data-discipline='run'] {
   --sport-color: #c4563d;
   --sport-soft: #fcf1ee;
+  --sport-fill: #b04a33;
 }
 
 .triathlon-tracker > header {
@@ -73,8 +77,34 @@
   color: var(--muted-foreground);
 }
 
+/* Planned sessions are calendar event chips filled with the sport color. */
 .tri-plan-entry {
-  border-left: 3px solid var(--sport-color);
+  background: var(--sport-fill);
+  color: #fff;
+  transition: filter 150ms ease;
+}
+
+.tri-plan-entry:hover {
+  filter: brightness(1.08);
+}
+
+/* Secondary text stays solid white: any transparency drops below AA. */
+.tri-plan-entry .tri-plan-meta {
+  color: #fff;
+}
+
+.tri-plan-entry .tri-plan-action {
+  color: #fff;
+}
+
+.tri-plan-entry .tri-plan-action:hover {
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+
+.tri-plan-entry .tri-plan-action:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
 }
 
 .tri-plot-value {
@@ -118,4 +148,29 @@
   .tri-performance-content > .tri-plot-canvas {
     height: 12.5rem;
   }
+}
+
+/* Estimate marker (* / **) follows a value like a footnote reference. */
+.tri-estimate-mark {
+  margin-left: 0.05em;
+  font-size: 0.62em;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--muted-foreground);
+}
+
+/* Recharts makes the chart surface focusable for keyboard users; a mouse
+   click or tap should not leave a frame around the whole plot. */
+.triathlon-tracker .recharts-wrapper:focus:not(:focus-visible),
+.triathlon-tracker .recharts-surface:focus:not(:focus-visible),
+.triathlon-tracker .recharts-surface [tabindex='-1']:focus {
+  outline: none;
+}
+
+.triathlon-tracker .recharts-wrapper:focus-visible,
+.triathlon-tracker .recharts-surface:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

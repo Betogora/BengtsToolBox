@@ -32,6 +32,8 @@ export type PlannedTraining = {
   localDate: string
   startMinutes: number | null
   discipline: Discipline
+  /** Walking is a variant of running, never a discipline of its own. */
+  isWalk?: boolean
   durationSeconds: number | null
   distanceMeters: number | null
   label: string
@@ -58,6 +60,8 @@ export type ActualTraining = {
   localDate: string
   startMinutes: number | null
   discipline: Discipline
+  /** Walking is a variant of running, never a discipline of its own. */
+  isWalk?: boolean
   context: TrainingContext | null
   durationSeconds: number | null
   distanceMeters: number | null

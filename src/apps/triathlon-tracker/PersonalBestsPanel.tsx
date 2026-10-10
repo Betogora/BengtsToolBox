@@ -17,9 +17,7 @@ import type {
   TrackerSettings,
   TrainingContext,
 } from './types'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { DisclosureSummary } from '@/components/ui/disclosure'
 import { Card } from '@/components/ui/card'
 import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
@@ -74,12 +72,19 @@ function WeightInput({
   )
 }
 
-export function ModelBadge() {
+/** Marks modelled values: * = estimate, ** = beyond measured distances. */
+export function EstimateMark({ extrapolated = false }: { extrapolated?: boolean }) {
   const { t } = useI18n()
   return (
-    <Badge variant="secondary" className="h-[18px] px-1.5 text-[11px]">
-      {t('triathlon.charts.model')}
-    </Badge>
+    <>
+      <span aria-hidden="true" className="tri-estimate-mark">
+        {extrapolated ? '**' : '*'}
+      </span>
+      <span className="sr-only">
+        {' '}
+        ({t(extrapolated ? 'triathlon.records.extrapolation' : 'triathlon.charts.estimated')})
+      </span>
+    </>
   )
 }
 
@@ -250,6 +255,10 @@ export function PersonalBestsPanel({
                       (item) =>
                         item.targetDistanceMeters === targetDistanceMeters,
                     )
+                    const shownSeconds =
+                      record?.durationSeconds ??
+                      estimate?.predictedDurationSeconds ??
+                      null
                     return (
                       <li
                         key={targetDistanceMeters}
@@ -278,6 +287,16 @@ export function PersonalBestsPanel({
                                 record.durationSeconds,
                               )}
                             </button>
+                          ) : estimate ? (
+                            <span
+                              className="tri-record-time"
+                              data-record-estimate
+                            >
+                              {formatTrainingDurationInput(
+                                estimate.predictedDurationSeconds,
+                              )}
+                              <EstimateMark extrapolated={estimate.extrapolated} />
+                            </span>
                           ) : (
                             <span className="tri-record-time text-subtle-foreground">
                               —
@@ -287,32 +306,26 @@ export function PersonalBestsPanel({
                               </span>
                             </span>
                           )}
-                          {estimate && (
+                          {shownSeconds !== null && (
                             <span className="type-caption flex flex-wrap items-center justify-end gap-x-1.5 text-muted-foreground tabular-nums">
-                              <ModelBadge />
                               <span>
-                                {formatTrainingDurationInput(
-                                  estimate.predictedDurationSeconds,
-                                )}
-                                {estimate.extrapolated && (
-                                  <span
-                                    aria-label={t(
-                                      'triathlon.records.extrapolation',
-                                    )}
-                                  >
-                                    *
-                                  </span>
-                                )}
-                              </span>
-                              <span>
-                                ·{' '}
                                 {formatPace(
-                                  (estimate.predictedDurationSeconds /
-                                    targetDistanceMeters) *
+                                  (shownSeconds / targetDistanceMeters) *
                                     (discipline === 'swim' ? 100 : 1000),
                                 )}{' '}
                                 /{discipline === 'swim' ? '100 m' : 'km'}
                               </span>
+                              {record && estimate && (
+                                <span>
+                                  ·{' '}
+                                  {formatTrainingDurationInput(
+                                    estimate.predictedDurationSeconds,
+                                  )}
+                                  <EstimateMark
+                                    extrapolated={estimate.extrapolated}
+                                  />
+                                </span>
+                              )}
                             </span>
                           )}
                         </div>
@@ -399,15 +412,23 @@ export function PersonalBestsPanel({
                                 >
                                   {Math.round(record.averagePowerWatts)} W
                                 </button>
+                              ) : predictedPower !== null ? (
+                                <span
+                                  className="tri-record-time"
+                                  data-record-estimate
+                                >
+                                  {Math.round(predictedPower)} W
+                                  <EstimateMark />
+                                </span>
                               ) : (
                                 <span className="tri-record-time text-subtle-foreground">
                                   —
                                 </span>
                               )}
-                              {predictedPower !== null && (
-                                <span className="type-caption flex items-center justify-end gap-x-1.5 text-muted-foreground tabular-nums">
-                                  <ModelBadge />
+                              {record && predictedPower !== null && (
+                                <span className="type-caption flex items-center justify-end text-muted-foreground tabular-nums">
                                   {Math.round(predictedPower)} W
+                                  <EstimateMark />
                                 </span>
                               )}
                             </div>
@@ -438,15 +459,18 @@ export function PersonalBestsPanel({
                           <div className="grid justify-items-end text-right">
                             <span className="tri-record-time">
                               {Math.round(analysis.criticalPowerWatts)} W
+                              <EstimateMark />
                             </span>
-                            <span className="type-caption flex items-center justify-end gap-x-1.5 text-muted-foreground tabular-nums">
-                              <ModelBadge />
-                              {analysis.criticalPowerWattsPerKg !== null &&
-                                `${analysis.criticalPowerWattsPerKg.toLocaleString(
+                            {analysis.criticalPowerWattsPerKg !== null && (
+                              <span className="type-caption flex items-center justify-end text-muted-foreground tabular-nums">
+                                {analysis.criticalPowerWattsPerKg.toLocaleString(
                                   locale,
                                   { maximumFractionDigits: 2 },
-                                )} W/kg`}
-                            </span>
+                                )}{' '}
+                                W/kg
+                                <EstimateMark />
+                              </span>
+                            )}
                           </div>
                         </li>
                       )}
@@ -494,50 +518,6 @@ export function PersonalBestsPanel({
           onSave={onUpdateWeight}
         />
       </div>
-      <details className="group rounded-lg border bg-card p-3">
-        <DisclosureSummary>
-          {t('triathlon.performance.methodology')}
-        </DisclosureSummary>
-        <div className="mt-3 grid gap-4 text-xs leading-relaxed text-muted-foreground md:grid-cols-3">
-          {(
-            [
-              [
-                'run',
-                'Vickers & Vertosick, 2016',
-                'https://pubmed.ncbi.nlm.nih.gov/27570626/',
-              ],
-              [
-                'swim',
-                'Scott et al., 2024',
-                'https://pmc.ncbi.nlm.nih.gov/articles/PMC10875687/',
-              ],
-              [
-                'bike',
-                'Karsten et al., 2021',
-                'https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.613151/full',
-              ],
-            ] as const
-          ).map(([discipline, source, href]) => (
-            <section key={discipline}>
-              <h3 className="mb-1 font-semibold text-foreground">
-                {t(`triathlon.discipline.${discipline}`)}
-              </h3>
-              <a
-                className="font-medium text-primary underline"
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {source}
-              </a>
-              <ul className="mt-2 list-disc space-y-1 pl-4">
-                <li>{t(`triathlon.records.method.${discipline}`)}</li>
-                <li>{t(`triathlon.records.limits.${discipline}`)}</li>
-              </ul>
-            </section>
-          ))}
-        </div>
-      </details>
     </section>
   )
 }

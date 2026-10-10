@@ -62,6 +62,7 @@ describe('running performance', () => {
           },
         ],
       },
+      { ...performance('walk-8', 'run', 'road', 250, 5_000), isWalk: true },
     ]
     trainings[3].localDate = '2025-08-21'
     trainings[5].localDate = '2026-08-23'

@@ -9,6 +9,7 @@ import {
   calculateOverallProgressIndex,
   getCurrentLocalDate,
   getDistanceActivityPerformancePoints,
+  getEfficiencyTrend,
   getPowerActivityPerformancePoints,
   summarizeWeeks,
 } from './domain'
@@ -24,6 +25,7 @@ import type {
 import { defaultTrainingContexts, trainingContexts } from './types'
 import type {
   ChartRange,
+  EfficiencyPlot,
   PerformanceActivityPoint,
   PerformancePlot,
   ProgressChartPoint,
@@ -106,7 +108,7 @@ export default function TrainingStatistics({
 }) {
   const { formatDateTime, t } = useI18n()
   const today = getCurrentLocalDate()
-  const [chartRange, setChartRange] = useState<ChartRange>('12w')
+  const [chartRange, setChartRange] = useState<ChartRange>('all')
   const [runContext, setRunContext] = useState<RunningContext>(
     defaultTrainingContexts.run,
   )
@@ -415,6 +417,35 @@ export default function TrainingStatistics({
     today,
   ])
 
+  const efficiencyPlots = useMemo<EfficiencyPlot[]>(
+    () =>
+      (
+        [
+          ['run', runContext],
+          ['bike', bikeContext],
+          ['swim', swimContext],
+        ] as const
+      ).flatMap(([discipline, context]) => {
+        const trend = getEfficiencyTrend(actualTrainings, {
+          discipline,
+          context,
+          fromLocalDate: startLocalDate,
+          asOfLocalDate: today,
+        })
+        return trend && trend.points.length > 0
+          ? [
+              {
+                id: discipline,
+                title: t(`triathlon.discipline.${discipline}`),
+                referenceHeartRateBpm: trend.referenceHeartRateBpm,
+                points: trend.points,
+              },
+            ]
+          : []
+      }),
+    [actualTrainings, bikeContext, runContext, startLocalDate, swimContext, t, today],
+  )
+
   const weeklyVolume = useMemo<WeeklyVolumeChartPoint[]>(
     () =>
       weeklyStats.map((week) => ({
@@ -523,6 +554,7 @@ export default function TrainingStatistics({
       }
     >
       <TrainingCharts
+        efficiencyPlots={efficiencyPlots}
         performancePlots={performancePlots}
         progressPoints={progressPoints}
         range={chartRange}

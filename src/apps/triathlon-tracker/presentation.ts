@@ -1,4 +1,4 @@
-import { Bike, Footprints, Waves } from 'lucide-react'
+import { Bike, Footprints, PersonStanding, Waves } from 'lucide-react'
 import type { Discipline } from './types'
 import { formatTrainingDurationInput } from './domain/units'
 
@@ -9,8 +9,28 @@ export const disciplineColors = {
   run: '#c4563d',
 } satisfies Record<Discipline, string>
 
+// Gleiche Werte wie --sport-fill in triathlon-tracker.css: dunklere Töne, auf
+// denen weiße Schrift WCAG AA erfüllt (Plankarten, Achsen-Badges).
+export const disciplineFillColors = {
+  swim: '#2a72a6',
+  bike: '#97680c',
+  run: '#b04a33',
+} satisfies Record<Discipline, string>
+
 export const disciplineIcons = { swim: Waves, bike: Bike, run: Footprints }
 export const disciplines = ['swim', 'bike', 'run'] as const
+
+type TrainingKind = { discipline: Discipline; isWalk?: boolean }
+
+export function trainingIcon(training: TrainingKind) {
+  return training.isWalk ? PersonStanding : disciplineIcons[training.discipline]
+}
+
+export function trainingLabelKey(training: TrainingKind) {
+  return training.isWalk
+    ? ('triathlon.variant.walk' as const)
+    : (`triathlon.discipline.${training.discipline}` as const)
+}
 
 export function formatTrainingDuration(seconds: number | null) {
   if (seconds === null) return '—'

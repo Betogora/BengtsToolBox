@@ -22,10 +22,18 @@ function rangeIssue(
 function validateSharedTraining(
   training: Pick<
     PlannedTraining,
-    'localDate' | 'startMinutes' | 'durationSeconds' | 'distanceMeters'
+    | 'localDate'
+    | 'startMinutes'
+    | 'discipline'
+    | 'isWalk'
+    | 'durationSeconds'
+    | 'distanceMeters'
   >,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = []
+  if (training.isWalk && training.discipline !== 'run') {
+    issues.push({ field: 'isWalk', code: 'context-mismatch', severity: 'error' })
+  }
   if (!isValidLocalDate(training.localDate)) {
     issues.push({ field: 'localDate', code: 'invalid-date', severity: 'error' })
   }

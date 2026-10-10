@@ -93,6 +93,7 @@ function getPerformanceAnalyticsChanges(
 ) {
   const structuralFields = [
     'isBenchmark',
+    'isWalk',
     'localDate',
     'discipline',
     'context',

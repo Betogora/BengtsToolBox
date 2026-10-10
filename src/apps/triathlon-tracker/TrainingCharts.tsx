@@ -1,23 +1,28 @@
+import { X } from 'lucide-react'
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   ComposedChart,
-  Legend,
   Line,
   LineChart,
-  ResponsiveContainer,
   ReferenceLine,
+  ResponsiveContainer,
   Scatter,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { EmptyState } from '@/apps/shared/components/EmptyState'
-import { disciplineColors } from '@/apps/triathlon-tracker/presentation'
+import {
+  disciplineColors,
+  disciplineFillColors,
+} from '@/apps/triathlon-tracker/presentation'
+import type { Discipline } from '@/apps/triathlon-tracker/types'
+import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DisclosureSummary } from '@/components/ui/disclosure'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,7 +35,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
-import { ModelBadge } from './PersonalBestsPanel'
+import { cn } from '@/lib/utils'
+import {
+  evenlySpacedTicks,
+  evenlySpacedTimestamps,
+  maxTicksForWidth,
+} from './chartTicks'
+import { EstimateMark } from './PersonalBestsPanel'
 
 export type ChartRange = '4w' | '12w' | '6m' | '1y' | 'all'
 
@@ -83,6 +94,36 @@ export type WeeklyVolumeChartPoint = {
   runKilometers: number
 }
 
+export type EfficiencyChartPoint = {
+  activityId: string
+  localDate: string
+  averageHeartRateBpm: number
+  speedMetersPerSecond: number
+  normalizedSpeedMetersPerSecond: number
+  trendSpeedMetersPerSecond: number
+}
+
+export type EfficiencyPlot = {
+  id: Discipline
+  title: string
+  referenceHeartRateBpm: number
+  points: EfficiencyChartPoint[]
+}
+
+/** A clicked (pinned) or hovered data point, in axis units. */
+type SelectedPoint = {
+  key: string
+  timestamp: number
+  value: number
+  localDate: string
+  seriesLabel: string
+  isModel: boolean
+  modelDisplayValue?: number | null
+  basis?: 'benchmark' | 'training' | null
+  heartRateBpm?: number
+  actualValue?: number
+}
+
 function formatClock(value: number) {
   const rounded = Math.max(0, Math.round(value))
   const hours = Math.floor(rounded / 3600)
@@ -111,10 +152,56 @@ const tooltipContentStyle = {
   boxShadow: 'var(--shadow-overlay)',
 }
 
-const gridStroke = 'var(--border)'
+const tooltipItemStyle = {
+  color: 'var(--popover-foreground)',
+  whiteSpace: 'normal' as const,
+}
+
+/** Dotted horizontal guides only, like a printed chart. */
+const gridProps = {
+  stroke: 'var(--border-strong, var(--border))',
+  strokeDasharray: '1 5',
+  strokeLinecap: 'round' as const,
+  vertical: false,
+}
+const tickStyle = { fill: 'var(--muted-foreground)', fontSize: 11 }
 /** Lighter sport tints mark measured history and secondary series. */
-const activityOpacity = 0.4
-const secondaryOpacity = 0.5
+const activityOpacity = 0.45
+const secondaryOpacity = 0.55
+const dimmedOpacity = 0.25
+const halfDayMs = 43_200_000
+
+function canHover() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(hover: hover)').matches === true
+  )
+}
+
+function useElementWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    setWidth(Math.round(element.getBoundingClientRect().width))
+    // Deferring the update to the next frame avoids ResizeObserver loop errors
+    // when the re-rendered tick labels change the observed layout again.
+    let frame = 0
+    const observer = new ResizeObserver(([entry]) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() =>
+        setWidth(Math.round(entry.contentRect.width)),
+      )
+    })
+    observer.observe(element)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [])
+  return [ref, width] as const
+}
 
 function LegendDot({ color, opacity = 1 }: { color: string; opacity?: number }) {
   return (
@@ -134,9 +221,175 @@ function LegendLine({ color, dash, opacity = 1 }: { color: string; dash: string;
   )
 }
 
-const tooltipItemStyle = {
-  color: 'var(--popover-foreground)',
-  whiteSpace: 'normal' as const,
+/** Value badge drawn onto an axis where a crosshair line meets it. */
+function AxisBadge({
+  viewBox,
+  axis,
+  text,
+  fill,
+  textColor = '#fff',
+}: {
+  viewBox?: { x?: number; y?: number; width?: number; height?: number }
+  axis: 'x' | 'y'
+  text: string
+  fill: string
+  textColor?: string
+}) {
+  if (!viewBox || viewBox.x === undefined || viewBox.y === undefined) {
+    return null
+  }
+  const width = text.length * 6.6 + 12
+  const height = 18
+  const x =
+    axis === 'y' ? viewBox.x - width - 4 : viewBox.x - width / 2
+  const y =
+    axis === 'y'
+      ? viewBox.y - height / 2
+      : viewBox.y + (viewBox.height ?? 0) + 4
+  return (
+    <g pointerEvents="none">
+      <rect x={x} y={y} width={width} height={height} rx={4} fill={fill} />
+      <text
+        x={x + width / 2}
+        y={y + height / 2}
+        dy="0.35em"
+        fill={textColor}
+        fontSize={11}
+        fontWeight={600}
+        textAnchor="middle"
+      >
+        {text}
+      </text>
+    </g>
+  )
+}
+
+/** Data point with a generous invisible hit area for touch. */
+function ClickablePoint({
+  cx,
+  cy,
+  color,
+  radius,
+  filled,
+  opacity,
+  pinned,
+  onSelect,
+  onHoverChange,
+}: {
+  cx: number
+  cy: number
+  color: string
+  radius: number
+  filled: boolean
+  opacity: number
+  pinned: boolean
+  onSelect: () => void
+  onHoverChange: (hovered: boolean) => void
+}) {
+  return (
+    <g
+      className="cursor-pointer"
+      data-chart-point
+      onClick={(event) => {
+        event.stopPropagation()
+        onSelect()
+      }}
+      onMouseEnter={() => {
+        if (canHover()) onHoverChange(true)
+      }}
+      onMouseLeave={() => onHoverChange(false)}
+    >
+      <circle cx={cx} cy={cy} r={11} fill="transparent" />
+      {pinned && (
+        <circle cx={cx} cy={cy} r={radius + 5} fill={color} fillOpacity={0.2} />
+      )}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={pinned ? radius + 1.5 : radius}
+        fill={filled || pinned ? color : 'var(--card)'}
+        fillOpacity={filled && !pinned ? opacity : 1}
+        stroke={color}
+        strokeOpacity={pinned ? 1 : Math.min(1, opacity * 2)}
+        strokeWidth={filled && !pinned ? 0 : 2}
+      />
+    </g>
+  )
+}
+
+/** Direct series label at the end of a line instead of a legend box. */
+function endLabel(lastIndex: number, text: string, color: string, opacity = 1) {
+  return function EndLabel(props: { x?: number | string; y?: number | string; index?: number }) {
+    const x = Number(props.x)
+    const y = Number(props.y)
+    if (props.index !== lastIndex || !Number.isFinite(x) || !Number.isFinite(y)) {
+      return <g key={`end-${props.index}`} />
+    }
+    return (
+      <text
+        key={`end-${props.index}`}
+        x={x + 8}
+        y={y}
+        dy="0.35em"
+        fill={color}
+        fillOpacity={opacity}
+        fontSize={11}
+        fontWeight={600}
+      >
+        {text}
+      </text>
+    )
+  }
+}
+
+function lastIndexWhere<T>(items: readonly T[], predicate: (item: T) => boolean) {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (predicate(items[index])) return index
+  }
+  return -1
+}
+
+function PointDetail({
+  color,
+  children,
+  onClose,
+}: {
+  color: string
+  children: ReactNode
+  onClose?: () => void
+}) {
+  const { t } = useI18n()
+  return (
+    <div
+      className="tri-point-detail mt-2 flex min-h-11 items-center gap-3 rounded-md border bg-muted/40 py-1.5 pl-3 pr-1.5"
+      data-point-detail
+    >
+      <LegendDot color={color} />
+      <div className="type-caption flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-0.5 tabular-nums">
+        {children}
+      </div>
+      {onClose && (
+        <Button
+          aria-label={t('triathlon.charts.unpin')}
+          className="size-8 shrink-0 text-muted-foreground"
+          size="icon"
+          variant="ghost"
+          onClick={onClose}
+        >
+          <X aria-hidden="true" />
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function DetailItem({ label, children }: { label?: ReactNode; children: ReactNode }) {
+  return (
+    <span className="whitespace-nowrap">
+      {label && <span className="text-muted-foreground">{label} </span>}
+      <span className="font-semibold text-foreground">{children}</span>
+    </span>
+  )
 }
 
 function RangePicker({
@@ -199,21 +452,60 @@ function performanceChartPoints(plot: PerformancePlot) {
   )
 }
 
-function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
-  const { formatNumber, formatDateTime, t } = useI18n()
-  const disciplineColor = disciplineColors[plot.id]
+type PerformanceChartDatum = ReturnType<typeof performanceChartPoints>[number]
+
+function useValueFormatters(plot: Pick<PerformancePlot, 'id' | 'modelUnit' | 'unit'>) {
+  const { formatNumber } = useI18n()
   const isPace = plot.id !== 'bike'
-  const chartPoints = performanceChartPoints(plot)
-  const valueFormatter = (value: number) =>
+  const unitLabel = isPace
+    ? plot.id === 'swim'
+      ? '100 m'
+      : 'km'
+    : plot.unit === 'watts'
+      ? 'W'
+      : 'km/h'
+  const axisValue = (value: number) =>
     isPace
-      ? `${formatClock(value)} min/${plot.id === 'swim' ? '100 m' : 'km'}`
-      : plot.unit === 'watts'
-        ? `${formatNumber(value, { maximumFractionDigits: 0 })} W`
-        : `${formatNumber(value, { maximumFractionDigits: 1 })} km/h`
-  const modelValueFormatter = (value: number) =>
+      ? formatClock(value)
+      : formatNumber(value, {
+          maximumFractionDigits: plot.unit === 'watts' ? 0 : 1,
+        })
+  const valueWithUnit = (value: number) =>
+    isPace ? `${formatClock(value)} /${unitLabel}` : `${axisValue(value)} ${unitLabel}`
+  const modelValue = (value: number) =>
     plot.modelUnit === 'seconds'
       ? formatClock(value)
       : `${formatNumber(value, { maximumFractionDigits: 0 })} W`
+  const difference = (value: number, reference: number) => {
+    const change = value - reference
+    const sign = change > 0 ? '+' : change < 0 ? '−' : '±'
+    return `${sign}${valueWithUnit(Math.abs(change))}`
+  }
+  const delta = (value: number, reference: number) => {
+    const change = value - reference
+    const sign = change > 0 ? '+' : change < 0 ? '−' : '±'
+    const percent = formatNumber(Math.abs((value / reference - 1) * 100), {
+      maximumFractionDigits: 1,
+    })
+    return `${difference(value, reference)} (${sign}${percent} %)`
+  }
+  return { isPace, unitLabel, axisValue, valueWithUnit, modelValue, difference, delta }
+}
+
+function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
+  const { formatDateTime, t } = useI18n()
+  const color = disciplineColors[plot.id]
+  const fill = disciplineFillColors[plot.id]
+  const { isPace, unitLabel, axisValue, valueWithUnit, modelValue, delta } =
+    useValueFormatters(plot)
+  const chartPoints = performanceChartPoints(plot)
+  const modelPoints = chartPoints.filter((point) => point.pointKind === 'model')
+  const activityPoints = chartPoints.filter((point) => point.pointKind === 'actual')
+  const [pinned, setPinned] = useState<SelectedPoint | null>(null)
+  const [hovered, setHovered] = useState<SelectedPoint | null>(null)
+  const [canvasRef, width] = useElementWidth<HTMLDivElement>()
+  const shortDate = (timestamp: number) =>
+    formatDateTime(new Date(timestamp), { day: '2-digit', month: 'short' })
 
   const latestModel = plot.points.findLast(
     (point) => point.primaryDisplayValue !== null,
@@ -226,6 +518,90 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
         point.actualValue !== null,
     )
     .map((point) => point.timestamp)
+  const domain: [number, number] = [
+    Math.min(...observedTimestamps) - halfDayMs,
+    Math.max(...observedTimestamps) + halfDayMs,
+  ]
+  const ticks = evenlySpacedTimestamps(
+    domain[0] + halfDayMs,
+    domain[1] - halfDayMs,
+    Math.min(5, maxTicksForWidth(width - 60, 84)),
+  )
+  const lastPrimary = lastIndexWhere(modelPoints, (point) => point.primaryValue !== null)
+  const lastSecondary = lastIndexWhere(modelPoints, (point) => point.secondaryValue !== null)
+  const togglePin = (point: SelectedPoint) =>
+    setPinned((current) => (current?.key === point.key ? null : point))
+  const pointOpacity = (key: string, base: number) =>
+    pinned && pinned.key !== key ? Math.min(base, dimmedOpacity) : base
+
+  const renderModelDot =
+    (series: 'primary' | 'secondary') =>
+    (props: { cx?: number; cy?: number; index?: number; payload?: PerformanceChartDatum }) => {
+      const { cx, cy, index, payload } = props
+      const value = series === 'primary' ? payload?.primaryValue : payload?.secondaryValue
+      if (cx == null || cy == null || payload == null || value == null) {
+        return <g key={`${series}-${index}`} />
+      }
+      const point: SelectedPoint = {
+        key: `${series}-${payload.rowKey}`,
+        timestamp: payload.timestamp,
+        value,
+        localDate: payload.localDate,
+        seriesLabel:
+          series === 'primary' ? plot.primaryLabel : (plot.secondaryLabel ?? ''),
+        isModel: true,
+        modelDisplayValue:
+          series === 'primary'
+            ? payload.primaryDisplayValue
+            : payload.secondaryDisplayValue,
+        basis: payload.basis,
+      }
+      return (
+        <ClickablePoint
+          key={`${series}-${index}`}
+          cx={cx}
+          cy={cy}
+          color={color}
+          radius={series === 'primary' ? 2.5 : 2}
+          filled={false}
+          opacity={pointOpacity(point.key, series === 'primary' ? 1 : secondaryOpacity)}
+          pinned={pinned?.key === point.key}
+          onSelect={() => togglePin(point)}
+          onHoverChange={(isHovered) => setHovered(isHovered ? point : null)}
+        />
+      )
+    }
+  const renderActivity = (props: unknown) => {
+    const { cx, cy, payload } = props as {
+      cx?: number
+      cy?: number
+      payload?: PerformanceChartDatum
+    }
+    if (cx == null || cy == null || payload?.actualValue == null) return <g />
+    const point: SelectedPoint = {
+      key: payload.rowKey,
+      timestamp: payload.timestamp,
+      value: payload.actualValue,
+      localDate: payload.localDate,
+      seriesLabel: plot.activityLabel,
+      isModel: false,
+    }
+    return (
+      <ClickablePoint
+        cx={cx}
+        cy={cy}
+        color={color}
+        radius={4}
+        filled
+        opacity={pointOpacity(point.key, activityOpacity)}
+        pinned={pinned?.key === point.key}
+        onSelect={() => togglePin(point)}
+        onHoverChange={(isHovered) => setHovered(isHovered ? point : null)}
+      />
+    )
+  }
+  const shown = hovered ?? pinned
+  const lineOpacity = pinned ? 0.35 : 1
 
   return (
     <Card
@@ -236,27 +612,21 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
       <CardHeader className="tri-performance-heading p-4">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <LegendDot color={disciplineColor} />
+            <LegendDot color={color} />
             {plot.title}
           </CardTitle>
           <span className="type-caption text-muted-foreground">
-            {isPace
-              ? plot.id === 'swim'
-                ? 'min/100 m'
-                : 'min/km'
-              : plot.unit === 'watts'
-                ? 'W'
-                : 'km/h'}
+            {isPace ? `min/${unitLabel}` : unitLabel}
           </span>
         </div>
         {latestModel && latestModel.primaryDisplayValue !== null && (
           <div className="mt-3 flex items-end justify-between gap-3">
             <div>
               <p className="tri-plot-value">
-                {modelValueFormatter(latestModel.primaryDisplayValue)}
+                {modelValue(latestModel.primaryDisplayValue)}
+                <EstimateMark />
               </p>
-              <p className="type-caption mt-1 flex items-center gap-1.5 text-muted-foreground">
-                <ModelBadge />
+              <p className="type-caption mt-1 text-muted-foreground">
                 {plot.primaryLabel}
               </p>
             </div>
@@ -273,49 +643,36 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
         )}
       </CardHeader>
       <CardContent className="tri-performance-content p-3 pt-0 sm:p-4 sm:pt-0">
-        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground min-[900px]:pt-0">
+        <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 pt-3 text-xs text-muted-foreground min-[900px]:pt-0">
           <span className="flex items-center gap-1.5">
-            <LegendDot color={disciplineColor} opacity={activityOpacity} />
+            <LegendDot color={color} opacity={activityOpacity} />
             {plot.activityLabel}
           </span>
           <span className="flex items-center gap-1.5">
-            <LegendLine color={disciplineColor} dash="6 4" />
-            {t('triathlon.charts.estimated')} {plot.primaryLabel}
+            <LegendLine color={color} dash="6 4" />
+            {t('triathlon.charts.estimated')}*
           </span>
-          {plot.secondaryLabel && (
-            <span className="flex items-center gap-1.5">
-              <LegendLine color={disciplineColor} dash="3 4" opacity={secondaryOpacity} />
-              {plot.secondaryLabel}
-            </span>
-          )}
         </div>
-        <div className="tri-plot-canvas h-56 min-w-0 sm:h-64">
+        <div className="tri-plot-canvas h-56 min-w-0 sm:h-64" ref={canvasRef}>
           <ResponsiveContainer height="100%" width="100%">
             <ComposedChart
-              data={chartPoints.filter((point) => point.pointKind === 'model')}
-              margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
+              data={modelPoints}
+              margin={{ bottom: 6, left: 4, right: 52, top: 12 }}
+              onClick={() => setPinned(null)}
             >
-              <CartesianGrid stroke={gridStroke} vertical={false} />
+              <CartesianGrid {...gridProps} />
               <XAxis
                 type="number"
                 dataKey="timestamp"
-                domain={[
-                  Math.min(...observedTimestamps) - 43200000,
-                  Math.max(...observedTimestamps) + 43200000,
-                ]}
+                domain={domain}
                 allowDataOverflow
-                tickCount={3}
-                minTickGap={40}
-                tickFormatter={(value) =>
-                  formatDateTime(new Date(Number(value)), {
-                    day: '2-digit',
-                    month: 'short',
-                  })
-                }
+                ticks={ticks}
+                interval={0}
+                tickFormatter={(value) => shortDate(Number(value))}
                 axisLine={false}
                 tickLine={false}
                 tickMargin={12}
-                tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                tick={tickStyle}
               />
               <YAxis
                 domain={['auto', 'auto']}
@@ -323,95 +680,130 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                 axisLine={false}
                 tickLine={false}
                 tickMargin={8}
-                tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                tickFormatter={(value: number) =>
-                  isPace
-                    ? formatClock(value)
-                    : formatNumber(value, { maximumFractionDigits: 0 })
-                }
+                tick={tickStyle}
+                tickFormatter={(value: number) => axisValue(value)}
                 width={46}
                 tickCount={4}
               />
-              <Tooltip
-                contentStyle={tooltipContentStyle}
-                formatter={(value, name, item) => [
-                  item.dataKey === 'timestamp'
-                    ? formatDateTime(new Date(Number(value)), {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    : valueFormatter(Number(value)),
-                  item.dataKey === 'timestamp'
-                    ? t('triathlon.form.date')
-                    : item.payload?.basis
-                      ? `${String(name)} · ${t(`triathlon.performance.basis.${item.payload.basis as 'benchmark' | 'training'}`)}`
-                      : String(name),
-                ]}
-                labelFormatter={(_, payload) =>
-                  payload[0]?.payload.localDate ?? ''
-                }
-                itemStyle={tooltipItemStyle}
-              />
+              {hovered && hovered.key !== pinned?.key && (
+                <ReferenceLine
+                  x={hovered.timestamp}
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="2 4"
+                  ifOverflow="hidden"
+                />
+              )}
+              {pinned && (
+                <ReferenceLine
+                  x={pinned.timestamp}
+                  stroke={color}
+                  strokeDasharray="3 3"
+                  ifOverflow="hidden"
+                  label={<AxisBadge axis="x" fill={fill} text={shortDate(pinned.timestamp)} />}
+                />
+              )}
+              {pinned && (
+                <ReferenceLine
+                  y={pinned.value}
+                  stroke={color}
+                  strokeDasharray="3 3"
+                  ifOverflow="hidden"
+                  label={<AxisBadge axis="y" fill={fill} text={axisValue(pinned.value)} />}
+                />
+              )}
               {/* Model estimates are dashed; measured sessions are dots. */}
               <Line
                 connectNulls={false}
                 dataKey="primaryValue"
-                dot={{ r: 2.5, fill: 'white', strokeWidth: 2, strokeDasharray: '0' }}
-                activeDot={{ r: 4, fill: 'white', strokeWidth: 2 }}
+                dot={renderModelDot('primary')}
+                activeDot={false}
                 name={plot.primaryLabel}
-                stroke={disciplineColor}
+                stroke={color}
                 strokeDasharray="6 4"
+                strokeOpacity={lineOpacity}
                 strokeWidth={2.5}
                 isAnimationActive={false}
                 type="linear"
+                label={endLabel(lastPrimary, plot.primaryLabel, color, lineOpacity)}
               />
               {plot.secondaryLabel && (
                 <Line
                   connectNulls={false}
                   dataKey="secondaryValue"
-                  dot={{ r: 2, fill: 'white', strokeWidth: 1.5, strokeDasharray: '0' }}
+                  dot={renderModelDot('secondary')}
+                  activeDot={false}
                   name={plot.secondaryLabel}
-                  stroke={disciplineColor}
+                  stroke={color}
                   strokeDasharray="3 4"
-                  strokeOpacity={secondaryOpacity}
+                  strokeOpacity={secondaryOpacity * lineOpacity}
                   strokeWidth={2}
                   isAnimationActive={false}
                   type="linear"
+                  label={endLabel(
+                    lastSecondary,
+                    plot.secondaryLabel,
+                    color,
+                    secondaryOpacity * lineOpacity,
+                  )}
                 />
               )}
               <Scatter
-                data={chartPoints.filter(
-                  (point) => point.pointKind === 'actual',
-                )}
+                data={activityPoints}
                 dataKey="actualValue"
                 isAnimationActive={false}
-                fill={disciplineColor}
-                fillOpacity={activityOpacity}
-                legendType="circle"
+                fill={color}
                 name={plot.activityLabel}
+                shape={renderActivity}
               />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+        {shown && (
+          <PointDetail
+            color={color}
+            onClose={pinned ? () => setPinned(null) : undefined}
+          >
+            <DetailItem>
+              {formatDateTime(new Date(shown.timestamp), {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </DetailItem>
+            {shown.isModel && shown.modelDisplayValue != null ? (
+              <DetailItem label={shown.seriesLabel}>
+                {modelValue(shown.modelDisplayValue)}
+                <EstimateMark />
+              </DetailItem>
+            ) : (
+              <DetailItem label={shown.seriesLabel}>
+                {valueWithUnit(shown.value)}
+              </DetailItem>
+            )}
+            {shown.isModel && (
+              <DetailItem>{valueWithUnit(shown.value)}</DetailItem>
+            )}
+            {shown.basis && (
+              <span className="text-muted-foreground">
+                {t(`triathlon.performance.basis.${shown.basis}`)}
+              </span>
+            )}
+            {pinned && shown.key !== pinned.key && (
+              <DetailItem label={t('triathlon.charts.vsPinned')}>
+                {delta(shown.value, pinned.value)}
+              </DetailItem>
+            )}
+          </PointDetail>
+        )}
       </CardContent>
     </Card>
   )
 }
 
 function PerformanceDataTable({ plot }: { plot: PerformancePlot }) {
-  const { formatNumber, t } = useI18n()
+  const { t } = useI18n()
+  const { valueWithUnit, modelValue } = useValueFormatters(plot)
   const chartPoints = performanceChartPoints(plot)
-  const valueFormatter = (value: number) =>
-    plot.id !== 'bike'
-      ? `${formatClock(value)} min/${plot.id === 'swim' ? '100 m' : 'km'}`
-      : plot.unit === 'watts'
-        ? `${formatNumber(value, { maximumFractionDigits: 0 })} W`
-        : `${formatNumber(value, { maximumFractionDigits: 1 })} km/h`
-  const modelValueFormatter = (value: number) =>
-    plot.modelUnit === 'seconds'
-      ? formatClock(value)
-      : `${formatNumber(value, { maximumFractionDigits: 0 })} W`
   return (
     <section
       className="min-w-0"
@@ -448,19 +840,19 @@ function PerformanceDataTable({ plot }: { plot: PerformancePlot }) {
                 <TableCell>
                   {point.primaryDisplayValue === null
                     ? '–'
-                    : modelValueFormatter(point.primaryDisplayValue)}
+                    : modelValue(point.primaryDisplayValue)}
                 </TableCell>
                 {plot.secondaryLabel && (
                   <TableCell>
                     {point.secondaryDisplayValue === null
                       ? '–'
-                      : modelValueFormatter(point.secondaryDisplayValue)}
+                      : modelValue(point.secondaryDisplayValue)}
                   </TableCell>
                 )}
                 <TableCell>
                   {point.actualValue === null
                     ? '–'
-                    : valueFormatter(point.actualValue)}
+                    : valueWithUnit(point.actualValue)}
                 </TableCell>
               </TableRow>
             ))}
@@ -507,29 +899,363 @@ function PerformancePlots({ plots }: { plots: PerformancePlot[] }) {
   )
 }
 
+function efficiencyAxisValue(id: Discipline, metersPerSecond: number) {
+  return id === 'bike'
+    ? metersPerSecond * 3.6
+    : (id === 'swim' ? 100 : 1000) / metersPerSecond
+}
+
+function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
+  const { formatDateTime, t } = useI18n()
+  const populated = plots.filter((plot) => plot.points.length > 0)
+  const [selectedId, setSelectedId] = useState<Discipline | null>(null)
+  const plot =
+    populated.find((candidate) => candidate.id === selectedId) ?? populated[0]
+  const [pinned, setPinned] = useState<SelectedPoint | null>(null)
+  const [hovered, setHovered] = useState<SelectedPoint | null>(null)
+  const [canvasRef, width] = useElementWidth<HTMLDivElement>()
+  const formatters = useValueFormatters({
+    id: plot?.id ?? 'run',
+    modelUnit: 'seconds',
+    unit: 'kilometers-per-hour',
+  })
+
+  if (!plot) {
+    return (
+      <Card className="min-w-0 shadow-none" data-efficiency-plot>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle>{t('triathlon.charts.efficiency')}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
+          <EmptyState>{t('triathlon.charts.noEfficiency')}</EmptyState>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const color = disciplineColors[plot.id]
+  const fill = disciplineFillColors[plot.id]
+  const data = plot.points.map((point) => ({
+    ...point,
+    timestamp: Date.parse(point.localDate + 'T12:00:00Z'),
+    normalizedValue: efficiencyAxisValue(plot.id, point.normalizedSpeedMetersPerSecond),
+    trendValue: efficiencyAxisValue(plot.id, point.trendSpeedMetersPerSecond),
+    actualValue: efficiencyAxisValue(plot.id, point.speedMetersPerSecond),
+  }))
+  type Datum = (typeof data)[number]
+  const first = data[0]
+  const latest = data[data.length - 1]
+  const domain: [number, number] = [
+    first.timestamp - halfDayMs,
+    latest.timestamp + halfDayMs,
+  ]
+  const ticks = evenlySpacedTimestamps(
+    first.timestamp,
+    latest.timestamp,
+    Math.min(5, maxTicksForWidth(width - 60, 84)),
+  )
+  const shortDate = (timestamp: number) =>
+    formatDateTime(new Date(timestamp), { day: '2-digit', month: 'short' })
+  const togglePin = (point: SelectedPoint) =>
+    setPinned((current) => (current?.key === point.key ? null : point))
+  const renderSession = (props: unknown) => {
+    const { cx, cy, payload } = props as { cx?: number; cy?: number; payload?: Datum }
+    if (cx == null || cy == null || !payload) return <g />
+    const point: SelectedPoint = {
+      key: payload.activityId,
+      timestamp: payload.timestamp,
+      value: payload.normalizedValue,
+      localDate: payload.localDate,
+      seriesLabel: t('triathlon.charts.efficiencyAt', {
+        bpm: plot.referenceHeartRateBpm,
+      }),
+      isModel: false,
+      heartRateBpm: payload.averageHeartRateBpm,
+      actualValue: payload.actualValue,
+    }
+    return (
+      <ClickablePoint
+        cx={cx}
+        cy={cy}
+        color={color}
+        radius={4}
+        filled
+        opacity={pinned && pinned.key !== point.key ? dimmedOpacity : activityOpacity}
+        pinned={pinned?.key === point.key}
+        onSelect={() => togglePin(point)}
+        onHoverChange={(isHovered) => setHovered(isHovered ? point : null)}
+      />
+    )
+  }
+  const shown = hovered ?? pinned
+
+  return (
+    <Card
+      className="tri-performance-card min-w-0 shadow-none"
+      data-efficiency-plot={plot.id}
+      data-discipline={plot.id}
+    >
+      <CardHeader className="tri-performance-heading p-4">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <LegendDot color={color} />
+            {t('triathlon.charts.efficiency')}
+          </CardTitle>
+          <span className="type-caption text-muted-foreground">
+            {formatters.isPace ? `min/${formatters.unitLabel}` : formatters.unitLabel}
+          </span>
+        </div>
+        <div className="mt-3">
+          <p className="tri-plot-value">
+            {formatters.isPace
+              ? formatClock(latest.trendValue)
+              : formatters.axisValue(latest.trendValue)}
+          </p>
+          <p className="type-caption mt-1 text-muted-foreground">
+            {t('triathlon.charts.efficiencyAt', { bpm: plot.referenceHeartRateBpm })}
+            {data.length > 1 && (
+              <>
+                {' · '}
+                <span className="font-semibold text-foreground">
+                  {formatters.difference(latest.trendValue, first.trendValue)}
+                </span>{' '}
+                {t('triathlon.charts.since', { date: shortDate(first.timestamp) })}
+              </>
+            )}
+          </p>
+        </div>
+      </CardHeader>
+      <CardContent className="tri-performance-content p-3 pt-0 sm:p-4 sm:pt-0">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 pt-3 min-[900px]:pt-0">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <LegendDot color={color} opacity={activityOpacity} />
+              {t('triathlon.charts.efficiencySession')}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <LegendLine color={color} dash="0" />
+              {t('triathlon.charts.efficiencyTrend')}
+            </span>
+          </div>
+          {populated.length > 1 && (
+            <SegmentedControl
+              aria-label={t('triathlon.form.discipline')}
+              className="w-fit"
+              value={plot.id}
+              onValueChange={(value) => {
+                setSelectedId(value as Discipline)
+                setPinned(null)
+                setHovered(null)
+              }}
+              options={populated.map((candidate) => ({
+                value: candidate.id,
+                label: candidate.title,
+              }))}
+            />
+          )}
+        </div>
+        <div className="tri-plot-canvas h-56 min-w-0 sm:h-64" ref={canvasRef}>
+          <ResponsiveContainer height="100%" width="100%">
+            <ComposedChart
+              data={data}
+              margin={{ bottom: 6, left: 4, right: 52, top: 12 }}
+              onClick={() => setPinned(null)}
+            >
+              <CartesianGrid {...gridProps} />
+              <XAxis
+                type="number"
+                dataKey="timestamp"
+                domain={domain}
+                allowDataOverflow
+                ticks={ticks}
+                interval={0}
+                tickFormatter={(value) => shortDate(Number(value))}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={12}
+                tick={tickStyle}
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                reversed={formatters.isPace}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
+                tick={tickStyle}
+                tickFormatter={(value: number) => formatters.axisValue(value)}
+                width={46}
+                tickCount={4}
+              />
+              {pinned && (
+                <ReferenceLine
+                  x={pinned.timestamp}
+                  stroke={color}
+                  strokeDasharray="3 3"
+                  ifOverflow="hidden"
+                  label={<AxisBadge axis="x" fill={fill} text={shortDate(pinned.timestamp)} />}
+                />
+              )}
+              {pinned && (
+                <ReferenceLine
+                  y={pinned.value}
+                  stroke={color}
+                  strokeDasharray="3 3"
+                  ifOverflow="hidden"
+                  label={<AxisBadge axis="y" fill={fill} text={formatters.axisValue(pinned.value)} />}
+                />
+              )}
+              <Line
+                dataKey="trendValue"
+                dot={false}
+                activeDot={false}
+                name={t('triathlon.charts.efficiencyTrend')}
+                stroke={color}
+                strokeOpacity={pinned ? 0.4 : 1}
+                strokeWidth={2.5}
+                isAnimationActive={false}
+                type="monotone"
+                label={endLabel(
+                  data.length - 1,
+                  t('triathlon.charts.trend'),
+                  color,
+                  pinned ? 0.4 : 1,
+                )}
+              />
+              <Scatter
+                dataKey="normalizedValue"
+                isAnimationActive={false}
+                fill={color}
+                name={t('triathlon.charts.efficiencySession')}
+                shape={renderSession}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        {shown && (
+          <PointDetail color={color} onClose={pinned ? () => setPinned(null) : undefined}>
+            <DetailItem>
+              {formatDateTime(new Date(shown.timestamp), {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </DetailItem>
+            <DetailItem label={shown.seriesLabel}>
+              {formatters.valueWithUnit(shown.value)}
+            </DetailItem>
+            {shown.actualValue !== undefined && (
+              <DetailItem label={t('triathlon.charts.actualPace')}>
+                {formatters.valueWithUnit(shown.actualValue)} ·{' '}
+                {shown.heartRateBpm} bpm
+              </DetailItem>
+            )}
+            {pinned && shown.key !== pinned.key && (
+              <DetailItem label={t('triathlon.charts.vsPinned')}>
+                {formatters.delta(shown.value, pinned.value)}
+              </DetailItem>
+            )}
+          </PointDetail>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function EfficiencyDataTable({ plot }: { plot: EfficiencyPlot }) {
+  const { t } = useI18n()
+  const { valueWithUnit } = useValueFormatters({
+    id: plot.id,
+    modelUnit: 'seconds',
+    unit: 'kilometers-per-hour',
+  })
+  return (
+    <section className="min-w-0" data-efficiency-table={plot.id}>
+      <h3 className="type-card-title">
+        {t('triathlon.charts.efficiency')} · {plot.title}
+      </h3>
+      <Table containerClassName="mt-3">
+        <TableHeader>
+          <TableHead>{t('triathlon.form.date')}</TableHead>
+          <TableHead>{t('triathlon.charts.heartRate')}</TableHead>
+          <TableHead>{t('triathlon.charts.actualPace')}</TableHead>
+          <TableHead>
+            {t('triathlon.charts.efficiencyAt', { bpm: plot.referenceHeartRateBpm })}
+          </TableHead>
+          <TableHead>{t('triathlon.charts.efficiencyTrend')}</TableHead>
+        </TableHeader>
+        <TableBody>
+          {plot.points.map((point) => (
+            <TableRow key={point.activityId}>
+              <TableCell>{point.localDate}</TableCell>
+              <TableCell>{point.averageHeartRateBpm} bpm</TableCell>
+              <TableCell>
+                {valueWithUnit(efficiencyAxisValue(plot.id, point.speedMetersPerSecond))}
+              </TableCell>
+              <TableCell>
+                {valueWithUnit(
+                  efficiencyAxisValue(plot.id, point.normalizedSpeedMetersPerSecond),
+                )}
+              </TableCell>
+              <TableCell>
+                {valueWithUnit(
+                  efficiencyAxisValue(plot.id, point.trendSpeedMetersPerSecond),
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </section>
+  )
+}
+
 function hasProgressData(points: ProgressChartPoint[]) {
   return points.some(
     (point) => point.swim !== null || point.bike !== null || point.run !== null,
   )
 }
 
+const progressSeries = ['swim', 'bike', 'run', 'overall'] as const
+type ProgressSeries = (typeof progressSeries)[number]
+
 function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
   const { formatNumber, formatDateTime, t } = useI18n()
+  const [focus, setFocus] = useState<ProgressSeries | null>(null)
+  const seriesLabel = (series: ProgressSeries) =>
+    series === 'overall' ? t('triathlon.charts.overall') : t(disciplineKey(series))
+  const seriesColor = (series: ProgressSeries) =>
+    series === 'overall' ? 'var(--foreground)' : disciplineColors[series]
+  const data = points.map((point) => ({
+    ...point,
+    timestamp: Date.parse(point.localDate + 'T12:00:00Z'),
+  }))
   return (
     <div>
       <p className="type-caption mb-3 text-muted-foreground">
         {t('triathlon.charts.indexBasis')}
       </p>
+      <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label={t('triathlon.charts.progress')}>
+        {progressSeries.map((series) => (
+          <button
+            key={series}
+            type="button"
+            aria-pressed={focus === series}
+            className={cn(
+              'type-caption flex items-center gap-1.5 rounded-md px-2 py-1 text-muted-foreground transition-opacity hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring',
+              focus === series && 'bg-muted text-foreground',
+              focus !== null && focus !== series && 'opacity-45',
+            )}
+            onClick={() => setFocus((current) => (current === series ? null : series))}
+          >
+            <LegendDot color={seriesColor(series)} />
+            {seriesLabel(series)}
+          </button>
+        ))}
+      </div>
       <div className="h-56 min-w-0 sm:h-64">
         <ResponsiveContainer height="100%" width="100%">
-          <LineChart
-            data={points.map((point) => ({
-              ...point,
-              timestamp: Date.parse(point.localDate + 'T12:00:00Z'),
-            }))}
-            margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
-          >
-            <CartesianGrid stroke={gridStroke} vertical={false} />
+          <LineChart data={data} margin={{ bottom: 4, left: 4, right: 12, top: 12 }}>
+            <CartesianGrid {...gridProps} />
             <XAxis
               type="number"
               dataKey="timestamp"
@@ -545,13 +1271,13 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
               axisLine={false}
               tickLine={false}
               tickMargin={10}
-              tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+              tick={tickStyle}
             />
             <YAxis
               domain={['auto', 'auto']}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+              tick={tickStyle}
               width={44}
             />
             <ReferenceLine
@@ -563,63 +1289,28 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
               contentStyle={tooltipContentStyle}
               formatter={(value, name) => [
                 formatNumber(Number(value), { maximumFractionDigits: 1 }),
-                name === 'overall'
-                  ? t('triathlon.charts.overall')
-                  : t(disciplineKey(name)),
+                seriesLabel(name as ProgressSeries),
               ]}
               labelFormatter={(_, payload) =>
                 payload[0]?.payload.localDate ?? ''
               }
               itemStyle={tooltipItemStyle}
             />
-            <Legend
-              verticalAlign="top"
-              align="left"
-              iconType="circle"
-              iconSize={8}
-              height={36}
-              wrapperStyle={{ fontSize: 12 }}
-              formatter={(value) => (
-                <span style={{ color: 'var(--muted-foreground)' }}>
-                  {value === 'overall'
-                    ? t('triathlon.charts.overall')
-                    : t(disciplineKey(value))}
-                </span>
-              )}
-            />
-            <Line
-              connectNulls={false}
-              dataKey="swim"
-              dot={{ r: 2 }}
-              isAnimationActive={false}
-              stroke={disciplineColors.swim}
-              strokeWidth={2}
-            />
-            <Line
-              connectNulls={false}
-              dataKey="bike"
-              dot={{ r: 2 }}
-              isAnimationActive={false}
-              stroke={disciplineColors.bike}
-              strokeWidth={2}
-            />
-            <Line
-              connectNulls={false}
-              dataKey="run"
-              dot={{ r: 2 }}
-              isAnimationActive={false}
-              stroke={disciplineColors.run}
-              strokeWidth={2}
-            />
-            <Line
-              connectNulls={false}
-              dataKey="overall"
-              dot={{ r: 2 }}
-              isAnimationActive={false}
-              stroke="var(--foreground)"
-              strokeDasharray="5 4"
-              strokeWidth={2}
-            />
+            {progressSeries
+              .filter((series) => focus === null || focus === series)
+              .map((series) => (
+                <Line
+                  key={series}
+                  connectNulls={false}
+                  dataKey={series}
+                  name={series}
+                  dot={{ r: 2 }}
+                  isAnimationActive={false}
+                  stroke={seriesColor(series)}
+                  strokeDasharray={series === 'overall' ? '5 4' : undefined}
+                  strokeWidth={2}
+                />
+              ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -664,10 +1355,14 @@ function ProgressDataTable({ points }: { points: ProgressChartPoint[] }) {
 }
 
 function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
-  const { formatNumber, t } = useI18n()
+  const { formatDateTime, formatNumber, t } = useI18n()
   const [volumeKind, setVolumeKind] = useState<'duration' | 'distance'>(
     'duration',
   )
+  const [focus, setFocus] = useState<Discipline | null>(null)
+  const [pinnedWeek, setPinnedWeek] = useState<string | null>(null)
+  const [hoveredWeek, setHoveredWeek] = useState<string | null>(null)
+  const [canvasRef, width] = useElementWidth<HTMLDivElement>()
   const hasVolume = points.some(
     (point) =>
       point.swimHours > 0 ||
@@ -679,7 +1374,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   )
   const isDuration = volumeKind === 'duration'
   const unit = isDuration ? 'h' : 'km'
-  const series = isDuration
+  const allSeries = isDuration
     ? ([
         { dataKey: 'swimHours', discipline: 'swim' },
         { dataKey: 'bikeHours', discipline: 'bike' },
@@ -690,6 +1385,38 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
         { dataKey: 'bikeKilometers', discipline: 'bike' },
         { dataKey: 'runKilometers', discipline: 'run' },
       ] as const)
+  const series = allSeries.filter(
+    ({ discipline }) => focus === null || focus === discipline,
+  )
+  const totalOf = (point: WeeklyVolumeChartPoint) =>
+    series.reduce((sum, { dataKey }) => sum + point[dataKey], 0)
+  const formatVolume = (value: number) =>
+    `${formatNumber(value, { maximumFractionDigits: 1 })} ${unit}`
+  const weekLabel = (weekStart: string) =>
+    formatDateTime(new Date(`${weekStart}T12:00:00`), {
+      day: '2-digit',
+      month: 'short',
+    })
+  const ticks = evenlySpacedTicks(
+    points.map((point) => point.weekStart),
+    maxTicksForWidth(width - 56, 64),
+  )
+  const latestWeek = points[points.length - 1]?.weekStart
+  const pinnedPoint = points.find((point) => point.weekStart === pinnedWeek)
+  const shownPoint = points.find(
+    (point) => point.weekStart === (hoveredWeek ?? pinnedWeek),
+  )
+  const accent = focus ? disciplineFillColors[focus] : 'var(--foreground)'
+  const accentText = focus ? '#fff' : 'var(--background)'
+  const barOpacity = (weekStart: string) =>
+    pinnedWeek
+      ? weekStart === pinnedWeek
+        ? 1
+        : dimmedOpacity
+      : weekStart === latestWeek
+        ? 1
+        : 0.7
+
   return (
     <Card className="min-w-0 shadow-none" data-weekly-volume>
       <CardHeader className="p-4 pb-2">
@@ -710,44 +1437,77 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                 label: t(`triathlon.charts.${value}`),
               }))}
             />
-            <dl className="tri-volume-legend mb-4 flex flex-wrap gap-x-6 gap-y-2">
-              {series.map(({ dataKey, discipline }) => (
-                <div className="flex items-baseline gap-2" key={discipline}>
-                  <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div
+              className="tri-volume-legend mb-3 flex flex-wrap gap-1"
+              role="group"
+              aria-label={t('triathlon.form.discipline')}
+            >
+              {allSeries.map(({ dataKey, discipline }) => (
+                <button
+                  key={discipline}
+                  type="button"
+                  aria-pressed={focus === discipline}
+                  data-volume-filter={discipline}
+                  title={t('triathlon.charts.showOnly', {
+                    sport: t(disciplineKey(discipline)),
+                  })}
+                  className={cn(
+                    'flex items-baseline gap-2 rounded-md px-2 py-1 transition-opacity hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring',
+                    focus === discipline && 'bg-muted',
+                    focus !== null && focus !== discipline && 'opacity-45',
+                  )}
+                  onClick={() => {
+                    setFocus((current) => (current === discipline ? null : discipline))
+                  }}
+                >
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <LegendDot color={disciplineColors[discipline]} />
                     {t(disciplineKey(discipline))}
-                  </dt>
-                  <dd className="text-sm font-semibold tabular-nums">
-                    {formatNumber(
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {formatVolume(
                       points.reduce((sum, point) => sum + point[dataKey], 0),
-                      { maximumFractionDigits: 1 },
-                    )}{' '}
-                    {unit}
-                  </dd>
-                </div>
+                    )}
+                  </span>
+                </button>
               ))}
-            </dl>
-            <div className="h-48 min-w-0 sm:h-56">
+            </div>
+            <div className="h-48 min-w-0 sm:h-56" ref={canvasRef}>
               <ResponsiveContainer height="100%" width="100%">
                 <BarChart
                   data={points}
-                  barCategoryGap="25%"
-                  margin={{ bottom: 4, left: 4, right: 12, top: 12 }}
+                  barCategoryGap="28%"
+                  margin={{ bottom: 6, left: 4, right: 12, top: 12 }}
+                  onClick={(state) => {
+                    const week =
+                      typeof state.activeLabel === 'string' ? state.activeLabel : null
+                    if (week)
+                      setPinnedWeek((current) => (current === week ? null : week))
+                  }}
+                  onMouseMove={(state) => {
+                    if (!canHover()) return
+                    setHoveredWeek(
+                      typeof state.activeLabel === 'string' ? state.activeLabel : null,
+                    )
+                  }}
+                  onMouseLeave={() => setHoveredWeek(null)}
                 >
-                  <CartesianGrid stroke={gridStroke} vertical={false} />
+                  <CartesianGrid {...gridProps} />
                   <XAxis
-                    dataKey="label"
-                    minTickGap={28}
+                    dataKey="weekStart"
+                    ticks={ticks}
+                    interval={0}
+                    tickFormatter={(value) => weekLabel(String(value))}
                     axisLine={false}
                     tickLine={false}
                     tickMargin={10}
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                    tick={tickStyle}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     tickCount={4}
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                    tick={tickStyle}
                     label={{
                       value: unit,
                       position: 'insideTopLeft',
@@ -758,36 +1518,45 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                     width={isDuration ? 40 : 48}
                   />
                   <Tooltip
-                    contentStyle={tooltipContentStyle}
-                    formatter={(value, name) => [
-                      `${formatNumber(Number(value), { maximumFractionDigits: 1 })} ${unit}`,
-                      t(disciplineKey(name)),
-                    ]}
-                    labelFormatter={(_, payload) =>
-                      payload[0]?.payload.weekStart ?? ''
-                    }
-                    itemStyle={tooltipItemStyle}
+                    content={() => null}
+                    cursor={{ fill: 'var(--muted)', fillOpacity: 0.7 }}
                   />
+                  {pinnedPoint && (
+                    <ReferenceLine
+                      y={totalOf(pinnedPoint)}
+                      stroke={accent}
+                      strokeDasharray="3 3"
+                      ifOverflow="extendDomain"
+                      label={
+                        <AxisBadge
+                          axis="y"
+                          fill={accent}
+                          textColor={accentText}
+                          text={formatNumber(totalOf(pinnedPoint), {
+                            maximumFractionDigits: 1,
+                          })}
+                        />
+                      }
+                    />
+                  )}
                   {series.map(({ dataKey, discipline }, index) => (
                     <Bar
                       dataKey={dataKey}
-                      maxBarSize={38}
+                      maxBarSize={30}
                       isAnimationActive={false}
                       fill={disciplineColors[discipline]}
                       key={dataKey}
                       name={dataKey}
+                      className="cursor-pointer"
                       radius={
-                        index === series.length - 1 ? [3, 3, 0, 0] : undefined
+                        index === series.length - 1 ? [4, 4, 0, 0] : undefined
                       }
                       stackId={volumeKind}
                     >
-                      {/* The current week keeps the full sport color. */}
-                      {points.map((point, pointIndex) => (
+                      {points.map((point) => (
                         <Cell
                           key={point.weekStart}
-                          fillOpacity={
-                            pointIndex === points.length - 1 ? 1 : 0.55
-                          }
+                          fillOpacity={barOpacity(point.weekStart)}
                         />
                       ))}
                     </Bar>
@@ -795,6 +1564,41 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {shownPoint && (
+              <PointDetail
+                color={focus ? disciplineColors[focus] : 'var(--foreground)'}
+                onClose={pinnedWeek ? () => setPinnedWeek(null) : undefined}
+              >
+                <DetailItem>
+                  {t('triathlon.charts.week', {
+                    date: formatDateTime(new Date(`${shownPoint.weekStart}T12:00:00`), {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    }),
+                  })}
+                </DetailItem>
+                {series.map(({ dataKey, discipline }) => (
+                  <DetailItem key={dataKey} label={t(disciplineKey(discipline))}>
+                    {formatVolume(shownPoint[dataKey])}
+                  </DetailItem>
+                ))}
+                {series.length > 1 && (
+                  <DetailItem label={t('triathlon.charts.total')}>
+                    {formatVolume(totalOf(shownPoint))}
+                  </DetailItem>
+                )}
+                {pinnedPoint && shownPoint.weekStart !== pinnedPoint.weekStart && (
+                  <DetailItem label={t('triathlon.charts.vsPinned')}>
+                    {(() => {
+                      const difference = totalOf(shownPoint) - totalOf(pinnedPoint)
+                      const sign = difference > 0 ? '+' : difference < 0 ? '−' : '±'
+                      return `${sign}${formatVolume(Math.abs(difference))}`
+                    })()}
+                  </DetailItem>
+                )}
+              </PointDetail>
+            )}
           </>
         )}
       </CardContent>
@@ -803,6 +1607,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
 }
 
 export default function TrainingCharts({
+  efficiencyPlots,
   performancePlots,
   progressPoints,
   range,
@@ -811,6 +1616,7 @@ export default function TrainingCharts({
   weeklyVolume,
   onRangeChange,
 }: {
+  efficiencyPlots: EfficiencyPlot[]
   performancePlots: PerformancePlot[]
   progressPoints: ProgressChartPoint[]
   range: ChartRange
@@ -822,6 +1628,7 @@ export default function TrainingCharts({
   const { t } = useI18n()
   const hasProgress = hasProgressData(progressPoints)
   const hasPerformance = performancePlots.some(hasPerformanceData)
+  const populatedEfficiency = efficiencyPlots.filter((plot) => plot.points.length > 0)
   const hasVolume = weeklyVolume.some(
     (point) =>
       point.swimHours +
@@ -848,6 +1655,10 @@ export default function TrainingCharts({
             </p>
           )}
           <PerformancePlots plots={performancePlots} />
+          <EfficiencyCard
+            key={populatedEfficiency.map((plot) => plot.id).join('-')}
+            plots={efficiencyPlots}
+          />
         </>
       )}
       {hasProgress && (
@@ -860,7 +1671,7 @@ export default function TrainingCharts({
           </div>
         </details>
       )}
-      {(hasPerformance || hasProgress) && (
+      {(hasPerformance || hasProgress || populatedEfficiency.length > 0) && (
         <details className="group min-w-0" data-chart-tables>
           <DisclosureSummary className="type-ui min-h-8 w-fit justify-start gap-1.5 px-3 font-medium hover:bg-secondary">
             {t('triathlon.charts.table')}
@@ -868,6 +1679,9 @@ export default function TrainingCharts({
           <div className="mt-2 grid gap-5 rounded-lg border bg-card p-4">
             {performancePlots.filter(hasPerformanceData).map((plot) => (
               <PerformanceDataTable key={plot.id} plot={plot} />
+            ))}
+            {populatedEfficiency.map((plot) => (
+              <EfficiencyDataTable key={plot.id} plot={plot} />
             ))}
             {hasProgress && <ProgressDataTable points={progressPoints} />}
           </div>

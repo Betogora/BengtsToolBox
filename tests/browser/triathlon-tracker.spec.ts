@@ -366,6 +366,10 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await expect(page.locator('[data-record-card="run"]')).toContainText(
     'Critical Speed',
   )
+  const estimatedFiveK = page.locator(
+    '[data-record-card="run"] [data-record-distance="5000"] [data-record-estimate]',
+  )
+  await expect(estimatedFiveK).toHaveText(/^\d+:\d{2}\*/)
   await page.getByRole('combobox', { name: 'Rekordbasis' }).click()
   await page
     .getByRole('option', { name: 'Alle Trainings', exact: true })
@@ -391,6 +395,15 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   ).toHaveText(['Zeit pro Woche', 'Distanz pro Woche'])
   await expect(page.locator('[data-performance-plot]')).toHaveCount(3)
   await expect(page.locator('[data-weekly-volume] details')).toHaveCount(0)
+  await expect(page.getByRole('radio', { name: 'Alles' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  const runFilter = page.locator('[data-volume-filter="run"]')
+  await runFilter.click()
+  await expect(runFilter).toHaveAttribute('aria-pressed', 'true')
+  await runFilter.click()
+  await expect(runFilter).toHaveAttribute('aria-pressed', 'false')
   await page.getByRole('radio', { name: '4W' }).click()
 
   const dataTables = page.locator('[data-chart-tables]')
@@ -593,3 +606,56 @@ test('Rekorde lassen sich sekundengenau anlegen und bleiben nach Kontextwechsel 
   })
   await app.expectHealthy()
 })
+
+test(
+  'Geplante Gehen-Einheit lässt sich vorausgefüllt als erledigt eintragen',
+  { tag: '@desktop' },
+  async ({ app, page }) => {
+    await page.addInitScript(() => {
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        timeZone: 'Europe/Berlin',
+        year: 'numeric',
+      }).formatToParts(new Date())
+      const values = Object.fromEntries(
+        parts.map((part) => [part.type, part.value]),
+      )
+      localStorage.setItem(
+        'app-hub:collection:apps/triathlon-tracker/sessions/default/planned-trainings',
+        JSON.stringify([
+          {
+            id: 'walk-plan',
+            position: 1,
+            localDate: `${values.year}-${values.month}-${values.day}`,
+            startMinutes: null,
+            discipline: 'run',
+            isWalk: true,
+            durationSeconds: 4_200,
+            distanceMeters: null,
+            label: 'Incline Walk',
+          },
+        ]),
+      )
+    })
+    await app.open('/apps/triathlon-tracker')
+    await page.getByRole('tab', { name: 'Planung', exact: true }).click()
+    const planned = page.locator('[data-planned-training="walk-plan"]')
+    await expect(planned).not.toHaveAttribute('data-plan-done')
+    await planned
+      .getByRole('button', { name: 'Als erledigt eintragen: Incline Walk' })
+      .click()
+    const form = page.getByRole('dialog', { name: 'Training eintragen' })
+    await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('1:10:00')
+    await expect(form.getByRole('radio', { name: 'Gehen' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    await form.getByLabel('Distanz (km)').fill('6')
+    await form.getByRole('button', { name: 'Speichern' }).click()
+    await expect(planned).toHaveAttribute('data-plan-done', 'true')
+    await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+    await expect(page.locator('[data-journal-training]')).toContainText('Gehen')
+    await app.expectHealthy()
+  },
+)

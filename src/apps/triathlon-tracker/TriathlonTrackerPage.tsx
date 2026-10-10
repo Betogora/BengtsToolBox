@@ -8,7 +8,7 @@ import {
   Plus,
   Trophy,
 } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -20,6 +20,7 @@ import {
   WeekCopyDialog,
 } from './components'
 import { getCurrentLocalDate, getWeekStartLocalDate } from './domain/dates'
+import { getCompletedPlannedTrainingIds } from './domain/planStatus'
 import { useTriathlonTracker } from './hooks/useTriathlonTracker'
 import type {
   ActualTrainingInput,
@@ -74,6 +75,14 @@ export function TriathlonTrackerPage() {
     tracker.actualTrainings,
     getWeekStartLocalDate(today),
   )
+  const completedPlanIds = useMemo(
+    () =>
+      getCompletedPlannedTrainingIds(
+        tracker.plannedTrainings,
+        tracker.actualTrainings,
+      ),
+    [tracker.actualTrainings, tracker.plannedTrainings],
+  )
 
   const openPlan = (date: string, training: PlannedTraining | null = null) => {
     setSelectedDate(date)
@@ -87,6 +96,19 @@ export function TriathlonTrackerPage() {
     setActualTemplate(undefined)
     setActualReturnTab('journal')
     setActualDialogOpen(true)
+  }
+  const logPlanned = (training: PlannedTraining) => {
+    openActual()
+    setSelectedDate(training.localDate)
+    setActualTemplate({
+      localDate: training.localDate,
+      startMinutes: training.startMinutes,
+      discipline: training.discipline,
+      isWalk: training.isWalk ?? false,
+      durationSeconds: training.durationSeconds,
+      distanceMeters: training.distanceMeters,
+    })
+    setActualReturnTab('calendar')
   }
   const deleteActual = async (id: string) => {
     await requireSuccessfulSync(tracker.deleteActualTraining(id))
@@ -208,8 +230,10 @@ export function TriathlonTrackerPage() {
                 activeLocalDate={activeLocalDate}
                 onDateChange={setActiveLocalDate}
                 plannedTrainings={tracker.plannedTrainings}
+                completedIds={completedPlanIds}
                 today={today}
                 onAdd={openPlan}
+                onLog={logPlanned}
                 onEdit={(training) => openPlan(training.localDate, training)}
                 onCopy={(training) => {
                   openPlan(training.localDate)

@@ -14,9 +14,10 @@ import {
 import { useState } from 'react'
 import { averagePaceSeconds, formatPace } from './domain/units'
 import {
-  disciplineIcons,
   disciplines,
   formatTrainingDuration,
+  trainingIcon,
+  trainingLabelKey,
 } from './presentation'
 import type { ActualTraining, Discipline } from './types'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
@@ -274,8 +275,8 @@ export function TrainingJournal({
             className="divide-y rounded-lg border bg-card"
           >
             {visible.map((training) => {
-              const Icon = disciplineIcons[training.discipline]
-              const label = t(`triathlon.discipline.${training.discipline}`)
+              const Icon = trainingIcon(training)
+              const label = t(trainingLabelKey(training))
               const pace =
                 training.durationSeconds && training.distanceMeters
                   ? formatPace(

@@ -117,6 +117,8 @@ export function isComparableContinuousTraining(
       : training.powerAnalyticsAvailableFromLocalDate
   return (
     training.discipline === discipline &&
+    // Walks count towards running volume but never towards running performance.
+    !training.isWalk &&
     (training.context === context ||
       (training.context === null &&
         defaultTrainingContexts[discipline] === context)) &&

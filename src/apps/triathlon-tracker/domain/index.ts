@@ -9,6 +9,8 @@ export {
   isInRollingMonthWindow,
   isValidLocalDate,
 } from './dates'
+export { getEfficiencyTrend } from './efficiency'
+export type { EfficiencyPoint, EfficiencyTrend } from './efficiency'
 export {
   analyzeBike,
   analyzeRun,
