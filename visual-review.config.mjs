@@ -359,6 +359,88 @@ Object.assign(review.scenes, {
   },
 })
 
+// Sushi-Map: vier Touristen mit Besuchen auf beiden Karten, Deutschlandkarte aktiv.
+const sushiPath = '/apps/sushi'
+const seedSushi = () => {
+  const base = 'apps/territory-map/sessions/default'
+  const players = [
+    ['person-2', 'Paul', '#ffd584'],
+    ['person-1', 'Bengt', '#7b0fff'],
+    ['person-3', 'Lennart', '#f0047f'],
+    ['person-4', 'Sushi-Tourist 4', '#14b8a6'],
+  ].map(([id, name, color], index) => ({ id, name, color, position: index + 1 }))
+  const visits = {
+    'person-2': [['it', 'es', 'pt', 'nl', 'at', 'ch', 'dk', 'se', 'jp', 'us'], ['DE-BW', 'DE-HE', 'DE-NW', 'DE-NI', 'DE-SH']],
+    'person-1': [['gb-eng', 'pl', 'cz', 'gr', 'hr', 'ie'], ['DE-BY', 'DE-SN', 'DE-BB', 'DE-TH', 'DE-MV', 'DE-ST']],
+    'person-3': [['ca', 'th', 'vn'], ['DE-HH']],
+    'person-4': [['eg', 'al'], ['DE-RP']],
+  }
+  const events = players.flatMap((player) =>
+    visits[player.id].flatMap((ids, mapIndex) =>
+      ids.map((territoryId) => ({ mapId: mapIndex ? 'germany' : 'world', territoryId, player })),
+    ),
+  ).map(({ mapId, territoryId, player }, index) => {
+    const date = new Date(Date.UTC(2026, 0, 1 + index * 3, 12))
+    return {
+      id: `sushi-preview-${index}`,
+      mapId,
+      territoryId,
+      territoryName: territoryId,
+      playerId: player.id,
+      playerName: player.name,
+      playerColor: player.color,
+      createdAtClientIso: date.toISOString(),
+      createdAtLabel: date.toLocaleDateString('de-DE'),
+      position: index,
+    }
+  })
+  localStorage.setItem(`app-hub:collection:${base}/players`, JSON.stringify(players))
+  localStorage.setItem(
+    `app-hub:collection:${base}/datasets`,
+    JSON.stringify([{ id: 'dataset-current', position: 1, name: 'Datensatz', status: 'active', createdAtClientIso: '2026-01-01T00:00:00.000Z', archivedAtClientIso: null, events }]),
+  )
+  localStorage.setItem(
+    `app-hub:doc:${base}/state/default`,
+    JSON.stringify({ activeMap: 'germany', isAchievementsOpen: false, isScoreOpen: true }),
+  )
+}
+const showSushiScore = async (page) => {
+  await page.getByRole('button', { name: 'Punktzahl' }).first().waitFor()
+  await page.waitForTimeout(400)
+  await page
+    .getByRole('button', { name: 'Erfolge' })
+    .evaluate((el) => el.scrollIntoView({ block: 'end' }))
+  await page.evaluate(() => scrollBy(0, 120))
+}
+const setup = review.setup
+review.setup = async (page, base) => {
+  await setup(page, base)
+  await page.addInitScript(seedSushi)
+}
+
+Object.assign(review.scenes, {
+  'sushi-punktzahl': { path: sushiPath, run: async ({ page }) => showSushiScore(page) },
+  'sushi-bearbeiten': {
+    path: sushiPath,
+    run: async ({ page }) => {
+      await page.getByRole('button', { name: 'Touristen bearbeiten' }).click()
+      await page.waitForTimeout(400)
+      await showSushiScore(page)
+    },
+  },
+})
+review.scenes['sushi-umbenennen'] = {
+  path: sushiPath,
+  run: async (context) => {
+    await review.scenes['sushi-bearbeiten'].run(context)
+    await context.page
+      .getByRole('button', { name: 'Name für Sushi-Tourist 4 bearbeiten', exact: true })
+      .first()
+      .click()
+    await context.page.waitForTimeout(300)
+  },
+}
+
 Object.assign(review.scenes, {
   hub: { path: '/' },
   'hub-qr': {

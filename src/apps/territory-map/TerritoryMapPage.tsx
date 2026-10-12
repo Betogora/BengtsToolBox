@@ -1,6 +1,8 @@
 import {
   BarChart3,
   Building2,
+  Check,
+  CirclePlus,
   Compass,
   Globe2,
   Home,
@@ -8,12 +10,12 @@ import {
   ListOrdered,
   MapPinned,
   Mountain,
+  Pencil,
   ShipWheel,
   Snowflake,
   Trash2,
   Trophy,
   UtensilsCrossed,
-  Users,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -25,14 +27,12 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
 
 import {
   AdaptiveTerritoryOwnerPattern,
-  AddEaterCard,
   ClaimDialog,
   TerritoryEventTable,
 } from '@/apps/territory-map/components'
@@ -603,6 +603,172 @@ function CollapsibleCardHeader({
   )
 }
 
+function SushiScoreCard({
+  isDatasetReady,
+  isOpen,
+  onAdd,
+  onColorChange,
+  onNameChange,
+  onRemove,
+  onToggle,
+  players,
+  scores,
+}: {
+  isDatasetReady: boolean
+  isOpen: boolean
+  onAdd: () => Promise<void>
+  onColorChange: (playerId: string, color: string) => unknown
+  onNameChange: (playerId: string, name: string) => Promise<unknown> | void
+  onRemove: (playerId: string) => unknown
+  onToggle: () => void
+  players: TerritoryPlayer[]
+  scores: SushiScore[]
+}) {
+  const { t } = useI18n()
+  const [isEditRequested, setIsEditRequested] = useState(false)
+  // Ohne synchronisierten Datensatz bleibt die Tabelle schreibgeschützt.
+  const isEditing = isEditRequested && isDatasetReady
+  // Die drei Stammspieler bleiben immer erhalten.
+  const removableIds = new Set(players.slice(3).map((player) => player.id))
+
+  return (
+    <Card className="min-w-0">
+      <CollapsibleCardHeader
+        icon={<ListOrdered className="size-5" />}
+        isOpen={isOpen}
+        title={t('territory.score')}
+        onToggle={onToggle}
+      />
+      {isOpen && (
+        <CardContent className="grid gap-3 p-4 pt-0 sm:p-6 sm:pt-0">
+          <Table className="table-fixed">
+            <colgroup>
+              <col />
+              <col className="w-10 min-[360px]:w-12 md:w-24" />
+              <col className="w-10 min-[360px]:w-12 md:w-32" />
+              <col className="w-[3.25rem] min-[360px]:w-14 md:w-24" />
+              {isEditing && <col className="w-9 md:w-12" />}
+            </colgroup>
+            <TableHeader>
+              <TableHead className="px-2 py-2 md:px-3">{t('territory.player')}</TableHead>
+              <TableHead className="px-1 py-2 text-right md:px-3">
+                {t('territory.world')}
+              </TableHead>
+              <TableHead className="px-1 py-2 text-right md:px-3">
+                <span className="md:hidden">DE</span>
+                <span className="hidden md:inline">{t('territory.map.germany')}</span>
+              </TableHead>
+              <TableHead className="py-2 pr-2 pl-1 text-right md:px-3">
+                {t('territory.total')}
+              </TableHead>
+              {isEditing && (
+                <TableHead className="px-0 py-2">
+                  <span className="sr-only">{t('common.delete')}</span>
+                </TableHead>
+              )}
+            </TableHeader>
+            <TableBody>
+              {scores.map(({ player, world, germany, total }) => (
+                <TableRow key={player.id} className={isEditing ? 'relative' : undefined}>
+                  <TableCell
+                    className={[
+                      'type-label min-w-0 md:px-3',
+                      isEditing ? 'py-1.5 pr-1 pl-1.5' : 'px-2 py-2',
+                    ].join(' ')}
+                  >
+                    {isEditing ? (
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <ColorPicker
+                          ariaLabel={t('territory.touristColorAria', { name: player.name })}
+                          className="size-6 shrink-0 cursor-pointer p-px md:size-8 md:p-0.5"
+                          value={player.color}
+                          onValueCommit={(color) => onColorChange(player.id, color)}
+                        />
+                        {/* Beim Umbenennen überdeckt das Eingabefeld die ganze Zeile. */}
+                        <span className="min-w-0 flex-1 has-[input]:absolute has-[input]:inset-0 has-[input]:z-10 has-[input]:flex has-[input]:items-center has-[input]:bg-card has-[input]:px-1.5">
+                          <InlineTextEdit
+                            ariaLabel={t('territory.touristNameAria', { name: player.name })}
+                            className="w-full px-1 underline decoration-dotted decoration-subtle-foreground underline-offset-4"
+                            fallback={`Sushi-Tourist ${player.position}`}
+                            triggerMode="label"
+                            value={player.name}
+                            onSave={(value) => onNameChange(player.id, value)}
+                          />
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="size-3 shrink-0 rounded-full"
+                          style={{ backgroundColor: player.color }}
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate">{player.name}</span>
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="px-1 py-2 text-right tabular-nums md:px-3">
+                    {world}
+                  </TableCell>
+                  <TableCell className="px-1 py-2 text-right tabular-nums md:px-3">
+                    {germany}
+                  </TableCell>
+                  <TableCell className="type-action py-2 pr-2 pl-1 text-right tabular-nums md:px-3">
+                    {total}
+                  </TableCell>
+                  {isEditing && (
+                    <TableCell className="px-0 py-1.5 pr-1 text-right md:pr-2">
+                      {removableIds.has(player.id) && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="size-7 md:size-8"
+                          aria-label={t('shared.playerCard.removeAria', { name: player.name })}
+                          onClick={() => void onRemove(player.id)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {isEditing && (
+                <TableRow>
+                  <TableCell className="px-2 py-2 md:px-3" colSpan={5}>
+                    <Button
+                      className="h-9 w-full border-dashed"
+                      variant="outline"
+                      onClick={() => void onAdd()}
+                    >
+                      <CirclePlus className="size-4" />
+                      {t('territory.addTourist')}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant={isEditing ? 'default' : 'outline'}
+              disabled={!isDatasetReady}
+              onClick={() => setIsEditRequested(!isEditing)}
+            >
+              {isEditing ? <Check className="size-4" /> : <Pencil className="size-4" />}
+              {t(isEditing ? 'territory.editTouristsDone' : 'territory.editTourists')}
+            </Button>
+          </div>
+          {!isDatasetReady && (
+            <p className="type-ui text-muted-foreground">{t('common.syncing')}</p>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
 export function TerritoryMapPage() {
   const { t } = useI18n()
   const {
@@ -628,7 +794,6 @@ export function TerritoryMapPage() {
   const [isDatasetOpen, setIsDatasetOpen] = useState(false)
   const isDatasetVisible = useDeferredValue(isDatasetOpen)
   const [isDatasetPrepared, setIsDatasetPrepared] = useState(false)
-  const [isSushiTouristOpen, setIsSushiTouristOpen] = useState(false)
   const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null)
   const [territoriesByMap, setTerritoriesByMap] = useState<
     Partial<Record<TerritoryMapId, Territory[]>>
@@ -824,188 +989,17 @@ export function TerritoryMapPage() {
           territories={territories}
         />
 
-        <div
-          className={[
-            'grid min-w-0 gap-4 lg:grid-cols-2',
-            isSushiTouristOpen && state.isScoreOpen
-              ? 'lg:items-stretch'
-              : 'lg:items-start',
-          ].join(' ')}
-        >
-          <Card>
-            <CollapsibleCardHeader
-              icon={<Users className="size-5" />}
-              isOpen={isSushiTouristOpen}
-              title={t('territory.tourist')}
-              onToggle={() => setIsSushiTouristOpen((current) => !current)}
-            />
-            {isSushiTouristOpen && (
-              <CardContent className="grid gap-3 p-4 pt-0">
-              {players.map((player, playerIndex) => (
-                <div
-                  key={player.id}
-                  className="grid gap-2 rounded-md border bg-background p-3"
-                  style={{ '--player-color': player.color } as CSSProperties}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-3 rounded-full bg-[var(--player-color)]"
-                      aria-hidden="true"
-                    />
-                    <div className="min-w-0 flex-1 [&_[data-slot=button]]:size-9">
-                      {isDatasetReady ? (
-                        <InlineTextEdit
-                          ariaLabel={t('territory.touristNameAria', {
-                            name: player.name,
-                          })}
-                          className="truncate"
-                          fallback={`Sushi-Tourist ${player.position}`}
-                          value={player.name}
-                          onSave={(value) => updatePlayerName(player.id, value)}
-                        />
-                      ) : (
-                        <span className="type-label">{player.name}</span>
-                      )}
-                    </div>
-                    <ColorPicker
-                      ariaLabel={t('territory.touristColorAria', {
-                        name: player.name,
-                      })}
-                      className="size-9 shrink-0 cursor-pointer"
-                      disabled={!isDatasetReady}
-                      value={player.color}
-                      onValueCommit={(color) =>
-                        updatePlayerColor(player.id, color)
-                      }
-                    />
-                    {playerIndex >= 3 ? (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="size-9"
-                        disabled={!isDatasetReady}
-                        aria-label={t('shared.playerCard.removeAria', {
-                          name: player.name,
-                        })}
-                        onClick={() => void removePlayer(player.id)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    ) : (
-                      <span className="size-9 shrink-0" aria-hidden="true" />
-                    )}
-                  </div>
-                </div>
-              ))}
-              <AddEaterCard
-                disabled={!isDatasetReady}
-                onAdd={handleAddEater}
-              />
-              {!isDatasetReady && (
-                <p className="type-ui text-muted-foreground">{t('common.syncing')}</p>
-              )}
-              </CardContent>
-            )}
-          </Card>
-
-          <Card className="min-w-0">
-            <CollapsibleCardHeader
-              icon={<ListOrdered className="size-5" />}
-              isOpen={state.isScoreOpen}
-              title={t('territory.score')}
-              onToggle={() => void setScoreOpen(!state.isScoreOpen)}
-            />
-            {state.isScoreOpen && (
-              <CardContent className="p-4 pt-0">
-                <Table className="table-fixed md:hidden" containerClassName="md:hidden">
-                    <colgroup>
-                      <col />
-                      <col className="w-16 min-[400px]:w-[4.25rem]" />
-                      <col className="w-16 min-[400px]:w-[4.25rem]" />
-                      <col className="w-16 min-[400px]:w-[4.25rem]" />
-                    </colgroup>
-                    <TableHeader>
-                        <TableHead className="px-2 py-2">
-                          {t('territory.player')}
-                        </TableHead>
-                        <TableHead className="px-1 py-2 text-right">
-                          {t('territory.world')}
-                        </TableHead>
-                        <TableHead className="px-1 py-2 text-right">DE</TableHead>
-                        <TableHead className="py-2 pr-2 pl-0 text-right">
-                          {t('territory.total')}
-                        </TableHead>
-                    </TableHeader>
-                    <TableBody>
-                      {sushiScores.map((score) => (
-                        <TableRow key={score.player.id}>
-                          <TableCell className="type-label min-w-0 px-2 py-2">
-                            <span className="flex min-w-0 items-center gap-2">
-                              <span
-                                className="size-3 shrink-0 rounded-full"
-                                style={{ backgroundColor: score.player.color }}
-                                aria-hidden="true"
-                              />
-                              <span className="min-w-0 truncate">{score.player.name}</span>
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-1 py-2 text-right tabular-nums">
-                            {score.world}
-                          </TableCell>
-                          <TableCell className="px-1 py-2 text-right tabular-nums">
-                            {score.germany}
-                          </TableCell>
-                          <TableCell className="type-action py-2 pr-2 pl-0 text-right tabular-nums">
-                            {score.total}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                </Table>
-                <Table className="min-w-[34rem]" containerClassName="hidden md:block">
-                    <TableHeader>
-                        <TableHead>{t('territory.player')}</TableHead>
-                        <TableHead className="text-right">
-                          {t('territory.world')}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {t('territory.map.germany')}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {t('territory.total')}
-                        </TableHead>
-                    </TableHeader>
-                    <TableBody>
-                      {sushiScores.map((score) => (
-                        <TableRow key={score.player.id}>
-                          <TableCell className="type-label">
-                            <span className="flex min-w-0 items-center gap-2">
-                              <span
-                                className="size-3 shrink-0 rounded-full"
-                                style={{ backgroundColor: score.player.color }}
-                                aria-hidden="true"
-                              />
-                              <span className="truncate">{score.player.name}</span>
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {score.world}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {score.germany}
-                          </TableCell>
-                          <TableCell className="type-action text-right tabular-nums">
-                            {score.total}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                </Table>
-              </CardContent>
-            )}
-          </Card>
-
-        </div>
+        <SushiScoreCard
+          isDatasetReady={isDatasetReady}
+          isOpen={state.isScoreOpen}
+          players={players}
+          scores={sushiScores}
+          onAdd={handleAddEater}
+          onColorChange={updatePlayerColor}
+          onNameChange={updatePlayerName}
+          onRemove={removePlayer}
+          onToggle={() => void setScoreOpen(!state.isScoreOpen)}
+        />
       </section>
 
       <Card>

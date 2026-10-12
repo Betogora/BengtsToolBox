@@ -335,26 +335,20 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
 
   const viewportWidth = page.viewportSize()?.width ?? 0
 
-  await page.getByRole('button', { name: 'Sushi-Tourist' }).click()
+  await page.getByRole('button', { name: 'Touristen bearbeiten' }).click()
 
   if (viewportWidth < 768) {
     const colorPickerBounds = await page
       .getByRole('button', { name: 'Sushi-Tourist 3 Farbe wählen' })
       .boundingBox()
-    const playerCardHeight = await page
-      .getByRole('button', { name: 'Sushi-Tourist 3 Farbe wählen' })
-      .evaluate(
-        (button) =>
-          button.parentElement?.parentElement?.getBoundingClientRect().height,
-      )
 
     await expect(
       page.getByRole('button', { name: 'Sushi-Tourist 3 entfernen' }),
     ).toHaveCount(0)
-    expect(colorPickerBounds?.width).toBeCloseTo(36, 0)
-    expect(colorPickerBounds?.height).toBeCloseTo(36, 0)
-    expect(playerCardHeight).toBeCloseTo(62, 0)
+    expect(colorPickerBounds?.width).toBeCloseTo(24, 0)
+    expect(colorPickerBounds?.height).toBeCloseTo(24, 0)
   }
+  await page.getByRole('button', { name: 'Fertig' }).click()
 
   const zoomIn = page.getByRole('button', { name: 'Reinzoomen' })
   const zoomOut = page.getByRole('button', { name: 'Rauszoomen' })
@@ -414,7 +408,7 @@ test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', asyn
     expect(scoreOverflow).toBeLessThanOrEqual(1)
     expect(scoreColumnWidths).toHaveLength(3)
     expect(scoreColumnWidths[0]).toBeCloseTo(scoreColumnWidths[1] ?? 0, 0)
-    expect(scoreColumnWidths[1]).toBeCloseTo(scoreColumnWidths[2] ?? 0, 0)
+    expect(scoreColumnWidths[2]).toBeGreaterThanOrEqual(scoreColumnWidths[1] ?? 0)
   }
 
   await expect(page.locator('input[aria-label="Datum"]')).toHaveCount(0)
@@ -583,7 +577,8 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', { tag: '@
   await expect(achievementsToggle).toHaveAttribute('aria-expanded', 'false')
   await expect(page.getByText('Land der Sushis')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Sushi-Tourist' }).click()
+  await page.getByRole('button', { name: 'Touristen bearbeiten' }).click()
+  await expect(page.getByRole('columnheader', { name: 'Gesamt' })).toBeVisible()
   for (const player of ['Bengt', 'Paul', 'Lennart']) {
     await expect(
       page.getByRole('button', { name: `${player} entfernen` }),
@@ -616,6 +611,10 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', { tag: '@
   await expect(removeFourthPlayer).toBeVisible()
   await removeFourthPlayer.click()
   await expect(removeFourthPlayer).toHaveCount(0)
+  await page.getByRole('button', { name: 'Fertig' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Sushi-Tourist hinzufügen' }),
+  ).toHaveCount(0)
 
   await achievementsToggle.click()
   const japanAchievement = page
@@ -766,7 +765,7 @@ test('Globaler Farbkreis zeigt live an und speichert direkte Änderungen', async
     await app.open(picker.route)
 
     if (picker.route === '/apps/sushi') {
-      await page.getByRole('button', { name: 'Sushi-Tourist' }).click()
+      await page.getByRole('button', { name: 'Touristen bearbeiten' }).click()
     }
 
     const scoreboardPickers = page.locator('button[aria-label^="Farbe für"]')

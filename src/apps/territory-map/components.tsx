@@ -1,5 +1,4 @@
 import {
-  CirclePlus,
   Trash2,
 } from 'lucide-react'
 import {
@@ -355,30 +354,6 @@ export function ClaimDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-export function AddEaterCard({
-  disabled,
-  onAdd,
-}: {
-  disabled: boolean
-  onAdd: () => Promise<void>
-}) {
-  const { t } = useI18n()
-
-  return (
-    <div className="rounded-md border border-dashed bg-background p-3">
-      <Button
-        className="h-9 w-full"
-        disabled={disabled}
-        variant="outline"
-        onClick={() => void onAdd()}
-      >
-        <CirclePlus className="size-4" />
-        {t('territory.addTourist')}
-      </Button>
-    </div>
   )
 }
 
