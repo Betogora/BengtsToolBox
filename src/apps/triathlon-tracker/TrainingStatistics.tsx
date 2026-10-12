@@ -427,7 +427,7 @@ export default function TrainingStatistics({
           ['bike', bikeContext, false],
           ['swim', swimContext, false],
         ] as const
-      ).flatMap(([discipline, context, isWalk]) => {
+      ).map(([discipline, context, isWalk]) => {
         const trend = getEfficiencyTrend(actualTrainings, {
           discipline,
           context,
@@ -435,22 +435,17 @@ export default function TrainingStatistics({
           asOfLocalDate: today,
           isWalk,
         })
-        return trend && trend.points.length > 0
-          ? [
-              {
-                key: isWalk ? 'walk' : discipline,
-                id: discipline,
-                title: isWalk
-                  ? t('triathlon.variant.walk')
-                  : t(`triathlon.discipline.${discipline}`),
-                unitNote: isWalk
-                  ? t('triathlon.charts.runningEquivalent')
-                  : undefined,
-                referenceHeartRateBpm: trend.referenceHeartRateBpm,
-                points: trend.points,
-              },
-            ]
-          : []
+        // Plots without sessions stay as empty, selectable charts.
+        return {
+          key: isWalk ? 'walk' : discipline,
+          id: discipline,
+          title: isWalk
+            ? t('triathlon.variant.walk')
+            : t(`triathlon.discipline.${discipline}`),
+          unitNote: isWalk ? t('triathlon.charts.runningEquivalent') : undefined,
+          referenceHeartRateBpm: trend?.referenceHeartRateBpm ?? 0,
+          points: trend?.points ?? [],
+        }
       }),
     [actualTrainings, bikeContext, runContext, startLocalDate, swimContext, t, today],
   )

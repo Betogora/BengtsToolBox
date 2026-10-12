@@ -176,6 +176,7 @@ const activityOpacity = 0.45
 const secondaryOpacity = 0.55
 const dimmedOpacity = 0.25
 const halfDayMs = 43_200_000
+const dayMs = 2 * halfDayMs
 
 function canHover() {
   return (
@@ -371,7 +372,7 @@ function PointDetail({
       data-point-detail
     >
       {color && <LegendDot color={color} />}
-      <div className="type-caption flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-0.5 tabular-nums">
+      <div className="type-caption flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-0.5 tabular-nums">
         {children}
       </div>
       {onClose && (
@@ -391,8 +392,8 @@ function PointDetail({
 
 function DetailItem({ label, children }: { label?: ReactNode; children: ReactNode }) {
   return (
-    <span className="whitespace-nowrap">
-      {label && <span className="text-muted-foreground">{label} </span>}
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+      {label && <span className="inline-flex items-center text-muted-foreground">{label}</span>}
       <span className="font-semibold text-foreground">{children}</span>
     </span>
   )
@@ -524,10 +525,15 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
         point.actualValue !== null,
     )
     .map((point) => point.timestamp)
-  const domain: [number, number] = [
-    Math.min(...observedTimestamps) - halfDayMs,
-    Math.max(...observedTimestamps) + halfDayMs,
-  ]
+  const isEmpty = observedTimestamps.length === 0
+  // An empty plot spans the last four weeks so its date axis stays readable.
+  const emptyEnd = Date.parse(`${new Date().toISOString().slice(0, 10)}T12:00:00Z`)
+  const domain: [number, number] = isEmpty
+    ? [emptyEnd - 27 * dayMs - halfDayMs, emptyEnd + halfDayMs]
+    : [
+        Math.min(...observedTimestamps) - halfDayMs,
+        Math.max(...observedTimestamps) + halfDayMs,
+      ]
   const ticks = evenlySpacedTimestamps(
     domain[0] + halfDayMs,
     domain[1] - halfDayMs,
@@ -681,12 +687,12 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
                 tick={tickStyle}
               />
               <YAxis
-                domain={['auto', 'auto']}
+                domain={isEmpty ? [0, 3] : ['auto', 'auto']}
                 reversed={isPace}
                 axisLine={false}
                 tickLine={false}
                 tickMargin={8}
-                tick={tickStyle}
+                tick={isEmpty ? false : tickStyle}
                 tickFormatter={(value: number) => axisValue(value)}
                 width={46}
                 tickCount={4}
@@ -877,30 +883,13 @@ function hasPerformanceData(plot: PerformancePlot) {
   )
 }
 
+// Plots without comparable sessions stay visible as empty charts.
 function PerformancePlots({ plots }: { plots: PerformancePlot[] }) {
-  const { t } = useI18n()
-  const populated = plots.filter(hasPerformanceData)
-  if (populated.length === 0) {
-    return (
-      <EmptyState className="rounded-lg border bg-card p-6">
-        {t('triathlon.charts.noPerformance')}
-      </EmptyState>
-    )
-  }
   return (
-    <div className="grid gap-3">
-      <div className="tri-performance-plots grid gap-3">
-        {populated.map((plot) => (
-          <PerformancePlotCard key={plot.id} plot={plot} />
-        ))}
-      </div>
-      {plots
-        .filter((plot) => !hasPerformanceData(plot))
-        .map((plot) => (
-          <p className="type-caption text-muted-foreground" key={plot.id}>
-            {t('triathlon.charts.noSportData', { sport: plot.title })}
-          </p>
-        ))}
+    <div className="tri-performance-plots grid gap-3">
+      {plots.map((plot) => (
+        <PerformancePlotCard key={plot.id} plot={plot} />
+      ))}
     </div>
   )
 }
@@ -915,8 +904,11 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
   const { formatDateTime, t } = useI18n()
   const populated = plots.filter((plot) => plot.points.length > 0)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  // Every plot stays selectable; without sessions it is simply empty.
   const plot =
-    populated.find((candidate) => candidate.key === selectedKey) ?? populated[0]
+    plots.find((candidate) => candidate.key === selectedKey) ??
+    populated[0] ??
+    plots[0]
   const [pinned, setPinned] = useState<SelectedPoint | null>(null)
   const [hovered, setHovered] = useState<SelectedPoint | null>(null)
   const [canvasRef, width] = useElementWidth<HTMLDivElement>()
@@ -949,15 +941,19 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
     actualValue: efficiencyAxisValue(plot.id, point.speedMetersPerSecond),
   }))
   type Datum = (typeof data)[number]
-  const first = data[0]
-  const latest = data[data.length - 1]
+  const first = data.at(0)
+  const latest = data.at(-1)
+  // An empty plot spans the last four weeks so its date axis stays readable.
+  const emptyEnd = Date.parse(`${new Date().toISOString().slice(0, 10)}T12:00:00Z`)
+  const startTimestamp = first?.timestamp ?? emptyEnd - 27 * dayMs
+  const endTimestamp = latest?.timestamp ?? emptyEnd
   const domain: [number, number] = [
-    first.timestamp - halfDayMs,
-    latest.timestamp + halfDayMs,
+    startTimestamp - halfDayMs,
+    endTimestamp + halfDayMs,
   ]
   const ticks = evenlySpacedTimestamps(
-    first.timestamp,
-    latest.timestamp,
+    startTimestamp,
+    endTimestamp,
     Math.min(5, maxTicksForWidth(width - 60, 84)),
   )
   const shortDate = (timestamp: number) =>
@@ -1012,6 +1008,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
             {plot.unitNote && ` · ${plot.unitNote}`}
           </span>
         </div>
+        {first && latest && (
         <div className="mt-3">
           <p className="tri-plot-value">
             {formatters.isPace
@@ -1031,6 +1028,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
             )}
           </p>
         </div>
+        )}
       </CardHeader>
       <CardContent className="tri-performance-content p-3 pt-0 sm:p-4 sm:pt-0">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 pt-3 min-[900px]:pt-0">
@@ -1044,7 +1042,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
               {t('triathlon.charts.efficiencyTrend')}
             </span>
           </div>
-          {populated.length > 1 && (
+          {plots.length > 1 && (
             <SegmentedControl
               aria-label={t('triathlon.form.discipline')}
               className="w-fit"
@@ -1054,7 +1052,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
                 setPinned(null)
                 setHovered(null)
               }}
-              options={populated.map((candidate) => ({
+              options={plots.map((candidate) => ({
                 value: candidate.key,
                 label: candidate.title,
               }))}
@@ -1083,12 +1081,12 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
                 tick={tickStyle}
               />
               <YAxis
-                domain={['auto', 'auto']}
+                domain={data.length === 0 ? [0, 3] : ['auto', 'auto']}
                 reversed={formatters.isPace}
                 axisLine={false}
                 tickLine={false}
                 tickMargin={8}
-                tick={tickStyle}
+                tick={data.length === 0 ? false : tickStyle}
                 tickFormatter={(value: number) => formatters.axisValue(value)}
                 width={46}
                 tickCount={4}
@@ -1362,6 +1360,44 @@ function ProgressDataTable({ points }: { points: ProgressChartPoint[] }) {
   )
 }
 
+/**
+ * Outer edges of one stacked segment, so the segments of a pinned week share
+ * a single outline around the whole column instead of one per segment.
+ */
+function ColumnOutline({
+  x,
+  y,
+  width,
+  height,
+  top,
+  bottom,
+}: {
+  x: number
+  y: number
+  width: number
+  height: number
+  top: boolean
+  bottom: boolean
+}) {
+  if (!(width > 0) || !(height > 0)) return null
+  const r = top ? Math.min(6, width / 2, height) : 0
+  const right = x + width
+  const base = y + height
+  const path = top
+    ? `M ${x} ${base} L ${x} ${y + r} Q ${x} ${y} ${x + r} ${y} L ${right - r} ${y} Q ${right} ${y} ${right} ${y + r} L ${right} ${base}`
+    : `M ${x} ${y} L ${x} ${base} M ${right} ${y} L ${right} ${base}`
+  return (
+    <path
+      d={bottom ? `${path} ${top ? `L ${x} ${base}` : `M ${x} ${base} L ${right} ${base}`}` : path}
+      fill="none"
+      stroke="var(--foreground)"
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+      pointerEvents="none"
+    />
+  )
+}
+
 /** Discipline name with its icon in the sport color. */
 function DisciplineLabel({ discipline }: { discipline: Discipline }) {
   const { t } = useI18n()
@@ -1370,7 +1406,7 @@ function DisciplineLabel({ discipline }: { discipline: Discipline }) {
     <span className="inline-flex items-center gap-1.5">
       <Icon
         aria-hidden="true"
-        className="size-3.5 shrink-0 self-center"
+        className="size-3.5 shrink-0"
         style={{ color: disciplineColors[discipline] }}
       />
       {t(disciplineKey(discipline))}
@@ -1437,6 +1473,8 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   // The rounded top belongs to the highest visible segment of each week.
   const topKey = (point: WeeklyVolumeChartPoint) =>
     [...series].reverse().find(({ dataKey }) => point[dataKey] > 0)?.dataKey
+  const bottomKey = (point: WeeklyVolumeChartPoint) =>
+    series.find(({ dataKey }) => point[dataKey] > 0)?.dataKey
 
   return (
     <Card className="min-w-0 shadow-none" data-weekly-volume>
@@ -1571,19 +1609,26 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                           payload: WeeklyVolumeChartPoint
                         }
                         const week = bar.payload.weekStart
+                        const isTop = topKey(bar.payload) === dataKey
                         return (
-                          <Rectangle
-                            {...bar}
-                            fillOpacity={barOpacity(week)}
-                            radius={
-                              topKey(bar.payload) === dataKey ? [6, 6, 0, 0] : 0
-                            }
-                            // A clicked week outlines each of its segments.
-                            stroke={
-                              week === pinnedWeek ? 'var(--foreground)' : 'none'
-                            }
-                            strokeWidth={1.5}
-                          />
+                          <g>
+                            <Rectangle
+                              {...bar}
+                              fillOpacity={barOpacity(week)}
+                              radius={isTop ? [6, 6, 0, 0] : 0}
+                              stroke="none"
+                            />
+                            {week === pinnedWeek && (
+                              <ColumnOutline
+                                x={Number(bar.x)}
+                                y={Number(bar.y)}
+                                width={Number(bar.width)}
+                                height={Number(bar.height)}
+                                top={isTop}
+                                bottom={bottomKey(bar.payload) === dataKey}
+                              />
+                            )}
+                          </g>
                         )
                       }}
                     />

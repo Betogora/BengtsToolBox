@@ -171,7 +171,11 @@
    click or tap should not leave a frame around the whole plot. */
 .triathlon-tracker .recharts-wrapper:focus:not(:focus-visible),
 .triathlon-tracker .recharts-surface:focus:not(:focus-visible),
-.triathlon-tracker .recharts-surface [tabindex='-1']:focus {
+.triathlon-tracker .recharts-surface [tabindex='-1']:focus,
+/* Inner layers (e.g. a clicked bar) receive focus too; the chart's own
+   selection outline marks them instead of a browser focus frame. */
+.triathlon-tracker .recharts-surface g:focus,
+.triathlon-tracker .recharts-surface path:focus {
   outline: none;
 }
 
