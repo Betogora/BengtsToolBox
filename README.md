@@ -69,6 +69,7 @@ Ohne ausgefüllte `.env.local` startet die Toolbox bewusst im lokalen Modus. Der
 ### Qualitätschecks
 
 ```powershell
+npm run check
 npm run lint
 npm run docs:check
 npm test
@@ -87,7 +88,7 @@ npm run preview
 2. UI, Zustand und Fachlogik entlang der bestehenden App-Muster trennen.
 3. Persistente Pfade ausschließlich in `src/lib/firebase/paths.ts` ergänzen.
 4. Eine reguläre Dashboard-App in `src/apps/registry.ts` registrieren; Sonderbereiche bewusst direkt im Router eintragen.
-5. `npm run lint`, `npm run docs:check`, `npm test` und `npm run build` ausführen.
+5. `npm run check` ausführen (Lint, Dokumentationscheck, Kern-Tests und Build).
 
 Der Abschnitt [Entwicklungsvertrag](docs/specs.md#7-entwicklungsvertrag) enthält die vollständige Checkliste.
 

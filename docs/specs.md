@@ -643,11 +643,10 @@ Der Produktions-Build erzeugt zusätzlich einen nicht versionierten Bundle-Beric
 Mindestens für Codeänderungen:
 
 ```powershell
-npm run lint
-npm run docs:check
-npm test
-npm run build
+npm run check
 ```
+
+`npm run check` bündelt Lint, Dokumentationscheck, Kern-Tests und Build.
 
 Bei Firebase- oder Sync-Änderungen zusätzlich:
 
@@ -656,7 +655,7 @@ Bei Firebase- oder Sync-Änderungen zusätzlich:
 3. Reload und Persistenz prüfen;
 4. Auth-, Rules-, Netzwerk- und sichtbare Fehlerzustände prüfen.
 
-Bei Änderungen der Bedienoberfläche zusätzlich die betroffenen Browserabläufe mit `npm run test:browser` prüfen. Für angeforderte UI-/Screenshot-Reviews gilt die CSS-Pixel-Matrix 320, 360, 375, 390, 393, 412, 430, 440; Tablet 768, 820, 1024; Desktop 1280, 1440, 1920. Betroffene Breakpoints werden unmittelbar darunter/darüber, relevante Zustände und getrennte Rollenansichten ausdrücklich geprüft. Diese Review-Matrix erweitert nicht automatisch die reguläre Testsuite.
+Bei Änderungen der Bedienoberfläche zusätzlich gezielt die betroffenen Browserabläufe mit `npm run test:browser -- <spec>` prüfen; die vollständige Suite läuft in CI. Für angeforderte UI-/Screenshot-Reviews gilt die CSS-Pixel-Matrix 320, 360, 375, 390, 393, 412, 430, 440; Tablet 768, 820, 1024; Desktop 1280, 1440, 1920. Betroffene Breakpoints werden unmittelbar darunter/darüber, relevante Zustände und getrennte Rollenansichten ausdrücklich geprüft. Diese Review-Matrix erweitert nicht automatisch die reguläre Testsuite.
 
 Eine Änderung ist fertig, wenn Registry oder Sonderroute korrekt, Persistenz zentral, gemeinsamer Code nicht dupliziert, UI-Zustände verständlich und Lint, Dokumentationscheck, Tests sowie Build erfolgreich sind. Dokumentation wird nur angepasst, wenn sich dauerhafter Kontext oder ein spezifiziertes Verhalten ändert.
 
@@ -724,7 +723,7 @@ Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Mehr
 | interner Pull Request | `.github/workflows/firebase-hosting-pull-request.yml` | temporärer Preview Channel |
 | Backend-Änderung auf `main` | `.github/workflows/firebase-backend.yml` | Rules und Indizes |
 
-Die Workflows verwenden Node 22.23.1. Der Live-Workflow führt nach `npm ci` Lint, Dokumentationscheck, Kern- und Browser-Tests sowie Build vor dem Firebase-Deployment aus. Pull Requests müssen die fünf stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests`, `Browser tests` und `Build` bestehen; der bestehende Check `Lint` umfasst dabei auch den Dokumentationscheck. Die Browser-Suite installiert ausschließlich Chromium, läuft ohne Firebase-Secrets und lädt Bericht, Screenshots und Traces nur bei einem Fehlschlag als kurzlebiges Artefakt hoch. Die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben fünf Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
+Die Workflows verwenden Node 22.23.1. Der Live-Workflow besteht aus zwei parallelen Jobs: `Build and deploy` führt nach `npm ci` Lint, Dokumentationscheck, Kern-Tests und Build aus und deployt danach sofort; `Browser tests` läuft daneben, blockiert das Deployment nicht und färbt den Commit bei Fehlern rot. Ein neuer Push bricht einen noch laufenden Live-Workflow ab. Playwright nutzt in CI vier Worker. Pull Requests müssen die fünf stabil benannten Checks `Lint`, `Core tests`, `Firebase rules tests`, `Browser tests` und `Build` bestehen; der bestehende Check `Lint` umfasst dabei auch den Dokumentationscheck. Die Browser-Suite installiert ausschließlich Chromium, läuft ohne Firebase-Secrets und lädt Bericht, Screenshots und Traces nur bei einem Fehlschlag als kurzlebiges Artefakt hoch. Die Rules-Tests verwenden Java 21. Erst danach veröffentlicht ein interner Pull Request das Build-Artefakt `dist` in einem temporären Firebase Preview Channel. Fork-Pull-Requests durchlaufen dieselben fünf Qualitätschecks ohne Secrets, ihr Preview-Deploy wird übersprungen. Das Backend-Workflow deployt Rules und Indizes getrennt.
 
 Das aktive Repository-Ruleset `main quality gate` verlangt für `main` einen zum Zielbranch aktuellen Pull Request und alle fünf GitHub-Actions-Checks einschließlich `Browser tests`. Es sind keine Reviews erforderlich; Merge, Squash und Rebase bleiben erlaubt. Der Benutzer `Betogora` besitzt einen expliziten Admin-Bypass für bewusste Ausnahmen.
 

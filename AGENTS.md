@@ -87,11 +87,10 @@ Die Projektregeln zu Port, Prüfbreiten, Zuständen und Kennzeichnung gelten zus
 Mindestens für Codeänderungen:
 
 ```powershell
-npm run lint
-npm run docs:check
-npm test
-npm run build
+npm run check
 ```
+
+`npm run check` bündelt Lint, Dokumentationscheck, Kern-Tests und Build und dauert lokal unter einer Minute. Lokal laufen Browsertests nur gezielt für die betroffene App, etwa `npm run test:browser -- tests/browser/triathlon-tracker.spec.ts`; die vollständige Browser-Suite übernimmt CI.
 
 Bei Firebase- oder Sync-Änderungen zusätzlich lokalen Modus ohne `.env.local`, Realtime-Sync in zwei Fenstern, Persistenz nach Reload sowie Auth-, Rules- und Netzwerkfehler prüfen.
 

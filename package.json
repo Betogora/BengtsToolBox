@@ -15,6 +15,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/checkBundleBudgets.mjs",
+    "check": "npm run lint && npm run docs:check && npm test && npm run build",
     "docs:acknowledge": "node scripts/syncSpecsFingerprint.mjs --write",
     "docs:check": "remark README.md AGENTS.md docs --frail --use remark-validate-links && node scripts/syncSpecsFingerprint.mjs --check",
     "lint": "eslint .",

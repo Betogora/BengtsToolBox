@@ -291,7 +291,7 @@ export function PlanCalendar({
                     className={cn(
                       'text-[11px] font-medium leading-4',
                       isToday || selected
-                        ? 'text-primary/80'
+                        ? 'text-primary'
                         : 'text-muted-foreground',
                     )}
                   >

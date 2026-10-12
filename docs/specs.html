@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:3e9ac40188d3db9aa2a18653697683503f97fefcb837c747659245c6e1ffc57c">
+  <meta name="specs-source-sha256" content="sha256:6c4ba0d75ada2cf53165858ad6c5ea426382908db2377cd293ff84da2159e7fe">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -1026,8 +1026,8 @@
               <li>Persistenz ausschließlich zentral.</li>
               <li>Kein vorsorglich abstrahierter Shared Code.</li>
               <li>Lade-, Leer-, Fehler- und Destruktivzustände verständlich.</li>
-              <li>Bei Codeänderungen mindestens <code>npm run lint</code>, <code>npm run docs:check</code>, <code>npm test</code> und <code>npm run build</code> grün.</li>
-              <li>Bei Firebase/Sync zusätzlich <code>npm run test:firebase</code>, lokalen Modus, zwei Fenster, Reload und Auth-/Rules-/Netzwerkfehler prüfen. Bei UI-Änderungen betroffene Browserabläufe mit <code>npm run test:browser</code> prüfen.</li>
+              <li>Bei Codeänderungen mindestens <code>npm run check</code> grün; es bündelt Lint, Dokumentationscheck, Kern-Tests und Build.</li>
+              <li>Bei Firebase/Sync zusätzlich <code>npm run test:firebase</code>, lokalen Modus, zwei Fenster, Reload und Auth-/Rules-/Netzwerkfehler prüfen. Bei UI-Änderungen gezielt die betroffenen Browserabläufe mit <code>npm run test:browser -- &lt;spec&gt;</code> prüfen; die vollständige Suite läuft in CI.</li>
             </ul>
           </article>
         </div>
@@ -1103,7 +1103,7 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
         <div class="grid-2">
           <article class="card">
             <h3>Produktion</h3>
-            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1, <code>npm ci</code>, Lint, Dokumentationscheck, Kern- und Browser-Tests, Build und Firebase Live-Hosting.</p>
+            <p>Push auf <code>main</code> oder manueller Workflow-Start: Node 22.23.1 und zwei parallele Jobs. <code>Build and deploy</code> führt nach <code>npm ci</code> Lint, Dokumentationscheck, Kern-Tests und Build aus und deployt danach sofort ins Firebase Live-Hosting; <code>Browser tests</code> läuft mit vier Playwright-Workern daneben, blockiert das Deployment nicht und färbt den Commit bei Fehlern rot. Ein neuer Push bricht einen noch laufenden Live-Workflow ab.</p>
           </article>
           <article class="card">
             <h3>Preview</h3>

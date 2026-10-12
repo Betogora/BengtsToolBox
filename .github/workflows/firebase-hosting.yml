@@ -6,12 +6,19 @@ on:
     branches:
       - main
 
+# Only the newest push matters; an older run still in progress is cancelled.
+concurrency:
+  group: firebase-hosting-live
+  cancel-in-progress: true
+
 permissions:
   contents: read
   checks: write
   pull-requests: write
 
 jobs:
+  # Deploys without waiting for the browser suite, which runs alongside and
+  # marks the commit red if a flow broke.
   build-and-deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
@@ -46,12 +53,6 @@ jobs:
       - name: Test core logic
         run: npm test
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Test browser flows
-        run: npm run test:browser
-
       - name: Build app
         run: npm run build
 
@@ -73,3 +74,36 @@ jobs:
           projectId: ${{ vars.FIREBASE_PROJECT_ID }}
           channelId: live
           firebaseToolsVersion: 15.22.1
+
+  browser-tests:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test browser flows
+        run: npm run test:browser
+
+      - name: Upload browser failure artifacts
+        if: ${{ !success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-results
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
