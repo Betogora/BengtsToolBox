@@ -4,6 +4,7 @@ import {
   addDaysToLocalDate,
   addMonthsToLocalDate,
   getCurrentLocalDate,
+  getIsoWeekNumber,
   getWeekLocalDates,
   getWeekStartLocalDate,
   isInRollingMonthWindow,
@@ -41,5 +42,12 @@ describe('tracker calendar dates', () => {
     expect(isInRollingMonthWindow('2025-08-22', '2026-08-22')).toBe(true)
     expect(isInRollingMonthWindow('2025-08-21', '2026-08-22')).toBe(false)
     expect(isInRollingMonthWindow('2026-08-23', '2026-08-22')).toBe(false)
+  })
+
+  it.each([
+    ['2026-10-12', 42], ['2026-11-22', 47], ['2026-12-28', 53],
+    ['2027-01-03', 53], ['2027-01-04', 1], ['2025-12-29', 1],
+  ])('ordnet %s der Kalenderwoche %i zu', (date, week) => {
+    expect(getIsoWeekNumber(date)).toBe(week)
   })
 })

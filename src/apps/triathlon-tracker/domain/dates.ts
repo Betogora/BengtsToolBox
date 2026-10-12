@@ -13,6 +13,15 @@ export {
   isValidLocalDate,
 } from '@/lib/localDates'
 
+/** ISO 8601 calendar week (KW): weeks start on Monday, week 1 holds 4 January. */
+export function getIsoWeekNumber(localDate: string): number {
+  const date = new Date(`${localDate}T12:00:00Z`)
+  // The Thursday of the same week decides the week-based year.
+  date.setUTCDate(date.getUTCDate() + 3 - ((date.getUTCDay() + 6) % 7))
+  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1)
+  return Math.floor((date.getTime() - yearStart) / 86_400_000 / 7) + 1
+}
+
 export function getWeekLocalDates(localDate: string): string[] {
   const weekStart = getWeekStartLocalDate(localDate)
   return Array.from({ length: 7 }, (_, index) =>

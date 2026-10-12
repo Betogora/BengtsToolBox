@@ -11,13 +11,13 @@ import { useMemo, useState } from 'react'
 import {
   addDaysToLocalDate,
   addMonthsToLocalDate,
+  getIsoWeekNumber,
   getWeekStartLocalDate,
   isValidLocalDate,
 } from './domain/dates'
 import {
-  disciplineColors,
-  disciplineIcons,
   disciplines,
+  trainingColors,
   trainingIcons,
   formatTrainingDuration,
   trainingLabelKey,
@@ -56,6 +56,21 @@ function CalendarDateJump({
         if (isValidLocalDate(date)) onValueChange(date)
       }}
     />
+  )
+}
+
+/** Up to three dots in the colors of the day's planned trainings. */
+function PlanDots({ trainings }: { trainings: readonly PlannedTraining[] }) {
+  return (
+    <span aria-hidden="true" className="flex h-1 justify-center gap-0.5">
+      {trainings.slice(0, 3).map((training) => (
+        <span
+          key={training.id}
+          className="size-1 rounded-full"
+          style={{ backgroundColor: trainingColors[training.discipline] }}
+        />
+      ))}
+    </span>
   )
 }
 
@@ -138,7 +153,7 @@ export function PlanCalendar({
   const title =
     view === 'month'
       ? dateLabel(activeLocalDate, { month: 'long', year: 'numeric' })
-      : `${dateLabel(firstDay, { day: 'numeric', month: 'short' })} – ${dateLabel(lastDay, { day: 'numeric', month: 'short', year: 'numeric' })}`
+      : `${dateLabel(firstDay, { day: 'numeric', month: 'short' })} – ${dateLabel(lastDay, { day: 'numeric', month: 'short', year: 'numeric' })} · ${t('triathlon.calendar.weekNumber', { week: getIsoWeekNumber(firstDay) })}`
 
   return (
     <section
@@ -187,6 +202,15 @@ export function PlanCalendar({
           >
             <ChevronRight aria-hidden="true" />
           </Button>
+          {view === 'month' && (
+            <div className="ml-1 w-36">
+              <CalendarDateJump
+                compact
+                value={activeLocalDate}
+                onValueChange={onDateChange}
+              />
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -246,12 +270,7 @@ export function PlanCalendar({
                 onClick={() => onDateChange(date)}
               >
                 {Number(date.slice(-2))}
-                <span
-                  className={cn(
-                    'size-1 rounded-full',
-                    byDate.has(date) ? 'bg-current' : 'bg-transparent',
-                  )}
-                />
+                <PlanDots trainings={byDate.get(date) ?? []} />
               </button>
             ))}
         </div>
@@ -301,13 +320,7 @@ export function PlanCalendar({
                   <span className="type-action tabular-nums">
                     {Number(date.slice(-2))}
                   </span>
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'size-1 rounded-full',
-                      byDate.has(date) ? 'bg-current' : 'bg-transparent',
-                    )}
-                  />
+                  <PlanDots trainings={byDate.get(date) ?? []} />
                 </button>
               )
             })}
@@ -320,9 +333,12 @@ export function PlanCalendar({
               className="type-caption px-3 py-2 font-medium text-muted-foreground"
               key={day}
             >
-              {dateLabel(addDaysToLocalDate(firstDay, day), {
-                weekday: 'short',
-              })}
+              {/* Same width as the day number box below, so both align. */}
+              <span className="inline-block w-8 text-center">
+                {dateLabel(addDaysToLocalDate(firstDay, day), {
+                  weekday: 'short',
+                })}
+              </span>
             </div>
           ))}
           <div className="type-caption hidden border-l px-3 py-3 font-semibold text-muted-foreground lg:block">
@@ -582,36 +598,38 @@ export function PlanCalendar({
                 )}
                 aria-label={`${t('triathlon.calendar.weekSummary')} ${weekStart}`}
               >
-                <div
-                  className={cn(
-                    'flex items-center justify-between gap-2 lg:block',
-                    view === 'week' && 'lg:flex',
-                  )}
-                >
-                  <p className="type-caption mb-2 font-semibold text-muted-foreground lg:hidden">
-                    {t('triathlon.calendar.weekSummary')} ·{' '}
-                    {dateLabel(weekStart, { day: 'numeric', month: 'short' })}
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  {/* The week view title already names the calendar week. */}
+                  <p
+                    className={cn(
+                      'type-caption w-full font-semibold text-muted-foreground',
+                      view === 'week' && 'md:hidden',
+                    )}
+                  >
+                    {t('triathlon.calendar.weekNumber', {
+                      week: getIsoWeekNumber(weekStart),
+                    })}
                   </p>
                   <p className="type-action flex items-center gap-1.5 tabular-nums">
                     <Clock3 aria-hidden="true" className="size-3.5" />
                     {formatTrainingDuration(totalSeconds)}
                   </p>
+                  <p className="type-caption text-muted-foreground">
+                    {entries.length === 1
+                      ? t('triathlon.summary.oneTraining')
+                      : t('triathlon.summary.trainingCount', {
+                          count: entries.length,
+                        })}
+                  </p>
                 </div>
-                <p className="type-caption mt-1 text-muted-foreground">
-                  {entries.length === 1
-                    ? t('triathlon.summary.oneTraining')
-                    : t('triathlon.summary.trainingCount', {
-                        count: entries.length,
-                      })}
-                </p>
                 <div
                   className={cn(
                     'mt-3 flex flex-wrap gap-3 lg:grid lg:gap-2',
                     view === 'week' && 'mt-0 items-center lg:flex lg:gap-4',
                   )}
                 >
-                  {disciplines.map((discipline) => {
-                    const Icon = disciplineIcons[discipline]
+                  {[...disciplines, 'strength' as const].map((discipline) => {
+                    const Icon = trainingIcons[discipline]
                     const matching = entries.filter(
                       (entry) => entry.discipline === discipline,
                     )
@@ -624,7 +642,7 @@ export function PlanCalendar({
                         <Icon
                           aria-hidden="true"
                           className="size-3.5 shrink-0"
-                          style={{ color: disciplineColors[discipline] }}
+                          style={{ color: trainingColors[discipline] }}
                         />
                         <span className="sr-only">
                           {t(`triathlon.discipline.${discipline}`)}:{' '}
@@ -653,17 +671,6 @@ export function PlanCalendar({
           )
         })}
       </div>
-      {view === 'month' && (
-        <div className="flex justify-end">
-          <div className="w-36">
-            <CalendarDateJump
-              compact
-              value={activeLocalDate}
-              onValueChange={onDateChange}
-            />
-          </div>
-        </div>
-      )}
     </section>
   )
 }
