@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:6c4ba0d75ada2cf53165858ad6c5ea426382908db2377cd293ff84da2159e7fe">
+  <meta name="specs-source-sha256" content="sha256:5bc616271e6bf8c3dac3ff5907ff66729aae03e11916e9d86f51aee8fc701f46">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -1134,7 +1134,7 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
         <p>In ein Secret gehört nur der Wert, nicht <code>NAME=value</code>. Das Projektziel ist <code>bengtstoolbox</code>. Live-Buzzer verwendet <code>bengtstoolbox-default-rtdb</code> in <code>europe-west1</code> (Belgien); seine Regeln liegen in <code>firebase/database.rules.json</code>.</p>
         <div class="card note" style="margin-top:1rem">
           <h3>Spark-kompatibler Backend-Deploy</h3>
-          <p><code>.github/workflows/firebase-backend.yml</code> läuft manuell oder bei Änderungen unter <code>firebase/**</code>, an <code>firebase.json</code> oder Paketdateien auf <code>main</code>. Nach <code>npm ci</code> und Emulator-Regeltests mit Java 21 deployt er Firestore-/Realtime-Database-Regeln und Firestore-Indizes getrennt vom Hosting. Live-Hosting verwendet <code>firebase-hosting.yml</code>, Pull Requests <code>firebase-hosting-pull-request.yml</code>.</p>
+          <p><code>.github/workflows/firebase-backend.yml</code> läuft manuell oder bei Änderungen unter <code>firebase/**</code>, oder an <code>firebase.json</code> auf <code>main</code>. Nach <code>npm ci</code> und Emulator-Regeltests mit Java 21 deployt er zuerst Firestore-Regeln und -Indizes, danach in einem eigenen Schritt die Realtime-Database-Regeln, getrennt vom Hosting. Das Deployment-Servicekonto benötigt dafür neben den Firebase-Regel- und Index-Rollen die Rolle „Firebase Realtime Database Admin“. Live-Hosting verwendet <code>firebase-hosting.yml</code>, Pull Requests <code>firebase-hosting-pull-request.yml</code>.</p>
           <p>Das Projekt muss im Spark-Tarif ohne verknüpftes Abrechnungskonto bleiben. Alle drei Deploy-Pipelines prüfen mit <code>scripts/checkFirebaseSpark.mjs</code> den Abrechnungsstatus und brechen bei aktivierter Abrechnung, verknüpftem Konto oder fehlender Prüfbarkeit ab. Die Prüfung benötigt einen kurzlebigen <code>GOOGLE_ACCESS_TOKEN</code>, <code>FIREBASE_PROJECT_ID</code> sowie eine aktivierte Cloud Billing API und Leserechte dafür. Die Pipelines beziehen den Token über die Google Cloud CLI mit dem bestehenden Deployment-Servicekonto; zusätzliche Token-Creator-Rechte sind nicht erforderlich. Die Prüfung aktiviert keine APIs oder Abrechnung. Mehr Nutzer und volle Kontingente aktivieren keine Subscription. Eine spätere manuelle Tarifänderung durch Administratoren verhindert die Prüfung nicht.</p>
           <pre><code>node scripts/checkFirebaseSpark.mjs
 npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --project bengtstoolbox</code></pre>

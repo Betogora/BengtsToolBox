@@ -5,11 +5,10 @@ on:
   push:
     branches:
       - main
+    # Only rule, index or Firebase config changes need a backend deploy.
     paths:
       - 'firebase/**'
       - 'firebase.json'
-      - 'package.json'
-      - 'package-lock.json'
 
 permissions:
   contents: read
@@ -41,9 +40,16 @@ jobs:
         run: GOOGLE_ACCESS_TOKEN="$(gcloud auth print-access-token)" node scripts/checkFirebaseSpark.mjs
         env:
           FIREBASE_PROJECT_ID: bengtstoolbox
-      - name: Deploy rules and indexes
+      # Separate steps keep a Realtime Database problem from blocking Firestore.
+      - name: Deploy Firestore rules and indexes
         run: >-
           npx firebase-tools@15.22.1 deploy
-          --only firestore:rules,firestore:indexes,database
+          --only firestore:rules,firestore:indexes
+          --project bengtstoolbox
+          --non-interactive
+      - name: Deploy Realtime Database rules
+        run: >-
+          npx firebase-tools@15.22.1 deploy
+          --only database
           --project bengtstoolbox
           --non-interactive
