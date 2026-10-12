@@ -18,14 +18,12 @@
     />
     <title>BengtsToolBox – App-Hub</title>
     <script>
-      // Applies the stored or system color scheme before the first paint; ColorSchemeProvider adopts it.
-      var colorScheme = null
+      // Applies the stored color scheme (default light) before the first paint; ColorSchemeProvider adopts it.
       try {
-        colorScheme = localStorage.getItem('bengtstoolbox.colorScheme')
+        if (localStorage.getItem('bengtstoolbox.colorScheme') === 'dark') {
+          document.documentElement.classList.add('dark')
+        }
       } catch (error) {}
-      if (colorScheme === 'dark' || (colorScheme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark')
-      }
     </script>
   </head>
   <body>

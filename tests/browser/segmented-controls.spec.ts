@@ -67,6 +67,8 @@ test('Auswahlindikator gleitet und richtet sich nach Größenwechseln aus @deskt
 })
 
 test('Farbschema wechselt global, wird gespeichert und ist im Dunkelmodus barrierefrei', async ({ app, page }) => {
+  // Ohne gespeicherte Wahl startet die App hell, auch bei dunkler Systemeinstellung.
+  await page.emulateMedia({ colorScheme: 'dark' })
   await app.open('/')
   const root = page.locator('html')
   await expect(root).not.toHaveClass(/\bdark\b/)

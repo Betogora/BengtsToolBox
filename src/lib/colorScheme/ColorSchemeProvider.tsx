@@ -19,7 +19,7 @@ const themeColors: Record<ColorScheme, string> = {
   dark: '#0e141b',
 }
 
-// index.html resolves the stored or system scheme before React mounts.
+// index.html applies the stored scheme (default light) before React mounts.
 function readInitialColorScheme(): ColorScheme {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
@@ -39,7 +39,7 @@ export function ColorSchemeProvider({ children }: PropsWithChildren) {
       colorScheme,
       setColorScheme: (nextColorScheme) => {
         setColorSchemeState(nextColorScheme)
-        // Only an explicit choice is stored; until then the system preference applies.
+        // Only an explicit choice is stored; until then the light scheme applies.
         localStore.writeText(storageKey, nextColorScheme)
       },
     }),
