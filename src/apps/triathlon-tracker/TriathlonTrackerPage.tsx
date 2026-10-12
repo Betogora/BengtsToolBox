@@ -8,7 +8,7 @@ import {
   Plus,
   Trophy,
 } from 'lucide-react'
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -41,7 +41,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { useI18n } from '@/lib/i18n'
 
-const TrainingStatistics = lazy(() => import('./TrainingStatistics'))
+const loadTrainingStatistics = () => import('./TrainingStatistics')
+const TrainingStatistics = lazy(loadTrainingStatistics)
+
+// Statistics and its chart library load in two lazy steps; fetching both while
+// the browser is idle removes that waterfall from the first tab visit.
+function preloadStatistics() {
+  void loadTrainingStatistics()
+  void import('./TrainingCharts')
+}
 
 async function requireSuccessfulSync<T extends { ok: boolean; error: unknown }>(
   resultPromise: Promise<T>,
@@ -60,6 +68,23 @@ export function TriathlonTrackerPage() {
   }
   const today = getCurrentLocalDate()
   const [activeTab, setActiveTab] = useState('calendar')
+  // Once opened, statistics stay mounted so revisits skip all model fits.
+  const [statisticsOpened, setStatisticsOpened] = useState(false)
+  if (activeTab === 'statistics' && !statisticsOpened) setStatisticsOpened(true)
+  useEffect(() => {
+    // Load and pre-render statistics while idle, so the first visit is instant.
+    const prepare = () => {
+      preloadStatistics()
+      setStatisticsOpened(true)
+    }
+    // Safari has no requestIdleCallback; a short delay serves the same purpose.
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(prepare, { timeout: 3_000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(prepare, 1_500)
+    return () => clearTimeout(id)
+  }, [])
   const [activeLocalDate, setActiveLocalDate] = useState(today)
   const [selectedDate, setSelectedDate] = useState(today)
   const [plannedDialogOpen, setPlannedDialogOpen] = useState(false)
@@ -177,7 +202,7 @@ export function TriathlonTrackerPage() {
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="min-w-0 gap-5"
+            className="relative min-w-0 gap-5"
           >
             <TabsList
               aria-label={t('app.triathlonTracker.title')}
@@ -273,13 +298,21 @@ export function TriathlonTrackerPage() {
                 }}
               />
             </TabsContent>
-            <TabsContent value="statistics">
-              <Suspense fallback={<LoadingState />}>
-                <TrainingStatistics
-                  actualTrainings={tracker.actualTrainings}
-                  settings={tracker.settings}
-                />
-              </Suspense>
+            {/* Inactive statistics keep their width (invisible, zero height),
+                so charts need no full redraw when the tab is shown again. */}
+            <TabsContent
+              value="statistics"
+              forceMount
+              className="data-[state=inactive]:invisible data-[state=inactive]:absolute data-[state=inactive]:inset-x-0 data-[state=inactive]:top-0 data-[state=inactive]:h-0 data-[state=inactive]:overflow-hidden"
+            >
+              {statisticsOpened && (
+                <Suspense fallback={<LoadingState />}>
+                  <TrainingStatistics
+                    actualTrainings={tracker.actualTrainings}
+                    settings={tracker.settings}
+                  />
+                </Suspense>
+              )}
             </TabsContent>
             <TabsContent
               value="journal"

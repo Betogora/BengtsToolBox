@@ -113,7 +113,7 @@ export function PersonalBestsPanel({
   return (
     <section className="grid gap-4" aria-label={t('triathlon.tabs.records')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="type-section-title">{t('triathlon.records.title')}</h2>
+        <h2 className="type-section-title flex min-h-12 items-center">{t('triathlon.records.title')}</h2>
         <Select
           value={basis}
           onValueChange={(value) => setBasis(value as 'benchmark' | 'all')}

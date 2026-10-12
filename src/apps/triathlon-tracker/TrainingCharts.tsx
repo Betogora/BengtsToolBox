@@ -1244,7 +1244,14 @@ function ColumnOutline({
 }
 
 /** Discipline name with its icon in the sport color. */
-function DisciplineLabel({ discipline }: { discipline: Discipline }) {
+function DisciplineLabel({
+  discipline,
+  compact = false,
+}: {
+  discipline: Discipline
+  /** Icon only on phones; the name stays available to screen readers. */
+  compact?: boolean
+}) {
   const { t } = useI18n()
   const Icon = disciplineIcons[discipline]
   return (
@@ -1254,7 +1261,9 @@ function DisciplineLabel({ discipline }: { discipline: Discipline }) {
         className="size-3.5 shrink-0"
         style={{ color: disciplineColors[discipline] }}
       />
-      {t(disciplineKey(discipline))}
+      <span className={compact ? 'sr-only sm:not-sr-only' : undefined}>
+        {t(disciplineKey(discipline))}
+      </span>
     </span>
   )
 }
@@ -1324,25 +1333,28 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   return (
     <Card className="min-w-0 shadow-none" data-weekly-volume>
       <CardHeader className="p-4 pb-2">
-        <CardTitle>{t('triathlon.charts.weeklyVolume')}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
-        {!hasVolume ? (
-          <EmptyState>{t('triathlon.charts.noVolume')}</EmptyState>
-        ) : (
-          <>
-            <SegmentedControl
-              aria-label={t('triathlon.charts.weeklyVolume')}
-              className="mb-2 w-fit"
-              value={volumeKind}
-              onValueChange={(value) => setVolumeKind(value as 'duration' | 'distance')}
-              options={(['duration', 'distance'] as const).map((value) => ({
-                value,
-                label: t(`triathlon.charts.${value}`),
-              }))}
-            />
+        {/* Title, unit switch and discipline legend share one row. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <CardTitle>{t('triathlon.charts.weeklyVolume')}</CardTitle>
+            {hasVolume && (
+              <SegmentedControl
+                aria-label={t('triathlon.charts.weeklyVolume')}
+                className="w-fit"
+                value={volumeKind}
+                onValueChange={(value) =>
+                  setVolumeKind(value as 'duration' | 'distance')
+                }
+                options={(['duration', 'distance'] as const).map((value) => ({
+                  value,
+                  label: t(`triathlon.charts.${value}`),
+                }))}
+              />
+            )}
+          </div>
+          {hasVolume && (
             <div
-              className="tri-volume-legend mb-3 flex flex-wrap gap-1"
+              className="tri-volume-legend -mx-1.5 flex flex-wrap gap-0.5"
               role="group"
               aria-label={t('triathlon.form.discipline')}
             >
@@ -1356,7 +1368,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                     sport: t(disciplineKey(discipline)),
                   })}
                   className={cn(
-                    'flex items-baseline gap-2 rounded-md px-2 py-1 transition-opacity hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring',
+                    'flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-opacity hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring',
                     focus === discipline && 'bg-muted',
                     focus !== null && focus !== discipline && 'opacity-45',
                   )}
@@ -1365,7 +1377,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                   }}
                 >
                   <span className="text-xs text-muted-foreground">
-                    <DisciplineLabel discipline={discipline} />
+                    <DisciplineLabel discipline={discipline} compact />
                   </span>
                   <span className="text-sm font-semibold tabular-nums">
                     {formatVolume(
@@ -1375,6 +1387,14 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                 </button>
               ))}
             </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
+        {!hasVolume ? (
+          <EmptyState>{t('triathlon.charts.noVolume')}</EmptyState>
+        ) : (
+          <>
             <div className="h-48 min-w-0 sm:h-56" ref={canvasRef}>
               <ResponsiveContainer height="100%" width="100%">
                 <BarChart
@@ -1560,7 +1580,10 @@ export default function TrainingCharts({
   )
   return (
     <section className="grid gap-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="type-section-title flex min-h-12 items-center">
+          {t('triathlon.section.performance')}
+        </h2>
         <RangePicker range={range} onRangeChange={onRangeChange} />
       </div>
       {rangeSummary}

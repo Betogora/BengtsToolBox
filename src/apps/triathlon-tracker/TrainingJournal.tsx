@@ -113,7 +113,7 @@ export function TrainingJournal({
       aria-label={t('triathlon.tabs.journal')}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="type-section-title">{t('triathlon.journal.title')}</h2>
+        <h2 className="type-section-title flex min-h-12 items-center">{t('triathlon.journal.title')}</h2>
         <span className="type-caption tabular-nums text-muted-foreground">
           {filtered.length === 1
             ? t('triathlon.summary.oneTraining')

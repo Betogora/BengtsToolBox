@@ -162,7 +162,7 @@ export function PlanCalendar({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="type-section-title">{title}</h2>
+          <h2 className="type-section-title flex min-h-12 items-center">{title}</h2>
         </div>
         <Button onClick={() => onAdd(activeLocalDate)}>
           <Plus aria-hidden="true" />
@@ -327,10 +327,10 @@ export function PlanCalendar({
           </div>
         )}
         {view === 'month' && (
-        <div className="hidden grid-cols-[repeat(7,minmax(0,1fr))_9rem] border-b lg:grid">
+        <div className="hidden grid-cols-[repeat(7,minmax(0,1fr))_9rem] items-center border-b lg:grid">
           {Array.from({ length: 7 }, (_, day) => (
             <div
-              className="type-caption px-3 py-2 font-medium text-muted-foreground"
+              className="type-caption px-3 py-3 font-medium text-muted-foreground"
               key={day}
             >
               {/* Same width as the day number box below, so both align. */}

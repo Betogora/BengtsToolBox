@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, memo, Suspense, useMemo, useState } from 'react'
 import {
   addDaysToLocalDate,
   addMonthsToLocalDate,
@@ -99,7 +99,7 @@ function speedAtDistance(
     : (distanceMeters / durationSeconds) * 3.6
 }
 
-export default function TrainingStatistics({
+function TrainingStatistics({
   actualTrainings,
   settings,
 }: {
@@ -570,3 +570,7 @@ export default function TrainingStatistics({
     </Suspense>
   )
 }
+
+// The tab stays mounted in the background; unrelated page updates (other tabs,
+// dialogs) must not redraw every chart.
+export default memo(TrainingStatistics)
