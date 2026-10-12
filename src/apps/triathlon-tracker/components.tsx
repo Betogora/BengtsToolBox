@@ -69,6 +69,7 @@ import {
   type TrainingMetricField,
   type TrainingMetricInput,
 } from './domain/units'
+import { estimateCyclingPowerWatts } from './domain/cyclingPower'
 
 export type {
   ActualTrainingInput,
@@ -816,19 +817,18 @@ function ActualTrainingDialogContent({
   const metricSpan = hasSpeed ? 'sm:col-span-3' : 'sm:col-span-4'
   const showIncline = discipline === 'run' && context === 'treadmill'
   const detailSpan = showIncline ? 'sm:col-span-3' : 'sm:col-span-4'
-  // Without a measured value the field shows the running power estimate,
+  // Without a measured value the field shows the running or cycling estimate,
   // which is derived on display and never stored.
-  const estimatedPower = estimateRunningPowerWatts(
-    {
-      discipline,
-      isWalk: discipline === 'run' && isWalk,
-      inclinePercent: showIncline ? optionalNumber(incline) : null,
-      durationSeconds: parseTrainingDuration(durationMinutes),
-      distanceMeters:
-        (optionalNumber(distanceKilometers) ?? 0) * 1000 || null,
-    },
-    weightKg,
-  )
+  const powerDraft = {
+    discipline,
+    isWalk: discipline === 'run' && isWalk,
+    inclinePercent: showIncline ? optionalNumber(incline) : null,
+    durationSeconds: parseTrainingDuration(durationMinutes),
+    distanceMeters: (optionalNumber(distanceKilometers) ?? 0) * 1000 || null,
+  }
+  const estimatedPower =
+    estimateRunningPowerWatts(powerDraft, weightKg) ??
+    estimateCyclingPowerWatts(powerDraft, weightKg)
   const powerIsEstimated =
     averagePowerWatts.trim() === '' && estimatedPower !== null
   const isComputed = (field: TrainingMetricField) =>

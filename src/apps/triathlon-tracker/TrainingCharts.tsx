@@ -3,16 +3,17 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Line,
   LineChart,
+  Rectangle,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
   Tooltip,
   XAxis,
   YAxis,
+  type RectangleProps,
 } from 'recharts'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
@@ -20,6 +21,7 @@ import { EmptyState } from '@/apps/shared/components/EmptyState'
 import {
   disciplineColors,
   disciplineFillColors,
+  disciplineIcons,
 } from '@/apps/triathlon-tracker/presentation'
 import type { Discipline } from '@/apps/triathlon-tracker/types'
 import { Button } from '@/components/ui/button'
@@ -358,7 +360,7 @@ function PointDetail({
   children,
   onClose,
 }: {
-  color: string
+  color?: string
   children: ReactNode
   onClose?: () => void
 }) {
@@ -368,7 +370,7 @@ function PointDetail({
       className="tri-point-detail mt-2 flex min-h-11 items-center gap-3 rounded-md border bg-muted/40 py-1.5 pl-3 pr-1.5"
       data-point-detail
     >
-      <LegendDot color={color} />
+      {color && <LegendDot color={color} />}
       <div className="type-caption flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-0.5 tabular-nums">
         {children}
       </div>
@@ -1360,6 +1362,22 @@ function ProgressDataTable({ points }: { points: ProgressChartPoint[] }) {
   )
 }
 
+/** Discipline name with its icon in the sport color. */
+function DisciplineLabel({ discipline }: { discipline: Discipline }) {
+  const { t } = useI18n()
+  const Icon = disciplineIcons[discipline]
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon
+        aria-hidden="true"
+        className="size-3.5 shrink-0 self-center"
+        style={{ color: disciplineColors[discipline] }}
+      />
+      {t(disciplineKey(discipline))}
+    </span>
+  )
+}
+
 function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   const { formatDateTime, formatNumber, t } = useI18n()
   const [volumeKind, setVolumeKind] = useState<'duration' | 'distance'>(
@@ -1407,21 +1425,18 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
     points.map((point) => point.weekStart),
     maxTicksForWidth(width - 56, 64),
   )
-  const latestWeek = points[points.length - 1]?.weekStart
   const pinnedPoint = points.find((point) => point.weekStart === pinnedWeek)
   const shownPoint = points.find(
     (point) => point.weekStart === (hoveredWeek ?? pinnedWeek),
   )
   const accent = focus ? disciplineFillColors[focus] : 'var(--foreground)'
   const accentText = focus ? '#fff' : 'var(--background)'
+  // Full sport colors; only a pinned week dims the others.
   const barOpacity = (weekStart: string) =>
-    pinnedWeek
-      ? weekStart === pinnedWeek
-        ? 1
-        : dimmedOpacity
-      : weekStart === latestWeek
-        ? 1
-        : 0.7
+    pinnedWeek && weekStart !== pinnedWeek ? dimmedOpacity : 1
+  // The rounded top belongs to the highest visible segment of each week.
+  const topKey = (point: WeeklyVolumeChartPoint) =>
+    [...series].reverse().find(({ dataKey }) => point[dataKey] > 0)?.dataKey
 
   return (
     <Card className="min-w-0 shadow-none" data-weekly-volume>
@@ -1466,9 +1481,8 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                     setFocus((current) => (current === discipline ? null : discipline))
                   }}
                 >
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <LegendDot color={disciplineColors[discipline]} />
-                    {t(disciplineKey(discipline))}
+                  <span className="text-xs text-muted-foreground">
+                    <DisciplineLabel discipline={discipline} />
                   </span>
                   <span className="text-sm font-semibold tabular-nums">
                     {formatVolume(
@@ -1523,10 +1537,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                     }}
                     width={isDuration ? 40 : 48}
                   />
-                  <Tooltip
-                    content={() => null}
-                    cursor={{ fill: 'var(--muted)', fillOpacity: 0.7 }}
-                  />
+                  <Tooltip content={() => null} cursor={false} />
                   {pinnedPoint && (
                     <ReferenceLine
                       y={totalOf(pinnedPoint)}
@@ -1545,7 +1556,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                       }
                     />
                   )}
-                  {series.map(({ dataKey, discipline }, index) => (
+                  {series.map(({ dataKey, discipline }) => (
                     <Bar
                       dataKey={dataKey}
                       maxBarSize={30}
@@ -1554,25 +1565,34 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                       key={dataKey}
                       name={dataKey}
                       className="cursor-pointer"
-                      radius={
-                        index === series.length - 1 ? [4, 4, 0, 0] : undefined
-                      }
                       stackId={volumeKind}
-                    >
-                      {points.map((point) => (
-                        <Cell
-                          key={point.weekStart}
-                          fillOpacity={barOpacity(point.weekStart)}
-                        />
-                      ))}
-                    </Bar>
+                      shape={(props: unknown) => {
+                        const bar = props as RectangleProps & {
+                          payload: WeeklyVolumeChartPoint
+                        }
+                        const week = bar.payload.weekStart
+                        return (
+                          <Rectangle
+                            {...bar}
+                            fillOpacity={barOpacity(week)}
+                            radius={
+                              topKey(bar.payload) === dataKey ? [6, 6, 0, 0] : 0
+                            }
+                            // A clicked week outlines each of its segments.
+                            stroke={
+                              week === pinnedWeek ? 'var(--foreground)' : 'none'
+                            }
+                            strokeWidth={1.5}
+                          />
+                        )
+                      }}
+                    />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
             </div>
             {shownPoint && (
               <PointDetail
-                color={focus ? disciplineColors[focus] : 'var(--foreground)'}
                 onClose={pinnedWeek ? () => setPinnedWeek(null) : undefined}
               >
                 <DetailItem>
@@ -1585,7 +1605,10 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                   })}
                 </DetailItem>
                 {series.map(({ dataKey, discipline }) => (
-                  <DetailItem key={dataKey} label={t(disciplineKey(discipline))}>
+                  <DetailItem
+                    key={dataKey}
+                    label={<DisciplineLabel discipline={discipline} />}
+                  >
                     {formatVolume(shownPoint[dataKey])}
                   </DetailItem>
                 ))}
