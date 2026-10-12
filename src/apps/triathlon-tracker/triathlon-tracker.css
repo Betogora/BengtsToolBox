@@ -141,9 +141,16 @@
     grid-template-columns: 15rem minmax(0, 1fr);
   }
   .tri-performance-heading {
-    justify-content: center;
+    justify-content: flex-start;
     padding: 1.5rem;
     border-right: 1px solid var(--border);
+  }
+  /* In the side column the unit sits below the title, both top-aligned
+     with the chart legend. */
+  .tri-performance-heading > div:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
   }
   .tri-performance-heading > div:last-child {
     flex-wrap: wrap;

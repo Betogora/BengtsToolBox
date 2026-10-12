@@ -28,14 +28,6 @@ import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DisclosureSummary } from '@/components/ui/disclosure'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import {
@@ -812,68 +804,6 @@ function PerformancePlotCard({ plot }: { plot: PerformancePlot }) {
   )
 }
 
-function PerformanceDataTable({ plot }: { plot: PerformancePlot }) {
-  const { t } = useI18n()
-  const { valueWithUnit, modelValue } = useValueFormatters(plot)
-  const chartPoints = performanceChartPoints(plot)
-  return (
-    <section
-      className="min-w-0"
-      data-performance-table={plot.id}
-      aria-labelledby={`triathlon-data-${plot.id}`}
-    >
-      <h3 className="type-card-title" id={`triathlon-data-${plot.id}`}>
-        {plot.title}
-      </h3>
-      <Table containerClassName="mt-3">
-        <TableHeader>
-          <TableHead>{t('triathlon.form.date')}</TableHead>
-          <TableHead>{t('triathlon.charts.kind')}</TableHead>
-          <TableHead>{plot.primaryLabel}</TableHead>
-          {plot.secondaryLabel && <TableHead>{plot.secondaryLabel}</TableHead>}
-          <TableHead>{plot.activityLabel}</TableHead>
-        </TableHeader>
-        <TableBody>
-          {chartPoints
-            .filter(
-              (point) =>
-                point.pointKind === 'actual' ||
-                point.primaryValue !== null ||
-                point.secondaryValue !== null,
-            )
-            .map((point) => (
-              <TableRow key={point.rowKey}>
-                <TableCell>{point.localDate}</TableCell>
-                <TableCell>
-                  {point.pointKind === 'actual'
-                    ? t('triathlon.status.actual')
-                    : `${t('triathlon.charts.model')} · ${t(`triathlon.performance.basis.${point.basis ?? 'training'}`)}`}
-                </TableCell>
-                <TableCell>
-                  {point.primaryDisplayValue === null
-                    ? '–'
-                    : modelValue(point.primaryDisplayValue)}
-                </TableCell>
-                {plot.secondaryLabel && (
-                  <TableCell>
-                    {point.secondaryDisplayValue === null
-                      ? '–'
-                      : modelValue(point.secondaryDisplayValue)}
-                  </TableCell>
-                )}
-                <TableCell>
-                  {point.actualValue === null
-                    ? '–'
-                    : valueWithUnit(point.actualValue)}
-                </TableCell>
-              </TableRow>
-            ))}
-        </TableBody>
-      </Table>
-    </section>
-  )
-}
-
 function hasPerformanceData(plot: PerformancePlot) {
   return (
     plot.activityPoints.length > 0 ||
@@ -1045,7 +975,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
           {plots.length > 1 && (
             <SegmentedControl
               aria-label={t('triathlon.form.discipline')}
-              className="w-fit"
+              className="w-fit [&>.selection-item]:flex-auto"
               value={plot.key}
               onValueChange={(value) => {
                 setSelectedKey(value)
@@ -1166,55 +1096,6 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
   )
 }
 
-function EfficiencyDataTable({ plot }: { plot: EfficiencyPlot }) {
-  const { t } = useI18n()
-  const { valueWithUnit } = useValueFormatters({
-    id: plot.id,
-    modelUnit: 'seconds',
-    unit: 'kilometers-per-hour',
-  })
-  return (
-    <section className="min-w-0" data-efficiency-table={plot.key}>
-      <h3 className="type-card-title">
-        {t('triathlon.charts.efficiency')} · {plot.title}
-        {plot.unitNote && ` (${plot.unitNote})`}
-      </h3>
-      <Table containerClassName="mt-3">
-        <TableHeader>
-          <TableHead>{t('triathlon.form.date')}</TableHead>
-          <TableHead>{t('triathlon.charts.heartRate')}</TableHead>
-          <TableHead>{t('triathlon.charts.actualPace')}</TableHead>
-          <TableHead>
-            {t('triathlon.charts.efficiencyAt', { bpm: plot.referenceHeartRateBpm })}
-          </TableHead>
-          <TableHead>{t('triathlon.charts.efficiencyTrend')}</TableHead>
-        </TableHeader>
-        <TableBody>
-          {plot.points.map((point) => (
-            <TableRow key={point.activityId}>
-              <TableCell>{point.localDate}</TableCell>
-              <TableCell>{point.averageHeartRateBpm} bpm</TableCell>
-              <TableCell>
-                {valueWithUnit(efficiencyAxisValue(plot.id, point.speedMetersPerSecond))}
-              </TableCell>
-              <TableCell>
-                {valueWithUnit(
-                  efficiencyAxisValue(plot.id, point.normalizedSpeedMetersPerSecond),
-                )}
-              </TableCell>
-              <TableCell>
-                {valueWithUnit(
-                  efficiencyAxisValue(plot.id, point.trendSpeedMetersPerSecond),
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </section>
-  )
-}
-
 function hasProgressData(points: ProgressChartPoint[]) {
   return points.some(
     (point) => point.swim !== null || point.bike !== null || point.run !== null,
@@ -1321,42 +1202,6 @@ function ProgressCard({ points }: { points: ProgressChartPoint[] }) {
         </ResponsiveContainer>
       </div>
     </div>
-  )
-}
-
-function ProgressDataTable({ points }: { points: ProgressChartPoint[] }) {
-  const { formatNumber, t } = useI18n()
-  return (
-    <section className="min-w-0" aria-labelledby="triathlon-data-index">
-      <h3 className="type-card-title" id="triathlon-data-index">
-        {t('triathlon.charts.progress')}
-      </h3>
-      <Table containerClassName="mt-3">
-        <TableHeader>
-          <TableHead>{t('triathlon.form.date')}</TableHead>
-          <TableHead>{t('triathlon.discipline.swim')}</TableHead>
-          <TableHead>{t('triathlon.discipline.bike')}</TableHead>
-          <TableHead>{t('triathlon.discipline.run')}</TableHead>
-          <TableHead>{t('triathlon.charts.overall')}</TableHead>
-        </TableHeader>
-        <TableBody>
-          {points.map((point) => (
-            <TableRow key={point.localDate}>
-              <TableCell>{point.localDate}</TableCell>
-              {[point.swim, point.bike, point.run, point.overall].map(
-                (value, index) => (
-                  <TableCell key={index}>
-                    {value === null
-                      ? '–'
-                      : formatNumber(value, { maximumFractionDigits: 1 })}
-                  </TableCell>
-                ),
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </section>
   )
 }
 
@@ -1723,11 +1568,6 @@ export default function TrainingCharts({
       {(hasVolume || hasPerformance) && (
         <>
           {performanceControls}
-          {hasPerformance && (
-            <p className="type-caption text-muted-foreground">
-              {t('triathlon.charts.rawComparison')}
-            </p>
-          )}
           <PerformancePlots plots={performancePlots} />
           <EfficiencyCard
             key={populatedEfficiency.map((plot) => plot.key).join('-')}
@@ -1742,22 +1582,6 @@ export default function TrainingCharts({
           </DisclosureSummary>
           <div className="px-3 pb-3 sm:px-4 sm:pb-4">
             <ProgressCard points={progressPoints} />
-          </div>
-        </details>
-      )}
-      {(hasPerformance || hasProgress || populatedEfficiency.length > 0) && (
-        <details className="group min-w-0" data-chart-tables>
-          <DisclosureSummary className="type-ui min-h-8 w-fit justify-start gap-1.5 px-3 font-medium hover:bg-secondary">
-            {t('triathlon.charts.table')}
-          </DisclosureSummary>
-          <div className="mt-2 grid gap-5 rounded-lg border bg-card p-4">
-            {performancePlots.filter(hasPerformanceData).map((plot) => (
-              <PerformanceDataTable key={plot.id} plot={plot} />
-            ))}
-            {populatedEfficiency.map((plot) => (
-              <EfficiencyDataTable key={plot.key} plot={plot} />
-            ))}
-            {hasProgress && <ProgressDataTable points={progressPoints} />}
           </div>
         </details>
       )}

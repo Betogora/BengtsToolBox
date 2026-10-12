@@ -430,25 +430,6 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await expect(runFilter).toHaveAttribute('aria-pressed', 'false')
   await page.getByRole('radio', { name: '4W' }).click()
 
-  const dataTables = page.locator('[data-chart-tables]')
-  await expect(dataTables).toHaveCount(1)
-  await dataTables.locator('summary').click()
-  await expect(dataTables.locator('[data-performance-table]')).toHaveCount(3)
-  const firstPerformanceTable = dataTables.locator(
-    '[data-performance-table="run"]',
-  )
-  await expect(
-    firstPerformanceTable.getByRole('cell', { name: 'Ist', exact: true }),
-  ).toHaveCount(4)
-  await expect(firstPerformanceTable).toContainText('Modell')
-  const tableOverflow = await page.evaluate(
-    () =>
-      Math.max(
-        document.documentElement.scrollWidth,
-        document.body.scrollWidth,
-      ) - window.innerWidth,
-  )
-  expect(tableOverflow).toBeLessThanOrEqual(1)
   await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
   await page
     .locator('button:visible[aria-label="Bearbeiten: Laufen"]')
