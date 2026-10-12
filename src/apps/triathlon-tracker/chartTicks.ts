@@ -33,15 +33,15 @@ export function maxTicksForWidth(width: number, pixelsPerTick = 72) {
  * so weekly hours or kilometres never show fractions such as 0.95.
  */
 export function niceVolumeTicks(maximum: number, maxIntervals = 4): number[] {
-  let step = 1
+  // Without a finite positive maximum the 1-2-5 search would never end.
+  if (!Number.isFinite(maximum) || maximum <= 0) return [0, 1]
   for (let magnitude = 1; ; magnitude *= 10) {
-    const candidate = [1, 2, 5].map((factor) => factor * magnitude)
-      .find((value) => Math.ceil(maximum / value) <= maxIntervals)
-    if (candidate) {
-      step = candidate
-      break
+    for (const factor of [1, 2, 5]) {
+      const step = factor * magnitude
+      const intervals = Math.ceil(maximum / step)
+      if (intervals <= maxIntervals) {
+        return Array.from({ length: intervals + 1 }, (_, index) => index * step)
+      }
     }
   }
-  const top = Math.max(1, Math.ceil(maximum / step)) * step
-  return Array.from({ length: top / step + 1 }, (_, index) => index * step)
 }
