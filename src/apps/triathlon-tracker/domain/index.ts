@@ -10,6 +10,7 @@ export {
   isValidLocalDate,
 } from './dates'
 export { getEfficiencyTrend } from './efficiency'
+export { estimateRunningPowerWatts, maximumInclinePercent } from './incline'
 export type { EfficiencyPoint, EfficiencyTrend } from './efficiency'
 export {
   analyzeBike,
@@ -31,6 +32,7 @@ export {
   averagePaceSeconds,
   durationSecondsFromAveragePace,
   formatPace,
+  formatSpeed,
   kilometersToMeters,
   metersToKilometers,
   minutesToSeconds,

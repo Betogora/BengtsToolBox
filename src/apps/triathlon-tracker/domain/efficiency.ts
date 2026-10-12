@@ -4,6 +4,7 @@ import type {
   TrainingContext,
 } from '@/apps/triathlon-tracker/types'
 import { addDaysToLocalDate } from './dates'
+import { flatRunningEquivalentSpeed } from './incline'
 import { isComparableContinuousTraining } from './performance'
 
 export type EfficiencyPoint = {
@@ -47,6 +48,8 @@ export function getEfficiencyTrend(
     context: TrainingContext
     fromLocalDate: string
     asOfLocalDate: string
+    /** Walks form their own trend instead of mixing with runs. */
+    isWalk?: boolean
   },
 ): EfficiencyTrend | null {
   const samples = trainings
@@ -59,6 +62,7 @@ export function getEfficiencyTrend(
           options.context,
           options.asOfLocalDate,
           'distance',
+          { isWalk: options.isWalk, allowIncline: true },
         ) ||
         heartRate === null ||
         !Number.isFinite(heartRate) ||
@@ -73,8 +77,16 @@ export function getEfficiencyTrend(
       ) {
         return []
       }
+      const rawSpeed = training.distanceMeters / training.durationSeconds
+      // Walks and inclined runs become comparable as flat running equivalent.
       const speedMetersPerSecond =
-        training.distanceMeters / training.durationSeconds
+        options.discipline === 'run'
+          ? flatRunningEquivalentSpeed(
+              rawSpeed,
+              training.inclinePercent ?? 0,
+              training.isWalk ?? false,
+            )
+          : rawSpeed
       return [
         {
           activityId: training.id,

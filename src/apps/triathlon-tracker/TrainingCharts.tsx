@@ -104,8 +104,12 @@ export type EfficiencyChartPoint = {
 }
 
 export type EfficiencyPlot = {
+  /** Unique per plot; walking shares the running discipline. */
+  key: string
   id: Discipline
   title: string
+  /** Walks are shown as flat running equivalent. */
+  unitNote?: string
   referenceHeartRateBpm: number
   points: EfficiencyChartPoint[]
 }
@@ -908,9 +912,9 @@ function efficiencyAxisValue(id: Discipline, metersPerSecond: number) {
 function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
   const { formatDateTime, t } = useI18n()
   const populated = plots.filter((plot) => plot.points.length > 0)
-  const [selectedId, setSelectedId] = useState<Discipline | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const plot =
-    populated.find((candidate) => candidate.id === selectedId) ?? populated[0]
+    populated.find((candidate) => candidate.key === selectedKey) ?? populated[0]
   const [pinned, setPinned] = useState<SelectedPoint | null>(null)
   const [hovered, setHovered] = useState<SelectedPoint | null>(null)
   const [canvasRef, width] = useElementWidth<HTMLDivElement>()
@@ -992,7 +996,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
   return (
     <Card
       className="tri-performance-card min-w-0 shadow-none"
-      data-efficiency-plot={plot.id}
+      data-efficiency-plot={plot.key}
       data-discipline={plot.id}
     >
       <CardHeader className="tri-performance-heading p-4">
@@ -1003,6 +1007,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
           </CardTitle>
           <span className="type-caption text-muted-foreground">
             {formatters.isPace ? `min/${formatters.unitLabel}` : formatters.unitLabel}
+            {plot.unitNote && ` · ${plot.unitNote}`}
           </span>
         </div>
         <div className="mt-3">
@@ -1041,14 +1046,14 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
             <SegmentedControl
               aria-label={t('triathlon.form.discipline')}
               className="w-fit"
-              value={plot.id}
+              value={plot.key}
               onValueChange={(value) => {
-                setSelectedId(value as Discipline)
+                setSelectedKey(value)
                 setPinned(null)
                 setHovered(null)
               }}
               options={populated.map((candidate) => ({
-                value: candidate.id,
+                value: candidate.key,
                 label: candidate.title,
               }))}
             />
@@ -1169,9 +1174,10 @@ function EfficiencyDataTable({ plot }: { plot: EfficiencyPlot }) {
     unit: 'kilometers-per-hour',
   })
   return (
-    <section className="min-w-0" data-efficiency-table={plot.id}>
+    <section className="min-w-0" data-efficiency-table={plot.key}>
       <h3 className="type-card-title">
         {t('triathlon.charts.efficiency')} · {plot.title}
+        {plot.unitNote && ` (${plot.unitNote})`}
       </h3>
       <Table containerClassName="mt-3">
         <TableHeader>
@@ -1656,7 +1662,7 @@ export default function TrainingCharts({
           )}
           <PerformancePlots plots={performancePlots} />
           <EfficiencyCard
-            key={populatedEfficiency.map((plot) => plot.id).join('-')}
+            key={populatedEfficiency.map((plot) => plot.key).join('-')}
             plots={efficiencyPlots}
           />
         </>
@@ -1681,7 +1687,7 @@ export default function TrainingCharts({
               <PerformanceDataTable key={plot.id} plot={plot} />
             ))}
             {populatedEfficiency.map((plot) => (
-              <EfficiencyDataTable key={plot.id} plot={plot} />
+              <EfficiencyDataTable key={plot.key} plot={plot} />
             ))}
             {hasProgress && <ProgressDataTable points={progressPoints} />}
           </div>

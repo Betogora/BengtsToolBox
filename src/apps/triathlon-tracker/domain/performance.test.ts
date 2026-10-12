@@ -13,6 +13,7 @@ import {
   calculateOverallProgressIndex,
   getDistanceActivityPerformancePoints,
   getPowerActivityPerformancePoints,
+  isComparableContinuousTraining,
 } from './performance'
 
 function performance(
@@ -97,6 +98,19 @@ describe('running performance', () => {
       availableAnchors: 0,
       requiredAnchors: 1,
     })
+  })
+
+  it('ordnet ältere Radfahrten ohne Kontext dem Ergometer zu', () => {
+    const ride = {
+      ...performance('bike-1', 'bike', 'indoor', 1_200, 10_000),
+      context: null,
+    }
+    expect(
+      isComparableContinuousTraining(ride, 'bike', 'indoor', '2026-08-22', 'distance'),
+    ).toBe(true)
+    expect(
+      isComparableContinuousTraining(ride, 'bike', 'outdoor', '2026-08-22', 'distance'),
+    ).toBe(false)
   })
 
   it('projects 5 km from one 10 km run and counts repeated efforts as support', () => {

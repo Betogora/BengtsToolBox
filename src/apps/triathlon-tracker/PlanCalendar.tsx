@@ -19,7 +19,6 @@ import {
   disciplineIcons,
   disciplines,
   formatTrainingDuration,
-  trainingIcon,
   trainingLabelKey,
 } from './presentation'
 import type { PlannedTraining } from './types'
@@ -32,9 +31,11 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 function CalendarDateJump({
   value,
   onValueChange,
+  compact = false,
 }: {
   value: string
   onValueChange: (value: string) => void
+  compact?: boolean
 }) {
   const { t } = useI18n()
   const [draft, setDraft] = useState(value)
@@ -46,6 +47,7 @@ function CalendarDateJump({
   return (
     <DatePicker
       required
+      compact={compact}
       label={t('triathlon.calendar.jumpTo')}
       value={draft}
       onValueChange={(date) => {
@@ -56,10 +58,11 @@ function CalendarDateJump({
   )
 }
 
-/** Today is filled; a selected other day only gets an outlined tint. */
+/** Today and a selected day share the outlined tint; today's column is shaded. */
 function dayStateClass(isToday: boolean, selected: boolean) {
-  if (isToday) return 'bg-primary text-primary-foreground'
-  if (selected) return 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/40'
+  if (isToday || selected) {
+    return 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/40'
+  }
   return 'hover:bg-muted'
 }
 
@@ -287,11 +290,9 @@ export function PlanCalendar({
                   <span
                     className={cn(
                       'text-[11px] font-medium leading-4',
-                      isToday
-                        ? 'text-primary-foreground/80'
-                        : selected
-                          ? 'text-primary/80'
-                          : 'text-muted-foreground',
+                      isToday || selected
+                        ? 'text-primary/80'
+                        : 'text-muted-foreground',
                     )}
                   >
                     {dateLabel(date, { weekday: 'short' })}
@@ -418,7 +419,8 @@ export function PlanCalendar({
                           className={cn(
                             'hidden size-8 items-center justify-center rounded-[10px] text-base tabular-nums lg:flex',
                             view === 'week' && 'lg:hidden',
-                            isToday && 'bg-primary text-primary-foreground',
+                            isToday &&
+                              'bg-primary/10 text-primary ring-1 ring-inset ring-primary/40',
                           )}
                         >
                           {Number(date.slice(-2))}
@@ -440,7 +442,7 @@ export function PlanCalendar({
                       {trainings.map((training) => {
                         const label =
                           training.label || t(trainingLabelKey(training))
-                        const Icon = trainingIcon(training)
+                        const Icon = disciplineIcons[training.discipline]
                         const done = completedIds.has(training.id)
                         const meta = [
                           training.startMinutes === null
@@ -604,7 +606,7 @@ export function PlanCalendar({
                 <div
                   className={cn(
                     'mt-3 flex flex-wrap gap-3 lg:grid lg:gap-2',
-                    view === 'week' && 'mt-0 lg:flex lg:gap-4',
+                    view === 'week' && 'mt-0 items-center lg:flex lg:gap-4',
                   )}
                 >
                   {disciplines.map((discipline) => {
@@ -635,35 +637,32 @@ export function PlanCalendar({
                       </div>
                     )
                   })}
+                  {view === 'week' && (
+                    <div className="w-36">
+                      <CalendarDateJump
+                        compact
+                        value={activeLocalDate}
+                        onValueChange={onDateChange}
+                      />
+                    </div>
+                  )}
                 </div>
               </aside>
             </div>
           )
         })}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="type-caption flex flex-wrap gap-4 text-muted-foreground">
-          {disciplines.map((discipline) => {
-            const Icon = disciplineIcons[discipline]
-            return (
-              <span className="flex items-center gap-1.5" key={discipline}>
-                <Icon
-                  aria-hidden="true"
-                  className="size-3.5"
-                  style={{ color: disciplineColors[discipline] }}
-                />
-                {t(`triathlon.discipline.${discipline}`)}
-              </span>
-            )
-          })}
+      {view === 'month' && (
+        <div className="flex justify-end">
+          <div className="w-36">
+            <CalendarDateJump
+              compact
+              value={activeLocalDate}
+              onValueChange={onDateChange}
+            />
+          </div>
         </div>
-        <div className="w-full sm:w-52">
-          <CalendarDateJump
-            value={activeLocalDate}
-            onValueChange={onDateChange}
-          />
-        </div>
-      </div>
+      )}
     </section>
   )
 }

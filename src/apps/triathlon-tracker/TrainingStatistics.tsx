@@ -421,22 +421,31 @@ export default function TrainingStatistics({
     () =>
       (
         [
-          ['run', runContext],
-          ['bike', bikeContext],
-          ['swim', swimContext],
+          ['run', runContext, false],
+          // Inclined walking only exists on the treadmill.
+          ['run', 'treadmill', true],
+          ['bike', bikeContext, false],
+          ['swim', swimContext, false],
         ] as const
-      ).flatMap(([discipline, context]) => {
+      ).flatMap(([discipline, context, isWalk]) => {
         const trend = getEfficiencyTrend(actualTrainings, {
           discipline,
           context,
           fromLocalDate: startLocalDate,
           asOfLocalDate: today,
+          isWalk,
         })
         return trend && trend.points.length > 0
           ? [
               {
+                key: isWalk ? 'walk' : discipline,
                 id: discipline,
-                title: t(`triathlon.discipline.${discipline}`),
+                title: isWalk
+                  ? t('triathlon.variant.walk')
+                  : t(`triathlon.discipline.${discipline}`),
+                unitNote: isWalk
+                  ? t('triathlon.charts.runningEquivalent')
+                  : undefined,
                 referenceHeartRateBpm: trend.referenceHeartRateBpm,
                 points: trend.points,
               },

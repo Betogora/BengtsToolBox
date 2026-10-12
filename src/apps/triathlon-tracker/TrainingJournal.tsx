@@ -12,11 +12,12 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
+import { getTrainingIntensity } from './domain/incline'
 import { averagePaceSeconds, formatPace } from './domain/units'
 import {
+  disciplineIcons,
   disciplines,
   formatTrainingDuration,
-  trainingIcon,
   trainingLabelKey,
 } from './presentation'
 import type { ActualTraining, Discipline } from './types'
@@ -275,7 +276,7 @@ export function TrainingJournal({
             className="divide-y rounded-lg border bg-card"
           >
             {visible.map((training) => {
-              const Icon = trainingIcon(training)
+              const Icon = disciplineIcons[training.discipline]
               const label = t(trainingLabelKey(training))
               const pace =
                 training.durationSeconds && training.distanceMeters
@@ -287,9 +288,20 @@ export function TrainingJournal({
                       ),
                     )
                   : null
+              const intensity = getTrainingIntensity(training)
+              const incline = training.inclinePercent ?? 0
               const meta = [
                 training.context
                   ? t(`triathlon.context.${training.context}`)
+                  : null,
+                incline > 0
+                  ? `${formatNumber(incline, { maximumFractionDigits: 1 })} %`
+                  : null,
+                intensity && incline > 0
+                  ? `${formatNumber(intensity.climbMeters, { maximumFractionDigits: 0 })} Hm`
+                  : null,
+                intensity
+                  ? `${formatNumber(intensity.metabolicEquivalent, { maximumFractionDigits: 1 })} MET`
                   : null,
                 training.intervals.length > 0
                   ? t('triathlon.journal.intervals', {

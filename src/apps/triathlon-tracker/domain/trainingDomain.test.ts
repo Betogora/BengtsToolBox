@@ -83,6 +83,25 @@ describe('tracker validation', () => {
       code: 'out-of-range',
       severity: 'error',
     })
+    expect(
+      validateSettings({ ...settings, planPaceSecondsPerKilometer: { walk: 600, run: 420 } }),
+    ).toEqual([])
+    expect(validateActualTraining(actual({ context: 'treadmill', isWalk: true, inclinePercent: 8 }))).toEqual([])
+    expect(validatePlannedTraining({ ...plan, discipline: 'run', inclinePercent: 6 })).toEqual([])
+    for (const invalid of [
+      actual({ context: 'road', inclinePercent: 3 }),
+      actual({ context: 'treadmill', inclinePercent: 45 }),
+      actual({ discipline: 'bike', context: 'indoor', inclinePercent: 2 }),
+    ]) {
+      expect(validateActualTraining(invalid).map((issue) => issue.field)).toContain('inclinePercent')
+    }
+    expect(
+      validateSettings({ ...settings, planPaceSecondsPerKilometer: { run: 60 } }),
+    ).toContainEqual({
+      field: 'planPaceSecondsPerKilometer.run',
+      code: 'out-of-range',
+      severity: 'error',
+    })
   })
 
   it('requires duration or distance and a matching sport context', () => {

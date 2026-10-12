@@ -104,34 +104,91 @@ export function formatTrainingDurationInput(seconds: number | null): string {
     : `${minutes}:${remainder}`
 }
 
+/** Speed in km/h for a pace in seconds per kilometre, at most two decimals. */
+export function formatSpeed(paceSecondsPerKilometer: number | null): string {
+  if (paceSecondsPerKilometer === null || paceSecondsPerKilometer <= 0) {
+    return ''
+  }
+  return String(Number((3_600 / paceSecondsPerKilometer).toFixed(2)))
+}
+
+/** Pace in seconds per kilometre for a speed in km/h. */
+export function parseSpeed(value: string): number | null {
+  const kilometersPerHour = Number(value.trim().replace(',', '.'))
+  return value.trim() !== '' &&
+    Number.isFinite(kilometersPerHour) &&
+    kilometersPerHour > 0
+    ? 3_600 / kilometersPerHour
+    : null
+}
+
+function formatKilometers(meters: number) {
+  return String(Number((meters / 1000).toFixed(6)))
+}
+
 export type TrainingMetricField = 'duration' | 'distance' | 'pace'
-export type TrainingMetricDraft = Record<TrainingMetricField, string> & {
+/** Speed is the pace in km/h and therefore counts as a pace input. */
+export type TrainingMetricInput = TrainingMetricField | 'speed'
+export type TrainingMetricDraft = Record<TrainingMetricInput, string> & {
   inputs: [TrainingMetricField, TrainingMetricField]
+  paceSource?: 'pace' | 'speed'
+}
+
+export function trainingMetricDraft(
+  durationSeconds: number | null,
+  distanceMeters: number | null,
+  discipline: Discipline,
+): TrainingMetricDraft {
+  const pace =
+    durationSeconds && distanceMeters
+      ? averagePaceSeconds(durationSeconds, distanceMeters, discipline)
+      : null
+  return {
+    duration: formatTrainingDurationInput(durationSeconds),
+    distance: distanceMeters === null ? '' : formatKilometers(distanceMeters),
+    pace: formatPace(pace),
+    speed: discipline === 'swim' ? '' : formatSpeed(pace),
+    inputs: ['duration', 'distance'],
+  }
 }
 
 export function updateTrainingMetrics(
   current: TrainingMetricDraft,
-  field: TrainingMetricField,
+  input: TrainingMetricInput,
   value: string,
   discipline: Discipline,
 ): TrainingMetricDraft {
+  const field: TrainingMetricField = input === 'speed' ? 'pace' : input
   const inputs = [
-    ...current.inputs.filter((input) => input !== field),
+    ...current.inputs.filter((item) => item !== field),
     field,
   ].slice(-2) as TrainingMetricDraft['inputs']
-  const next = { ...current, [field]: value, inputs }
+  const next: TrainingMetricDraft = { ...current, [input]: value, inputs }
+  if (field === 'pace') next.paceSource = input as 'pace' | 'speed'
   const derived = (['duration', 'distance', 'pace'] as const).find(
-    (input) => !inputs.includes(input),
+    (item) => !inputs.includes(item),
   )!
   const duration = parseTrainingDuration(next.duration) ?? 0
   const distance = Number(next.distance.replace(',', '.')) * 1000
-  const pace = parsePace(next.pace)
+  // A typed speed keeps full precision instead of the rounded pace text.
+  const pace =
+    next.paceSource === 'speed' && discipline !== 'swim'
+      ? parseSpeed(next.speed)
+      : parsePace(next.pace)
   const positive = (number: number) => Number.isFinite(number) && number > 0
+  if (input === 'pace') {
+    next.speed = discipline === 'swim' ? '' : formatSpeed(pace)
+  } else if (input === 'speed') {
+    next.pace = formatPace(pace)
+  }
   if (derived === 'pace') {
-    next.pace =
+    const derivedPace =
       positive(duration) && positive(distance)
-        ? formatPace(averagePaceSeconds(duration, distance, discipline))
-        : ''
+        ? averagePaceSeconds(duration, distance, discipline)
+        : null
+    next.pace = formatPace(derivedPace)
+    next.speed = discipline === 'swim' ? '' : formatSpeed(derivedPace)
+    delete next.paceSource
   } else if (derived === 'duration') {
     next.duration =
       pace && positive(distance)
@@ -142,15 +199,57 @@ export function updateTrainingMetrics(
   } else {
     next.distance =
       pace && positive(duration)
-        ? String(
-            Number(
-              (
-                ((duration / pace) * averagePaceReferenceMeters(discipline)) /
-                1000
-              ).toFixed(6),
-            ),
+        ? formatKilometers(
+            (duration / pace) * averagePaceReferenceMeters(discipline),
           )
         : ''
+  }
+  return next
+}
+
+export type PlanMetricField = 'duration' | 'distance'
+export type PlanMetricDraft = Record<PlanMetricField, string> & {
+  /** The field completed from the default pace, if any. */
+  derived: PlanMetricField | null
+}
+
+/**
+ * Completes a plan from one entered value and the default pace. Editing the
+ * derived field turns it into an entered value; without a pace or with both
+ * or no values entered nothing is derived.
+ */
+export function updatePlanMetrics(
+  current: PlanMetricDraft,
+  field: PlanMetricField | null,
+  value: string,
+  paceSecondsPerKilometer: number | null,
+): PlanMetricDraft {
+  const next: PlanMetricDraft = { ...current }
+  if (field) {
+    next[field] = value
+    if (next.derived === field) next.derived = null
+  }
+  if (next.derived) {
+    next[next.derived] = ''
+    next.derived = null
+  }
+  const duration = parseTrainingDuration(next.duration)
+  const distanceKilometers = Number(next.distance.replace(',', '.'))
+  const hasDistance =
+    next.distance.trim() !== '' &&
+    Number.isFinite(distanceKilometers) &&
+    distanceKilometers > 0
+  if (!paceSecondsPerKilometer) return next
+  if (duration && duration > 0 && next.distance.trim() === '') {
+    next.distance = String(
+      Number((duration / paceSecondsPerKilometer).toFixed(2)),
+    )
+    next.derived = 'distance'
+  } else if (hasDistance && next.duration.trim() === '') {
+    next.duration = formatTrainingDurationInput(
+      distanceKilometers * paceSecondsPerKilometer,
+    )
+    next.derived = 'duration'
   }
   return next
 }

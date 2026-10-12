@@ -10,6 +10,7 @@ import {
 } from '@/lib/localDates'
 import { Button } from '@/components/ui/button'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
@@ -33,6 +34,8 @@ type DatePickerProps = {
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void
   required?: boolean
   disabled?: boolean
+  /** Single-line field without visible label, e.g. inside a toolbar. */
+  compact?: boolean
 }
 
 function parseDateInput(value: string) {
@@ -51,6 +54,7 @@ export function DatePicker({
   onKeyDown,
   required = false,
   disabled = false,
+  compact = false,
 }: DatePickerProps) {
   const { t, locale, language } = useI18n()
   const formatters = useMemo(() => ({
@@ -152,56 +156,106 @@ export function DatePicker({
       }}
     >
       <div className="relative min-w-0">
-        <IftaInput
-          label={label}
-          required={required}
-          disabled={disabled}
-          aria-invalid={Boolean(value && !parseDateInput(value))}
-          value={editing ? draft : displayedValue}
-          placeholder={language === 'de' ? 'TT.MM.JJJJ' : 'YYYY-MM-DD'}
-          pattern="(\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4})"
-          autoComplete="off"
-          className="pr-9 text-[0.8rem] tabular-nums sm:text-sm"
-          ref={(input) => {
-            input?.setCustomValidity(
-              value && !parseDateInput(value)
-                ? t('ui.picker.invalidDate')
-                : '',
-            )
-          }}
-          onFocus={() => {
-            setDraft(displayedValue)
-            setEditing(true)
-          }}
-          onBlur={(event) => {
-            setEditing(false)
-            const canonical = parseDateInput(event.currentTarget.value)
-            if (canonical !== null || (!required && !event.currentTarget.value)) {
-              onValueCommit?.(canonical ?? '')
-            }
-          }}
-          onChange={(event) => {
-            const next = event.currentTarget.value
-            setDraft(next)
-            onValueChange(parseDateInput(next) ?? next)
-          }}
-          onKeyDown={(event) => {
-            onKeyDown?.(event)
-            if (event.key === 'ArrowDown' && event.altKey) {
-              event.preventDefault()
-              setViewDate(initialDate)
-              setFocusedDate(initialDate)
-              setOpen(true)
-            }
-          }}
-        />
+        {compact ? (
+          <Input
+            aria-label={label}
+            title={label}
+            className="h-8 pr-8 text-[0.8rem] tabular-nums"
+            required={required}
+            disabled={disabled}
+            aria-invalid={Boolean(value && !parseDateInput(value))}
+            value={editing ? draft : displayedValue}
+            placeholder={language === 'de' ? 'TT.MM.JJJJ' : 'YYYY-MM-DD'}
+            pattern="(\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4})"
+            autoComplete="off"
+            ref={(input) => {
+              input?.setCustomValidity(
+                value && !parseDateInput(value)
+                  ? t('ui.picker.invalidDate')
+                  : '',
+              )
+            }}
+            onFocus={() => {
+              setDraft(displayedValue)
+              setEditing(true)
+            }}
+            onBlur={(event) => {
+              setEditing(false)
+              const canonical = parseDateInput(event.currentTarget.value)
+              if (canonical !== null || (!required && !event.currentTarget.value)) {
+                onValueCommit?.(canonical ?? '')
+              }
+            }}
+            onChange={(event) => {
+              const next = event.currentTarget.value
+              setDraft(next)
+              onValueChange(parseDateInput(next) ?? next)
+            }}
+            onKeyDown={(event) => {
+              onKeyDown?.(event)
+              if (event.key === 'ArrowDown' && event.altKey) {
+                event.preventDefault()
+                setViewDate(initialDate)
+                setFocusedDate(initialDate)
+                setOpen(true)
+              }
+            }}
+          />
+        ) : (
+          <IftaInput
+            label={label}
+            className="pr-9 text-[0.8rem] tabular-nums sm:text-sm"
+            required={required}
+            disabled={disabled}
+            aria-invalid={Boolean(value && !parseDateInput(value))}
+            value={editing ? draft : displayedValue}
+            placeholder={language === 'de' ? 'TT.MM.JJJJ' : 'YYYY-MM-DD'}
+            pattern="(\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4})"
+            autoComplete="off"
+            ref={(input) => {
+              input?.setCustomValidity(
+                value && !parseDateInput(value)
+                  ? t('ui.picker.invalidDate')
+                  : '',
+              )
+            }}
+            onFocus={() => {
+              setDraft(displayedValue)
+              setEditing(true)
+            }}
+            onBlur={(event) => {
+              setEditing(false)
+              const canonical = parseDateInput(event.currentTarget.value)
+              if (canonical !== null || (!required && !event.currentTarget.value)) {
+                onValueCommit?.(canonical ?? '')
+              }
+            }}
+            onChange={(event) => {
+              const next = event.currentTarget.value
+              setDraft(next)
+              onValueChange(parseDateInput(next) ?? next)
+            }}
+            onKeyDown={(event) => {
+              onKeyDown?.(event)
+              if (event.key === 'ArrowDown' && event.altKey) {
+                event.preventDefault()
+                setViewDate(initialDate)
+                setFocusedDate(initialDate)
+                setOpen(true)
+              }
+            }}
+          />
+        )}
         <PopoverTrigger asChild>
           <Button
             type="button"
             variant="ghost"
             size="icon"
             disabled={disabled}
-            className="absolute right-1 top-1 size-9 text-muted-foreground"
+            className={cn(
+              'absolute text-muted-foreground',
+              compact ? 'right-0 top-0 size-8' : 'right-1 top-1 size-9',
+            )}
             aria-label={`${t('ui.picker.openCalendar')}: ${label}`}
           >
             <CalendarDays aria-hidden="true" />

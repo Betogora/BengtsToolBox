@@ -1,4 +1,4 @@
-import { Bike, Footprints, PersonStanding, Waves } from 'lucide-react'
+import { Bike, Footprints, Waves } from 'lucide-react'
 import type { Discipline } from './types'
 import { formatTrainingDurationInput } from './domain/units'
 
@@ -17,14 +17,11 @@ export const disciplineFillColors = {
   run: '#b04a33',
 } satisfies Record<Discipline, string>
 
+// Genau ein Icon je Disziplin; Varianten wie Gehen erhalten kein eigenes.
 export const disciplineIcons = { swim: Waves, bike: Bike, run: Footprints }
 export const disciplines = ['swim', 'bike', 'run'] as const
 
 type TrainingKind = { discipline: Discipline; isWalk?: boolean }
-
-export function trainingIcon(training: TrainingKind) {
-  return training.isWalk ? PersonStanding : disciplineIcons[training.discipline]
-}
 
 export function trainingLabelKey(training: TrainingKind) {
   return training.isWalk

@@ -1,11 +1,11 @@
-import { Clock3, Copy, Footprints, PersonStanding, Plus, Trash2 } from 'lucide-react'
+import { Clock3, Copy, Plus, Trash2 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { trainingContexts } from './types'
+import { defaultWalkContext, trainingContexts } from './types'
 
 import type {
   ActualTraining,
@@ -13,6 +13,7 @@ import type {
   Discipline,
   IntervalSegment,
   PlannedTraining,
+  PlanPaces,
   RunningContext,
   SwimmingContext,
   TrainingContext,
@@ -21,8 +22,11 @@ import {
   addDaysToLocalDate,
   averagePaceSeconds,
   formatPace,
+  formatSpeed,
   getWeekStartLocalDate,
+  estimateRunningPowerWatts,
   isValidLocalDate,
+  maximumInclinePercent,
   parsePace,
   validateActualTraining,
 } from '@/apps/triathlon-tracker/domain'
@@ -53,11 +57,16 @@ import {
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
 import {
+  updatePlanMetrics,
   updateTrainingMetrics,
   parseTrainingDuration,
   formatTrainingDurationInput,
+  trainingMetricDraft,
+  type PlanMetricDraft,
+  type PlanMetricField,
   type TrainingMetricDraft,
   type TrainingMetricField,
+  type TrainingMetricInput,
 } from './domain/units'
 
 export type {
@@ -95,6 +104,62 @@ function optionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function inclineToInput(inclinePercent: number | null | undefined) {
+  return inclinePercent == null ? '' : `${inclinePercent}`
+}
+
+function InclineInput({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <IftaInput
+      inputMode="decimal"
+      label={t('triathlon.form.incline')}
+      max={maximumInclinePercent}
+      min="0"
+      step="0.5"
+      type="number"
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value)}
+    />
+  )
+}
+
+const rpeLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+
+function RpeSelect({
+  value,
+  onValueChange,
+}: {
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <Select
+      value={value === '' ? 'none' : value}
+      onValueChange={(next) => onValueChange(next === 'none' ? '' : next)}
+    >
+      <IftaSelectTrigger label={t('triathlon.form.rpe')}>
+        <SelectValue>{value === '' ? '—' : value}</SelectValue>
+      </IftaSelectTrigger>
+      <SelectContent className="triathlon-tracker">
+        <SelectItem value="none">—</SelectItem>
+        {rpeLevels.map((level) => (
+          <SelectItem key={level} value={String(level)}>
+            {level} · {t(`triathlon.form.rpeLevel.${level}`)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 function formatDistance(meters: number | null, locale: string) {
   if (meters === null) return null
   return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(meters / 1000)} km`
@@ -116,8 +181,11 @@ type DefaultTrainingContexts = {
 function defaultContext(
   discipline: Discipline,
   defaultContexts: DefaultTrainingContexts,
+  isWalk = false,
 ): TrainingContext {
-  return defaultContexts[discipline]
+  return discipline === 'run' && isWalk
+    ? defaultWalkContext
+    : defaultContexts[discipline]
 }
 
 function averagePaceLabel(
@@ -175,8 +243,8 @@ function RunVariantControl({
       value={isWalk ? 'walk' : 'run'}
       onValueChange={(value) => onIsWalkChange(value === 'walk')}
       options={[
-        { value: 'run', label: t('triathlon.variant.run'), icon: Footprints },
-        { value: 'walk', label: t('triathlon.variant.walk'), icon: PersonStanding },
+        { value: 'run', label: t('triathlon.variant.run') },
+        { value: 'walk', label: t('triathlon.variant.walk') },
       ]}
     />
   )
@@ -185,6 +253,7 @@ function RunVariantControl({
 type PlannedTrainingDialogProps = {
   initialDate: string
   open: boolean
+  planPaces: PlanPaces
   training: PlannedTraining | null
   template?: PlannedTrainingInput
   onDelete?: (id: string) => Promise<unknown> | unknown
@@ -207,6 +276,7 @@ export function PlannedTrainingDialog(props: PlannedTrainingDialogProps) {
 
 function PlannedTrainingDialogContent({
   initialDate,
+  planPaces,
   training,
   template,
   onDelete,
@@ -223,16 +293,38 @@ function PlannedTrainingDialogContent({
   const [discipline, setDiscipline] = useState<Discipline>(
     (training ?? template)?.discipline ?? 'run',
   )
-  const [durationMinutes, setDurationMinutes] = useState(
-    formatTrainingDurationInput(
+  const [planMetrics, setPlanMetrics] = useState<PlanMetricDraft>({
+    duration: formatTrainingDurationInput(
       (training ?? template)?.durationSeconds ?? null,
     ),
-  )
-  const [distanceKilometers, setDistanceKilometers] = useState(
-    metersToKilometers((training ?? template)?.distanceMeters ?? null),
-  )
+    distance: metersToKilometers((training ?? template)?.distanceMeters ?? null),
+    derived: null,
+  })
+  const { duration: durationMinutes, distance: distanceKilometers } =
+    planMetrics
   const [label, setLabel] = useState((training ?? template)?.label ?? '')
   const [isWalk, setIsWalk] = useState((training ?? template)?.isWalk ?? false)
+  const [incline, setIncline] = useState(
+    inclineToInput((training ?? template)?.inclinePercent),
+  )
+  // Only walks and runs have a default pace to complete the plan with.
+  const planPace = (nextDiscipline: Discipline, nextIsWalk: boolean) =>
+    nextDiscipline === 'run' ? planPaces[nextIsWalk ? 'walk' : 'run'] : null
+  const updatePlanMetric = (field: PlanMetricField, value: string) =>
+    setPlanMetrics((current) =>
+      updatePlanMetrics(current, field, value, planPace(discipline, isWalk)),
+    )
+  const changePlanKind = (nextDiscipline: Discipline, nextIsWalk: boolean) => {
+    setDiscipline(nextDiscipline)
+    setIsWalk(nextIsWalk)
+    setPlanMetrics((current) =>
+      updatePlanMetrics(current, null, '', planPace(nextDiscipline, nextIsWalk)),
+    )
+  }
+  const planComputedClass = (field: PlanMetricField) =>
+    planMetrics.derived === field
+      ? 'bg-muted text-muted-foreground shadow-none'
+      : undefined
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -240,12 +332,17 @@ function PlannedTrainingDialogContent({
     event.preventDefault()
     const parsedDuration = parseTrainingDuration(durationMinutes)
     const parsedDistance = optionalNumber(distanceKilometers)
+    const parsedIncline =
+      discipline === 'run' ? optionalNumber(incline) : null
 
     if (
       !isValidLocalDate(localDate) ||
       (durationMinutes.trim() !== '' && parsedDuration === null) ||
       (parsedDuration !== null && parsedDuration < 0) ||
-      (parsedDistance !== null && parsedDistance < 0)
+      (parsedDistance !== null && parsedDistance < 0) ||
+      (discipline === 'run' && incline.trim() !== '' && parsedIncline === null) ||
+      (parsedIncline !== null &&
+        (parsedIncline < 0 || parsedIncline > maximumInclinePercent))
     ) {
       setError(t('triathlon.form.invalidValues'))
       return
@@ -259,6 +356,7 @@ function PlannedTrainingDialogContent({
         startMinutes: timeToMinutes(startTime),
         discipline,
         isWalk: discipline === 'run' && isWalk,
+        inclinePercent: parsedIncline,
         durationSeconds: parsedDuration,
         distanceMeters:
           parsedDistance === null ? null : Math.round(parsedDistance * 1000),
@@ -302,19 +400,31 @@ function PlannedTrainingDialogContent({
         </fieldset>
         <fieldset className="grid grid-cols-2 gap-2">
           <legend className="sr-only">{t('triathlon.form.targets')}</legend>
-          <DisciplineSelect value={discipline} onValueChange={setDiscipline} />
+          <DisciplineSelect
+            value={discipline}
+            onValueChange={(next) => changePlanKind(next, false)}
+          />
           <IftaInput
+            className={planComputedClass('duration')}
+            data-computed={planMetrics.derived === 'duration' || undefined}
             label={t('triathlon.journal.duration')}
             aria-label={t('triathlon.form.durationClock')}
             title={t('triathlon.form.durationClock')}
             placeholder="45:00"
             value={durationMinutes}
-            onChange={(event) => setDurationMinutes(event.currentTarget.value)}
+            onChange={(event) =>
+              updatePlanMetric('duration', event.currentTarget.value)
+            }
           />
           {discipline === 'run' && (
-            <RunVariantControl isWalk={isWalk} onIsWalkChange={setIsWalk} />
+            <RunVariantControl
+              isWalk={isWalk}
+              onIsWalkChange={(next) => changePlanKind('run', next)}
+            />
           )}
           <IftaInput
+            className={planComputedClass('distance')}
+            data-computed={planMetrics.derived === 'distance' || undefined}
             inputMode="decimal"
             label={t('triathlon.form.distanceKilometers')}
             min="0"
@@ -322,16 +432,20 @@ function PlannedTrainingDialogContent({
             type="number"
             value={distanceKilometers}
             onChange={(event) =>
-              setDistanceKilometers(event.currentTarget.value)
+              updatePlanMetric('distance', event.currentTarget.value)
             }
           />
-          <IftaInput
-            className="sm:col-span-1"
-            label={t('triathlon.form.shortLabel')}
-            maxLength={40}
-            value={label}
-            onChange={(event) => setLabel(event.currentTarget.value)}
-          />
+          {discipline === 'run' && (
+            <InclineInput value={incline} onChange={setIncline} />
+          )}
+          <div className={discipline === 'run' ? 'col-span-2' : undefined}>
+            <IftaInput
+              label={t('triathlon.form.shortLabel')}
+              maxLength={40}
+              value={label}
+              onChange={(event) => setLabel(event.currentTarget.value)}
+            />
+          </div>
         </fieldset>
         {error && (
           <p className="type-ui text-destructive" role="alert">
@@ -558,6 +672,8 @@ function IntervalEditor({
 
 type ActualTrainingDialogProps = {
   defaultContexts: DefaultTrainingContexts
+  /** Enables the running power estimate. */
+  weightKg: number | null
   initialDate: string
   open: boolean
   training: ActualTraining | null
@@ -582,6 +698,7 @@ export function ActualTrainingDialog(props: ActualTrainingDialogProps) {
 
 function ActualTrainingDialogContent({
   defaultContexts,
+  weightKg,
   initialDate,
   training,
   template,
@@ -598,26 +715,27 @@ function ActualTrainingDialogContent({
   )
   const [discipline, setDiscipline] = useState<Discipline>(initialDiscipline)
   const [context, setContext] = useState<TrainingContext>(
-    initial?.context ?? defaultContext(initialDiscipline, defaultContexts),
+    initial?.context ??
+      // A planned incline only exists on the treadmill.
+      (initial?.inclinePercent
+        ? 'treadmill'
+        : defaultContext(initialDiscipline, defaultContexts, initial?.isWalk)),
   )
-  const [metrics, setMetrics] = useState<TrainingMetricDraft>(() => ({
-    duration: formatTrainingDurationInput(initial?.durationSeconds ?? null),
-    distance: metersToKilometers(initial?.distanceMeters ?? null),
-    pace: formatPace(
-      initial?.durationSeconds && initial.distanceMeters
-        ? averagePaceSeconds(
-            initial.durationSeconds,
-            initial.distanceMeters,
-            initialDiscipline,
-          )
-        : null,
+  const [incline, setIncline] = useState(inclineToInput(initial?.inclinePercent))
+  // A manually chosen context survives switching between running and walking.
+  const [contextChosen, setContextChosen] = useState(Boolean(initial?.context))
+  const [metrics, setMetrics] = useState<TrainingMetricDraft>(() =>
+    trainingMetricDraft(
+      initial?.durationSeconds ?? null,
+      initial?.distanceMeters ?? null,
+      initialDiscipline,
     ),
-    inputs: ['duration', 'distance'],
-  }))
+  )
   const {
     duration: durationMinutes,
     distance: distanceKilometers,
     pace: averagePace,
+    speed: averageSpeed,
   } = metrics
   const [isBenchmark, setIsBenchmark] = useState(initial?.isBenchmark ?? false)
   const [isWalk, setIsWalk] = useState(initial?.isWalk ?? false)
@@ -645,24 +763,54 @@ function ActualTrainingDialogContent({
     setDiscipline(nextDiscipline)
     setIsWalk(false)
     setContext(defaultContext(nextDiscipline, defaultContexts))
-    setMetrics((current) => ({
-      ...current,
-      inputs: ['duration', 'distance'],
-      pace: formatPace(
-        averagePaceSeconds(
-          parseTrainingDuration(current.duration) ?? 0,
-          Number(current.distance) * 1000,
-          nextDiscipline,
-        ),
-      ),
-    }))
+    setContextChosen(false)
+    setMetrics((current) => {
+      const pace = averagePaceSeconds(
+        parseTrainingDuration(current.duration) ?? 0,
+        Number(current.distance.replace(',', '.')) * 1000,
+        nextDiscipline,
+      )
+      return {
+        ...current,
+        inputs: ['duration', 'distance'],
+        paceSource: undefined,
+        pace: formatPace(pace),
+        speed: nextDiscipline === 'swim' ? '' : formatSpeed(pace),
+      }
+    })
   }
-  const updateMetric = (field: TrainingMetricField, value: string) => {
+  const handleIsWalkChange = (nextIsWalk: boolean) => {
+    setIsWalk(nextIsWalk)
+    if (!contextChosen) {
+      setContext(defaultContext(discipline, defaultContexts, nextIsWalk))
+    }
+  }
+  const updateMetric = (field: TrainingMetricInput, value: string) => {
     setMetrics((current) =>
       updateTrainingMetrics(current, field, value, discipline),
     )
   }
   // The field outside the last two inputs is derived from the other two.
+  // Speed in km/h only exists alongside a pace per kilometre.
+  const hasSpeed = discipline !== 'swim'
+  const metricSpan = hasSpeed ? 'sm:col-span-3' : 'sm:col-span-4'
+  const showIncline = discipline === 'run' && context === 'treadmill'
+  const detailSpan = showIncline ? 'sm:col-span-3' : 'sm:col-span-4'
+  // Without a measured value the field shows the running power estimate,
+  // which is derived on display and never stored.
+  const estimatedPower = estimateRunningPowerWatts(
+    {
+      discipline,
+      isWalk: discipline === 'run' && isWalk,
+      inclinePercent: showIncline ? optionalNumber(incline) : null,
+      durationSeconds: parseTrainingDuration(durationMinutes),
+      distanceMeters:
+        (optionalNumber(distanceKilometers) ?? 0) * 1000 || null,
+    },
+    weightKg,
+  )
+  const powerIsEstimated =
+    averagePowerWatts.trim() === '' && estimatedPower !== null
   const isComputed = (field: TrainingMetricField) =>
     !metrics.inputs.includes(field)
   const computedClass = (field: TrainingMetricField) =>
@@ -713,9 +861,16 @@ function ActualTrainingDialogContent({
         averagePowerWatts: optionalNumber(interval.averagePowerWatts),
       }),
     )
+    const hasIncline = discipline === 'run' && context === 'treadmill'
+    const parsedIncline = hasIncline ? optionalNumber(incline) : null
+    if (hasIncline && incline.trim() !== '' && parsedIncline === null) {
+      setError(t('triathlon.form.invalidValues'))
+      return
+    }
     const nextTraining: ActualTrainingInput = {
       isBenchmark,
       isWalk: discipline === 'run' && isWalk,
+      inclinePercent: parsedIncline,
       localDate,
       startMinutes: timeToMinutes(startTime),
       discipline,
@@ -792,7 +947,10 @@ function ActualTrainingDialogContent({
           <Select
             key={discipline}
             value={context}
-            onValueChange={(value) => setContext(value as TrainingContext)}
+            onValueChange={(value) => {
+              setContext(value as TrainingContext)
+              setContextChosen(true)
+            }}
           >
             <IftaSelectTrigger label={t('triathlon.form.context')}>
               <SelectValue />
@@ -806,36 +964,43 @@ function ActualTrainingDialogContent({
             </SelectContent>
           </Select>
           {discipline === 'run' && (
-            <RunVariantControl isWalk={isWalk} onIsWalkChange={setIsWalk} />
+            <RunVariantControl
+              isWalk={isWalk}
+              onIsWalkChange={handleIsWalkChange}
+            />
           )}
         </fieldset>
-        <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-12">
           <legend className="sr-only">{t('triathlon.form.metrics')}</legend>
-          <IftaInput
-            className={computedClass('duration')}
-            data-computed={isComputed('duration') || undefined}
-            label={t('triathlon.journal.duration')}
-            aria-label={t('triathlon.form.durationClock')}
-            title={t('triathlon.form.durationClock')}
-            placeholder="20:35"
-            value={durationMinutes}
-            onChange={(event) =>
-              updateMetric('duration', event.currentTarget.value)
-            }
-          />
-          <IftaInput
-            className={computedClass('distance')}
-            data-computed={isComputed('distance') || undefined}
-            label={t('triathlon.form.distanceKilometers')}
-            min="0"
-            step="0.01"
-            type="number"
-            value={distanceKilometers}
-            onChange={(event) =>
-              updateMetric('distance', event.currentTarget.value)
-            }
-          />
-          <div className="col-span-2 sm:col-span-1">
+          <div className={metricSpan}>
+            <IftaInput
+              className={computedClass('duration')}
+              data-computed={isComputed('duration') || undefined}
+              label={t('triathlon.journal.duration')}
+              aria-label={t('triathlon.form.durationClock')}
+              title={t('triathlon.form.durationClock')}
+              placeholder="20:35"
+              value={durationMinutes}
+              onChange={(event) =>
+                updateMetric('duration', event.currentTarget.value)
+              }
+            />
+          </div>
+          <div className={metricSpan}>
+            <IftaInput
+              className={computedClass('distance')}
+              data-computed={isComputed('distance') || undefined}
+              label={t('triathlon.form.distanceKilometers')}
+              min="0"
+              step="0.01"
+              type="number"
+              value={distanceKilometers}
+              onChange={(event) =>
+                updateMetric('distance', event.currentTarget.value)
+              }
+            />
+          </div>
+          <div className={hasSpeed ? metricSpan : 'col-span-2 sm:col-span-4'}>
             <IftaInput
               className={computedClass('pace')}
               data-computed={isComputed('pace') || undefined}
@@ -848,40 +1013,69 @@ function ActualTrainingDialogContent({
               }
             />
           </div>
-          <p className="type-caption col-span-2 text-muted-foreground sm:col-span-3">
+          {hasSpeed && (
+            <div className={metricSpan}>
+              <IftaInput
+                className={computedClass('pace')}
+                data-computed={isComputed('pace') || undefined}
+                inputMode="decimal"
+                label={t('triathlon.form.averageSpeed')}
+                min="0"
+                step="0.01"
+                type="number"
+                value={averageSpeed}
+                onChange={(event) =>
+                  updateMetric('speed', event.currentTarget.value)
+                }
+              />
+            </div>
+          )}
+          <p className="type-caption col-span-2 text-muted-foreground sm:col-span-12">
             {t('triathlon.form.metricsDerived')}
           </p>
-          <IftaInput
-            label={t('triathlon.form.averageHeartRate')}
-            min="30"
-            max="250"
-            type="number"
-            value={averageHeartRateBpm}
-            onChange={(event) =>
-              setAverageHeartRateBpm(event.currentTarget.value)
-            }
-          />
-          <IftaInput
-            label={t('triathlon.form.averagePower')}
-            min="0"
-            max="3000"
-            type="number"
-            value={averagePowerWatts}
-            onChange={(event) =>
-              setAveragePowerWatts(event.currentTarget.value)
-            }
-          />
-          <div className="col-span-2 sm:col-span-1">
+          <div className={detailSpan}>
             <IftaInput
-              label={t('triathlon.form.rpe')}
-              min="1"
-              max="10"
+              label={t('triathlon.form.averageHeartRate')}
+              min="30"
+              max="250"
               type="number"
-              value={rpe}
-              onChange={(event) => setRpe(event.currentTarget.value)}
+              value={averageHeartRateBpm}
+              onChange={(event) =>
+                setAverageHeartRateBpm(event.currentTarget.value)
+              }
             />
           </div>
-          <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-3">
+          <div className={detailSpan}>
+            <RpeSelect value={rpe} onValueChange={setRpe} />
+          </div>
+          {showIncline && (
+            <div className={detailSpan}>
+              <InclineInput value={incline} onChange={setIncline} />
+            </div>
+          )}
+          <div className={showIncline ? detailSpan : `col-span-2 ${detailSpan}`}>
+            <IftaInput
+              className={
+                powerIsEstimated
+                  ? 'bg-muted text-muted-foreground shadow-none'
+                  : undefined
+              }
+              data-computed={powerIsEstimated || undefined}
+              label={t('triathlon.form.averagePower')}
+              min="0"
+              max="3000"
+              type="number"
+              value={
+                powerIsEstimated
+                  ? String(Math.round(estimatedPower))
+                  : averagePowerWatts
+              }
+              onChange={(event) =>
+                setAveragePowerWatts(event.currentTarget.value)
+              }
+            />
+          </div>
+          <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-12">
             <input
               type="checkbox"
               className="size-4 accent-primary"

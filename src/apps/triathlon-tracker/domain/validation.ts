@@ -6,6 +6,7 @@ import type {
 } from '@/apps/triathlon-tracker/types'
 import { trainingContexts } from '@/apps/triathlon-tracker/types'
 import { isValidLocalDate } from './dates'
+import { maximumInclinePercent } from './incline'
 
 function rangeIssue(
   field: string,
@@ -26,6 +27,7 @@ function validateSharedTraining(
     | 'startMinutes'
     | 'discipline'
     | 'isWalk'
+    | 'inclinePercent'
     | 'durationSeconds'
     | 'distanceMeters'
   >,
@@ -46,7 +48,21 @@ function validateSharedTraining(
   }
   issues.push(...rangeIssue('durationSeconds', training.durationSeconds, 0))
   issues.push(...rangeIssue('distanceMeters', training.distanceMeters, 0))
+  const incline = training.inclinePercent ?? null
+  if (incline !== null && training.discipline !== 'run') {
+    issues.push({ field: 'inclinePercent', code: 'context-mismatch', severity: 'error' })
+  }
+  issues.push(...rangeIssue('inclinePercent', incline, 0, maximumInclinePercent))
   return issues
+}
+
+/** 2:00 to 30:00 min/km, i.e. 2 to 30 km/h. */
+export function isValidPlanPace(paceSecondsPerKilometer: number) {
+  return (
+    Number.isFinite(paceSecondsPerKilometer) &&
+    paceSecondsPerKilometer >= 120 &&
+    paceSecondsPerKilometer <= 1_800
+  )
 }
 
 export function validateSettings(settings: TrackerSettings): ValidationIssue[] {
@@ -56,6 +72,17 @@ export function validateSettings(settings: TrackerSettings): ValidationIssue[] {
     (!Number.isFinite(settings.weightKg) || settings.weightKg < 20 || settings.weightKg > 300)
   ) {
     issues.push({ field: 'weightKg', code: 'out-of-range', severity: 'error' })
+  }
+  for (const [variant, pace] of Object.entries(
+    settings.planPaceSecondsPerKilometer ?? {},
+  )) {
+    if (!isValidPlanPace(pace)) {
+      issues.push({
+        field: `planPaceSecondsPerKilometer.${variant}`,
+        code: 'out-of-range',
+        severity: 'error',
+      })
+    }
   }
   return issues
 }
@@ -85,6 +112,9 @@ export function validateActualTraining(
     !trainingContexts[training.discipline].some((context) => context === training.context)
   ) {
     issues.push({ field: 'context', code: 'context-mismatch', severity: 'error' })
+  }
+  if ((training.inclinePercent ?? null) !== null && training.context !== 'treadmill') {
+    issues.push({ field: 'inclinePercent', code: 'context-mismatch', severity: 'error' })
   }
   issues.push(
     ...rangeIssue('averageHeartRateBpm', training.averageHeartRateBpm, 30, 250),

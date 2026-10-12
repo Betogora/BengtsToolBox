@@ -2,7 +2,7 @@ export type Discipline = 'swim' | 'bike' | 'run'
 
 export const trainingContexts = {
   swim: ['pool-50', 'pool-25', 'open-water'],
-  bike: ['outdoor', 'indoor'],
+  bike: ['indoor', 'outdoor'],
   run: ['road', 'treadmill'],
 } as const
 
@@ -14,15 +14,30 @@ export type TrainingContext =
   | CyclingContext
   | RunningContext
 
+/** Also the context of older trainings saved without one. */
 export const defaultTrainingContexts = {
   swim: 'pool-50',
-  bike: 'outdoor',
+  bike: 'indoor',
   run: 'road',
 } as const satisfies Record<Discipline, TrainingContext>
+
+export const defaultWalkContext = 'treadmill' satisfies RunningContext
+
+export type RunVariant = 'run' | 'walk'
+
+/** Pace in seconds per kilometre used to complete planned walks and runs. */
+export const defaultPlanPaces = {
+  walk: 600,
+  run: 420,
+} as const satisfies Record<RunVariant, number>
+
+export type PlanPaces = Record<RunVariant, number>
 
 export type TrackerSettings = {
   schemaVersion: 1
   weightKg: number | null
+  /** Missing values fall back to `defaultPlanPaces`. */
+  planPaceSecondsPerKilometer?: Partial<Record<RunVariant, number>>
   updatedBy?: string
 }
 
@@ -34,6 +49,8 @@ export type PlannedTraining = {
   discipline: Discipline
   /** Walking is a variant of running, never a discipline of its own. */
   isWalk?: boolean
+  /** Treadmill incline in percent; only for walks and runs. */
+  inclinePercent?: number | null
   durationSeconds: number | null
   distanceMeters: number | null
   label: string
@@ -62,6 +79,8 @@ export type ActualTraining = {
   discipline: Discipline
   /** Walking is a variant of running, never a discipline of its own. */
   isWalk?: boolean
+  /** Treadmill incline in percent; only for walks and runs. */
+  inclinePercent?: number | null
   context: TrainingContext | null
   durationSeconds: number | null
   distanceMeters: number | null

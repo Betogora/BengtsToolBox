@@ -93,4 +93,21 @@ describe('pace at equal heart rate', () => {
     expect(recent?.referenceHeartRateBpm).toBe(full?.referenceHeartRateBpm)
     expect(recent?.points.map((point) => point.activityId)).toEqual(['late'])
   })
+
+  it('führt Gehen als eigene Kurve und rechnet Steigung in Lauf-Äquivalent um', () => {
+    const treadmill = { ...options, context: 'treadmill' as const }
+    const inclined = (id: string, isWalk: boolean, incline: number) => ({
+      ...run(id, '2026-09-10', 3_600, 6_000, 150),
+      context: 'treadmill' as const,
+      isWalk,
+      inclinePercent: incline,
+    })
+    const trainings = [inclined('walk', true, 10), inclined('hill-run', false, 5)]
+    const walking = getEfficiencyTrend(trainings, { ...treadmill, isWalk: true })
+    expect(walking?.points.map((point) => point.activityId)).toEqual(['walk'])
+    expect(walking!.points[0].speedMetersPerSecond * 3.6).toBeCloseTo(8.4)
+    const running = getEfficiencyTrend(trainings, treadmill)
+    expect(running?.points.map((point) => point.activityId)).toEqual(['hill-run'])
+    expect(running!.points[0].speedMetersPerSecond * 3.6).toBeCloseTo(7.35)
+  })
 })

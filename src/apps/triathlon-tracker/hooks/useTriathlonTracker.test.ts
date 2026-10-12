@@ -297,7 +297,12 @@ describe('useTriathlonTracker', () => {
     }]
     const tracker = renderHook()
 
-    await tracker.updateActualTraining('actual-1', { rpe: 4 })
+    // Fehlende optionale Felder älterer Einträge gelten als unverändert.
+    await tracker.updateActualTraining('actual-1', {
+      rpe: 4,
+      isWalk: false,
+      inclinePercent: null,
+    })
     await tracker.updateActualTraining('actual-1', { durationSeconds: 1_700 })
     await tracker.updateActualTraining('actual-1', { averagePowerWatts: 280 })
 

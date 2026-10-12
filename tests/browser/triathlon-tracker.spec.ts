@@ -10,9 +10,8 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
     page.getByRole('heading', { level: 1, name: 'Triathlon-Tracker' }),
   ).toBeVisible()
   await expect(
-    page.getByRole('tab', { name: 'Rekorde', exact: true }),
-  ).toHaveAttribute('aria-selected', 'true')
-  await page.getByRole('tab', { name: 'Planung', exact: true }).click()
+    page.getByRole('tablist', { name: 'Triathlon-Tracker' }).getByRole('tab'),
+  ).toHaveText(['Planung', 'Rekorde', 'Statistik', 'Tagebuch'])
   await expect(
     page.getByRole('tab', { name: 'Planung', exact: true }),
   ).toHaveAttribute('aria-selected', 'true')
@@ -101,6 +100,10 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(timeInput).toHaveValue('23:07')
   await plan.getByLabel('Kurzes Label').fill('Lockerer Lauf')
   await plan.getByLabel('Dauer (m:ss / h:mm:ss)').fill('30')
+  await expect(plan.getByLabel('Distanz (km)')).toHaveValue('4.29')
+  await plan.getByRole('radio', { name: 'Gehen' }).click()
+  await expect(plan.getByLabel('Distanz (km)')).toHaveValue('3')
+  await plan.getByRole('radio', { name: 'Laufen' }).click()
   await plan.getByLabel('Distanz (km)').fill('5')
   const plannedDate = toLocalDate(
     await plan.getByLabel('Datum', { exact: true }).inputValue(),
@@ -132,9 +135,19 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(
     actual.getByRole('combobox', { name: 'Kontext', exact: true }),
   ).toHaveText('50-m-Becken')
+  await expect(actual.getByLabel('Ø Tempo (km/h)')).toHaveCount(0)
+  await actual.getByRole('combobox', { name: 'Disziplin' }).click()
+  await page.getByRole('option', { name: 'Rad', exact: true }).click()
+  await expect(
+    actual.getByRole('combobox', { name: 'Kontext', exact: true }),
+  ).toHaveText('Ergometer')
   await actual.getByRole('combobox', { name: 'Disziplin' }).click()
   await page.getByRole('option', { name: 'Laufen', exact: true }).click()
   const runContext = actual.getByRole('combobox', { name: 'Kontext', exact: true })
+  await expect(runContext).toHaveText('Straße')
+  await actual.getByRole('radio', { name: 'Gehen' }).click()
+  await expect(runContext).toHaveText('Laufband')
+  await actual.getByRole('radio', { name: 'Laufen' }).click()
   await expect(runContext).toHaveText('Straße')
   await runContext.click()
   await expect(page.getByRole('option')).toHaveText(['Straße', 'Laufband'])
@@ -150,7 +163,9 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(actual.getByLabel('Ø Pace (min/km)')).toHaveValue('4:30')
   await actual.getByLabel('Ø Pace (min/km)').fill('5:00')
   await expect(actual.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('50:00')
-  await actual.getByLabel('RPE (1–10)').fill('6')
+  await expect(actual.getByLabel('Ø Tempo (km/h)')).toHaveValue('12')
+  await actual.getByRole('combobox', { name: 'RPE (1–10)' }).click()
+  await page.getByRole('option', { name: '6 · deutlich anstrengend' }).click()
   await page.mouse.move(1, 1)
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
     timeout: 6000,
@@ -238,7 +253,7 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
       page.locator('[data-calendar-date="' + target + '"]'),
     ).toContainText('Zweiter Lauf')
   }
-  await page.getByRole('tab', { name: 'Verlauf', exact: true }).click()
+  await page.getByRole('tab', { name: 'Statistik', exact: true }).click()
   await expect(page.locator('[data-week-summary-item]').first()).toContainText(
     '45 min',
   )
@@ -325,7 +340,8 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
         `bike-${index + 1}`,
         index + 7,
         'bike',
-        'outdoor',
+        // Ohne Kontext gespeicherte Altfahrten zählen zum Ergometer.
+        null,
         duration,
         duration * 10,
         cp + workCapacity / duration,
@@ -362,22 +378,30 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
     timeout: 6000,
   })
+  await page.getByLabel('Plantempo Gehen (km/h)').fill('5')
+  await expect(page.getByLabel('Plantempo Gehen (min/km)')).toHaveValue('12:00')
+  await page.getByLabel('Plantempo Gehen (km/h)').blur()
+  await expect(page.getByText('Plantempo gespeichert.')).toBeVisible()
+  await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await expect(page.getByText(/W\/kg/)).toBeVisible()
-  await expect(page.locator('[data-record-card="run"]')).toContainText(
-    'Critical Speed',
+  await expect(page.locator('[data-record-card]')).toHaveCount(3)
+  for (const card of await page.locator('[data-record-card]').all()) {
+    await expect(card).not.toContainText(/Anker|Critical Speed|CSS|Leistungstests/)
+  }
+  await expect(page.getByRole('combobox', { name: 'Rekordbasis' })).toHaveText(
+    'Alle Trainings',
   )
+  await expect(
+    page.locator('[data-record-card="run"] [data-record-distance="5000"]'),
+  ).toContainText('20:00')
+  await page.getByRole('combobox', { name: 'Rekordbasis' }).click()
+  await page
+    .getByRole('option', { name: 'Nur Leistungstests', exact: true })
+    .click()
   const estimatedFiveK = page.locator(
     '[data-record-card="run"] [data-record-distance="5000"] [data-record-estimate]',
   )
   await expect(estimatedFiveK).toHaveText(/^\d+:\d{2}\*/)
-  await page.getByRole('combobox', { name: 'Rekordbasis' }).click()
-  await page
-    .getByRole('option', { name: 'Alle Trainings', exact: true })
-    .click()
-  await expect(
-    page.locator('[data-record-card="run"] [data-record-distance="5000"]'),
-  ).toContainText('20:00')
-  await expect(page.locator('[data-record-card="swim"]')).toContainText('CSS')
   const recordHeights = await page
     .locator('[data-record-card]')
     .evaluateAll((cards) =>
@@ -386,7 +410,7 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   expect(Math.max(...recordHeights) - Math.min(...recordHeights)).toBeLessThan(
     1,
   )
-  await page.getByRole('tab', { name: 'Verlauf', exact: true }).click()
+  await page.getByRole('tab', { name: 'Statistik', exact: true }).click()
   await expect(
     page.getByRole('radio', { name: 'Zeit pro Woche' }),
   ).toHaveAttribute('aria-checked', 'true')
@@ -516,9 +540,6 @@ test(
     await expect(page.locator('[data-record-card="run"]')).toContainText(
       '29:40',
     )
-    await expect(page.locator('[data-record-card="run"]')).toContainText(
-      'Aus Leistungstests',
-    )
     await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
     await page.getByRole('button', { name: 'Bearbeiten: Laufen' }).click()
     const edit = page.getByRole('dialog', { name: 'Training bearbeiten' })
@@ -534,6 +555,7 @@ test('Rekorde lassen sich sekundengenau anlegen und bleiben nach Kontextwechsel 
   page,
 }) => {
   await app.open('/apps/triathlon-tracker')
+  await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await page
     .getByRole('button', { name: 'Laufen · 5 km eintragen', exact: true })
     .click()
@@ -596,6 +618,7 @@ test('Rekorde lassen sich sekundengenau anlegen und bleiben nach Kontextwechsel 
   const persisted = await page.context().newPage()
   await persisted.goto('/apps/triathlon-tracker')
   await persisted.reload()
+  await persisted.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await expect(
     persisted.locator('[data-record-card="run"] [data-record-distance="5000"]'),
   ).toContainText('20:35')
@@ -631,6 +654,7 @@ test(
             startMinutes: null,
             discipline: 'run',
             isWalk: true,
+            inclinePercent: 5,
             durationSeconds: 4_200,
             distanceMeters: null,
             label: 'Incline Walk',
@@ -651,11 +675,24 @@ test(
       'aria-checked',
       'true',
     )
+    await expect(
+      form.getByRole('combobox', { name: 'Kontext', exact: true }),
+    ).toHaveText('Laufband')
+    await expect(form.getByLabel('Steigung (%)')).toHaveValue('5')
     await form.getByLabel('Distanz (km)').fill('6')
     await form.getByRole('button', { name: 'Speichern' }).click()
     await expect(planned).toHaveAttribute('data-plan-done', 'true')
     await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
-    await expect(page.locator('[data-journal-training]')).toContainText('Gehen')
+    const journal = page.locator('[data-journal-training]')
+    await expect(journal).toContainText('Gehen')
+    await expect(journal).toContainText('5 % · 300 Hm · 5,7 MET')
+    await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
+    await expect(
+      page.locator('[data-walking-record="climb"]'),
+    ).toContainText('300 Hm')
+    await expect(
+      page.locator('[data-walking-record="climbRate"]'),
+    ).toContainText('257 Hm/h')
     await app.expectHealthy()
   },
 )

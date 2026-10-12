@@ -108,6 +108,8 @@ export function isComparableContinuousTraining(
   context: TrainingContext,
   asOfLocalDate: string,
   metric: 'distance' | 'power',
+  // Walks and inclined runs only enter efficiency trends via their equivalent.
+  variant: { isWalk?: boolean; allowIncline?: boolean } = {},
 ) {
   const baseAvailability =
     training.analyticsAvailableFromLocalDate ?? training.localDate
@@ -118,7 +120,8 @@ export function isComparableContinuousTraining(
   return (
     training.discipline === discipline &&
     // Walks count towards running volume but never towards running performance.
-    !training.isWalk &&
+    Boolean(training.isWalk) === Boolean(variant.isWalk) &&
+    (variant.allowIncline || !(training.inclinePercent ?? 0)) &&
     (training.context === context ||
       (training.context === null &&
         defaultTrainingContexts[discipline] === context)) &&

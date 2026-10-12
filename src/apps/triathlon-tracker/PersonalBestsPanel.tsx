@@ -1,10 +1,10 @@
 import { Plus, Trophy } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { analyzeBike, analyzeRun, analyzeSwim } from './domain/performance'
 import {
   getPersonalRecords,
+  getWalkingClimbRecords,
   personalRecordDistances,
 } from './domain/personalRecords'
 import { formatPace, formatTrainingDurationInput } from './domain/units'
@@ -19,7 +19,7 @@ import type {
 } from './types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
+import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
   Select,
   SelectContent,
@@ -28,49 +28,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
-
-function WeightInput({
-  weightKg,
-  onSave,
-}: {
-  weightKg: number | null
-  onSave: (weightKg: number | null) => Promise<unknown>
-}) {
-  const { t } = useI18n()
-  const [value, setValue] = useState(weightKg?.toString() ?? '')
-  const [saving, setSaving] = useState(false)
-  const save = async () => {
-    const next = value.trim() === '' ? null : Number(value.replace(',', '.'))
-    if (next !== null && (!Number.isFinite(next) || next < 20 || next > 300)) {
-      toast.error(t('triathlon.settings.invalidWeight'))
-      return
-    }
-    if (next === weightKg) return
-    setSaving(true)
-    try {
-      await onSave(next)
-      toast.success(t('triathlon.settings.weightSaved'))
-    } catch {
-      toast.error(t('triathlon.form.saveFailed'))
-    } finally {
-      setSaving(false)
-    }
-  }
-  return (
-    <IftaInput
-      label={t('triathlon.settings.weight')}
-      className="max-w-56"
-      inputMode="decimal"
-      value={value}
-      disabled={saving}
-      onChange={(event) => setValue(event.target.value)}
-      onBlur={() => void save()}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') event.currentTarget.blur()
-      }}
-    />
-  )
-}
 
 /** Marks modelled values: * = estimate, ** = beyond measured distances. */
 export function EstimateMark({ extrapolated = false }: { extrapolated?: boolean }) {
@@ -94,20 +51,18 @@ export function PersonalBestsPanel({
   today,
   onAdd,
   onEdit,
-  onUpdateWeight,
 }: {
   actualTrainings: ActualTraining[]
   settings: TrackerSettings
   today: string
   onAdd: (template: Partial<ActualTrainingInput>) => void
   onEdit: (training: ActualTraining) => void
-  onUpdateWeight: (weightKg: number | null) => Promise<unknown>
 }) {
   const { locale, t } = useI18n()
   const [selectedContexts, setSelectedContexts] = useState<
     Record<Discipline, TrainingContext>
   >(defaultTrainingContexts)
-  const [basis, setBasis] = useState<'benchmark' | 'all'>('benchmark')
+  const [basis, setBasis] = useState<'benchmark' | 'all'>('all')
   const recordTrainings = useMemo(
     () =>
       basis === 'benchmark'
@@ -135,6 +90,11 @@ export function PersonalBestsPanel({
       }),
     }),
     [actualTrainings, selectedContexts, settings.weightKg, today],
+  )
+  // Walks are never benchmarks, so the record basis does not apply to them.
+  const walkingRecords = useMemo(
+    () => getWalkingClimbRecords(actualTrainings, today),
+    [actualTrainings, today],
   )
   const distanceLabel = (distance: number, discipline: Discipline) => {
     if (distance === 21097.5) return t('triathlon.records.halfMarathon')
@@ -189,13 +149,6 @@ export function PersonalBestsPanel({
                 ? analysis.estimates
                 : (analysis.distanceAnalysis?.estimates ?? [])
               : []
-          const method =
-            analysis.status === 'ready'
-              ? analysis.model === 'power-law' &&
-                analysis.anchorIds.length === 1
-                ? t('triathlon.performance.method.riegel')
-                : t(`triathlon.performance.method.${analysis.model}`)
-              : null
           const add = (input: Partial<ActualTrainingInput>) =>
             onAdd({
               discipline,
@@ -352,21 +305,75 @@ export function PersonalBestsPanel({
                   },
                 )}
               </ul>
-              {analysis.status === 'ready' &&
-                analysis.model === 'critical-power' &&
-                analysis.distanceAnalysis && (
-                  <p className="type-caption border-t px-4 py-2 text-muted-foreground">
-                    {t('triathlon.records.timeModel')} ·{' '}
-                    {t('triathlon.performance.method.power-law')} ·{' '}
-                    {t(
-                      `triathlon.performance.basis.${analysis.distanceAnalysis.basis}`,
-                    )}{' '}
-                    ·{' '}
-                    {t('triathlon.performance.anchors', {
-                      count: analysis.distanceAnalysis.anchorIds.length,
+              {discipline === 'run' && (
+                <div className="border-t" data-walking-records>
+                  <h4 className="type-caption px-4 pt-3 font-semibold text-muted-foreground">
+                    {t('triathlon.records.walkingClimb')}
+                  </h4>
+                  <ul className="divide-y">
+                    {(
+                      [
+                        ['climbRate', 'Hm/h'],
+                        ['climb', 'Hm'],
+                      ] as const
+                    ).map(([kind, unit]) => {
+                      const record = walkingRecords[kind]
+                      const rowLabel = t(`triathlon.records.${kind}`)
+                      return (
+                        <li
+                          className="flex min-h-16 items-center gap-2 py-2.5 pl-4 pr-2"
+                          key={kind}
+                          data-walking-record={kind}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="type-ui font-semibold">{rowLabel}</p>
+                            {record && (
+                              <p className="type-caption text-muted-foreground tabular-nums">
+                                {formattedDate(record.localDate)}
+                              </p>
+                            )}
+                          </div>
+                          {record ? (
+                            <button
+                              className="tri-record-time rounded-sm hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
+                              onClick={() => edit(record.trainingId)}
+                              aria-label={t('triathlon.records.edit', {
+                                sport: t('triathlon.variant.walk'),
+                                distance: rowLabel,
+                              })}
+                            >
+                              {Math.round(record.value).toLocaleString(locale)}{' '}
+                              {unit}
+                            </button>
+                          ) : (
+                            <span className="tri-record-time text-subtle-foreground">
+                              —
+                            </span>
+                          )}
+                          <Button
+                            className="size-8 text-muted-foreground"
+                            size="icon"
+                            variant="ghost"
+                            aria-label={t('triathlon.records.add', {
+                              sport: t('triathlon.variant.walk'),
+                              distance: rowLabel,
+                            })}
+                            onClick={() =>
+                              add({
+                                isWalk: true,
+                                context: 'treadmill',
+                                isBenchmark: false,
+                              })
+                            }
+                          >
+                            <Plus className="size-4" aria-hidden="true" />
+                          </Button>
+                        </li>
+                      )
                     })}
-                  </p>
-                )}
+                  </ul>
+                </div>
+              )}
               {discipline === 'bike' && (
                 <div className="border-t">
                   <h4 className="type-caption px-4 pt-3 font-semibold text-muted-foreground">
@@ -477,47 +484,15 @@ export function PersonalBestsPanel({
                   </ul>
                 </div>
               )}
-              <div className="type-caption mt-auto grid gap-0.5 border-t bg-muted/50 px-4 py-3 text-muted-foreground">
-                {analysis.status === 'ready' ? (
-                  <>
-                    <p className="font-semibold text-foreground">
-                      {method} ·{' '}
-                      {t(`triathlon.performance.basis.${analysis.basis}`)}
-                    </p>
-                    <p>
-                      {t('triathlon.performance.anchors', {
-                        count: analysis.anchorIds.length,
-                      })}{' '}
-                      · {t('triathlon.records.modelWindow')}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-semibold text-foreground">
-                      {t('triathlon.performance.anchors', {
-                        count: analysis.availableAnchors,
-                      })}
-                    </p>
-                    <p>{t(`triathlon.records.next.${discipline}`)}</p>
-                  </>
-                )}
-              </div>
             </Card>
           )
         })}
       </div>
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-3">
-        <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
-          <Trophy className="mr-1 inline size-3.5" aria-hidden="true" />
-          {t('triathlon.records.rules')}{' '}
-          {t('triathlon.records.extrapolationNote')}
-        </p>
-        <WeightInput
-          key={settings.weightKg ?? 'none'}
-          weightKg={settings.weightKg}
-          onSave={onUpdateWeight}
-        />
-      </div>
+      <p className="rounded-lg border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+        <Trophy className="mr-1 inline size-3.5" aria-hidden="true" />
+        {t('triathlon.records.rules')}{' '}
+        {t('triathlon.records.extrapolationNote')}
+      </p>
     </section>
   )
 }

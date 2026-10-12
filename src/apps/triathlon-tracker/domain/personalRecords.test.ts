@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ActualTraining } from '@/apps/triathlon-tracker/types'
-import { getPersonalRecords } from './personalRecords'
+import { getPersonalRecords, getWalkingClimbRecords } from './personalRecords'
 
 function training(overrides: Partial<ActualTraining> = {}): ActualTraining {
   return {
@@ -61,5 +61,26 @@ describe('measured personal records', () => {
       { targetDurationSeconds: 1_200, record: { trainingId: 'twenty', localDate: '2025-01-10', averagePowerWatts: 280 } },
     ])
     expect(result.distanceRecords.every((slot) => slot.record === null)).toBe(true)
+  })
+
+  it('wertet Steigungsgehen als Höhenmeter und hält geneigte Läufe aus Laufrekorden heraus', () => {
+    const walk = (overrides: Partial<ActualTraining>) =>
+      training({ isWalk: true, context: 'treadmill', inclinePercent: 5, durationSeconds: 3_600, distanceMeters: 6_000, ...overrides })
+    const result = getWalkingClimbRecords([
+      walk({ id: 'steady' }),
+      walk({ id: 'short-steep', inclinePercent: 12, durationSeconds: 900, distanceMeters: 1_500 }),
+      walk({ id: 'long', durationSeconds: 5_400, distanceMeters: 8_400 }),
+      walk({ id: 'flat', inclinePercent: 0 }),
+      training({ id: 'incline-run', context: 'treadmill', inclinePercent: 8 }),
+    ], '2026-10-03')
+    expect(result.climb).toMatchObject({ trainingId: 'long' })
+    expect(result.climb?.value).toBeCloseTo(419.5, 1)
+    // Unter 20 Minuten zählt eine Einheit nicht für die Steigrate.
+    expect(result.climbRate).toMatchObject({ trainingId: 'steady' })
+    expect(result.climbRate?.value).toBeCloseTo(299.6, 1)
+    expect(getPersonalRecords(
+      [training({ context: 'treadmill', inclinePercent: 2 })],
+      { ...options, context: 'treadmill' },
+    ).distanceRecords[1].record).toBeNull()
   })
 })

@@ -41,7 +41,7 @@ export type ActualTrainingInput = Omit<
 
 export type TrackerSettingsInput = Pick<
   TrackerSettings,
-  'weightKg'
+  'weightKg' | 'planPaceSecondsPerKilometer'
 >
 
 type StoredActualTraining = Omit<ActualTraining, 'context'> & {
@@ -94,14 +94,20 @@ function getPerformanceAnalyticsChanges(
   const structuralFields = [
     'isBenchmark',
     'isWalk',
+    'inclinePercent',
     'localDate',
     'discipline',
     'context',
     'durationSeconds',
   ] as const
 
+  // Optional fields missing in older documents equal their empty value.
+  const normalized = (field: (typeof structuralFields)[number], value: unknown) =>
+    field === 'isWalk' ? Boolean(value) : (value ?? null)
   const structural = structuralFields.some(
-    (field) => field in partial && partial[field] !== training[field],
+    (field) =>
+      field in partial &&
+      normalized(field, partial[field]) !== normalized(field, training[field]),
   ) || (
     'intervals' in partial &&
     JSON.stringify(partial.intervals) !== JSON.stringify(training.intervals)

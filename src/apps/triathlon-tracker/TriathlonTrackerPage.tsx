@@ -28,9 +28,11 @@ import type {
 } from './hooks/useTriathlonTracker'
 import { PlanCalendar } from './PlanCalendar'
 import { PersonalBestsPanel } from './PersonalBestsPanel'
+import { TrackerSettingsPanel } from './TrackerSettingsPanel'
 import { summarizeWeek } from './domain/weeklyStats'
 import { TrainingJournal } from './TrainingJournal'
-import { defaultTrainingContexts } from './types'
+import { defaultPlanPaces, defaultTrainingContexts } from './types'
+import type { PlanPaces } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
@@ -52,8 +54,12 @@ async function requireSuccessfulSync<T extends { ok: boolean; error: unknown }>(
 export function TriathlonTrackerPage() {
   const { t } = useI18n()
   const tracker = useTriathlonTracker()
+  const planPaces: PlanPaces = {
+    ...defaultPlanPaces,
+    ...tracker.settings.planPaceSecondsPerKilometer,
+  }
   const today = getCurrentLocalDate()
-  const [activeTab, setActiveTab] = useState('records')
+  const [activeTab, setActiveTab] = useState('calendar')
   const [activeLocalDate, setActiveLocalDate] = useState(today)
   const [selectedDate, setSelectedDate] = useState(today)
   const [plannedDialogOpen, setPlannedDialogOpen] = useState(false)
@@ -105,6 +111,7 @@ export function TriathlonTrackerPage() {
       startMinutes: training.startMinutes,
       discipline: training.discipline,
       isWalk: training.isWalk ?? false,
+      inclinePercent: training.inclinePercent ?? null,
       durationSeconds: training.durationSeconds,
       distanceMeters: training.distanceMeters,
     })
@@ -178,53 +185,30 @@ export function TriathlonTrackerPage() {
               className="max-w-full w-full sm:w-fit"
             >
               <TabsTrigger
-                value="records"
-                icon={Trophy}
-                label={t('triathlon.tabs.records')}
-              />
-              <TabsTrigger
                 value="calendar"
                 icon={CalendarDays}
                 label={t('triathlon.tabs.calendar')}
               />
               <TabsTrigger
-                value="journal"
-                icon={NotebookPen}
-                label={t('triathlon.tabs.journal')}
+                value="records"
+                icon={Trophy}
+                label={t('triathlon.tabs.records')}
               />
               <TabsTrigger
                 value="statistics"
                 icon={BarChart3}
                 label={t('triathlon.tabs.statistics')}
               />
-            </TabsList>
-            <TabsContent
-              value="records"
-              forceMount
-              className="data-[state=inactive]:hidden"
-            >
-              <PersonalBestsPanel
-                actualTrainings={tracker.actualTrainings}
-                settings={tracker.settings}
-                today={today}
-                onEdit={(training) => {
-                  openActual(training)
-                  setActualReturnTab('records')
-                }}
-                onAdd={(template) => {
-                  openActual()
-                  setActualTemplate(template)
-                  setActualReturnTab('records')
-                }}
-                onUpdateWeight={(weightKg) =>
-                  requireSuccessfulSync(tracker.updateSettings({ weightKg }))
-                }
+              <TabsTrigger
+                value="journal"
+                icon={NotebookPen}
+                label={t('triathlon.tabs.journal')}
               />
-            </TabsContent>
+            </TabsList>
             <TabsContent
               value="calendar"
               forceMount
-              className="data-[state=inactive]:hidden"
+              className="grid gap-4 data-[state=inactive]:hidden"
             >
               <PlanCalendar
                 activeLocalDate={activeLocalDate}
@@ -251,6 +235,51 @@ export function TriathlonTrackerPage() {
                   }
                 }}
               />
+              <TrackerSettingsPanel
+                weightKg={tracker.settings.weightKg}
+                planPaces={planPaces}
+                onUpdateWeight={(weightKg) =>
+                  requireSuccessfulSync(tracker.updateSettings({ weightKg }))
+                }
+                onUpdatePlanPace={(variant, paceSeconds) =>
+                  requireSuccessfulSync(
+                    tracker.updateSettings({
+                      planPaceSecondsPerKilometer: {
+                        ...planPaces,
+                        [variant]: paceSeconds,
+                      },
+                    }),
+                  )
+                }
+              />
+            </TabsContent>
+            <TabsContent
+              value="records"
+              forceMount
+              className="data-[state=inactive]:hidden"
+            >
+              <PersonalBestsPanel
+                actualTrainings={tracker.actualTrainings}
+                settings={tracker.settings}
+                today={today}
+                onEdit={(training) => {
+                  openActual(training)
+                  setActualReturnTab('records')
+                }}
+                onAdd={(template) => {
+                  openActual()
+                  setActualTemplate(template)
+                  setActualReturnTab('records')
+                }}
+              />
+            </TabsContent>
+            <TabsContent value="statistics">
+              <Suspense fallback={<LoadingState />}>
+                <TrainingStatistics
+                  actualTrainings={tracker.actualTrainings}
+                  settings={tracker.settings}
+                />
+              </Suspense>
             </TabsContent>
             <TabsContent
               value="journal"
@@ -264,20 +293,13 @@ export function TriathlonTrackerPage() {
                 onAdd={() => openActual()}
               />
             </TabsContent>
-            <TabsContent value="statistics">
-              <Suspense fallback={<LoadingState />}>
-                <TrainingStatistics
-                  actualTrainings={tracker.actualTrainings}
-                  settings={tracker.settings}
-                />
-              </Suspense>
-            </TabsContent>
           </Tabs>
         </>
       )}
       <PlannedTrainingDialog
         initialDate={selectedDate}
         open={plannedDialogOpen}
+        planPaces={planPaces}
         training={editingPlanned}
         template={planTemplate}
         onOpenChange={setPlannedDialogOpen}
@@ -296,6 +318,7 @@ export function TriathlonTrackerPage() {
       />
       <ActualTrainingDialog
         defaultContexts={defaultTrainingContexts}
+        weightKg={tracker.settings.weightKg}
         initialDate={selectedDate}
         open={actualDialogOpen}
         training={editingActual}
