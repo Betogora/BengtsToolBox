@@ -15,6 +15,7 @@ import type {
   PlannedTraining,
   PlanPaces,
   RunningContext,
+  TrainingDiscipline,
   SwimmingContext,
   TrainingContext,
 } from '@/apps/triathlon-tracker/types'
@@ -166,7 +167,7 @@ function formatDistance(meters: number | null, locale: string) {
 }
 
 function getDisciplineLabel(
-  discipline: Discipline,
+  discipline: TrainingDiscipline,
   t: ReturnType<typeof useI18n>['t'],
 ) {
   return t(`triathlon.discipline.${discipline}`)
@@ -201,14 +202,14 @@ function DisciplineSelect({
   value,
   onValueChange,
 }: {
-  value: Discipline
-  onValueChange: (value: Discipline) => void
+  value: TrainingDiscipline
+  onValueChange: (value: TrainingDiscipline) => void
 }) {
   const { t } = useI18n()
   return (
     <Select
       value={value}
-      onValueChange={(next) => onValueChange(next as Discipline)}
+      onValueChange={(next) => onValueChange(next as TrainingDiscipline)}
     >
       <IftaSelectTrigger
         className="min-w-0 gap-1 [&_[data-slot=select-value]]:truncate"
@@ -217,7 +218,7 @@ function DisciplineSelect({
         <SelectValue />
       </IftaSelectTrigger>
       <SelectContent className="triathlon-tracker">
-        {(['swim', 'bike', 'run'] as const).map((discipline) => (
+        {(['swim', 'bike', 'run', 'strength'] as const).map((discipline) => (
           <SelectItem key={discipline} value={discipline}>
             {getDisciplineLabel(discipline, t)}
           </SelectItem>
@@ -290,7 +291,7 @@ function PlannedTrainingDialogContent({
   const [startTime, setStartTime] = useState(
     minutesToTime((training ?? template)?.startMinutes ?? null),
   )
-  const [discipline, setDiscipline] = useState<Discipline>(
+  const [discipline, setDiscipline] = useState<TrainingDiscipline>(
     (training ?? template)?.discipline ?? 'run',
   )
   const [planMetrics, setPlanMetrics] = useState<PlanMetricDraft>({
@@ -308,13 +309,16 @@ function PlannedTrainingDialogContent({
     inclineToInput((training ?? template)?.inclinePercent),
   )
   // Only walks and runs have a default pace to complete the plan with.
-  const planPace = (nextDiscipline: Discipline, nextIsWalk: boolean) =>
+  const planPace = (nextDiscipline: TrainingDiscipline, nextIsWalk: boolean) =>
     nextDiscipline === 'run' ? planPaces[nextIsWalk ? 'walk' : 'run'] : null
   const updatePlanMetric = (field: PlanMetricField, value: string) =>
     setPlanMetrics((current) =>
       updatePlanMetrics(current, field, value, planPace(discipline, isWalk)),
     )
-  const changePlanKind = (nextDiscipline: Discipline, nextIsWalk: boolean) => {
+  const changePlanKind = (
+    nextDiscipline: TrainingDiscipline,
+    nextIsWalk: boolean,
+  ) => {
     setDiscipline(nextDiscipline)
     setIsWalk(nextIsWalk)
     setPlanMetrics((current) =>
@@ -359,7 +363,9 @@ function PlannedTrainingDialogContent({
         inclinePercent: parsedIncline,
         durationSeconds: parsedDuration,
         distanceMeters:
-          parsedDistance === null ? null : Math.round(parsedDistance * 1000),
+          parsedDistance === null || discipline === 'strength'
+            ? null
+            : Math.round(parsedDistance * 1000),
         label: label.trim().slice(0, 40),
       })
       onOpenChange(false)
@@ -422,23 +428,31 @@ function PlannedTrainingDialogContent({
               onIsWalkChange={(next) => changePlanKind('run', next)}
             />
           )}
-          <IftaInput
-            className={planComputedClass('distance')}
-            data-computed={planMetrics.derived === 'distance' || undefined}
-            inputMode="decimal"
-            label={t('triathlon.form.distanceKilometers')}
-            min="0"
-            step="0.01"
-            type="number"
-            value={distanceKilometers}
-            onChange={(event) =>
-              updatePlanMetric('distance', event.currentTarget.value)
-            }
-          />
+          {discipline !== 'strength' && (
+            <IftaInput
+              className={planComputedClass('distance')}
+              data-computed={planMetrics.derived === 'distance' || undefined}
+              inputMode="decimal"
+              label={t('triathlon.form.distanceKilometers')}
+              min="0"
+              step="0.01"
+              type="number"
+              value={distanceKilometers}
+              onChange={(event) =>
+                updatePlanMetric('distance', event.currentTarget.value)
+              }
+            />
+          )}
           {discipline === 'run' && (
             <InclineInput value={incline} onChange={setIncline} />
           )}
-          <div className={discipline === 'run' ? 'col-span-2' : undefined}>
+          <div
+            className={
+              discipline === 'run' || discipline === 'strength'
+                ? 'col-span-2'
+                : undefined
+            }
+          >
             <IftaInput
               label={t('triathlon.form.shortLabel')}
               maxLength={40}
@@ -708,12 +722,17 @@ function ActualTrainingDialogContent({
 }: Omit<ActualTrainingDialogProps, 'open'>) {
   const { t } = useI18n()
   const initial = training ?? template
-  const initialDiscipline = initial?.discipline ?? 'run'
+  const initialKind = initial?.discipline ?? 'run'
+  // Strength has no endurance metrics; their hidden drafts behave like running.
+  const initialDiscipline: Discipline =
+    initialKind === 'strength' ? 'run' : initialKind
   const [localDate, setLocalDate] = useState(initial?.localDate ?? initialDate)
   const [startTime, setStartTime] = useState(
     minutesToTime(initial?.startMinutes ?? null),
   )
-  const [discipline, setDiscipline] = useState<Discipline>(initialDiscipline)
+  const [discipline, setDiscipline] = useState<TrainingDiscipline>(initialKind)
+  const isStrength = discipline === 'strength'
+  const enduranceDiscipline: Discipline = isStrength ? 'run' : discipline
   const [context, setContext] = useState<TrainingContext>(
     initial?.context ??
       // A planned incline only exists on the treadmill.
@@ -759,8 +778,9 @@ function ActualTrainingDialogContent({
   const [durationWarningConfirmed, setDurationWarningConfirmed] =
     useState(false)
 
-  const handleDisciplineChange = (nextDiscipline: Discipline) => {
-    setDiscipline(nextDiscipline)
+  const handleDisciplineChange = (nextKind: TrainingDiscipline) => {
+    const nextDiscipline: Discipline = nextKind === 'strength' ? 'run' : nextKind
+    setDiscipline(nextKind)
     setIsWalk(false)
     setContext(defaultContext(nextDiscipline, defaultContexts))
     setContextChosen(false)
@@ -782,12 +802,12 @@ function ActualTrainingDialogContent({
   const handleIsWalkChange = (nextIsWalk: boolean) => {
     setIsWalk(nextIsWalk)
     if (!contextChosen) {
-      setContext(defaultContext(discipline, defaultContexts, nextIsWalk))
+      setContext(defaultContext(enduranceDiscipline, defaultContexts, nextIsWalk))
     }
   }
   const updateMetric = (field: TrainingMetricInput, value: string) => {
     setMetrics((current) =>
-      updateTrainingMetrics(current, field, value, discipline),
+      updateTrainingMetrics(current, field, value, enduranceDiscipline),
     )
   }
   // The field outside the last two inputs is derived from the other two.
@@ -821,11 +841,13 @@ function ActualTrainingDialogContent({
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     const parsedDuration = parseTrainingDuration(durationMinutes)
-    const parsedDistance = optionalNumber(distanceKilometers)
-    const parsedAveragePace = averagePace ? parsePace(averagePace) : null
-    const parsedHr = optionalNumber(averageHeartRateBpm)
-    const parsedPower = optionalNumber(averagePowerWatts)
-    const parsedRpe = optionalNumber(rpe)
+    // Strength keeps only the duration; hidden endurance drafts are ignored.
+    const parsedDistance = isStrength ? null : optionalNumber(distanceKilometers)
+    const parsedAveragePace =
+      !isStrength && averagePace ? parsePace(averagePace) : null
+    const parsedHr = isStrength ? null : optionalNumber(averageHeartRateBpm)
+    const parsedPower = isStrength ? null : optionalNumber(averagePowerWatts)
+    const parsedRpe = isStrength ? null : optionalNumber(rpe)
 
     if (
       !localDate ||
@@ -834,23 +856,23 @@ function ActualTrainingDialogContent({
         (parsedDistance === null || parsedDistance <= 0)) ||
       (parsedDuration !== null && parsedDuration < 0) ||
       (parsedDistance !== null && parsedDistance < 0) ||
-      (averagePace !== '' && parsedAveragePace === null) ||
+      (!isStrength && averagePace !== '' && parsedAveragePace === null) ||
       (parsedAveragePace !== null &&
         (parsedDistance === null || parsedDistance <= 0)) ||
       (parsedHr !== null && (parsedHr < 30 || parsedHr > 250)) ||
       (parsedPower !== null && parsedPower < 0) ||
       (parsedRpe !== null && (parsedRpe < 1 || parsedRpe > 10)) ||
-      intervals.some(
+      (!isStrength && intervals.some(
         (interval) =>
           interval.durationMinutes.trim() !== '' &&
           parseTrainingDuration(interval.durationMinutes) === null,
-      )
+      ))
     ) {
       setError(t('triathlon.form.actualInvalid'))
       return
     }
 
-    const parsedIntervals: IntervalSegment[] = intervals.map(
+    const parsedIntervals: IntervalSegment[] = (isStrength ? [] : intervals).map(
       (interval, index) => ({
         id: interval.id,
         position: index + 1,
@@ -868,13 +890,13 @@ function ActualTrainingDialogContent({
       return
     }
     const nextTraining: ActualTrainingInput = {
-      isBenchmark,
+      isBenchmark: !isStrength && isBenchmark,
       isWalk: discipline === 'run' && isWalk,
       inclinePercent: parsedIncline,
       localDate,
       startMinutes: timeToMinutes(startTime),
       discipline,
-      context,
+      context: isStrength ? null : context,
       durationSeconds: parsedDuration,
       distanceMeters:
         parsedDistance === null ? null : Math.round(parsedDistance * 1000),
@@ -944,25 +966,38 @@ function ActualTrainingDialogContent({
             value={discipline}
             onValueChange={handleDisciplineChange}
           />
-          <Select
-            key={discipline}
-            value={context}
-            onValueChange={(value) => {
-              setContext(value as TrainingContext)
-              setContextChosen(true)
-            }}
-          >
-            <IftaSelectTrigger label={t('triathlon.form.context')}>
-              <SelectValue />
-            </IftaSelectTrigger>
-            <SelectContent className="triathlon-tracker">
-              {trainingContexts[discipline].map((option) => (
-                <SelectItem key={option} value={option}>
-                  {t(`triathlon.context.${option}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isStrength ? (
+            <IftaInput
+              label={t('triathlon.journal.duration')}
+              aria-label={t('triathlon.form.durationClock')}
+              title={t('triathlon.form.durationClock')}
+              placeholder="45:00"
+              value={durationMinutes}
+              onChange={(event) =>
+                updateMetric('duration', event.currentTarget.value)
+              }
+            />
+          ) : (
+            <Select
+              key={discipline}
+              value={context}
+              onValueChange={(value) => {
+                setContext(value as TrainingContext)
+                setContextChosen(true)
+              }}
+            >
+              <IftaSelectTrigger label={t('triathlon.form.context')}>
+                <SelectValue />
+              </IftaSelectTrigger>
+              <SelectContent className="triathlon-tracker">
+                {trainingContexts[enduranceDiscipline].map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {t(`triathlon.context.${option}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           {discipline === 'run' && (
             <RunVariantControl
               isWalk={isWalk}
@@ -970,147 +1005,151 @@ function ActualTrainingDialogContent({
             />
           )}
         </fieldset>
-        <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-12">
-          <legend className="sr-only">{t('triathlon.form.metrics')}</legend>
-          <div className={metricSpan}>
-            <IftaInput
-              className={computedClass('duration')}
-              data-computed={isComputed('duration') || undefined}
-              label={t('triathlon.journal.duration')}
-              aria-label={t('triathlon.form.durationClock')}
-              title={t('triathlon.form.durationClock')}
-              placeholder="20:35"
-              value={durationMinutes}
-              onChange={(event) =>
-                updateMetric('duration', event.currentTarget.value)
-              }
-            />
-          </div>
-          <div className={metricSpan}>
-            <IftaInput
-              className={computedClass('distance')}
-              data-computed={isComputed('distance') || undefined}
-              label={t('triathlon.form.distanceKilometers')}
-              min="0"
-              step="0.01"
-              type="number"
-              value={distanceKilometers}
-              onChange={(event) =>
-                updateMetric('distance', event.currentTarget.value)
-              }
-            />
-          </div>
-          <div className={hasSpeed ? metricSpan : 'col-span-2 sm:col-span-4'}>
-            <IftaInput
-              className={computedClass('pace')}
-              data-computed={isComputed('pace') || undefined}
-              inputMode="text"
-              label={averagePaceLabel(discipline, t)}
-              placeholder="5:30"
-              value={averagePace}
-              onChange={(event) =>
-                updateMetric('pace', event.currentTarget.value)
-              }
-            />
-          </div>
-          {hasSpeed && (
-            <div className={metricSpan}>
-              <IftaInput
-                className={computedClass('pace')}
-                data-computed={isComputed('pace') || undefined}
-                inputMode="decimal"
-                label={t('triathlon.form.averageSpeed')}
-                min="0"
-                step="0.01"
-                type="number"
-                value={averageSpeed}
-                onChange={(event) =>
-                  updateMetric('speed', event.currentTarget.value)
-                }
-              />
-            </div>
-          )}
-          <p className="type-caption col-span-2 text-muted-foreground sm:col-span-12">
-            {t('triathlon.form.metricsDerived')}
-          </p>
-          <div className={detailSpan}>
-            <IftaInput
-              label={t('triathlon.form.averageHeartRate')}
-              min="30"
-              max="250"
-              type="number"
-              value={averageHeartRateBpm}
-              onChange={(event) =>
-                setAverageHeartRateBpm(event.currentTarget.value)
-              }
-            />
-          </div>
-          <div className={detailSpan}>
-            <RpeSelect value={rpe} onValueChange={setRpe} />
-          </div>
-          {showIncline && (
-            <div className={detailSpan}>
-              <InclineInput value={incline} onChange={setIncline} />
-            </div>
-          )}
-          <div className={showIncline ? detailSpan : `col-span-2 ${detailSpan}`}>
-            <IftaInput
-              className={
-                powerIsEstimated
-                  ? 'bg-muted text-muted-foreground shadow-none'
-                  : undefined
-              }
-              data-computed={powerIsEstimated || undefined}
-              label={t('triathlon.form.averagePower')}
-              min="0"
-              max="3000"
-              type="number"
-              value={
-                powerIsEstimated
-                  ? String(Math.round(estimatedPower))
-                  : averagePowerWatts
-              }
-              onChange={(event) =>
-                setAveragePowerWatts(event.currentTarget.value)
-              }
-            />
-          </div>
-          <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-12">
-            <input
-              type="checkbox"
-              className="size-4 accent-primary"
-              checked={isBenchmark}
-              onChange={(event) => setIsBenchmark(event.target.checked)}
-            />
-            {t('triathlon.form.benchmark')}
-          </label>
-        </fieldset>
-
-        <section>
-          <Button
-            aria-controls="actual-training-details"
-            aria-expanded={showDetails}
-            className="h-11 w-full justify-between rounded-md bg-muted px-3 hover:bg-muted/70 hover:text-foreground"
-            type="button"
-            variant="ghost"
-            onClick={() => setShowDetails((current) => !current)}
-          >
-            <span className="flex items-center gap-2">
-              {t('triathlon.intervals.title')}
-              {intervals.length > 0 && (
-                <span className="type-caption text-muted-foreground tabular-nums">
-                  {intervals.length}
-                </span>
+        {!isStrength && (
+          <>
+            <fieldset className="grid grid-cols-2 gap-2 sm:grid-cols-12">
+              <legend className="sr-only">{t('triathlon.form.metrics')}</legend>
+              <div className={metricSpan}>
+                <IftaInput
+                  className={computedClass('duration')}
+                  data-computed={isComputed('duration') || undefined}
+                  label={t('triathlon.journal.duration')}
+                  aria-label={t('triathlon.form.durationClock')}
+                  title={t('triathlon.form.durationClock')}
+                  placeholder="20:35"
+                  value={durationMinutes}
+                  onChange={(event) =>
+                    updateMetric('duration', event.currentTarget.value)
+                  }
+                />
+              </div>
+              <div className={metricSpan}>
+                <IftaInput
+                  className={computedClass('distance')}
+                  data-computed={isComputed('distance') || undefined}
+                  label={t('triathlon.form.distanceKilometers')}
+                  min="0"
+                  step="0.01"
+                  type="number"
+                  value={distanceKilometers}
+                  onChange={(event) =>
+                    updateMetric('distance', event.currentTarget.value)
+                  }
+                />
+              </div>
+              <div className={hasSpeed ? metricSpan : 'col-span-2 sm:col-span-4'}>
+                <IftaInput
+                  className={computedClass('pace')}
+                  data-computed={isComputed('pace') || undefined}
+                  inputMode="text"
+                  label={averagePaceLabel(enduranceDiscipline, t)}
+                  placeholder="5:30"
+                  value={averagePace}
+                  onChange={(event) =>
+                    updateMetric('pace', event.currentTarget.value)
+                  }
+                />
+              </div>
+              {hasSpeed && (
+                <div className={metricSpan}>
+                  <IftaInput
+                    className={computedClass('pace')}
+                    data-computed={isComputed('pace') || undefined}
+                    inputMode="decimal"
+                    label={t('triathlon.form.averageSpeed')}
+                    min="0"
+                    step="0.01"
+                    type="number"
+                    value={averageSpeed}
+                    onChange={(event) =>
+                      updateMetric('speed', event.currentTarget.value)
+                    }
+                  />
+                </div>
               )}
-            </span>
-            <DisclosureIndicator isOpen={showDetails} />
-          </Button>
-          {showDetails && (
-            <div className="grid gap-4 pt-2" id="actual-training-details">
-              <IntervalEditor intervals={intervals} onChange={setIntervals} />
-            </div>
-          )}
-        </section>
+              <p className="type-caption col-span-2 text-muted-foreground sm:col-span-12">
+                {t('triathlon.form.metricsDerived')}
+              </p>
+              <div className={detailSpan}>
+                <IftaInput
+                  label={t('triathlon.form.averageHeartRate')}
+                  min="30"
+                  max="250"
+                  type="number"
+                  value={averageHeartRateBpm}
+                  onChange={(event) =>
+                    setAverageHeartRateBpm(event.currentTarget.value)
+                  }
+                />
+              </div>
+              <div className={detailSpan}>
+                <RpeSelect value={rpe} onValueChange={setRpe} />
+              </div>
+              {showIncline && (
+                <div className={detailSpan}>
+                  <InclineInput value={incline} onChange={setIncline} />
+                </div>
+              )}
+              <div className={showIncline ? detailSpan : `col-span-2 ${detailSpan}`}>
+                <IftaInput
+                  className={
+                    powerIsEstimated
+                      ? 'bg-muted text-muted-foreground shadow-none'
+                      : undefined
+                  }
+                  data-computed={powerIsEstimated || undefined}
+                  label={t('triathlon.form.averagePower')}
+                  min="0"
+                  max="3000"
+                  type="number"
+                  value={
+                    powerIsEstimated
+                      ? String(Math.round(estimatedPower))
+                      : averagePowerWatts
+                  }
+                  onChange={(event) =>
+                    setAveragePowerWatts(event.currentTarget.value)
+                  }
+                />
+              </div>
+              <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-12">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={isBenchmark}
+                  onChange={(event) => setIsBenchmark(event.target.checked)}
+                />
+                {t('triathlon.form.benchmark')}
+              </label>
+            </fieldset>
+
+            <section>
+              <Button
+                aria-controls="actual-training-details"
+                aria-expanded={showDetails}
+                className="h-11 w-full justify-between rounded-md bg-muted px-3 hover:bg-muted/70 hover:text-foreground"
+                type="button"
+                variant="ghost"
+                onClick={() => setShowDetails((current) => !current)}
+              >
+                <span className="flex items-center gap-2">
+                  {t('triathlon.intervals.title')}
+                  {intervals.length > 0 && (
+                    <span className="type-caption text-muted-foreground tabular-nums">
+                      {intervals.length}
+                    </span>
+                  )}
+                </span>
+                <DisclosureIndicator isOpen={showDetails} />
+              </Button>
+              {showDetails && (
+                <div className="grid gap-4 pt-2" id="actual-training-details">
+                  <IntervalEditor intervals={intervals} onChange={setIntervals} />
+                </div>
+              )}
+            </section>
+          </>
+        )}
 
         {durationWarningConfirmed && (
           <p

@@ -1,4 +1,9 @@
 export type Discipline = 'swim' | 'bike' | 'run'
+/**
+ * Strength training is a plannable and loggable training kind with duration
+ * only. It is no discipline: no tiles, records, contexts or performance data.
+ */
+export type TrainingDiscipline = Discipline | 'strength'
 
 export const trainingContexts = {
   swim: ['pool-50', 'pool-25', 'open-water'],
@@ -46,7 +51,7 @@ export type PlannedTraining = {
   position: number
   localDate: string
   startMinutes: number | null
-  discipline: Discipline
+  discipline: TrainingDiscipline
   /** Walking is a variant of running, never a discipline of its own. */
   isWalk?: boolean
   /** Treadmill incline in percent; only for walks and runs. */
@@ -76,7 +81,7 @@ export type ActualTraining = {
   powerAnalyticsAvailableFromLocalDate?: string
   localDate: string
   startMinutes: number | null
-  discipline: Discipline
+  discipline: TrainingDiscipline
   /** Walking is a variant of running, never a discipline of its own. */
   isWalk?: boolean
   /** Treadmill incline in percent; only for walks and runs. */

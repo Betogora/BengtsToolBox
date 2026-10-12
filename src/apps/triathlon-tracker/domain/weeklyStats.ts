@@ -30,6 +30,8 @@ export function summarizeWeek(
   const byDiscipline = emptyDisciplineStats()
 
   inWeek.forEach((training) => {
+    // Strength counts towards total time only, never as a discipline.
+    if (training.discipline === 'strength') return
     const stats = byDiscipline[training.discipline]
     stats.trainingCount += 1
     stats.durationSeconds += training.durationSeconds ?? 0
@@ -39,8 +41,8 @@ export function summarizeWeek(
   return {
     weekStart,
     totalTrainingCount: inWeek.length,
-    totalDurationSeconds: Object.values(byDiscipline).reduce(
-      (sum, stats) => sum + stats.durationSeconds,
+    totalDurationSeconds: inWeek.reduce(
+      (sum, training) => sum + (training.durationSeconds ?? 0),
       0,
     ),
     byDiscipline,

@@ -659,6 +659,16 @@ test(
             distanceMeters: null,
             label: 'Incline Walk',
           },
+          {
+            id: 'strength-plan',
+            position: 2,
+            localDate: `${values.year}-${values.month}-${values.day}`,
+            startMinutes: null,
+            discipline: 'strength',
+            durationSeconds: 1_800,
+            distanceMeters: null,
+            label: 'Kraft A',
+          },
         ]),
       )
     })
@@ -693,6 +703,24 @@ test(
     await expect(
       page.locator('[data-walking-record="climbRate"]'),
     ).toContainText('257 Hm/h')
+
+    // Strength: grey plan entry, duration only, counted in total time only.
+    await page.getByRole('tab', { name: 'Planung', exact: true }).click()
+    const strength = page.locator('[data-planned-training="strength-plan"]')
+    await expect(strength).toHaveAttribute('data-discipline', 'strength')
+    await strength
+      .getByRole('button', { name: 'Als erledigt eintragen: Kraft A' })
+      .click()
+    await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('30:00')
+    await expect(form.getByRole('combobox', { name: 'Kontext', exact: true })).toHaveCount(0)
+    await expect(form.getByLabel('Distanz (km)')).toHaveCount(0)
+    await expect(form.getByRole('combobox', { name: 'RPE (1–10)' })).toHaveCount(0)
+    await form.getByRole('button', { name: 'Speichern' }).click()
+    await expect(strength).toHaveAttribute('data-plan-done', 'true')
+    await expect(page.locator('[data-week-summary-item]')).toHaveCount(4)
+    await expect(page.locator('[data-week-summary-item]').first()).toContainText('1 h 40 min')
+    await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+    await expect(journal.filter({ hasText: 'Krafttraining' })).toHaveCount(1)
     await app.expectHealthy()
   },
 )

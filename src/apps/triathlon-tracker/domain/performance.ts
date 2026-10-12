@@ -210,7 +210,7 @@ export function getPowerActivityPerformancePoints(
 
 function eligibleDistanceSamples(
   trainings: readonly ActualTraining[],
-  discipline: ActualTraining['discipline'],
+  discipline: Discipline,
   context: TrainingContext,
   asOfLocalDate: string,
 ): DistanceSample[] {

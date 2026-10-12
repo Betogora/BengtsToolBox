@@ -20,6 +20,13 @@
   --sport-fill: #b04a33;
 }
 
+/* Strength is a neutral training kind for the plan, not a discipline. */
+.triathlon-tracker [data-discipline='strength'] {
+  --sport-color: #6b7280;
+  --sport-soft: #f1f2f4;
+  --sport-fill: #5b616b;
+}
+
 .triathlon-tracker > header {
   padding-bottom: 0.5rem;
 }

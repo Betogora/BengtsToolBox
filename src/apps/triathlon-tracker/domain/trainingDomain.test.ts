@@ -87,6 +87,18 @@ describe('tracker validation', () => {
       validateSettings({ ...settings, planPaceSecondsPerKilometer: { walk: 600, run: 420 } }),
     ).toEqual([])
     expect(validateActualTraining(actual({ context: 'treadmill', isWalk: true, inclinePercent: 8 }))).toEqual([])
+    const strength = actual({
+      discipline: 'strength', context: null, distanceMeters: null, averageHeartRateBpm: null, rpe: null,
+    })
+    expect(validateActualTraining(strength)).toEqual([])
+    expect(validatePlannedTraining({ ...plan, discipline: 'strength', distanceMeters: null })).toEqual([])
+    for (const invalid of [
+      { ...strength, durationSeconds: null },
+      { ...strength, rpe: 6 },
+      { ...strength, context: 'road' as const },
+    ]) {
+      expect(validateActualTraining(invalid).some((issue) => issue.severity === 'error')).toBe(true)
+    }
     expect(validatePlannedTraining({ ...plan, discipline: 'run', inclinePercent: 6 })).toEqual([])
     for (const invalid of [
       actual({ context: 'road', inclinePercent: 3 }),
@@ -167,13 +179,24 @@ describe('tracker week statistics', () => {
       distanceMeters: 30_000,
     }),
     actual({ id: 'actual-next-week', localDate: '2026-08-24' }),
+    actual({
+      id: 'strength',
+      localDate: '2026-08-19',
+      discipline: 'strength',
+      context: null,
+      durationSeconds: 1_800,
+      distanceMeters: null,
+      averageHeartRateBpm: null,
+      rpe: null,
+    }),
   ]
 
   it('aggregates Monday through Sunday and fills empty weeks', () => {
+    // Strength counts towards total time but not as a discipline.
     expect(summarizeWeek(trainings, '2026-08-20')).toMatchObject({
       weekStart: '2026-08-17',
-      totalTrainingCount: 2,
-      totalDurationSeconds: 5_400,
+      totalTrainingCount: 3,
+      totalDurationSeconds: 7_200,
       byDiscipline: {
         run: { trainingCount: 1, durationSeconds: 1_800, distanceMeters: 5_000 },
         bike: { trainingCount: 1, durationSeconds: 3_600, distanceMeters: 30_000 },

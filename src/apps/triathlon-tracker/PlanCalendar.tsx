@@ -18,6 +18,7 @@ import {
   disciplineColors,
   disciplineIcons,
   disciplines,
+  trainingIcons,
   formatTrainingDuration,
   trainingLabelKey,
 } from './presentation'
@@ -442,7 +443,7 @@ export function PlanCalendar({
                       {trainings.map((training) => {
                         const label =
                           training.label || t(trainingLabelKey(training))
-                        const Icon = disciplineIcons[training.discipline]
+                        const Icon = trainingIcons[training.discipline]
                         const done = completedIds.has(training.id)
                         const meta = [
                           training.startMinutes === null

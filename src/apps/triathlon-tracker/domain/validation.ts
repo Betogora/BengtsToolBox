@@ -91,6 +91,9 @@ export function validatePlannedTraining(
   training: PlannedTraining,
 ): ValidationIssue[] {
   const issues = validateSharedTraining(training)
+  if (training.discipline === 'strength' && training.distanceMeters !== null) {
+    issues.push({ field: 'distanceMeters', code: 'context-mismatch', severity: 'error' })
+  }
   if (training.label.length > 40) {
     issues.push({ field: 'label', code: 'too-long', severity: 'error' })
   }
@@ -107,7 +110,23 @@ export function validateActualTraining(
   ) {
     issues.push({ field: 'training', code: 'required', severity: 'error' })
   }
-  if (
+  if (training.discipline === 'strength') {
+    // Strength sessions only carry a duration.
+    if (!training.durationSeconds || training.durationSeconds <= 0) {
+      issues.push({ field: 'durationSeconds', code: 'required', severity: 'error' })
+    }
+    if (
+      training.context !== null ||
+      training.distanceMeters !== null ||
+      training.averageHeartRateBpm !== null ||
+      training.averagePowerWatts !== null ||
+      training.rpe !== null ||
+      training.intervals.length > 0 ||
+      training.isBenchmark
+    ) {
+      issues.push({ field: 'discipline', code: 'context-mismatch', severity: 'error' })
+    }
+  } else if (
     training.context !== null &&
     !trainingContexts[training.discipline].some((context) => context === training.context)
   ) {

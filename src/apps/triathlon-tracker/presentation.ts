@@ -1,5 +1,5 @@
-import { Bike, Footprints, Waves } from 'lucide-react'
-import type { Discipline } from './types'
+import { Bike, Dumbbell, Footprints, Waves } from 'lucide-react'
+import type { Discipline, TrainingDiscipline } from './types'
 import { formatTrainingDurationInput } from './domain/units'
 
 // Gleiche Werte wie --sport-color in triathlon-tracker.css; beide gemeinsam ändern.
@@ -21,7 +21,10 @@ export const disciplineFillColors = {
 export const disciplineIcons = { swim: Waves, bike: Bike, run: Footprints }
 export const disciplines = ['swim', 'bike', 'run'] as const
 
-type TrainingKind = { discipline: Discipline; isWalk?: boolean }
+/** Icons for every plannable kind; strength is shown but no discipline. */
+export const trainingIcons = { ...disciplineIcons, strength: Dumbbell }
+
+type TrainingKind = { discipline: TrainingDiscipline; isWalk?: boolean }
 
 export function trainingLabelKey(training: TrainingKind) {
   return training.isWalk

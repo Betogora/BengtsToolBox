@@ -15,8 +15,8 @@ import { useState } from 'react'
 import { getTrainingIntensity } from './domain/incline'
 import { averagePaceSeconds, formatPace } from './domain/units'
 import {
-  disciplineIcons,
   disciplines,
+  trainingIcons,
   formatTrainingDuration,
   trainingLabelKey,
 } from './presentation'
@@ -276,10 +276,12 @@ export function TrainingJournal({
             className="divide-y rounded-lg border bg-card"
           >
             {visible.map((training) => {
-              const Icon = disciplineIcons[training.discipline]
+              const Icon = trainingIcons[training.discipline]
               const label = t(trainingLabelKey(training))
               const pace =
-                training.durationSeconds && training.distanceMeters
+                training.discipline !== 'strength' &&
+                training.durationSeconds &&
+                training.distanceMeters
                   ? formatPace(
                       averagePaceSeconds(
                         training.durationSeconds,
