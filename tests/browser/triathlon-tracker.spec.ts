@@ -382,6 +382,11 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await expect(page.getByLabel('Plantempo Gehen (min/km)')).toHaveValue('12:00')
   await page.getByLabel('Plantempo Gehen (km/h)').blur()
   await expect(page.getByText('Plantempo gespeichert.')).toBeVisible()
+  // A fading toast would fail the contrast check in expectHealthy later on.
+  await page.mouse.move(1, 1)
+  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
+    timeout: 6000,
+  })
   await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await expect(page.getByText(/W\/kg/)).toBeVisible()
   await expect(page.locator('[data-record-card]')).toHaveCount(3)

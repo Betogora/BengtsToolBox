@@ -4,6 +4,7 @@ import {
   evenlySpacedTicks,
   evenlySpacedTimestamps,
   maxTicksForWidth,
+  niceVolumeTicks,
 } from './chartTicks'
 
 describe('chart ticks', () => {
@@ -19,5 +20,16 @@ describe('chart ticks', () => {
     expect(evenlySpacedTimestamps(0, 300, 4)).toEqual([0, 100, 200, 300])
     expect(evenlySpacedTimestamps(5, 5, 4)).toEqual([5])
     expect(maxTicksForWidth(360)).toBe(5)
+  })
+
+  it.each([
+    [0, [0, 1]],
+    [0.7, [0, 1]],
+    [2.85, [0, 1, 2, 3]],
+    [5.4, [0, 2, 4, 6]],
+    [12, [0, 5, 10, 15]],
+    [38, [0, 10, 20, 30, 40]],
+  ])('teilt %f in ganze 1-2-5-Schritte', (maximum, ticks) => {
+    expect(niceVolumeTicks(maximum)).toEqual(ticks)
   })
 })

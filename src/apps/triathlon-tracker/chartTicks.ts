@@ -27,3 +27,21 @@ export function evenlySpacedTimestamps(
 export function maxTicksForWidth(width: number, pixelsPerTick = 72) {
   return Math.max(2, Math.floor(width / pixelsPerTick))
 }
+
+/**
+ * Whole-unit axis ticks from zero with a 1-2-5 step (1, 2, 5, 10, 20, 50 …),
+ * so weekly hours or kilometres never show fractions such as 0.95.
+ */
+export function niceVolumeTicks(maximum: number, maxIntervals = 4): number[] {
+  let step = 1
+  for (let magnitude = 1; ; magnitude *= 10) {
+    const candidate = [1, 2, 5].map((factor) => factor * magnitude)
+      .find((value) => Math.ceil(maximum / value) <= maxIntervals)
+    if (candidate) {
+      step = candidate
+      break
+    }
+  }
+  const top = Math.max(1, Math.ceil(maximum / step)) * step
+  return Array.from({ length: top / step + 1 }, (_, index) => index * step)
+}

@@ -34,6 +34,7 @@ import {
   evenlySpacedTicks,
   evenlySpacedTimestamps,
   maxTicksForWidth,
+  niceVolumeTicks,
 } from './chartTicks'
 import { EstimateMark } from './PersonalBestsPanel'
 
@@ -364,7 +365,7 @@ function PointDetail({
       data-point-detail
     >
       {color && <LegendDot color={color} />}
-      <div className="type-caption flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-0.5 tabular-nums">
+      <div className="type-caption flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-0.5 tabular-nums">
         {children}
       </div>
       {onClose && (
@@ -384,8 +385,8 @@ function PointDetail({
 
 function DetailItem({ label, children }: { label?: ReactNode; children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-      {label && <span className="inline-flex items-center text-muted-foreground">{label}</span>}
+    <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+      {label && <span className="inline-flex items-baseline text-muted-foreground">{label}</span>}
       <span className="font-semibold text-foreground">{children}</span>
     </span>
   )
@@ -1255,10 +1256,12 @@ function DisciplineLabel({
   const { t } = useI18n()
   const Icon = disciplineIcons[discipline]
   return (
-    <span className="inline-flex items-center gap-1.5">
+    // Baseline alignment keeps the name level with a larger value next to it;
+    // the icon is nudged down to sit centered on the text instead of above it.
+    <span className="inline-flex items-baseline gap-1.5">
       <Icon
         aria-hidden="true"
-        className="size-3.5 shrink-0"
+        className="relative top-0.5 size-3.5 shrink-0"
         style={{ color: disciplineColors[discipline] }}
       />
       <span className={compact ? 'sr-only sm:not-sr-only' : undefined}>
@@ -1316,6 +1319,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
     maxTicksForWidth(width - 56, 64),
   )
   const pinnedPoint = points.find((point) => point.weekStart === pinnedWeek)
+  const volumeTicks = niceVolumeTicks(Math.max(0, ...points.map(totalOf)))
   const shownPoint = points.find(
     (point) => point.weekStart === (hoveredWeek ?? pinnedWeek),
   )
@@ -1368,7 +1372,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                     sport: t(disciplineKey(discipline)),
                   })}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-opacity hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring',
+                    'flex items-baseline gap-1.5 rounded-md px-1.5 py-1 transition-opacity hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring',
                     focus === discipline && 'bg-muted',
                     focus !== null && focus !== discipline && 'opacity-45',
                   )}
@@ -1429,7 +1433,8 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tickCount={4}
+                    domain={[0, volumeTicks[volumeTicks.length - 1]]}
+                    ticks={volumeTicks}
                     tick={tickStyle}
                     label={{
                       value: unit,
