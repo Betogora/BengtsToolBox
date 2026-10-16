@@ -70,6 +70,8 @@ export type IntervalSegment = {
   distanceMeters: number | null
   averageHeartRateBpm: number | null
   averagePowerWatts: number | null
+  /** Heart rate read at the end of the phase; reliable even when it climbs. */
+  endHeartRateBpm?: number | null
 }
 
 export type ActualTraining = {

@@ -710,3 +710,83 @@ test(
     await app.expectHealthy()
   },
 )
+
+test('Geplante Intervalle öffnen eine Phasentabelle, die unterwegs ausfüllbar ist', async ({
+  app,
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'Europe/Berlin',
+      year: 'numeric',
+    }).formatToParts(new Date())
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+    localStorage.setItem(
+      'app-hub:collection:apps/triathlon-tracker/sessions/default/planned-trainings',
+      JSON.stringify([
+        {
+          id: 'interval-plan',
+          position: 1,
+          localDate: `${values.year}-${values.month}-${values.day}`,
+          startMinutes: null,
+          discipline: 'run',
+          durationSeconds: 2_100,
+          distanceMeters: null,
+          label: 'Intervalle 3×4 min',
+        },
+      ]),
+    )
+  })
+  await app.open('/apps/triathlon-tracker')
+  await page.getByRole('tab', { name: 'Planung', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Als erledigt eintragen: Intervalle 3×4 min' })
+    .click()
+  const form = page.getByRole('dialog', { name: 'Training eintragen' })
+  const phases = form.locator('[data-phase-kind]')
+  await expect(phases).toHaveCount(7)
+  await expect(phases.first()).toContainText('Einlaufen')
+  await expect(phases.last()).toContainText('Auslaufen')
+  await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('35:00')
+
+  await form.getByLabel('Einlaufen · Ø Tempo (km/h)').fill('9')
+  await form.getByLabel('Intervall 1 · Ø Tempo (km/h)').fill('13')
+  const firstEndPulse = form.getByLabel('Intervall 1 · Puls am Phasenende')
+  await firstEndPulse.fill('185')
+  // Enter jumps to the next phase instead of saving the dialog.
+  await firstEndPulse.press('Enter')
+  await expect(form.getByLabel('Erholung · Puls am Phasenende').first()).toBeFocused()
+  await expect(form.getByLabel('Intervall 2 · Ø Tempo (km/h)')).toHaveAttribute(
+    'placeholder',
+    '13',
+  )
+  await expect(form.getByLabel('Distanz (km)')).toHaveValue('6.05')
+  await expect(form.getByLabel('Distanz (km)')).toHaveAttribute('readonly', '')
+
+  await form.getByRole('button', { name: 'Intervall', exact: true }).click()
+  await expect(phases).toHaveCount(9)
+  await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('43:00')
+  await form.getByRole('button', { name: 'Intervall 4 entfernen' }).click()
+  await expect(phases).toHaveCount(7)
+
+  await form.getByRole('button', { name: 'Speichern' }).click()
+  await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+  await expect(page.locator('[data-journal-training]')).toContainText('3 Intervalle')
+  await page.getByRole('button', { name: 'Bearbeiten: Laufen' }).click()
+  const edit = page.getByRole('dialog', { name: 'Training bearbeiten' })
+  await expect(edit.getByLabel('Intervall 1 · Puls am Phasenende')).toHaveValue('185')
+  await expect(edit.getByLabel('Intervall 3 · Ø Tempo (km/h)')).toHaveValue('13')
+
+  // Rebuilding starts again from a scheme.
+  await edit.getByRole('button', { name: 'Neu aufbauen' }).click()
+  await edit.getByRole('button', { name: 'Bestätigen' }).click()
+  await edit.getByLabel('Anzahl').fill('4')
+  await edit.getByRole('button', { name: 'Tabelle erzeugen' }).click()
+  await expect(edit.locator('[data-phase-kind="work"]')).toHaveCount(4)
+  await expect(edit.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('43:00')
+  // The sticky footer covers rows mid-scroll; at the end nothing is hidden.
+  await edit.evaluate((dialog) => dialog.scrollTo(0, dialog.scrollHeight))
+  await app.expectHealthy()
+})

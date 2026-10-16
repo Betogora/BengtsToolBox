@@ -1,5 +1,5 @@
 import { Clock3, Copy, Plus, Trash2 } from 'lucide-react'
-import type { FormEvent } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { useMemo, useState } from 'react'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -70,6 +71,20 @@ import {
   type TrainingMetricInput,
 } from './domain/units'
 import { estimateCyclingPowerWatts } from './domain/cyclingPower'
+import {
+  buildIntervalScheme,
+  countWorkPhases,
+  defaultIntervalScheme,
+  insertIntervalPair,
+  intervalDistanceMeters,
+  intervalKindAt,
+  intervalPhaseAt,
+  intervalSpeedKilometersPerHour,
+  intervalTotals,
+  maximumIntervalRepetitions,
+  removeIntervalPhase,
+  type IntervalScheme,
+} from './domain/intervals'
 
 export type {
   ActualTrainingInput,
@@ -511,37 +526,83 @@ type IntervalDraft = {
   kind: IntervalSegment['kind']
   durationMinutes: string
   distanceMeters: string
+  /** km/h; running phases derive their distance from it. */
+  speed: string
   averageHeartRateBpm: string
   averagePowerWatts: string
+  endHeartRateBpm: string
 }
+
+const optionalText = (value: number | null | undefined) =>
+  value == null ? '' : `${value}`
 
 function intervalToDraft(interval: IntervalSegment): IntervalDraft {
   return {
     id: interval.id,
     kind: interval.kind,
     durationMinutes: formatTrainingDurationInput(interval.durationSeconds),
-    distanceMeters:
-      interval.distanceMeters === null ? '' : `${interval.distanceMeters}`,
-    averageHeartRateBpm:
-      interval.averageHeartRateBpm === null
-        ? ''
-        : `${interval.averageHeartRateBpm}`,
-    averagePowerWatts:
-      interval.averagePowerWatts === null
-        ? ''
-        : `${interval.averagePowerWatts}`,
+    distanceMeters: optionalText(interval.distanceMeters),
+    speed: optionalText(intervalSpeedKilometersPerHour(interval)),
+    averageHeartRateBpm: optionalText(interval.averageHeartRateBpm),
+    averagePowerWatts: optionalText(interval.averagePowerWatts),
+    endHeartRateBpm: optionalText(interval.endHeartRateBpm),
   }
 }
 
-function createIntervalDraft(): IntervalDraft {
+function createIntervalDraft(
+  kind: IntervalSegment['kind'] = 'work',
+  durationMinutes = '',
+): IntervalDraft {
   return {
     id: `interval-${crypto.randomUUID()}`,
-    kind: 'work',
-    durationMinutes: '',
+    kind,
+    durationMinutes,
     distanceMeters: '',
+    speed: '',
     averageHeartRateBpm: '',
     averagePowerWatts: '',
+    endHeartRateBpm: '',
   }
+}
+
+/** A speed of 0 km/h stands for a standing rest. */
+function parsePhaseSpeed(value: string) {
+  const speed = optionalNumber(value)
+  return speed !== null && speed >= 0 ? speed : null
+}
+
+/** An empty speed repeats the one of the previous phase of the same kind. */
+function inheritedPhaseSpeeds(phases: readonly IntervalDraft[]) {
+  const speeds: (number | null)[] = []
+  phases.forEach((phase, index) => {
+    speeds.push(
+      phase.speed.trim() === ''
+        ? (speeds[index - 2] ?? null)
+        : parsePhaseSpeed(phase.speed),
+    )
+  })
+  return speeds
+}
+
+function runIntervalSegments(phases: readonly IntervalDraft[]): IntervalSegment[] {
+  const speeds = inheritedPhaseSpeeds(phases)
+  return phases.map((phase, index) => {
+    const durationSeconds = parseTrainingDuration(phase.durationMinutes)
+    return {
+      id: phase.id,
+      position: index + 1,
+      kind: intervalKindAt(index),
+      durationSeconds,
+      distanceMeters: intervalDistanceMeters(durationSeconds, speeds[index]),
+      averageHeartRateBpm: optionalNumber(phase.averageHeartRateBpm),
+      averagePowerWatts: optionalNumber(phase.averagePowerWatts),
+      endHeartRateBpm: optionalNumber(phase.endHeartRateBpm),
+    }
+  })
+}
+
+function formatKilometersInput(meters: number) {
+  return String(Number((meters / 1000).toFixed(2)))
 }
 
 function IntervalEditor({
@@ -685,6 +746,253 @@ function IntervalEditor({
   )
 }
 
+// Narrow columns leave the phase name readable at 320 px.
+const phaseGridClass =
+  'grid grid-cols-[minmax(0,1fr)_3.5rem_2.75rem_2.75rem_1.75rem] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem_2.25rem] sm:gap-2'
+const phaseInputClass = 'h-9 px-1 text-center tabular-nums'
+
+type SchemeDraft = Record<keyof IntervalScheme, string>
+
+function SchemeForm({ onCreate }: { onCreate: (phases: IntervalDraft[]) => void }) {
+  const { t } = useI18n()
+  const [scheme, setScheme] = useState<SchemeDraft>(() => ({
+    warmUpSeconds: formatTrainingDurationInput(defaultIntervalScheme.warmUpSeconds),
+    repetitions: `${defaultIntervalScheme.repetitions}`,
+    workSeconds: formatTrainingDurationInput(defaultIntervalScheme.workSeconds),
+    recoverySeconds: formatTrainingDurationInput(defaultIntervalScheme.recoverySeconds),
+    coolDownSeconds: formatTrainingDurationInput(defaultIntervalScheme.coolDownSeconds),
+  }))
+  const durations = {
+    warmUpSeconds: parseTrainingDuration(scheme.warmUpSeconds),
+    workSeconds: parseTrainingDuration(scheme.workSeconds),
+    recoverySeconds: parseTrainingDuration(scheme.recoverySeconds),
+    coolDownSeconds: parseTrainingDuration(scheme.coolDownSeconds) ?? 0,
+  }
+  const repetitions = Number(scheme.repetitions)
+  const isValid =
+    Number.isInteger(repetitions) &&
+    repetitions >= 1 &&
+    repetitions <= maximumIntervalRepetitions &&
+    Boolean(durations.warmUpSeconds) &&
+    Boolean(durations.workSeconds) &&
+    (repetitions === 1 || Boolean(durations.recoverySeconds))
+  const field = (key: keyof IntervalScheme, label: string, numeric = false) => (
+    <IftaInput
+      label={label}
+      inputMode={numeric ? 'numeric' : 'decimal'}
+      value={scheme[key]}
+      onChange={(event) => {
+        const value = event.currentTarget.value
+        setScheme((current) => ({ ...current, [key]: value }))
+      }}
+    />
+  )
+
+  return (
+    <div className="grid gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {field('warmUpSeconds', t('triathlon.intervals.phase.warm-up'))}
+        {field('repetitions', t('triathlon.intervals.repetitions'), true)}
+        {field('workSeconds', t('triathlon.intervals.phase.work'))}
+        {field('recoverySeconds', t('triathlon.intervals.phase.recovery'))}
+        <div className="col-span-2 sm:col-span-1">
+          {field('coolDownSeconds', t('triathlon.intervals.phase.cool-down'))}
+        </div>
+      </div>
+      <Button
+        disabled={!isValid}
+        type="button"
+        variant="outline"
+        onClick={() =>
+          onCreate(
+            buildIntervalScheme({
+              warmUpSeconds: durations.warmUpSeconds ?? 0,
+              repetitions,
+              workSeconds: durations.workSeconds ?? 0,
+              recoverySeconds: durations.recoverySeconds ?? 0,
+              coolDownSeconds: durations.coolDownSeconds,
+            }).map((seconds, index) =>
+              createIntervalDraft(
+                intervalKindAt(index),
+                formatTrainingDurationInput(seconds),
+              ),
+            ),
+          )
+        }
+      >
+        <Plus aria-hidden="true" />
+        {t('triathlon.intervals.createTable')}
+      </Button>
+    </div>
+  )
+}
+
+/**
+ * Running phases as one compact table that can be filled in on the go:
+ * kinds alternate by position, speeds repeat until changed and the heart
+ * rate is the value read at the end of each phase.
+ */
+function RunIntervalTable({
+  phases,
+  totals,
+  onChange,
+}: {
+  phases: IntervalDraft[]
+  /** Sums the dialog already derived from the same phases. */
+  totals: ReturnType<typeof intervalTotals> | null
+  onChange: (phases: IntervalDraft[]) => void
+}) {
+  const { formatNumber, t } = useI18n()
+  const speeds = inheritedPhaseSpeeds(phases)
+
+  if (phases.length === 0 || !totals) {
+    return <SchemeForm onCreate={onChange} />
+  }
+
+  const update = (id: string, partial: Partial<IntervalDraft>) =>
+    onChange(
+      phases.map((phase) => (phase.id === id ? { ...phase, ...partial } : phase)),
+    )
+  const phaseLabel = (index: number) => {
+    const phase = intervalPhaseAt(index, phases.length)
+    return phase === 'work'
+      ? t('triathlon.intervals.workNumber', { number: (index + 1) / 2 })
+      : t(`triathlon.intervals.phase.${phase}`)
+  }
+  // Enter moves down the column instead of submitting the whole dialog.
+  const focusNextRow = (
+    event: KeyboardEvent<HTMLInputElement>,
+    field: string,
+    index: number,
+  ) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    const next = event.currentTarget.form?.querySelector<HTMLInputElement>(
+      `[data-phase-field="${field}"][data-phase-row="${index + 1}"]`,
+    )
+    if (next) next.focus()
+    else event.currentTarget.blur()
+  }
+  const phaseInput = (
+    phase: IntervalDraft,
+    index: number,
+    field: 'durationMinutes' | 'speed' | 'endHeartRateBpm',
+    label: string,
+    placeholder?: string,
+  ) => (
+    <Input
+      aria-label={`${phaseLabel(index)} · ${label}`}
+      className={phaseInputClass}
+      data-phase-field={field}
+      data-phase-row={index}
+      enterKeyHint="next"
+      inputMode={field === 'endHeartRateBpm' ? 'numeric' : 'decimal'}
+      placeholder={placeholder}
+      value={phase[field]}
+      onChange={(event) => update(phase.id, { [field]: event.currentTarget.value })}
+      onKeyDown={(event) => focusNextRow(event, field, index)}
+    />
+  )
+
+  return (
+    <div className="grid gap-1.5">
+      <div
+        aria-hidden="true"
+        className={`${phaseGridClass} type-caption px-1 text-center text-muted-foreground`}
+      >
+        <span />
+        <span>{t('triathlon.journal.duration')}</span>
+        <span>km/h</span>
+        <span title={t('triathlon.intervals.endHeartRate')}>
+          {t('triathlon.intervals.heartRateShort')}
+        </span>
+        <span />
+      </div>
+      {phases.map((phase, index) => {
+        const kind = intervalKindAt(index)
+        const removable =
+          kind === 'work' || (index > 0 && index === phases.length - 1)
+        const inherited =
+          phase.speed.trim() === '' && speeds[index] !== null
+            ? formatNumber(speeds[index] ?? 0, { maximumFractionDigits: 1 })
+            : undefined
+        return (
+          <div
+            className={`${phaseGridClass} rounded-md px-1 py-1 ${kind === 'work' ? 'bg-muted' : ''}`}
+            data-phase-kind={kind}
+            key={phase.id}
+          >
+            <span
+              className={`type-caption leading-tight break-words ${kind === 'work' ? 'font-semibold' : 'text-muted-foreground'}`}
+            >
+              {phaseLabel(index)}
+            </span>
+            {phaseInput(phase, index, 'durationMinutes', t('triathlon.journal.duration'))}
+            {phaseInput(phase, index, 'speed', t('triathlon.form.averageSpeed'), inherited)}
+            {phaseInput(phase, index, 'endHeartRateBpm', t('triathlon.intervals.endHeartRate'))}
+            {removable ? (
+              <Button
+                aria-label={t('triathlon.intervals.removePhase', {
+                  phase: phaseLabel(index),
+                })}
+                className="size-7 sm:size-9"
+                size="icon"
+                type="button"
+                variant="ghost"
+                onClick={() => onChange(removeIntervalPhase(phases, index))}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
+            ) : (
+              <span />
+            )}
+          </div>
+        )
+      })}
+      <div className={`${phaseGridClass} type-caption border-t px-1 pt-2 font-semibold tabular-nums`}>
+        <span>{t('triathlon.intervals.total')}</span>
+        <span className="text-center">
+          {formatTrainingDurationInput(totals.durationSeconds)}
+        </span>
+        <span className="col-span-2 text-center">
+          {totals.distanceMeters === null
+            ? ''
+            : `${formatNumber(totals.distanceMeters / 1000, { maximumFractionDigits: 2 })} km`}
+        </span>
+        <span />
+      </div>
+      <div className="flex flex-wrap justify-between gap-2 pt-1">
+        <Button
+          disabled={phases.length >= 99}
+          size="sm"
+          type="button"
+          variant="outline"
+          onClick={() =>
+            onChange(
+              insertIntervalPair(phases, (kind, template) =>
+                createIntervalDraft(kind, template?.durationMinutes),
+              ),
+            )
+          }
+        >
+          <Plus aria-hidden="true" />
+          {t('triathlon.intervals.addInterval')}
+        </Button>
+        <ConfirmButton
+          description={t('triathlon.intervals.resetDescription')}
+          title={t('triathlon.intervals.reset')}
+          trigger={
+            <Button size="sm" type="button" variant="ghost">
+              {t('triathlon.intervals.reset')}
+            </Button>
+          }
+          onConfirm={() => onChange([])}
+        />
+      </div>
+    </div>
+  )
+}
+
 type ActualTrainingDialogProps = {
   defaultContexts: DefaultTrainingContexts
   /** Enables the running power estimate. */
@@ -817,14 +1125,36 @@ function ActualTrainingDialogContent({
   const metricSpan = hasSpeed ? 'sm:col-span-3' : 'sm:col-span-4'
   const showIncline = discipline === 'run' && context === 'treadmill'
   const detailSpan = showIncline ? 'sm:col-span-3' : 'sm:col-span-4'
+  // Running phases are the source of the totals. Only the distance stays
+  // editable while a phase has no speed yet.
+  const runPhases =
+    discipline === 'run' && intervals.length > 0
+      ? runIntervalSegments(intervals)
+      : null
+  const phaseTotals = runPhases ? intervalTotals(runPhases) : null
+  const phaseDistance = phaseTotals?.distanceMeters ?? null
+  const shownDuration = phaseTotals
+    ? formatTrainingDurationInput(phaseTotals.durationSeconds)
+    : durationMinutes
+  const shownDistance =
+    phaseDistance === null ? distanceKilometers : formatKilometersInput(phaseDistance)
+  const phasePace = phaseTotals
+    ? averagePaceSeconds(
+        phaseTotals.durationSeconds ?? 0,
+        (optionalNumber(shownDistance) ?? 0) * 1000,
+        'run',
+      )
+    : null
+  const shownPace = phaseTotals ? formatPace(phasePace) : averagePace
+  const shownSpeed = phaseTotals ? formatSpeed(phasePace) : averageSpeed
   // Without a measured value the field shows the running or cycling estimate,
   // which is derived on display and never stored.
   const powerDraft = {
     discipline,
     isWalk: discipline === 'run' && isWalk,
     inclinePercent: showIncline ? optionalNumber(incline) : null,
-    durationSeconds: parseTrainingDuration(durationMinutes),
-    distanceMeters: (optionalNumber(distanceKilometers) ?? 0) * 1000 || null,
+    durationSeconds: parseTrainingDuration(shownDuration),
+    distanceMeters: (optionalNumber(shownDistance) ?? 0) * 1000 || null,
   }
   const estimatedPower =
     estimateRunningPowerWatts(powerDraft, weightKg) ??
@@ -832,31 +1162,35 @@ function ActualTrainingDialogContent({
   const powerIsEstimated =
     averagePowerWatts.trim() === '' && estimatedPower !== null
   const isComputed = (field: TrainingMetricField) =>
-    !metrics.inputs.includes(field)
+    phaseTotals
+      ? field !== 'distance' || phaseDistance !== null
+      : !metrics.inputs.includes(field)
   const computedClass = (field: TrainingMetricField) =>
     isComputed(field)
       ? 'bg-muted text-muted-foreground shadow-none'
       : undefined
+  const isReadOnly = (field: TrainingMetricField) =>
+    phaseTotals !== null && isComputed(field)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    const parsedDuration = parseTrainingDuration(durationMinutes)
+    const parsedDuration = parseTrainingDuration(shownDuration)
     // Strength keeps only the duration; hidden endurance drafts are ignored.
-    const parsedDistance = isStrength ? null : optionalNumber(distanceKilometers)
+    const parsedDistance = isStrength ? null : optionalNumber(shownDistance)
     const parsedAveragePace =
-      !isStrength && averagePace ? parsePace(averagePace) : null
+      !isStrength && shownPace ? parsePace(shownPace) : null
     const parsedHr = isStrength ? null : optionalNumber(averageHeartRateBpm)
     const parsedPower = isStrength ? null : optionalNumber(averagePowerWatts)
     const parsedRpe = isStrength ? null : optionalNumber(rpe)
 
     if (
       !localDate ||
-      (durationMinutes.trim() !== '' && parsedDuration === null) ||
+      (shownDuration.trim() !== '' && parsedDuration === null) ||
       ((parsedDuration === null || parsedDuration <= 0) &&
         (parsedDistance === null || parsedDistance <= 0)) ||
       (parsedDuration !== null && parsedDuration < 0) ||
       (parsedDistance !== null && parsedDistance < 0) ||
-      (!isStrength && averagePace !== '' && parsedAveragePace === null) ||
+      (!isStrength && shownPace !== '' && parsedAveragePace === null) ||
       (parsedAveragePace !== null &&
         (parsedDistance === null || parsedDistance <= 0)) ||
       (parsedHr !== null && (parsedHr < 30 || parsedHr > 250)) ||
@@ -864,25 +1198,30 @@ function ActualTrainingDialogContent({
       (parsedRpe !== null && (parsedRpe < 1 || parsedRpe > 10)) ||
       (!isStrength && intervals.some(
         (interval) =>
-          interval.durationMinutes.trim() !== '' &&
-          parseTrainingDuration(interval.durationMinutes) === null,
+          (interval.durationMinutes.trim() !== '' &&
+            parseTrainingDuration(interval.durationMinutes) === null) ||
+          (runPhases !== null &&
+            interval.speed.trim() !== '' &&
+            parsePhaseSpeed(interval.speed) === null),
       ))
     ) {
       setError(t('triathlon.form.actualInvalid'))
       return
     }
 
-    const parsedIntervals: IntervalSegment[] = (isStrength ? [] : intervals).map(
-      (interval, index) => ({
-        id: interval.id,
-        position: index + 1,
-        kind: interval.kind,
-        durationSeconds: parseTrainingDuration(interval.durationMinutes),
-        distanceMeters: optionalNumber(interval.distanceMeters),
-        averageHeartRateBpm: optionalNumber(interval.averageHeartRateBpm),
-        averagePowerWatts: optionalNumber(interval.averagePowerWatts),
-      }),
-    )
+    const parsedIntervals: IntervalSegment[] = isStrength
+      ? []
+      : (runPhases ??
+        intervals.map((interval, index) => ({
+          id: interval.id,
+          position: index + 1,
+          kind: interval.kind,
+          durationSeconds: parseTrainingDuration(interval.durationMinutes),
+          distanceMeters: optionalNumber(interval.distanceMeters),
+          averageHeartRateBpm: optionalNumber(interval.averageHeartRateBpm),
+          averagePowerWatts: optionalNumber(interval.averagePowerWatts),
+          endHeartRateBpm: optionalNumber(interval.endHeartRateBpm),
+        })))
     const hasIncline = discipline === 'run' && context === 'treadmill'
     const parsedIncline = hasIncline ? optionalNumber(incline) : null
     if (hasIncline && incline.trim() !== '' && parsedIncline === null) {
@@ -1017,7 +1356,8 @@ function ActualTrainingDialogContent({
                   aria-label={t('triathlon.form.durationClock')}
                   title={t('triathlon.form.durationClock')}
                   placeholder="20:35"
-                  value={durationMinutes}
+                  readOnly={isReadOnly('duration')}
+                  value={shownDuration}
                   onChange={(event) =>
                     updateMetric('duration', event.currentTarget.value)
                   }
@@ -1031,7 +1371,8 @@ function ActualTrainingDialogContent({
                   min="0"
                   step="0.01"
                   type="number"
-                  value={distanceKilometers}
+                  readOnly={isReadOnly('distance')}
+                  value={shownDistance}
                   onChange={(event) =>
                     updateMetric('distance', event.currentTarget.value)
                   }
@@ -1044,7 +1385,8 @@ function ActualTrainingDialogContent({
                   inputMode="text"
                   label={averagePaceLabel(enduranceDiscipline, t)}
                   placeholder="5:30"
-                  value={averagePace}
+                  readOnly={isReadOnly('pace')}
+                  value={shownPace}
                   onChange={(event) =>
                     updateMetric('pace', event.currentTarget.value)
                   }
@@ -1060,7 +1402,8 @@ function ActualTrainingDialogContent({
                     min="0"
                     step="0.01"
                     type="number"
-                    value={averageSpeed}
+                    readOnly={isReadOnly('pace')}
+                    value={shownSpeed}
                     onChange={(event) =>
                       updateMetric('speed', event.currentTarget.value)
                     }
@@ -1068,7 +1411,9 @@ function ActualTrainingDialogContent({
                 </div>
               )}
               <p className="type-caption col-span-2 text-muted-foreground sm:col-span-12">
-                {t('triathlon.form.metricsDerived')}
+                {phaseTotals
+                  ? t('triathlon.form.metricsFromIntervals')
+                  : t('triathlon.form.metricsDerived')}
               </p>
               <div className={detailSpan}>
                 <IftaInput
@@ -1136,7 +1481,9 @@ function ActualTrainingDialogContent({
                   {t('triathlon.intervals.title')}
                   {intervals.length > 0 && (
                     <span className="type-caption text-muted-foreground tabular-nums">
-                      {intervals.length}
+                      {discipline === 'run'
+                        ? countWorkPhases(intervals)
+                        : intervals.length}
                     </span>
                   )}
                 </span>
@@ -1144,7 +1491,15 @@ function ActualTrainingDialogContent({
               </Button>
               {showDetails && (
                 <div className="grid gap-4 pt-2" id="actual-training-details">
-                  <IntervalEditor intervals={intervals} onChange={setIntervals} />
+                  {discipline === 'run' ? (
+                    <RunIntervalTable
+                      phases={intervals}
+                      totals={phaseTotals}
+                      onChange={setIntervals}
+                    />
+                  ) : (
+                    <IntervalEditor intervals={intervals} onChange={setIntervals} />
+                  )}
                 </div>
               )}
             </section>

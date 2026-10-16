@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { getTrainingIntensity } from './domain/incline'
+import { countWorkPhases } from './domain/intervals'
 import { averagePaceSeconds, formatPace } from './domain/units'
 import {
   disciplines,
@@ -305,9 +306,9 @@ export function TrainingJournal({
                 intensity
                   ? `${formatNumber(intensity.metabolicEquivalent, { maximumFractionDigits: 1 })} MET`
                   : null,
-                training.intervals.length > 0
+                countWorkPhases(training.intervals) > 0
                   ? t('triathlon.journal.intervals', {
-                      count: training.intervals.length,
+                      count: countWorkPhases(training.intervals),
                     })
                   : null,
                 training.averageHeartRateBpm !== null

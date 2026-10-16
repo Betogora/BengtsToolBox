@@ -7,6 +7,7 @@ import type {
 import { trainingContexts } from '@/apps/triathlon-tracker/types'
 import { isValidLocalDate } from './dates'
 import { maximumInclinePercent } from './incline'
+import { intervalTotals } from './intervals'
 
 function rangeIssue(
   field: string,
@@ -168,23 +169,23 @@ export function validateActualTraining(
         0,
         3_000,
       ),
+      ...rangeIssue(
+        `${prefix}.endHeartRateBpm`,
+        segment.endHeartRateBpm ?? null,
+        30,
+        250,
+      ),
     )
   })
 
-  const intervalDuration = training.intervals.reduce(
-    (sum, interval) => sum + (interval.durationSeconds ?? 0),
-    0,
-  )
-  const intervalDistance = training.intervals.reduce(
-    (sum, interval) => sum + (interval.distanceMeters ?? 0),
-    0,
-  )
+  // Phases without a distance (no speed entered) leave the total distance
+  // open, so only complete sums are compared.
+  const intervalSums = intervalTotals(training.intervals)
+  const differs = (sum: number | null, total: number | null) =>
+    sum !== null && total !== null && Math.abs(sum - total) > 1
   if (
-    training.intervals.length > 0 &&
-    ((training.durationSeconds !== null &&
-      Math.abs(intervalDuration - training.durationSeconds) > 1) ||
-      (training.distanceMeters !== null &&
-        Math.abs(intervalDistance - training.distanceMeters) > 1))
+    differs(intervalSums.durationSeconds, training.durationSeconds) ||
+    differs(intervalSums.distanceMeters, training.distanceMeters)
   ) {
     issues.push({
       field: 'intervals',

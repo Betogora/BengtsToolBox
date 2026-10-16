@@ -164,6 +164,33 @@ describe('tracker validation', () => {
     })
     expect(training.durationSeconds).toBe(1_800)
   })
+
+  it('compares interval distances only when every phase has one', () => {
+    const phase = (overrides: Partial<ActualTraining['intervals'][number]>) => ({
+      id: `segment-${overrides.position}`,
+      position: 1,
+      kind: 'rest' as const,
+      durationSeconds: 900,
+      distanceMeters: null,
+      averageHeartRateBpm: null,
+      averagePowerWatts: null,
+      ...overrides,
+    })
+    const training = actual({
+      intervals: [
+        phase({ position: 1, distanceMeters: 2_000 }),
+        phase({ position: 2, kind: 'work', endHeartRateBpm: 185 }),
+      ],
+    })
+
+    expect(validateActualTraining(training)).toEqual([])
+    expect(validateActualTraining({
+      ...training,
+      intervals: [phase({ position: 1, durationSeconds: 1_800, endHeartRateBpm: 300 })],
+    })).toEqual([
+      { field: 'intervals.0.endHeartRateBpm', code: 'out-of-range', severity: 'error' },
+    ])
+  })
 })
 
 describe('tracker week statistics', () => {

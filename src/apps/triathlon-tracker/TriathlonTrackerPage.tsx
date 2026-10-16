@@ -20,6 +20,10 @@ import {
   WeekCopyDialog,
 } from './components'
 import { getCurrentLocalDate, getWeekStartLocalDate } from './domain/dates'
+import {
+  intervalSegmentsFromScheme,
+  plannedIntervalScheme,
+} from './domain/intervals'
 import { getCompletedPlannedTrainingIds } from './domain/planStatus'
 import { useTriathlonTracker } from './hooks/useTriathlonTracker'
 import type {
@@ -57,6 +61,17 @@ async function requireSuccessfulSync<T extends { ok: boolean; error: unknown }>(
   const result = await resultPromise
   if (!result.ok) throw result.error
   return result
+}
+
+/** A planned run such as "Intervalle 3×4 min" opens with its phase table. */
+function plannedRunIntervals(training: PlannedTraining) {
+  const scheme =
+    training.discipline === 'run'
+      ? plannedIntervalScheme(training.label, training.durationSeconds)
+      : null
+  return scheme
+    ? intervalSegmentsFromScheme(scheme, () => `interval-${crypto.randomUUID()}`)
+    : []
 }
 
 export function TriathlonTrackerPage() {
@@ -139,6 +154,7 @@ export function TriathlonTrackerPage() {
       inclinePercent: training.inclinePercent ?? null,
       durationSeconds: training.durationSeconds,
       distanceMeters: training.distanceMeters,
+      intervals: plannedRunIntervals(training),
     })
     setActualReturnTab('calendar')
   }
