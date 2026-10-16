@@ -96,6 +96,8 @@ export type EfficiencyChartPoint = {
   speedMetersPerSecond: number
   normalizedSpeedMetersPerSecond: number
   trendSpeedMetersPerSecond: number
+  /** Interval sessions are drawn as rings. */
+  source?: 'continuous' | 'intervals'
 }
 
 export type EfficiencyPlot = {
@@ -121,6 +123,7 @@ type SelectedPoint = {
   basis?: 'benchmark' | 'training' | null
   heartRateBpm?: number
   actualValue?: number
+  actualLabel?: string
 }
 
 function formatClock(value: number) {
@@ -203,12 +206,24 @@ function useElementWidth<T extends HTMLElement>() {
   return [ref, width] as const
 }
 
-function LegendDot({ color, opacity = 1 }: { color: string; opacity?: number }) {
+function LegendDot({
+  color,
+  opacity = 1,
+  hollow = false,
+}: {
+  color: string
+  opacity?: number
+  hollow?: boolean
+}) {
   return (
     <span
       aria-hidden="true"
       className="size-2 shrink-0 rounded-full"
-      style={{ background: color, opacity }}
+      style={
+        hollow
+          ? { border: `1.5px solid ${color}` }
+          : { background: color, opacity }
+      }
     />
   )
 }
@@ -905,6 +920,10 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
       isModel: false,
       heartRateBpm: payload.averageHeartRateBpm,
       actualValue: payload.actualValue,
+      actualLabel:
+        payload.source === 'intervals'
+          ? t('triathlon.charts.efficiencyIntervals')
+          : undefined,
     }
     return (
       <ClickablePoint
@@ -912,7 +931,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
         cy={cy}
         color={color}
         radius={4}
-        filled
+        filled={payload.source !== 'intervals'}
         opacity={pinned && pinned.key !== point.key ? dimmedOpacity : activityOpacity}
         pinned={pinned?.key === point.key}
         onSelect={() => togglePin(point)}
@@ -968,6 +987,12 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
               <LegendDot color={color} opacity={activityOpacity} />
               {t('triathlon.charts.efficiencySession')}
             </span>
+            {data.some((point) => point.source === 'intervals') && (
+              <span className="flex items-center gap-1.5">
+                <LegendDot color={color} hollow />
+                {t('triathlon.charts.efficiencyIntervals')}
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <LegendLine color={color} dash="0" />
               {t('triathlon.charts.efficiencyTrend')}
@@ -1080,7 +1105,7 @@ function EfficiencyCard({ plots }: { plots: EfficiencyPlot[] }) {
               {formatters.valueWithUnit(shown.value)}
             </DetailItem>
             {shown.actualValue !== undefined && (
-              <DetailItem label={t('triathlon.charts.actualPace')}>
+              <DetailItem label={shown.actualLabel ?? t('triathlon.charts.actualPace')}>
                 {formatters.valueWithUnit(shown.actualValue)} ·{' '}
                 {shown.heartRateBpm} bpm
               </DetailItem>

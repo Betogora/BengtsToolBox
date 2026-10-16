@@ -41,6 +41,8 @@ export type PlanPaces = Record<RunVariant, number>
 export type TrackerSettings = {
   schemaVersion: 1
   weightKg: number | null
+  /** Optional; lets efficiency count only the heart rate above rest. */
+  restingHeartRateBpm?: number | null
   /** Missing values fall back to `defaultPlanPaces`. */
   planPaceSecondsPerKilometer?: Partial<Record<RunVariant, number>>
   updatedBy?: string

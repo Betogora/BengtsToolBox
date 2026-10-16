@@ -57,6 +57,8 @@ function validateSharedTraining(
   return issues
 }
 
+export const restingHeartRateRange = { minimum: 30, maximum: 110 } as const
+
 /** 2:00 to 30:00 min/km, i.e. 2 to 30 km/h. */
 export function isValidPlanPace(paceSecondsPerKilometer: number) {
   return (
@@ -74,6 +76,14 @@ export function validateSettings(settings: TrackerSettings): ValidationIssue[] {
   ) {
     issues.push({ field: 'weightKg', code: 'out-of-range', severity: 'error' })
   }
+  issues.push(
+    ...rangeIssue(
+      'restingHeartRateBpm',
+      settings.restingHeartRateBpm ?? null,
+      restingHeartRateRange.minimum,
+      restingHeartRateRange.maximum,
+    ),
+  )
   for (const [variant, pace] of Object.entries(
     settings.planPaceSecondsPerKilometer ?? {},
   )) {

@@ -434,6 +434,7 @@ function TrainingStatistics({
           fromLocalDate: startLocalDate,
           asOfLocalDate: today,
           isWalk,
+          restingHeartRateBpm: settings.restingHeartRateBpm ?? null,
         })
         // Plots without sessions stay as empty, selectable charts.
         return {
@@ -447,7 +448,16 @@ function TrainingStatistics({
           points: trend?.points ?? [],
         }
       }),
-    [actualTrainings, bikeContext, runContext, startLocalDate, swimContext, t, today],
+    [
+      actualTrainings,
+      bikeContext,
+      runContext,
+      settings.restingHeartRateBpm,
+      startLocalDate,
+      swimContext,
+      t,
+      today,
+    ],
   )
 
   const weeklyVolume = useMemo<WeeklyVolumeChartPoint[]>(

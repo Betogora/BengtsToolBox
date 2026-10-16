@@ -750,6 +750,10 @@ test('Geplante Intervalle öffnen eine Phasentabelle, die unterwegs ausfüllbar 
   await expect(phases.first()).toContainText('Einlaufen')
   await expect(phases.last()).toContainText('Auslaufen')
   await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('35:00')
+  // Interval runs stay flat, even on the treadmill.
+  await form.getByRole('combobox', { name: 'Kontext', exact: true }).click()
+  await page.getByRole('option', { name: 'Laufband', exact: true }).click()
+  await expect(form.getByLabel('Steigung (%)')).toHaveCount(0)
 
   await form.getByLabel('Einlaufen · Ø Tempo (km/h)').fill('9')
   await form.getByLabel('Intervall 1 · Ø Tempo (km/h)').fill('13')

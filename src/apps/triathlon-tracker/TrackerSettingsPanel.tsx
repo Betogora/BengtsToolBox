@@ -8,32 +8,46 @@ import {
   parsePace,
   parseSpeed,
 } from './domain/units'
-import { isValidPlanPace } from './domain/validation'
+import { isValidPlanPace, restingHeartRateRange } from './domain/validation'
 import type { PlanPaces, RunVariant } from './types'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
 
-function WeightInput({
-  weightKg,
+/** An optional number saved on blur, such as the weight or resting pulse. */
+function OptionalNumberInput({
+  label,
+  invalidMessage,
+  savedMessage,
+  minimum,
+  maximum,
+  current,
   onSave,
 }: {
-  weightKg: number | null
-  onSave: (weightKg: number | null) => Promise<unknown>
+  label: string
+  invalidMessage: string
+  savedMessage: string
+  minimum: number
+  maximum: number
+  current: number | null
+  onSave: (value: number | null) => Promise<unknown>
 }) {
   const { t } = useI18n()
-  const [value, setValue] = useState(weightKg?.toString() ?? '')
+  const [value, setValue] = useState(current?.toString() ?? '')
   const [saving, setSaving] = useState(false)
   const save = async () => {
     const next = value.trim() === '' ? null : Number(value.replace(',', '.'))
-    if (next !== null && (!Number.isFinite(next) || next < 20 || next > 300)) {
-      toast.error(t('triathlon.settings.invalidWeight'))
+    if (
+      next !== null &&
+      (!Number.isFinite(next) || next < minimum || next > maximum)
+    ) {
+      toast.error(invalidMessage)
       return
     }
-    if (next === weightKg) return
+    if (next === current) return
     setSaving(true)
     try {
       await onSave(next)
-      toast.success(t('triathlon.settings.weightSaved'))
+      toast.success(savedMessage)
     } catch {
       toast.error(t('triathlon.form.saveFailed'))
     } finally {
@@ -42,7 +56,7 @@ function WeightInput({
   }
   return (
     <IftaInput
-      label={t('triathlon.settings.weight')}
+      label={label}
       className="max-w-56"
       inputMode="decimal"
       value={value}
@@ -138,27 +152,47 @@ function PlanPaceInput({
   )
 }
 
-/** General inputs used by planning, power estimates and W/kg. */
+/** General inputs used by planning, power estimates, W/kg and efficiency. */
 export function TrackerSettingsPanel({
   weightKg,
+  restingHeartRateBpm,
   planPaces,
   onUpdatePlanPace,
   onUpdateWeight,
+  onUpdateRestingHeartRate,
 }: {
   weightKg: number | null
+  restingHeartRateBpm: number | null
   planPaces: PlanPaces
   onUpdatePlanPace: (variant: RunVariant, paceSeconds: number) => Promise<unknown>
   onUpdateWeight: (weightKg: number | null) => Promise<unknown>
+  onUpdateRestingHeartRate: (bpm: number | null) => Promise<unknown>
 }) {
+  const { t } = useI18n()
   return (
     <div
       className="flex flex-wrap items-end gap-x-6 gap-y-3 rounded-lg border bg-card p-3"
       data-tracker-settings
     >
-      <WeightInput
-        key={weightKg ?? 'none'}
-        weightKg={weightKg}
+      <OptionalNumberInput
+        key={`weight-${weightKg ?? 'none'}`}
+        label={t('triathlon.settings.weight')}
+        invalidMessage={t('triathlon.settings.invalidWeight')}
+        savedMessage={t('triathlon.settings.weightSaved')}
+        minimum={20}
+        maximum={300}
+        current={weightKg}
         onSave={onUpdateWeight}
+      />
+      <OptionalNumberInput
+        key={`resting-${restingHeartRateBpm ?? 'none'}`}
+        label={t('triathlon.settings.restingHeartRate')}
+        invalidMessage={t('triathlon.settings.invalidRestingHeartRate')}
+        savedMessage={t('triathlon.settings.restingHeartRateSaved')}
+        minimum={restingHeartRateRange.minimum}
+        maximum={restingHeartRateRange.maximum}
+        current={restingHeartRateBpm}
+        onSave={onUpdateRestingHeartRate}
       />
       {(['walk', 'run'] as const).map((variant) => (
         <PlanPaceInput

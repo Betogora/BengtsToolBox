@@ -41,7 +41,7 @@ export type ActualTrainingInput = Omit<
 
 export type TrackerSettingsInput = Pick<
   TrackerSettings,
-  'weightKg' | 'planPaceSecondsPerKilometer'
+  'weightKg' | 'restingHeartRateBpm' | 'planPaceSecondsPerKilometer'
 >
 
 type StoredActualTraining = Omit<ActualTraining, 'context'> & {

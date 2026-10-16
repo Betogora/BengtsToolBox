@@ -278,9 +278,15 @@ export function TriathlonTrackerPage() {
               />
               <TrackerSettingsPanel
                 weightKg={tracker.settings.weightKg}
+                restingHeartRateBpm={tracker.settings.restingHeartRateBpm ?? null}
                 planPaces={planPaces}
                 onUpdateWeight={(weightKg) =>
                   requireSuccessfulSync(tracker.updateSettings({ weightKg }))
+                }
+                onUpdateRestingHeartRate={(restingHeartRateBpm) =>
+                  requireSuccessfulSync(
+                    tracker.updateSettings({ restingHeartRateBpm }),
+                  )
                 }
                 onUpdatePlanPace={(variant, paceSeconds) =>
                   requireSuccessfulSync(

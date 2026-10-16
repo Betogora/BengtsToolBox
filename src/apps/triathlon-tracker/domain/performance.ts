@@ -82,7 +82,7 @@ const insufficient = (
   requiredAnchors,
 })
 
-function linearRegression(
+export function linearRegression(
   points: readonly [number, number][],
 ): LinearFit | null {
   if (points.length < 2) {
@@ -108,8 +108,9 @@ export function isComparableContinuousTraining(
   context: TrainingContext,
   asOfLocalDate: string,
   metric: 'distance' | 'power',
-  // Walks and inclined runs only enter efficiency trends via their equivalent.
-  variant: { isWalk?: boolean; allowIncline?: boolean } = {},
+  // Walks and inclined runs only enter efficiency trends via their equivalent;
+  // interval sessions only via their phase table.
+  variant: { isWalk?: boolean; allowIncline?: boolean; intervals?: boolean } = {},
 ) {
   const baseAvailability =
     training.analyticsAvailableFromLocalDate ?? training.localDate
@@ -125,7 +126,7 @@ export function isComparableContinuousTraining(
     (training.context === context ||
       (training.context === null &&
         defaultTrainingContexts[discipline] === context)) &&
-    training.intervals.length === 0 &&
+    training.intervals.length > 0 === Boolean(variant.intervals) &&
     baseAvailability <= asOfLocalDate &&
     (metricAvailability ?? baseAvailability) <= asOfLocalDate &&
     training.localDate <= asOfLocalDate

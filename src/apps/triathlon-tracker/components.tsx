@@ -1123,7 +1123,9 @@ function ActualTrainingDialogContent({
   // Speed in km/h only exists alongside a pace per kilometre.
   const hasSpeed = discipline !== 'swim'
   const metricSpan = hasSpeed ? 'sm:col-span-3' : 'sm:col-span-4'
-  const showIncline = discipline === 'run' && context === 'treadmill'
+  // Interval runs are always flat; only continuous treadmill sessions incline.
+  const showIncline =
+    discipline === 'run' && context === 'treadmill' && intervals.length === 0
   const detailSpan = showIncline ? 'sm:col-span-3' : 'sm:col-span-4'
   // Running phases are the source of the totals. Only the distance stays
   // editable while a phase has no speed yet.
@@ -1222,9 +1224,8 @@ function ActualTrainingDialogContent({
           averagePowerWatts: optionalNumber(interval.averagePowerWatts),
           endHeartRateBpm: optionalNumber(interval.endHeartRateBpm),
         })))
-    const hasIncline = discipline === 'run' && context === 'treadmill'
-    const parsedIncline = hasIncline ? optionalNumber(incline) : null
-    if (hasIncline && incline.trim() !== '' && parsedIncline === null) {
+    const parsedIncline = showIncline ? optionalNumber(incline) : null
+    if (showIncline && incline.trim() !== '' && parsedIncline === null) {
       setError(t('triathlon.form.invalidValues'))
       return
     }

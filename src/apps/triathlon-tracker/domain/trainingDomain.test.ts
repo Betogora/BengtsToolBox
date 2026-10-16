@@ -86,6 +86,12 @@ describe('tracker validation', () => {
     expect(
       validateSettings({ ...settings, planPaceSecondsPerKilometer: { walk: 600, run: 420 } }),
     ).toEqual([])
+    expect(validateSettings({ ...settings, restingHeartRateBpm: 60 })).toEqual([])
+    expect(validateSettings({ ...settings, restingHeartRateBpm: 150 })).toContainEqual({
+      field: 'restingHeartRateBpm',
+      code: 'out-of-range',
+      severity: 'error',
+    })
     expect(validateActualTraining(actual({ context: 'treadmill', isWalk: true, inclinePercent: 8 }))).toEqual([])
     const strength = actual({
       discipline: 'strength', context: null, distanceMeters: null, averageHeartRateBpm: null, rpe: null,
