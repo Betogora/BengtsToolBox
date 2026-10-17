@@ -294,6 +294,9 @@ export function TrainingJournal({
               const intensity = getTrainingIntensity(training)
               const incline = training.inclinePercent ?? 0
               const meta = [
+                training.discipline === 'run' && !training.isWalk
+                  ? t(`triathlon.intensity.${training.intensity ?? 'easy'}`)
+                  : null,
                 training.context
                   ? t(`triathlon.context.${training.context}`)
                   : null,

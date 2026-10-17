@@ -30,6 +30,10 @@ export const defaultWalkContext = 'treadmill' satisfies RunningContext
 
 export type RunVariant = 'run' | 'walk'
 
+/** Purpose of a run: Zone 2, threshold or VO2max. Walks are always easy. */
+export const runIntensities = ['easy', 'threshold', 'vo2max'] as const
+export type RunIntensity = (typeof runIntensities)[number]
+
 /** Pace in seconds per kilometre used to complete planned walks and runs. */
 export const defaultPlanPaces = {
   walk: 600,
@@ -58,6 +62,8 @@ export type PlannedTraining = {
   isWalk?: boolean
   /** Treadmill incline in percent; only for walks and runs. */
   inclinePercent?: number | null
+  /** Only for runs; missing means easy. */
+  intensity?: RunIntensity | null
   durationSeconds: number | null
   distanceMeters: number | null
   label: string
@@ -90,6 +96,8 @@ export type ActualTraining = {
   isWalk?: boolean
   /** Treadmill incline in percent; only for walks and runs. */
   inclinePercent?: number | null
+  /** Only for runs; missing means easy. */
+  intensity?: RunIntensity | null
   context: TrainingContext | null
   durationSeconds: number | null
   distanceMeters: number | null

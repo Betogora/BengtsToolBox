@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:11bc7697f517b3afcc0181d5468c5fa2a2d39e2cf9c139ea92e7183046dc1203">
+  <meta name="specs-source-sha256" content="sha256:ed418b1cbb69988eafc022f50bdd2bff1217484e90113be681d78e519b1a826f">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -914,6 +914,7 @@
             <li>Dauer akzeptiert <code>m:ss</code>, <code>h:mm:ss</code> und Dezimalminuten, auch für Planungen und Intervalle. Bearbeiten erhält die Sekunden. Hauptmesswerte stehen direkt im kompakten Dialog, Intervalle sind aufklappbar. Normale Trainingseinträge öffnen nach dem Speichern das Tagebuch; allgemeine Neueingaben verwenden den Standardkontext.</li>
             <li>Ungültige Eingaben verhindern das Speichern. Abweichende Intervallsummen gegenüber Gesamtdauer/-distanz sind ein Hinweis und blockieren nicht; eine Summe wird nur verglichen, wenn jede Phase den Wert hat. Einheiten bleiben bearbeitbar und löschbar.</li>
             <li>Lauf-Intervalle sind eine Phasentabelle, die schon während des Trainings ausfüllbar ist: Phasen wechseln strikt zwischen locker (Einlaufen, Erholung, Auslaufen) und Intervall, beginnend locker; ein Auslaufen ist optional. Je Phase gelten Dauer, Tempo in km/h (leer übernimmt das Tempo der vorigen gleichartigen Phase, 0 bedeutet Stehen) und Puls am Phasenende. Ein Schema aus Einlaufen, Anzahl, Intervall, Erholung und Auslaufen erzeugt die Zeilen; geplante Läufe mit „N×M min“ in der Bezeichnung öffnen bereits mit Tabelle und füllen die Erholung auf die Plandauer auf. Intervall-Läufe haben keine Steigung, auch nicht auf dem Laufband. Intervalle lassen sich paarweise ergänzen und entfernen; Gesamtdauer und, sobald jede Phase ein Tempo hat, Distanz ergeben sich aus der Tabelle. Schwimmen und Rad behalten die freie Abschnittsliste.</li>
+            <li>Läufe tragen in Plan und Training eine Intensität: Locker (Zone 2), Schwelle oder VO2max; ohne Angabe gilt locker, Gehen ist immer locker. <code>Als erledigt eintragen</code> übernimmt sie. Schwelle und VO2max starten die Tabelle mit 15 min Einlaufen; Schwellen-Erholungen dauern etwa 1 min je 5 min Belastung (1–3 min), VO2max-Erholungen 3 min, kürzere Wiederholungen so lang wie die Belastung, und das Auslaufen füllt die Plandauer auf, mindestens 5 min. Das Tagebuch zeigt die Intensität.</li>
             </ul>
             <h4>Tagebuch, Volumen und Statistik</h4>
             <ul>

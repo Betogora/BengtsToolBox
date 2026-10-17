@@ -4,7 +4,7 @@ import type {
   TrackerSettings,
   ValidationIssue,
 } from '@/apps/triathlon-tracker/types'
-import { trainingContexts } from '@/apps/triathlon-tracker/types'
+import { runIntensities, trainingContexts } from '@/apps/triathlon-tracker/types'
 import { isValidLocalDate } from './dates'
 import { maximumInclinePercent } from './incline'
 import { intervalTotals } from './intervals'
@@ -29,6 +29,7 @@ function validateSharedTraining(
     | 'discipline'
     | 'isWalk'
     | 'inclinePercent'
+    | 'intensity'
     | 'durationSeconds'
     | 'distanceMeters'
   >,
@@ -36,6 +37,14 @@ function validateSharedTraining(
   const issues: ValidationIssue[] = []
   if (training.isWalk && training.discipline !== 'run') {
     issues.push({ field: 'isWalk', code: 'context-mismatch', severity: 'error' })
+  }
+  const intensity = training.intensity ?? null
+  if (intensity !== null) {
+    if (training.discipline !== 'run' || training.isWalk) {
+      issues.push({ field: 'intensity', code: 'context-mismatch', severity: 'error' })
+    } else if (!runIntensities.includes(intensity)) {
+      issues.push({ field: 'intensity', code: 'out-of-range', severity: 'error' })
+    }
   }
   if (!isValidLocalDate(training.localDate)) {
     issues.push({ field: 'localDate', code: 'invalid-date', severity: 'error' })

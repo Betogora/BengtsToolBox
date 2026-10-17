@@ -170,6 +170,8 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
     timeout: 6000,
   })
+  // The sticky footer covers fields mid-scroll; at the end nothing is hidden.
+  await actual.evaluate((dialog) => dialog.scrollTo(0, dialog.scrollHeight))
   await app.expectHealthy()
   await actual.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByRole('tab', { name: 'Tagebuch' })).toHaveAttribute(
@@ -794,3 +796,53 @@ test('Geplante Intervalle öffnen eine Phasentabelle, die unterwegs ausfüllbar 
   await edit.evaluate((dialog) => dialog.scrollTo(0, dialog.scrollHeight))
   await app.expectHealthy()
 })
+
+test(
+  'Geplanter VO2max-Lauf übernimmt Intensität und passende Erholung',
+  { tag: '@desktop' },
+  async ({ app, page }) => {
+    await page.addInitScript(() => {
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        timeZone: 'Europe/Berlin',
+        year: 'numeric',
+      }).formatToParts(new Date())
+      const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+      localStorage.setItem(
+        'app-hub:collection:apps/triathlon-tracker/sessions/default/planned-trainings',
+        JSON.stringify([
+          {
+            id: 'vo2-plan',
+            position: 1,
+            localDate: `${values.year}-${values.month}-${values.day}`,
+            startMinutes: null,
+            discipline: 'run',
+            intensity: 'vo2max',
+            durationSeconds: 3_000,
+            distanceMeters: null,
+            label: 'VO2max 4×4 min',
+          },
+        ]),
+      )
+    })
+    await app.open('/apps/triathlon-tracker')
+    await page.getByRole('tab', { name: 'Planung', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Als erledigt eintragen: VO2max 4×4 min' })
+      .click()
+    const form = page.getByRole('dialog', { name: 'Training eintragen' })
+    await expect(form.getByRole('radio', { name: 'VO2max' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    await expect(form.getByLabel('Einlaufen · Dauer')).toHaveValue('15:00')
+    await expect(form.getByLabel('Erholung · Dauer').first()).toHaveValue('3:00')
+    await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('50:00')
+    await form.getByRole('button', { name: 'Speichern' }).click()
+    await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+    await expect(page.locator('[data-journal-training]')).toContainText('VO2max')
+    await expect(page.locator('[data-journal-training]')).toContainText('4 Intervalle')
+    await app.expectHealthy()
+  },
+)

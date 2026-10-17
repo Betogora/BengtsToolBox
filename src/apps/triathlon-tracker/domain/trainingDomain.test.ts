@@ -106,6 +106,13 @@ describe('tracker validation', () => {
       expect(validateActualTraining(invalid).some((issue) => issue.severity === 'error')).toBe(true)
     }
     expect(validatePlannedTraining({ ...plan, discipline: 'run', inclinePercent: 6 })).toEqual([])
+    expect(validateActualTraining(actual({ intensity: 'threshold' }))).toEqual([])
+    for (const invalid of [
+      actual({ isWalk: true, intensity: 'vo2max' }),
+      actual({ discipline: 'bike', context: 'indoor', intensity: 'threshold' }),
+    ]) {
+      expect(validateActualTraining(invalid).map((issue) => issue.field)).toContain('intensity')
+    }
     for (const invalid of [
       actual({ context: 'road', inclinePercent: 3 }),
       actual({ context: 'treadmill', inclinePercent: 45 }),

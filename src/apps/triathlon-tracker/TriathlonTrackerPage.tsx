@@ -67,7 +67,11 @@ async function requireSuccessfulSync<T extends { ok: boolean; error: unknown }>(
 function plannedRunIntervals(training: PlannedTraining) {
   const scheme =
     training.discipline === 'run'
-      ? plannedIntervalScheme(training.label, training.durationSeconds)
+      ? plannedIntervalScheme(
+          training.label,
+          training.durationSeconds,
+          training.isWalk ? 'easy' : (training.intensity ?? 'easy'),
+        )
       : null
   return scheme
     ? intervalSegmentsFromScheme(scheme, () => `interval-${crypto.randomUUID()}`)
@@ -152,6 +156,7 @@ export function TriathlonTrackerPage() {
       discipline: training.discipline,
       isWalk: training.isWalk ?? false,
       inclinePercent: training.inclinePercent ?? null,
+      intensity: training.intensity ?? null,
       durationSeconds: training.durationSeconds,
       distanceMeters: training.distanceMeters,
       intervals: plannedRunIntervals(training),

@@ -1,4 +1,4 @@
-import type { IntervalSegment } from '@/apps/triathlon-tracker/types'
+import type { IntervalSegment, RunIntensity } from '@/apps/triathlon-tracker/types'
 
 /**
  * Running intervals alternate strictly: a session starts easy, every odd
@@ -36,6 +36,45 @@ export const defaultIntervalScheme: IntervalScheme = {
 
 export const maximumIntervalRepetitions = 49
 
+// Quality sessions start with a longer warm-up and end with ten easy minutes.
+const qualityWarmUpSeconds = 900
+const qualityCoolDownSeconds = 600
+const minimumCoolDownSeconds = 300
+
+/**
+ * Threshold reps rest about one minute per five (1–3 min) so the intensity
+ * stays continuous; VO2max reps rest three minutes, short ones as long as
+ * they last.
+ */
+function qualityRecoverySeconds(
+  intensity: Exclude<RunIntensity, 'easy'>,
+  workSeconds: number,
+) {
+  if (intensity === 'vo2max') return Math.min(workSeconds, 180)
+  return Math.min(180, Math.max(60, Math.round(workSeconds / 5 / 30) * 30))
+}
+
+function qualityScheme(
+  intensity: Exclude<RunIntensity, 'easy'>,
+  repetitions: number,
+  workSeconds: number,
+): IntervalScheme {
+  return {
+    warmUpSeconds: qualityWarmUpSeconds,
+    repetitions,
+    workSeconds,
+    recoverySeconds: qualityRecoverySeconds(intensity, workSeconds),
+    coolDownSeconds: qualityCoolDownSeconds,
+  }
+}
+
+/** Starting scheme of the table for each kind of run. */
+export const intervalSchemeDefaults: Record<RunIntensity, IntervalScheme> = {
+  easy: defaultIntervalScheme,
+  threshold: qualityScheme('threshold', 3, 600),
+  vo2max: qualityScheme('vo2max', 4, 240),
+}
+
 /** Phase durations of a scheme; a cool-down of zero ends on the last interval. */
 export function buildIntervalScheme(scheme: IntervalScheme): number[] {
   const durations = [scheme.warmUpSeconds]
@@ -55,6 +94,7 @@ export function buildIntervalScheme(scheme: IntervalScheme): number[] {
 export function plannedIntervalScheme(
   label: string,
   plannedDurationSeconds: number | null,
+  intensity: RunIntensity = 'easy',
 ): IntervalScheme | null {
   const match = /(\d+)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*(?:min|')/i.exec(label)
   if (!match) return null
@@ -66,6 +106,23 @@ export function plannedIntervalScheme(
     workSeconds <= 0
   ) {
     return null
+  }
+  if (intensity !== 'easy') {
+    // Quality runs rest by purpose; the cool-down absorbs the plan duration.
+    const scheme = qualityScheme(intensity, repetitions, workSeconds)
+    if (plannedDurationSeconds === null) return scheme
+    const remaining =
+      plannedDurationSeconds -
+      scheme.warmUpSeconds -
+      repetitions * workSeconds -
+      (repetitions - 1) * scheme.recoverySeconds
+    return {
+      ...scheme,
+      coolDownSeconds: Math.max(
+        minimumCoolDownSeconds,
+        Math.round(remaining / 30) * 30,
+      ),
+    }
   }
   const { warmUpSeconds, coolDownSeconds } = defaultIntervalScheme
   const remaining =

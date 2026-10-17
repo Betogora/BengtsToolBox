@@ -5,7 +5,7 @@ import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { defaultWalkContext, trainingContexts } from './types'
+import { defaultWalkContext, runIntensities, trainingContexts } from './types'
 
 import type {
   ActualTraining,
@@ -14,6 +14,7 @@ import type {
   IntervalSegment,
   PlannedTraining,
   PlanPaces,
+  RunIntensity,
   RunningContext,
   TrainingDiscipline,
   SwimmingContext,
@@ -74,8 +75,8 @@ import { estimateCyclingPowerWatts } from './domain/cyclingPower'
 import {
   buildIntervalScheme,
   countWorkPhases,
-  defaultIntervalScheme,
   insertIntervalPair,
+  intervalSchemeDefaults,
   intervalDistanceMeters,
   intervalKindAt,
   intervalPhaseAt,
@@ -267,6 +268,29 @@ function RunVariantControl({
   )
 }
 
+function RunIntensityControl({
+  intensity,
+  onIntensityChange,
+}: {
+  intensity: RunIntensity
+  onIntensityChange: (intensity: RunIntensity) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <SegmentedControl
+      aria-label={t('triathlon.intensity.label')}
+      className="col-span-2 w-full sm:col-span-full"
+      data-run-intensity
+      value={intensity}
+      onValueChange={(value) => onIntensityChange(value as RunIntensity)}
+      options={runIntensities.map((value) => ({
+        value,
+        label: t(`triathlon.intensity.${value}`),
+      }))}
+    />
+  )
+}
+
 type PlannedTrainingDialogProps = {
   initialDate: string
   open: boolean
@@ -321,6 +345,9 @@ function PlannedTrainingDialogContent({
     planMetrics
   const [label, setLabel] = useState((training ?? template)?.label ?? '')
   const [isWalk, setIsWalk] = useState((training ?? template)?.isWalk ?? false)
+  const [intensity, setIntensity] = useState<RunIntensity>(
+    (training ?? template)?.intensity ?? 'easy',
+  )
   const [incline, setIncline] = useState(
     inclineToInput((training ?? template)?.inclinePercent),
   )
@@ -377,6 +404,7 @@ function PlannedTrainingDialogContent({
         discipline,
         isWalk: discipline === 'run' && isWalk,
         inclinePercent: parsedIncline,
+        intensity: discipline === 'run' && !isWalk ? intensity : null,
         durationSeconds: parsedDuration,
         distanceMeters:
           parsedDistance === null || discipline === 'strength'
@@ -442,6 +470,12 @@ function PlannedTrainingDialogContent({
             <RunVariantControl
               isWalk={isWalk}
               onIsWalkChange={(next) => changePlanKind('run', next)}
+            />
+          )}
+          {discipline === 'run' && !isWalk && (
+            <RunIntensityControl
+              intensity={intensity}
+              onIntensityChange={setIntensity}
             />
           )}
           {discipline !== 'strength' && (
@@ -753,14 +787,20 @@ const phaseInputClass = 'h-9 px-1 text-center tabular-nums'
 
 type SchemeDraft = Record<keyof IntervalScheme, string>
 
-function SchemeForm({ onCreate }: { onCreate: (phases: IntervalDraft[]) => void }) {
+function SchemeForm({
+  defaults,
+  onCreate,
+}: {
+  defaults: IntervalScheme
+  onCreate: (phases: IntervalDraft[]) => void
+}) {
   const { t } = useI18n()
   const [scheme, setScheme] = useState<SchemeDraft>(() => ({
-    warmUpSeconds: formatTrainingDurationInput(defaultIntervalScheme.warmUpSeconds),
-    repetitions: `${defaultIntervalScheme.repetitions}`,
-    workSeconds: formatTrainingDurationInput(defaultIntervalScheme.workSeconds),
-    recoverySeconds: formatTrainingDurationInput(defaultIntervalScheme.recoverySeconds),
-    coolDownSeconds: formatTrainingDurationInput(defaultIntervalScheme.coolDownSeconds),
+    warmUpSeconds: formatTrainingDurationInput(defaults.warmUpSeconds),
+    repetitions: `${defaults.repetitions}`,
+    workSeconds: formatTrainingDurationInput(defaults.workSeconds),
+    recoverySeconds: formatTrainingDurationInput(defaults.recoverySeconds),
+    coolDownSeconds: formatTrainingDurationInput(defaults.coolDownSeconds),
   }))
   const durations = {
     warmUpSeconds: parseTrainingDuration(scheme.warmUpSeconds),
@@ -835,18 +875,27 @@ function SchemeForm({ onCreate }: { onCreate: (phases: IntervalDraft[]) => void 
 function RunIntervalTable({
   phases,
   totals,
+  intensity,
   onChange,
 }: {
   phases: IntervalDraft[]
   /** Sums the dialog already derived from the same phases. */
   totals: ReturnType<typeof intervalTotals> | null
+  /** Picks the scheme the empty table starts from. */
+  intensity: RunIntensity
   onChange: (phases: IntervalDraft[]) => void
 }) {
   const { formatNumber, t } = useI18n()
   const speeds = inheritedPhaseSpeeds(phases)
 
   if (phases.length === 0 || !totals) {
-    return <SchemeForm onCreate={onChange} />
+    return (
+      <SchemeForm
+        key={intensity}
+        defaults={intervalSchemeDefaults[intensity]}
+        onCreate={onChange}
+      />
+    )
   }
 
   const update = (id: string, partial: Partial<IntervalDraft>) =>
@@ -1067,6 +1116,9 @@ function ActualTrainingDialogContent({
   } = metrics
   const [isBenchmark, setIsBenchmark] = useState(initial?.isBenchmark ?? false)
   const [isWalk, setIsWalk] = useState(initial?.isWalk ?? false)
+  const [intensity, setIntensity] = useState<RunIntensity>(
+    initial?.intensity ?? 'easy',
+  )
   const [averageHeartRateBpm, setAverageHeartRateBpm] = useState(
     initial?.averageHeartRateBpm == null
       ? ''
@@ -1233,6 +1285,7 @@ function ActualTrainingDialogContent({
       isBenchmark: !isStrength && isBenchmark,
       isWalk: discipline === 'run' && isWalk,
       inclinePercent: parsedIncline,
+      intensity: discipline === 'run' && !isWalk ? intensity : null,
       localDate,
       startMinutes: timeToMinutes(startTime),
       discipline,
@@ -1342,6 +1395,12 @@ function ActualTrainingDialogContent({
             <RunVariantControl
               isWalk={isWalk}
               onIsWalkChange={handleIsWalkChange}
+            />
+          )}
+          {discipline === 'run' && !isWalk && (
+            <RunIntensityControl
+              intensity={intensity}
+              onIntensityChange={setIntensity}
             />
           )}
         </fieldset>
@@ -1496,6 +1555,7 @@ function ActualTrainingDialogContent({
                     <RunIntervalTable
                       phases={intervals}
                       totals={phaseTotals}
+                      intensity={isWalk ? 'easy' : intensity}
                       onChange={setIntervals}
                     />
                   ) : (

@@ -61,6 +61,24 @@ describe('alternating interval phases', () => {
     },
   )
 
+  it.each([
+    ['Schwelle 3×8 min', minutes(52), 'threshold', [480, 90, 600]],
+    ['Schwelle 2×15 min', null, 'threshold', [900, 180, 600]],
+    ['VO2max 4×4 min', minutes(50), 'vo2max', [240, 180, 600]],
+    // A short plan still keeps five minutes to cool down.
+    ['VO2max 3×4 min', minutes(35), 'vo2max', [240, 180, 300]],
+  ] as const)(
+    'rests %s by its purpose',
+    (label, duration, intensity, [workSeconds, recoverySeconds, coolDownSeconds]) => {
+      expect(plannedIntervalScheme(label, duration, intensity)).toMatchObject({
+        warmUpSeconds: minutes(15),
+        workSeconds,
+        recoverySeconds,
+        coolDownSeconds,
+      })
+    },
+  )
+
   it('ignores plans without an interval scheme', () => {
     expect(plannedIntervalScheme('Long Run', minutes(45))).toBeNull()
     expect(plannedIntervalScheme('Deload · locker', minutes(30))).toBeNull()
