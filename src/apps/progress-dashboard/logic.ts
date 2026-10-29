@@ -2,12 +2,17 @@ import type {
   PlayerScore,
   ProgressDrinkIcon,
   ProgressEvent,
+  ProgressEventDelta,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import { createRandomId } from '@/apps/shared/utils'
 import { getParticipantColorByPosition } from '@/lib/theme'
 
 export const defaultProgressDrinkIcon: ProgressDrinkIcon = 'beer'
+
+export function getDrinkIconEventDelta(icon: ProgressDrinkIcon): ProgressEventDelta {
+  return icon === 'schnaps' ? 0.5 : 1
+}
 
 export function createProgressPlayer(
   players: ProgressPlayer[],

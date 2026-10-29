@@ -28,7 +28,7 @@ test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
   await app.expectHealthy()
 })
 
-test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe responsiv', async ({
+test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung responsiv', async ({
   app,
   page,
 }) => {
@@ -96,49 +96,61 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
   const chart = page.getByRole('group', { name: 'Getränke-Dashboard' })
   const progressList = page.getByRole('list', { name: 'Topliste' })
   const progressItems = progressList.getByRole('listitem')
+  const viewportWidth = page.viewportSize()!.width
 
   await expect(chart).toBeVisible()
-  const chartUnit = chart.locator('text').filter({ hasText: /^Getränke$/ })
-  if (page.viewportSize()!.width < 768) await expect(chartUnit).toBeHidden()
-  else await expect(chartUnit).toBeVisible()
-  await expect(progressList).toBeVisible()
+  await expect(chart.locator('text').filter({ hasText: /^Getränke$/ })).toBeVisible()
+  await expect(chart.locator('path[stroke="#facc15" i]')).toHaveCount(1)
+  await expect(page.locator('[data-progress-leader]')).toContainText('Person 1')
   await expect(progressItems).toHaveCount(5)
   await expect(progressItems.nth(0)).toContainText('Person 1')
   await expect(progressItems.nth(1)).toContainText('Jan')
   await expect(progressItems.nth(2)).toContainText('Niggy')
   await expect(progressItems.nth(3)).toContainText('Eddy')
   await expect(progressItems.nth(4)).toContainText('Bengt')
-  await expect(progressList.locator('[data-progress-variant="detailed"]')).toHaveCount(3)
-  await expect(progressList.locator('[data-progress-variant="compact"]')).toHaveCount(2)
-  await expect(progressList.getByRole('img')).toHaveCount(5)
-  await expect(progressList.getByRole('button')).toHaveCount(0)
+
+  // Ab Desktop-Breite steht die Topliste neben dem Diagramm, darunter sonst.
+  const chartBounds = (await chart.boundingBox())!
+  const listBounds = (await progressList.boundingBox())!
+  if (viewportWidth >= 1024) expect(listBounds.x).toBeGreaterThan(chartBounds.x + chartBounds.width)
+  else expect(listBounds.y).toBeGreaterThan(chartBounds.y + chartBounds.height)
+  await app.expectHealthy()
+
+  await page.getByRole('button', { name: /^Spieler/, expanded: false }).click()
   const storedColor = page.getByRole('button', { name: 'Person 1 Farbe wählen' }).locator('span')
   await expect(storedColor).toHaveCSS('background-color', 'rgb(250, 204, 21)')
-  await expect(progressItems.nth(0).locator('path')).toHaveAttribute('stroke', /#facc15/i)
-  await expect(progressItems.nth(3).locator('path')).toHaveAttribute('stroke', /#fd7261/i)
 
-  const chartBounds = await chart.boundingBox()
-  const listBounds = await progressList.boundingBox()
-  const summary = page.getByRole('textbox', { name: 'Einheit' }).locator('xpath=ancestor::*[@data-slot="card-header"]')
-  const summaryBounds = await summary.boundingBox()
-  expect(summaryBounds!.y + summaryBounds!.height).toBeLessThanOrEqual(chartBounds!.y)
-  if ((page.viewportSize()?.width ?? 0) >= 900) {
-    const frameBounds = await chart.locator('..').boundingBox()
-    expect(Math.abs(frameBounds!.width - (summaryBounds!.width - 48))).toBeLessThanOrEqual(2)
-  }
+  // Ein zentraler Knopf: Spieler, Getränk und eine halbe Menge im Dialog wählen.
+  await page.getByRole('button', { name: 'Eintragen', exact: true }).filter({ visible: true }).click()
+  const entryDialog = page.getByRole('dialog', { name: 'Eintragen' })
+  await expect(entryDialog.getByRole('button', { name: 'Spieler wählen' })).toBeDisabled()
+  await entryDialog.getByRole('radio', { name: 'Jan' }).click()
+  await entryDialog.getByRole('radio', { name: 'Wein' }).click()
+  await entryDialog.getByRole('radio', { name: '½', exact: true }).click()
+  await entryDialog.getByRole('button', { name: '0,5 Wein für Jan speichern' }).click()
+  await expect(entryDialog).toBeHidden()
+  await expect(progressItems.nth(1)).toContainText('10')
+  const lastEvent = await page.evaluate((key) => {
+    const datasets = JSON.parse(window.localStorage.getItem(key) ?? '[]')
+    return datasets[0]?.events.at(-1)
+  }, progressDatasetsStorageKey)
+  expect(lastEvent).toMatchObject({ playerId: 'person-2', icon: 'wine', valueDelta: 0.5 })
 
-  expect(listBounds?.y ?? 0).toBeGreaterThan(
-    (chartBounds?.y ?? 0) + (chartBounds?.height ?? 0),
-  )
+  // Das zuletzt gewählte Getränk wird beim nächsten Eintrag für Jan vorgeschlagen.
+  await page.getByRole('button', { name: 'Eintragen', exact: true }).filter({ visible: true }).click()
+  await entryDialog.getByRole('radio', { name: 'Jan' }).click()
+  await expect(entryDialog.getByRole('radio', { name: 'Wein' })).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Escape')
   await app.expectHealthy()
 
   await page.getByRole('button', { name: 'Datensatz', exact: false }).click()
   const dateInput = page.locator('input[aria-label="Datum"]:visible').first()
   const timeInput = page.locator('input[aria-label="Uhrzeit"]:visible').first()
-  const readTimestamp = () => page.evaluate((key) => {
+  // Die oberste Tabellenzeile ist der zuletzt eingetragene Wein für Jan.
+  const readTimestamp = () => page.evaluate(({ key, eventId }) => {
     const datasets = JSON.parse(window.localStorage.getItem(key) ?? '[]')
-    return datasets[0]?.events.find((event: { id: string }) => event.id === 'event-8')?.createdAtClientIso
-  }, progressDatasetsStorageKey)
+    return datasets[0]?.events.find((event: { id: string }) => event.id === eventId)?.createdAtClientIso
+  }, { key: progressDatasetsStorageKey, eventId: lastEvent.id })
   const timestamp = await readTimestamp()
 
   await dateInput.fill('2026-02-29')
@@ -158,7 +170,7 @@ test('Fortschritts-Dashboard zeigt Diagramm und statische Spieler-Verläufe resp
   await app.expectHealthy()
 })
 
-test('Fortschritts-Dashboard zeigt Spieler-Verläufe auch ohne Ereignisse', async ({
+test('Fortschritts-Dashboard zeigt Topliste ohne Führung auch ohne Ereignisse', async ({
   app,
   page,
 }) => {
@@ -200,10 +212,7 @@ test('Fortschritts-Dashboard zeigt Spieler-Verläufe auch ohne Ereignisse', asyn
 
   await expect(page.getByText('Noch keine Ereignisse im aktuellen Datensatz.')).toBeVisible()
   await expect(progressList.getByRole('listitem')).toHaveCount(2)
-  await expect(progressList.locator('[data-progress-variant="detailed"]')).toHaveCount(2)
-  await expect(progressList.locator('[data-progress-variant="compact"]')).toHaveCount(0)
-  await expect(progressList.getByRole('img')).toHaveCount(2)
-  await expect(progressList.getByRole('button')).toHaveCount(0)
+  await expect(page.locator('[data-progress-leader]')).toHaveText('Führung: –')
   await app.expectHealthy()
 })
 

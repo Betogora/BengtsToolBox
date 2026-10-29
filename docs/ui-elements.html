@@ -263,6 +263,7 @@
       <a href="#primitive">Primitive</a>
       <a href="#shared">Shared Patterns</a>
       <a href="#triathlon">Triathlon · Fachmuster</a>
+      <a href="#progress">Fortschritt · Fachmuster</a>
       <a href="#icons">Icons &amp; Assets</a>
       <a href="#states">Zustände</a>
     </nav>
@@ -559,6 +560,47 @@
               <div style="display:flex;align-items:flex-end;gap:.8rem;height:7rem;margin-top:.6rem;padding:0 .25rem;border-bottom:1px solid var(--border);background:repeating-linear-gradient(to top,transparent 0 34px,var(--border) 34px 35px)"><i style="flex:1;height:38%;border-radius:6px 6px 0 0;background:#ead9b0"></i><i style="flex:1;height:52%;border-radius:6px 6px 0 0;background:#ead9b0"></i><i style="flex:1;height:66%;border-radius:6px 6px 0 0;background:#ead9b0"></i><i style="flex:1;height:86%;border-radius:6px 6px 0 0;background:var(--bike)"></i><i style="flex:1;height:72%;border:1.5px dashed var(--bike);border-bottom:0;border-radius:6px 6px 0 0"></i></div>
               <div class="cx-row" style="flex-wrap:wrap;gap:.9rem;margin-top:.7rem"><span class="cx-row cx-meta" style="gap:.35rem"><span class="cx-dot" style="--c:var(--bike)"></span>Aktuell</span><span class="cx-row cx-meta" style="gap:.35rem"><span class="cx-dot" style="--c:#ead9b0"></span>Verlauf</span><span class="cx-row cx-meta" style="gap:.35rem"><span class="cx-dot" style="--c:transparent;border:1.5px dashed var(--bike)"></span>Modell</span></div>
               <details class="group" style="margin-top:.4rem"><summary class="catalog-disclosure" style="width:fit-content;gap:.4rem;font-size:.8125rem;font-weight:600;color:var(--muted-foreground)">Daten als Tabelle anzeigen<span data-demo="DisclosureIndicator"></span></summary><p class="cx-meta">Werte aller Diagramme gemeinsam aufklappbar</p></details>
+            </div></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="catalog-section" id="progress" data-filter-section>
+        <div class="section-heading"><div><h2>Fortschritt · Fachmuster</h2></div></div>
+        <div class="catalog-grid">
+          <article class="catalog-card" data-catalog-item data-source="src/apps/progress-dashboard/ProgressDashboardPage.tsx">
+            <div class="catalog-card__header"><div><h3>Statusanzeige im Seitenkopf</h3></div></div>
+            <div class="preview preview--center"><div class="cx-row" style="flex-wrap:wrap;gap:.5rem">
+              <span class="demo-button demo-button--outline" style="cursor:default"><svg class="icon" style="color:var(--brand-primary)"><use href="#i-trophy"/></svg><span class="cx-dot" style="--c:#f0047f;width:.625rem;height:.625rem"></span>Bengt<span class="cx-num" style="color:var(--muted-foreground);font-weight:500">7</span></span>
+              <span class="demo-button demo-button--outline"><svg class="icon"><use href="#i-monitor"/></svg>Presenter</span>
+            </div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/apps/progress-dashboard/components.tsx">
+            <div class="catalog-card__header"><div><h3>Personenauswahl im Eintragsdialog</h3></div></div>
+            <div class="preview preview--center"><div style="display:grid;width:min(100%,22rem);gap:.6rem">
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem">
+                <span class="cx-row" style="gap:.5rem;min-height:2.75rem;padding:0 .75rem;border:1px solid #7b0fff;border-radius:10px;background:color-mix(in srgb,#7b0fff 10%,#fff);box-shadow:inset 0 0 0 1px #7b0fff;font-size:.875rem;font-weight:600"><span style="display:grid;width:1rem;height:1rem;place-items:center;border-radius:50%;background:#7b0fff;color:#fff"><svg class="icon" style="width:.75rem;height:.75rem;stroke-width:3"><use href="#i-check"/></svg></span>Paul</span>
+                <span class="cx-row" style="gap:.5rem;min-height:2.75rem;padding:0 .75rem;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:.875rem;font-weight:600"><span style="width:1rem;height:1rem;border-radius:50%;background:#14b8a6"></span>Lennart</span>
+              </div>
+              <span class="demo-button" style="min-height:2.75rem"><span class="cx-dot" style="--c:#7b0fff;width:.625rem;height:.625rem;box-shadow:0 0 0 2px rgb(255 255 255 / 80%)"></span>0,5 Bier für Paul speichern</span>
+            </div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/apps/progress-dashboard/ProgressDashboardPage.tsx">
+            <div class="catalog-card__header"><div><h3>Topliste mit Podiumsziffer</h3></div></div>
+            <div class="preview preview--center"><div class="cx-panel" style="width:min(100%,20rem)">
+              <div style="display:grid;grid-template-columns:2.25rem 1fr auto;align-items:center;gap:.75rem;min-height:3.5rem;padding:0 .75rem;border-bottom:1px solid var(--border)"><span class="cx-num" style="display:grid;width:2rem;height:2rem;place-items:center;border:1px solid rgb(201 150 26 / 50%);border-radius:10px;background:var(--podium-1-strong, #f7e3a3)">1</span><span class="cx-row" style="gap:.5rem;font-weight:600"><span class="cx-dot" style="--c:#f0047f"></span>Bengt</span><span class="cx-num" style="font-size:1.25rem">7</span></div>
+              <div style="display:grid;grid-template-columns:2.25rem 1fr auto;align-items:center;gap:.75rem;min-height:3.5rem;padding:0 .75rem"><span class="cx-num" style="display:grid;width:2rem;height:2rem;place-items:center;border:1px solid var(--border);border-radius:10px;background:#fff">4</span><span class="cx-row" style="gap:.5rem;font-weight:600"><span class="cx-dot" style="--c:#14b8a6"></span>Maximiliane</span><span class="cx-num" style="font-size:1.25rem">2,5</span></div>
+            </div></div>
+          </article>
+
+          <article class="catalog-card" data-catalog-item data-source="src/apps/progress-dashboard/components.tsx">
+            <div class="catalog-card__header"><div><h3>Kompakte Archivzeile</h3></div></div>
+            <div class="preview preview--center"><div class="cx-panel" style="display:flex;align-items:center;gap:.25rem;width:min(100%,20rem);padding:.5rem .5rem .5rem .75rem">
+              <div style="min-width:0;flex:1"><div style="font-size:.875rem;font-weight:600">Datensatz</div><div class="cx-meta">11.10.2026, 03:00:00 · 10 Ereignisse</div></div>
+              <span style="display:grid;width:2.25rem;height:2.25rem;place-items:center;color:var(--brand-primary)"><svg class="icon" style="transform:rotate(90deg)"><use href="#i-chevron"/></svg></span>
+              <span style="display:grid;width:2.25rem;height:2.25rem;place-items:center;color:var(--muted-foreground)"><svg class="icon"><use href="#i-trash"/></svg></span>
             </div></div>
           </article>
         </div>

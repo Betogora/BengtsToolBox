@@ -300,7 +300,10 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Änderungen der Einheit aktualisieren einen noch automatisch abgeleiteten Diagrammtitel mit.
 - „Archivieren und neu starten“ kopiert den aktiven Datensatz mit Datumsnamen ins Archiv und erzeugt einen leeren aktiven Datensatz. Mehrere Archive desselben lokalen Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
 - Archive können umbenannt und gelöscht werden.
-- Die aktive Seite zeigt Desktop und mobil ein interaktives Zeitdiagramm mit einer gemeinsamen Rangliste darunter. Die ersten drei Personen besitzen dauerhaft sichtbare, farbige Detailverläufe; weitere Personen erscheinen als kompakte Zeilen mit Mini-Verlauf und ohne Aufklappsteuerung.
+- Die aktive Seite zeigt das interaktive Zeitdiagramm ohne eigene Box auf der Seite; es zeichnet in Pixeln der tatsächlichen Breite mit runden Achsenwerten und vollen oder halben Uhrzeiten. Die Topliste steht ab Desktop-Breite daneben, sonst darunter; dort bleibt das Diagramm angeheftet, solange die Topliste läuft. Podiumsfarben erscheinen nur auf Plätzen mit Punkten.
+- Die Führung steht im Seitenkopf neben dem Presenter; ohne Punkte führt niemand.
+- Eingetragen wird über einen zentralen Knopf, unter der Topliste beziehungsweise mobil fest am unteren Rand. Der Dialog wählt bewusst ohne Vorauswahl Person, Getränk und Menge (Schnellwerte ¼, ½, 1, 2, 3 und −/+); das gewählte Getränk wird als Standard der Person gespeichert.
+- Personen, Farben und Einheit werden in einem eingeklappten Bereich verwaltet.
 - Der Presenter zeigt Stand, Führung, Eventzahl und Gesamtscore.
 
 ### 5.8 Sushi Map

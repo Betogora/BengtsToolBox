@@ -441,6 +441,108 @@ review.scenes['sushi-umbenennen'] = {
   },
 }
 
+// Fortschritts-Dashboard: fünf Spieler (einer mit langem Namen) über einen Abend, ein Archiv.
+const progressPath = '/apps/progress-dashboard'
+const seedProgress = () => {
+  const base = 'apps/progress-dashboard/sessions/default'
+  const players = [
+    ['person-1', 'Paul', '#7b0fff', 'beer'],
+    ['person-2', 'Bengt', '#f0047f', 'wine'],
+    ['person-3', 'Maximiliane von Hohenstein', '#14b8a6', 'schnaps'],
+    ['person-4', 'Lennart', '#ffb020', 'beer'],
+    ['person-5', 'Jo', '#2f6fed', 'funnel'],
+  ].map(([id, name, color, defaultEventIcon], index) => ({
+    id, name, color, defaultEventIcon, position: index + 1,
+  }))
+  const plan = [
+    ['person-1', 'beer', 1], ['person-2', 'wine', 1], ['person-1', 'beer', 1],
+    ['person-4', 'beer', 1], ['person-3', 'schnaps', 0.5], ['person-2', 'wine', 1],
+    ['person-1', 'beer', 1], ['person-5', 'funnel', 1], ['person-4', 'beer', 1],
+    ['person-2', 'wine', 1], ['person-3', 'schnaps', 0.5], ['person-1', 'beer', 1],
+    ['person-2', 'beer', 1], ['person-4', 'beer', 1], ['person-3', 'schnaps', 0.5],
+    ['person-1', 'beer', 1], ['person-2', 'wine', 1], ['person-5', 'funnel', 1],
+    ['person-3', 'wine', 1], ['person-2', 'wine', 1], ['person-1', 'schnaps', 0.5],
+    ['person-4', 'beer', 1], ['person-2', 'beer', 1], ['person-1', 'beer', 1],
+  ]
+  const start = new Date()
+  start.setHours(19, 0, 0, 0)
+  const byId = Object.fromEntries(players.map((player) => [player.id, player]))
+  const empty = new URLSearchParams(location.search).has('review-empty')
+  const events = (empty ? [] : plan).map(([playerId, icon, valueDelta], index) => {
+    const date = new Date(start.getTime() + index * 9 * 60_000)
+    return {
+      id: `progress-preview-${index}`,
+      playerId,
+      playerName: byId[playerId].name,
+      playerColor: byId[playerId].color,
+      valueDelta,
+      icon,
+      createdAtClientIso: date.toISOString(),
+      createdAtLabel: date.toLocaleString('de-DE'),
+      position: index + 1,
+    }
+  })
+  localStorage.setItem('bengtstoolbox.language', 'de')
+  localStorage.setItem(`app-hub:collection:${base}/players`, JSON.stringify(players))
+  localStorage.setItem(
+    `app-hub:collection:${base}/datasets`,
+    JSON.stringify([
+      { id: 'dataset-current', position: 2, name: 'Datensatz', chartTitle: 'Getränke-Dashboard', unit: 'Getränke', status: 'active', createdAtClientIso: start.toISOString(), archivedAtClientIso: null, events },
+      { id: 'dataset-archived', position: 1, name: 'Datensatz', chartTitle: 'Getränke-Dashboard', unit: 'Getränke', status: 'archived', createdAtClientIso: '2026-10-10T17:00:00.000Z', archivedAtClientIso: '2026-10-11T01:00:00.000Z', events: events.slice(0, 10) },
+    ]),
+  )
+  localStorage.setItem(
+    `app-hub:doc:${base}/state/default`,
+    JSON.stringify({ activeDatasetId: 'dataset-current' }),
+  )
+}
+const progressSetup = review.setup
+review.setup = async (page, base) => {
+  await progressSetup(page, base)
+  await page.addInitScript(seedProgress)
+}
+const progressReady = (page) => page.locator('svg[role=group]').first().waitFor()
+Object.assign(review.scenes, {
+  'progress-start': { path: progressPath, run: async ({ page }) => progressReady(page) },
+  'progress-scroll': {
+    path: progressPath,
+    run: async ({ page }) => {
+      await progressReady(page)
+      await page.evaluate(() => scrollTo(0, 640))
+    },
+  },
+  // Zentraler Eintragsdialog mit Spieler Paul und halber Menge.
+  'progress-eintragen': {
+    path: progressPath,
+    run: async ({ page }) => {
+      await page.getByRole('button', { name: 'Eintragen', exact: true }).filter({ visible: true }).click()
+      const dialog = page.getByRole('dialog')
+      await dialog.getByRole('radio', { name: 'Paul' }).click()
+      await dialog.getByRole('radio', { name: '½', exact: true }).click()
+      await page.waitForTimeout(300)
+    },
+  },
+  'progress-verwalten': {
+    path: progressPath,
+    run: async ({ page }) => {
+      const setup = page.getByRole('button', { name: /^Spieler/ }).first()
+      await setup.click()
+      await page.waitForTimeout(300)
+      await setup.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+      await page.evaluate(() => scrollBy(0, -96))
+    },
+  },
+  'progress-archiv': {
+    path: progressPath,
+    run: async ({ page }) => {
+      await page
+        .getByText('Alte Datensätze', { exact: true })
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    },
+  },
+  'progress-leer': { path: `${progressPath}?review-empty=1` },
+})
+
 Object.assign(review.scenes, {
   hub: { path: '/' },
   'hub-qr': {

@@ -6,20 +6,23 @@ import {
   Trophy,
   UsersRound,
 } from 'lucide-react'
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 import {
   ArchiveDatasetCard,
+  DashboardProgressChart,
   EventTable,
-  PlayerCard,
+  PlayerSetupList,
   ProgressChart,
+  ProgressEntryDialog,
 } from '@/apps/progress-dashboard/components'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import type {
   PlayerScore,
   ProgressDataset,
+  ProgressDrinkIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
@@ -41,6 +44,7 @@ import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
+
 
 function getPodiumRowClass(rank: number) {
   return cn(
@@ -176,6 +180,7 @@ function ProgressDashboardPresenter({
   )
 }
 
+
 export function ProgressDashboardPage() {
   const { t } = useI18n()
   const {
@@ -206,21 +211,73 @@ export function ProgressDashboardPage() {
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
   const unitLabel = activeDataset.unit.trim()
   const [isActiveDatasetOpen, setIsActiveDatasetOpen] = useState(false)
-  const chartAccentStyle = {
-    '--progress-accent': leader?.player.color ?? 'var(--primary)',
-  } as CSSProperties
+  const [isPlayerSetupOpen, setIsPlayerSetupOpen] = useState(false)
+  // Der Schlüssel setzt den Dialog bei jedem Öffnen auf den Ausgangszustand zurück.
+  const [entry, setEntry] = useState({ key: 0, open: false })
   const appTitle = t('app.progressDashboard.title')
+  const rankedPlayerScores = [...playerScores].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.player.position - right.player.position,
+  )
+  // Ohne Punkte führt niemand.
+  const shownLeader = leader && leader.score > 0 ? leader : undefined
+
+  const addDrink = async (
+    player: ProgressPlayer,
+    icon: ProgressDrinkIcon,
+    amount: number,
+  ) => {
+    const didSave = await addEvent(player, icon, amount)
+
+    if (!didSave) {
+      toast.error(t('common.syncError'))
+      return
+    }
+
+    toast.success(t('progress.savedDelta', { delta: `+${formatNumber(amount)}` }))
+    // Das zuletzt gewählte Getränk wird beim nächsten Eintrag vorgeschlagen.
+    if (icon !== player.defaultEventIcon) {
+      void updatePlayerDefaultEventIcon(player.id, icon)
+    }
+  }
+
+  const entryButton = (className?: string) => (
+    <Button
+      className={cn('h-11 w-full', className)}
+      onClick={() => setEntry((current) => ({ key: current.key + 1, open: true }))}
+    >
+      <Plus />
+      {t('progress.entry.open')}
+    </Button>
+  )
 
   return (
-    <AppPage width="wide">
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0">
-          <AppPageTitle
-            Icon={ChartNoAxesCombined}
-            title={appTitle}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
+    <AppPage width="wide" className="pb-28 lg:pb-10">
+      <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <AppPageTitle Icon={ChartNoAxesCombined} title={appTitle} />
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div
+            data-progress-leader
+            className="type-action inline-flex h-9 min-w-0 items-center gap-2 rounded-md border bg-card px-3 shadow-xs"
+          >
+            <Trophy aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            {shownLeader ? (
+              <>
+                <span className="sr-only">{t('progress.leader')}:</span>
+                <span
+                  className="size-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: shownLeader.player.color }}
+                />
+                <span className="min-w-0 max-w-40 truncate">{shownLeader.player.name}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatNumber(shownLeader.score)}
+                </span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">{t('progress.leader')}: –</span>
+            )}
+          </div>
           <PresenterLauncher
             appTitle={appTitle}
             views={[
@@ -242,13 +299,6 @@ export function ProgressDashboardPage() {
               },
             ]}
           />
-          <Badge variant="outline">
-            {t('common.playerCount', { count: players.length })}
-          </Badge>
-          <Badge variant="outline">
-            {formatNumber(totalEvents)}
-            {unitLabel ? ` ${unitLabel}` : ''}
-          </Badge>
         </div>
       </section>
 
@@ -261,113 +311,104 @@ export function ProgressDashboardPage() {
         </Card>
       )}
 
-      <Card
-        style={chartAccentStyle}
-      >
-        <CardHeader className="min-w-0 gap-3 min-[900px]:grid min-[900px]:grid-cols-3 min-[900px]:items-center">
-          <div
-            className="grid min-w-0 gap-2 rounded-md border p-3"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--progress-accent) 12%, var(--card))' }}
-          >
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Trophy className="size-4 text-[var(--progress-accent)]" />
-              {t('progress.leader')}
-            </div>
-            <div className="type-action min-w-0 break-words">
-              {leader ? leader.player.name : '-'}
-            </div>
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="type-metric-lg tabular-nums">
-                {formatNumber(leader?.score ?? 0)}
-              </span>
-              {unitLabel && <span className="type-ui break-all text-muted-foreground">{unitLabel}</span>}
-            </div>
-          </div>
-          <div className="rounded-md border bg-muted/40 px-3 py-2">
-            <div className="type-caption text-muted-foreground">{t('progress.totalScore')}</div>
-            <div className="type-action tabular-nums">
-              {formatNumber(totalScore)}{unitLabel ? ` ${unitLabel}` : ''}
-            </div>
-          </div>
-          <IftaInput
-            aria-label={t('progress.unitAria')}
-            label={t('progress.unitAria')}
-            value={activeDataset.unit}
-            onChange={(event) =>
-              updateActiveDatasetMeta('unit', event.currentTarget.value)
-            }
-          />
-        </CardHeader>
-        <CardContent className="min-w-0 px-3 pb-4 sm:px-6 sm:pb-6">
-          <ProgressChart
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
+        {/* Auf schmalen Ansichten bleibt das Diagramm angeheftet, solange die Topliste läuft. */}
+        <div className="sticky top-[4.5rem] z-10 -mx-4 border-b bg-background px-4 pb-2 sm:-mx-6 sm:px-6 lg:top-[5.5rem] lg:mx-0 lg:border-0 lg:px-0 lg:pb-0">
+          <DashboardProgressChart
+            className="h-[250px] md:h-[400px] lg:h-[540px]"
             dataset={activeDataset}
-            mode="dashboard"
             players={players}
           />
-        </CardContent>
-      </Card>
-
-      <section className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div>
-          <h2 className="type-section-title flex items-center gap-2">
-            <UsersRound className="size-5 text-primary" />
-            {t('progress.players')}
-          </h2>
-          {(isLoading || isPending) && (
-            <p className="type-ui mt-1 text-muted-foreground">
-              {t('common.syncing')}
-            </p>
-          )}
         </div>
-      </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {playerScores.map((playerScore) => (
-          <PlayerCard
-            key={playerScore.player.id}
-            drinkIcons={progressDrinkIcons}
-            playerScore={playerScore}
-            unit={activeDataset.unit}
-            onAddEvent={async (player, icon) => {
-              const didSave = await addEvent(player, icon)
+        <section className="grid gap-3" aria-labelledby="progress-top-list-title">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="progress-top-list-title" className="type-section-title">
+              {t('progress.topList')}
+            </h2>
+            <span className="type-ui tabular-nums text-muted-foreground">
+              {formatNumber(totalScore)}
+              {unitLabel ? ` ${unitLabel}` : ''}
+            </span>
+          </div>
+          <Card className="gap-0 py-0">
+            {rankedPlayerScores.length === 0 ? (
+              <EmptyState className="m-3">{t('progress.emptyPlayers')}</EmptyState>
+            ) : (
+              <ol aria-labelledby="progress-top-list-title" className="divide-y">
+                {rankedPlayerScores.map(({ player, score }, index) => (
+                  <li
+                    key={player.id}
+                    className="grid min-h-14 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 px-3"
+                  >
+                    <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'size-8')}>
+                      {index + 1}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: player.color }}
+                      />
+                      <span className="type-action truncate">{player.name}</span>
+                    </span>
+                    <span className="type-metric-sm tabular-nums">
+                      {formatNumber(score)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </Card>
+          {entryButton('hidden lg:inline-flex')}
+          {(isLoading || isPending) && (
+            <p className="type-ui text-muted-foreground">{t('common.syncing')}</p>
+          )}
+        </section>
+      </div>
 
-              if (didSave) {
-                toast.success(
-                  t('progress.savedDelta', {
-                    delta: icon === 'schnaps' ? '+0,5' : '+1',
-                  }),
-                )
-              } else {
-                toast.error(t('common.syncError'))
+      <Card>
+        <CardHeader>
+          <button
+            className="flex min-h-11 min-w-0 items-center gap-2 text-left"
+            aria-expanded={isPlayerSetupOpen}
+            onClick={() => setIsPlayerSetupOpen((current) => !current)}
+          >
+            <UsersRound className="size-5 text-primary" />
+            <span className="type-action">{t('progress.players')}</span>
+            <span className="type-caption text-muted-foreground">
+              {t('common.playerCount', { count: players.length })}
+            </span>
+            <DisclosureIndicator isOpen={isPlayerSetupOpen} className="ml-auto" />
+          </button>
+        </CardHeader>
+        {isPlayerSetupOpen && (
+          <CardContent>
+            <PlayerSetupList
+              playerScores={playerScores}
+              unitInput={
+                <IftaInput
+                  aria-label={t('progress.unitAria')}
+                  label={t('progress.unitAria')}
+                  value={activeDataset.unit}
+                  onChange={(event) =>
+                    updateActiveDatasetMeta('unit', event.currentTarget.value)
+                  }
+                />
               }
-            }}
-            onColorChange={(playerId, color) => updatePlayerColor(playerId, color)}
-            onDefaultIconChange={(playerId, icon) =>
-              updatePlayerDefaultEventIcon(playerId, icon)
-            }
-            onNameChange={(playerId, name) => updatePlayerName(playerId, name)}
-            onRemove={async (playerId) => {
-              if (!(await removePlayer(playerId)).ok) return
-              toast.success(t('progress.playerRemoved'))
-            }}
-          />
-        ))}
-        <Card className="min-h-[13.25rem] border-dashed">
-          <CardContent className="flex h-full items-center justify-center p-6">
-            <Button
-              className="h-24 w-full flex-col gap-2"
-              variant="outline"
-              onClick={async () => {
+              onAdd={async () => {
                 if (!(await addPlayer()).ok) return
                 toast.success(t('progress.playerAdded'))
               }}
-            >
-              <Plus className="size-6" />
-              {t('progress.addPlayer')}
-            </Button>
+              onColorChange={(playerId, color) => updatePlayerColor(playerId, color)}
+              onNameChange={(playerId, name) => updatePlayerName(playerId, name)}
+              onRemove={async (playerId) => {
+                if (!(await removePlayer(playerId)).ok) return
+                toast.success(t('progress.playerRemoved'))
+              }}
+            />
           </CardContent>
-        </Card>
-      </section>
+        )}
+      </Card>
 
       <Card>
         <CardHeader>
@@ -439,6 +480,20 @@ export function ProgressDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Mobil und auf dem Tablet sitzt der zentrale Eintragen-Knopf am unteren Rand. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+        <div className="mx-auto max-w-xl">{entryButton()}</div>
+      </div>
+
+      <ProgressEntryDialog
+        key={entry.key}
+        drinkIcons={progressDrinkIcons}
+        open={entry.open}
+        players={players}
+        onOpenChange={(open) => setEntry((current) => ({ ...current, open }))}
+        onSave={(player, icon, amount) => void addDrink(player, icon, amount)}
+      />
     </AppPage>
   )
 }

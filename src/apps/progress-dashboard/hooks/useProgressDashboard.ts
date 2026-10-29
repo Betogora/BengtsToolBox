@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import {
   createProgressPlayer,
   defaultProgressDrinkIcon,
+  getDrinkIconEventDelta,
   getPlayerScores,
 } from '@/apps/progress-dashboard/logic'
 import type {
@@ -177,10 +178,6 @@ function isProgressDrinkIcon(icon: unknown): icon is ProgressDrinkIcon {
 
 function normalizeDrinkIcon(icon: unknown): ProgressDrinkIcon {
   return isProgressDrinkIcon(icon) ? icon : defaultProgressDrinkIcon
-}
-
-function getDrinkIconEventDelta(icon: ProgressDrinkIcon): ProgressEventDelta {
-  return icon === 'schnaps' ? 0.5 : 1
 }
 
 function normalizeDatasetName(name: string | undefined) {
@@ -438,9 +435,13 @@ export function useProgressDashboard(lobbyId?: string) {
     })
   }
 
-  const addEvent = (player: ProgressPlayer, icon: ProgressDrinkIcon) => {
+  const addEvent = (
+    player: ProgressPlayer,
+    icon: ProgressDrinkIcon,
+    amount?: ProgressEventDelta,
+  ) => {
     const eventIcon = normalizeDrinkIcon(icon)
-    const valueDelta = getDrinkIconEventDelta(eventIcon)
+    const valueDelta = amount ?? getDrinkIconEventDelta(eventIcon)
     const now = new Date().toISOString()
     const event: ProgressEvent = {
       id: `event-${createRandomId()}`,

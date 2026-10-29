@@ -45,6 +45,7 @@ test('fehlgeschlagenes Hinzufügen zeigt keine Erfolgsmeldung', { tag: '@desktop
     }
   })
   await app.open('/apps/progress-dashboard')
+  await page.getByRole('button', { name: /^Spieler/, expanded: false }).click()
   await page.getByRole('button', { name: 'Spieler hinzufügen' }).click()
   await expect(page.getByText('Der lokale Speicher ist voll. Die Änderung wurde nicht gespeichert.')).toBeVisible()
   await expect(page.locator('[data-sonner-toast][data-type="success"]')).toHaveCount(0)
