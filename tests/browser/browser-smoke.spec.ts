@@ -777,6 +777,10 @@ test('Globaler Farbkreis zeigt live an und speichert direkte Änderungen', async
       await page.getByRole('button', { name: 'Touristen bearbeiten' }).click()
     }
 
+    if (picker.route === '/apps/progress-dashboard') {
+      await page.getByRole('button', { name: /^Spieler/, expanded: false }).click()
+    }
+
     const scoreboardPickers = page.locator('button[aria-label^="Farbe für"]')
 
     if (picker.route === scoreboardRoute) {
