@@ -21,9 +21,14 @@ import { EmptyState } from '@/apps/shared/components/EmptyState'
 import {
   disciplineColors,
   disciplineFillColors,
-  disciplineIcons,
+  trainingColors,
+  trainingFillColors,
+  trainingIcons,
 } from '@/apps/triathlon-tracker/presentation'
-import type { Discipline } from '@/apps/triathlon-tracker/types'
+import type {
+  Discipline,
+  TrainingDiscipline,
+} from '@/apps/triathlon-tracker/types'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DisclosureSummary } from '@/components/ui/disclosure'
@@ -84,6 +89,8 @@ export type WeeklyVolumeChartPoint = {
   swimHours: number
   bikeHours: number
   runHours: number
+  /** Strength has a duration only, so it joins the time view alone. */
+  strengthHours: number
   swimKilometers: number
   bikeKilometers: number
   runKilometers: number
@@ -140,6 +147,7 @@ function disciplineKey(value: unknown) {
   const normalized = String(value).replace(/Hours|Kilometers/, '')
   if (normalized === 'swim') return 'triathlon.discipline.swim' as const
   if (normalized === 'bike') return 'triathlon.discipline.bike' as const
+  if (normalized === 'strength') return 'triathlon.discipline.strength' as const
   return 'triathlon.discipline.run' as const
 }
 
@@ -1274,12 +1282,12 @@ function DisciplineLabel({
   discipline,
   compact = false,
 }: {
-  discipline: Discipline
+  discipline: TrainingDiscipline
   /** Icon only on phones; the name stays available to screen readers. */
   compact?: boolean
 }) {
   const { t } = useI18n()
-  const Icon = disciplineIcons[discipline]
+  const Icon = trainingIcons[discipline]
   return (
     // Baseline alignment keeps the name level with a larger value next to it;
     // the icon is nudged down to sit centered on the text instead of above it.
@@ -1287,7 +1295,7 @@ function DisciplineLabel({
       <Icon
         aria-hidden="true"
         className="relative top-0.5 size-3.5 shrink-0"
-        style={{ color: disciplineColors[discipline] }}
+        style={{ color: trainingColors[discipline] }}
       />
       <span className={compact ? 'sr-only sm:not-sr-only' : undefined}>
         {t(disciplineKey(discipline))}
@@ -1301,7 +1309,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   const [volumeKind, setVolumeKind] = useState<'duration' | 'distance'>(
     'duration',
   )
-  const [focus, setFocus] = useState<Discipline | null>(null)
+  const [focus, setFocus] = useState<TrainingDiscipline | null>(null)
   const [pinnedWeek, setPinnedWeek] = useState<string | null>(null)
   const [hoveredWeek, setHoveredWeek] = useState<string | null>(null)
   const [canvasRef, width] = useElementWidth<HTMLDivElement>()
@@ -1310,6 +1318,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
       point.swimHours > 0 ||
       point.bikeHours > 0 ||
       point.runHours > 0 ||
+      point.strengthHours > 0 ||
       point.swimKilometers > 0 ||
       point.bikeKilometers > 0 ||
       point.runKilometers > 0,
@@ -1321,6 +1330,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
         { dataKey: 'swimHours', discipline: 'swim' },
         { dataKey: 'bikeHours', discipline: 'bike' },
         { dataKey: 'runHours', discipline: 'run' },
+        { dataKey: 'strengthHours', discipline: 'strength' },
       ] as const)
     : ([
         { dataKey: 'swimKilometers', discipline: 'swim' },
@@ -1348,7 +1358,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   const shownPoint = points.find(
     (point) => point.weekStart === (hoveredWeek ?? pinnedWeek),
   )
-  const accent = focus ? disciplineFillColors[focus] : 'var(--foreground)'
+  const accent = focus ? trainingFillColors[focus] : 'var(--foreground)'
   const accentText = focus ? '#fff' : 'var(--background)'
   // Full sport colors; only a pinned week dims the others.
   const barOpacity = (weekStart: string) =>
@@ -1371,9 +1381,11 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                 aria-label={t('triathlon.charts.weeklyVolume')}
                 className="w-fit"
                 value={volumeKind}
-                onValueChange={(value) =>
+                onValueChange={(value) => {
                   setVolumeKind(value as 'duration' | 'distance')
-                }
+                  // Strength has no distance, so its focus would hide every bar.
+                  if (value === 'distance' && focus === 'strength') setFocus(null)
+                }}
                 options={(['duration', 'distance'] as const).map((value) => ({
                   value,
                   label: t(`triathlon.charts.${value}`),
@@ -1494,7 +1506,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                       dataKey={dataKey}
                       maxBarSize={30}
                       isAnimationActive={false}
-                      fill={disciplineColors[discipline]}
+                      fill={trainingColors[discipline]}
                       key={dataKey}
                       name={dataKey}
                       className="cursor-pointer"
@@ -1603,6 +1615,7 @@ export default function TrainingCharts({
       point.swimHours +
         point.bikeHours +
         point.runHours +
+        point.strengthHours +
         point.swimKilometers +
         point.bikeKilometers +
         point.runKilometers >

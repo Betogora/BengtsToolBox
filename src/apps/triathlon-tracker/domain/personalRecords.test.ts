@@ -63,7 +63,7 @@ describe('measured personal records', () => {
     expect(result.distanceRecords.every((slot) => slot.record === null)).toBe(true)
   })
 
-  it('wertet Steigungsgehen als Höhenmeter und hält geneigte Läufe aus Laufrekorden heraus', () => {
+  it('wertet Steigungsgehen als Steigrate und hält geneigte Läufe aus Laufrekorden heraus', () => {
     const walk = (overrides: Partial<ActualTraining>) =>
       training({ isWalk: true, context: 'treadmill', inclinePercent: 5, durationSeconds: 3_600, distanceMeters: 6_000, ...overrides })
     const result = getWalkingClimbRecords([
@@ -73,8 +73,6 @@ describe('measured personal records', () => {
       walk({ id: 'flat', inclinePercent: 0 }),
       training({ id: 'incline-run', context: 'treadmill', inclinePercent: 8 }),
     ], '2026-10-03')
-    expect(result.climb).toMatchObject({ trainingId: 'long' })
-    expect(result.climb?.value).toBeCloseTo(419.5, 1)
     // Unter 20 Minuten zählt eine Einheit nicht für die Steigrate.
     expect(result.climbRate).toMatchObject({ trainingId: 'steady' })
     expect(result.climbRate?.value).toBeCloseTo(299.6, 1)

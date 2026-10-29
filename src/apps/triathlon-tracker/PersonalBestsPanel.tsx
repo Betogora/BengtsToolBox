@@ -1,4 +1,4 @@
-import { Plus, Trophy } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { analyzeBike, analyzeRun, analyzeSwim } from './domain/performance'
@@ -32,15 +32,16 @@ import { useI18n } from '@/lib/i18n'
 /** Marks modelled values: * = estimate, ** = beyond measured distances. */
 export function EstimateMark({ extrapolated = false }: { extrapolated?: boolean }) {
   const { t } = useI18n()
+  const meaning = t(
+    extrapolated ? 'triathlon.records.extrapolation' : 'triathlon.charts.estimated',
+  )
   return (
     <>
-      <span aria-hidden="true" className="tri-estimate-mark">
+      {/* The tooltip replaces the former legend below the records. */}
+      <span aria-hidden="true" className="tri-estimate-mark" title={meaning}>
         {extrapolated ? '**' : '*'}
       </span>
-      <span className="sr-only">
-        {' '}
-        ({t(extrapolated ? 'triathlon.records.extrapolation' : 'triathlon.charts.estimated')})
-      </span>
+      <span className="sr-only"> ({meaning})</span>
     </>
   )
 }
@@ -311,12 +312,7 @@ export function PersonalBestsPanel({
                     {t('triathlon.records.walkingClimb')}
                   </h4>
                   <ul className="divide-y">
-                    {(
-                      [
-                        ['climbRate', 'Hm/h'],
-                        ['climb', 'Hm'],
-                      ] as const
-                    ).map(([kind, unit]) => {
+                    {([['climbRate', 'Hm/h']] as const).map(([kind, unit]) => {
                       const record = walkingRecords[kind]
                       const rowLabel = t(`triathlon.records.${kind}`)
                       return (
@@ -488,11 +484,6 @@ export function PersonalBestsPanel({
           )
         })}
       </div>
-      <p className="rounded-lg border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
-        <Trophy className="mr-1 inline size-3.5" aria-hidden="true" />
-        {t('triathlon.records.rules')}{' '}
-        {t('triathlon.records.extrapolationNote')}
-      </p>
     </section>
   )
 }

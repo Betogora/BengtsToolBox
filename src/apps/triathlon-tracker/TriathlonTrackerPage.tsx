@@ -35,7 +35,7 @@ import { PersonalBestsPanel } from './PersonalBestsPanel'
 import { TrackerSettingsPanel } from './TrackerSettingsPanel'
 import { summarizeWeek } from './domain/weeklyStats'
 import { TrainingJournal } from './TrainingJournal'
-import { defaultPlanPaces, defaultTrainingContexts } from './types'
+import { defaultPlanPaces, newTrainingContexts } from './types'
 import type { PlanPaces } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
 import { AppPage } from '@/apps/shared/components/AppPage'
@@ -377,7 +377,7 @@ export function TriathlonTrackerPage() {
         }}
       />
       <ActualTrainingDialog
-        defaultContexts={defaultTrainingContexts}
+        defaultContexts={newTrainingContexts}
         weightKg={tracker.settings.weightKg}
         initialDate={selectedDate}
         open={actualDialogOpen}

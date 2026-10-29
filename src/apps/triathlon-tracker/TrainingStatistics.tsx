@@ -471,6 +471,7 @@ function TrainingStatistics({
         swimHours: week.byDiscipline.swim.durationSeconds / 3600,
         bikeHours: week.byDiscipline.bike.durationSeconds / 3600,
         runHours: week.byDiscipline.run.durationSeconds / 3600,
+        strengthHours: week.strengthDurationSeconds / 3600,
         swimKilometers: week.byDiscipline.swim.distanceMeters / 1000,
         bikeKilometers: week.byDiscipline.bike.distanceMeters / 1000,
         runKilometers: week.byDiscipline.run.distanceMeters / 1000,

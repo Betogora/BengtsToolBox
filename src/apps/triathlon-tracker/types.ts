@@ -28,6 +28,12 @@ export const defaultTrainingContexts = {
 
 export const defaultWalkContext = 'treadmill' satisfies RunningContext
 
+/** Preselected for new trainings; runs mostly happen on the treadmill. */
+export const newTrainingContexts = {
+  ...defaultTrainingContexts,
+  run: 'treadmill',
+} as const satisfies Record<Discipline, TrainingContext>
+
 export type RunVariant = 'run' | 'walk'
 
 /** Purpose of a run: Zone 2, threshold or VO2max. Walks are always easy. */
@@ -132,6 +138,7 @@ export type WeekStats = {
   totalTrainingCount: number
   totalDurationSeconds: number
   byDiscipline: Record<Discipline, DisciplineWeekStats>
+  strengthDurationSeconds: number
 }
 
 export type PerformanceEstimate = {

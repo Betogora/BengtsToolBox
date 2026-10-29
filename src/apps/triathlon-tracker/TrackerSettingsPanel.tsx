@@ -80,22 +80,31 @@ function PlanPaceInput({
   onSave: (paceSeconds: number) => Promise<unknown>
 }) {
   const { t } = useI18n()
-  const [draft, setDraft] = useState({
+  const [draft, setDraft] = useState<{
+    pace: string
+    speed: string
+    source?: 'pace' | 'speed'
+  }>({
     pace: formatPace(paceSeconds),
     speed: formatSpeed(paceSeconds),
   })
   const [saving, setSaving] = useState(false)
   const save = async () => {
-    const next = parsePace(draft.pace)
-    if (next === null || !isValidPlanPace(next)) {
+    if (!draft.source) return
+    // A typed speed is kept exactly so that 7.6 km/h does not come back as
+    // 7.59 after rounding to whole seconds per kilometre.
+    const parsed =
+      draft.source === 'speed' ? parseSpeed(draft.speed) : parsePace(draft.pace)
+    if (parsed === null || !isValidPlanPace(parsed)) {
       toast.error(t('triathlon.settings.invalidPlanPace'))
       setDraft({ pace: formatPace(paceSeconds), speed: formatSpeed(paceSeconds) })
       return
     }
-    if (Math.round(next) === paceSeconds) return
+    const next = draft.source === 'speed' ? parsed : Math.round(parsed)
+    if (next === paceSeconds) return
     setSaving(true)
     try {
-      await onSave(Math.round(next))
+      await onSave(next)
       toast.success(t('triathlon.settings.planPaceSaved'))
     } catch {
       toast.error(t('triathlon.form.saveFailed'))
@@ -123,6 +132,7 @@ function PlanPaceInput({
           setDraft((current) => ({
             pace,
             speed: seconds === null ? current.speed : formatSpeed(seconds),
+            source: 'pace',
           }))
         }}
         onBlur={() => void save()}
@@ -143,6 +153,7 @@ function PlanPaceInput({
           setDraft((current) => ({
             speed,
             pace: seconds === null ? current.pace : formatPace(seconds),
+            source: 'speed',
           }))
         }}
         onBlur={() => void save()}

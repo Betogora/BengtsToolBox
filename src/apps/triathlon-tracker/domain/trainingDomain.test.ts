@@ -241,6 +241,7 @@ describe('tracker week statistics', () => {
         run: { trainingCount: 1, durationSeconds: 1_800, distanceMeters: 5_000 },
         bike: { trainingCount: 1, durationSeconds: 3_600, distanceMeters: 30_000 },
       },
+      strengthDurationSeconds: 1_800,
     })
     expect(summarizeWeeks([], '2026-08-17', '2026-08-30')).toHaveLength(2)
   })

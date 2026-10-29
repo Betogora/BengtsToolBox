@@ -125,8 +125,6 @@ export type ClimbRecord = {
 export type WalkingClimbRecords = {
   /** Best average climbing rate in vertical metres per hour. */
   climbRate: ClimbRecord | null
-  /** Most vertical metres in one session. */
-  climb: ClimbRecord | null
 }
 
 // Shorter sessions overstate the sustainable climbing rate.
@@ -152,29 +150,26 @@ export function getWalkingClimbRecords(
   asOfLocalDate: string,
 ): WalkingClimbRecords {
   let climbRate: ClimbRecord | null = null
-  let climb: ClimbRecord | null = null
   for (const training of trainings) {
     const incline = training.inclinePercent ?? 0
     if (
       incline <= 0 ||
       !training.durationSeconds ||
       !training.distanceMeters ||
-      training.durationSeconds <= 0 ||
+      training.durationSeconds < minimumClimbRateDurationSeconds ||
       training.distanceMeters <= 0 ||
       !isComparableContinuousTraining(
         training, 'run', 'treadmill', asOfLocalDate, 'distance',
         { isWalk: true, allowIncline: true },
       )
     ) continue
-    const meters = climbMeters(training.distanceMeters, incline)
-    const base = { trainingId: training.id, localDate: training.localDate }
-    climb = betterRecord(climb, { ...base, value: meters })
-    if (training.durationSeconds >= minimumClimbRateDurationSeconds) {
-      climbRate = betterRecord(climbRate, {
-        ...base,
-        value: (meters / training.durationSeconds) * 3_600,
-      })
-    }
+    climbRate = betterRecord(climbRate, {
+      trainingId: training.id,
+      localDate: training.localDate,
+      value:
+        (climbMeters(training.distanceMeters, incline) / training.durationSeconds) *
+        3_600,
+    })
   }
-  return { climbRate, climb }
+  return { climbRate }
 }

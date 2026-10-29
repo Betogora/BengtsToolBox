@@ -5,7 +5,12 @@ import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { defaultWalkContext, runIntensities, trainingContexts } from './types'
+import {
+  defaultTrainingContexts,
+  defaultWalkContext,
+  runIntensities,
+  trainingContexts,
+} from './types'
 
 import type {
   ActualTraining,
@@ -1093,10 +1098,13 @@ function ActualTrainingDialogContent({
   const enduranceDiscipline: Discipline = isStrength ? 'run' : discipline
   const [context, setContext] = useState<TrainingContext>(
     initial?.context ??
-      // A planned incline only exists on the treadmill.
-      (initial?.inclinePercent
-        ? 'treadmill'
-        : defaultContext(initialDiscipline, defaultContexts, initial?.isWalk)),
+      // Saved trainings without one keep the context the analysis assumes.
+      (training
+        ? defaultContext(initialDiscipline, defaultTrainingContexts, training.isWalk)
+        : // A planned incline only exists on the treadmill.
+          initial?.inclinePercent
+          ? 'treadmill'
+          : defaultContext(initialDiscipline, defaultContexts, initial?.isWalk)),
   )
   const [incline, setIncline] = useState(inclineToInput(initial?.inclinePercent))
   // A manually chosen context survives switching between running and walking.

@@ -28,10 +28,14 @@ export function summarizeWeek(
       training.localDate >= weekStart && training.localDate <= weekEnd,
   )
   const byDiscipline = emptyDisciplineStats()
+  let strengthDurationSeconds = 0
 
   inWeek.forEach((training) => {
-    // Strength counts towards total time only, never as a discipline.
-    if (training.discipline === 'strength') return
+    // Strength counts towards time only, never as a discipline.
+    if (training.discipline === 'strength') {
+      strengthDurationSeconds += training.durationSeconds ?? 0
+      return
+    }
     const stats = byDiscipline[training.discipline]
     stats.trainingCount += 1
     stats.durationSeconds += training.durationSeconds ?? 0
@@ -46,6 +50,7 @@ export function summarizeWeek(
       0,
     ),
     byDiscipline,
+    strengthDurationSeconds,
   }
 }
 

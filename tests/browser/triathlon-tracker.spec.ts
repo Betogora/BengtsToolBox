@@ -144,15 +144,14 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await actual.getByRole('combobox', { name: 'Disziplin' }).click()
   await page.getByRole('option', { name: 'Laufen', exact: true }).click()
   const runContext = actual.getByRole('combobox', { name: 'Kontext', exact: true })
-  await expect(runContext).toHaveText('Straße')
+  await expect(runContext).toHaveText('Laufband')
   await actual.getByRole('radio', { name: 'Gehen' }).click()
   await expect(runContext).toHaveText('Laufband')
   await actual.getByRole('radio', { name: 'Laufen' }).click()
-  await expect(runContext).toHaveText('Straße')
+  await expect(runContext).toHaveText('Laufband')
   await runContext.click()
   await expect(page.getByRole('option')).toHaveText(['Straße', 'Laufband'])
   await page.getByRole('option', { name: 'Laufband', exact: true }).click()
-  await expect(runContext).toHaveText('Laufband')
   await actual.getByRole('button', { name: 'Speichern' }).click()
   await expect(actual.getByRole('alert')).toContainText(
     'Trage mindestens Dauer oder Distanz ein.',
@@ -380,10 +379,12 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
     timeout: 6000,
   })
-  await page.getByLabel('Plantempo Gehen (km/h)').fill('5')
-  await expect(page.getByLabel('Plantempo Gehen (min/km)')).toHaveValue('12:00')
-  await page.getByLabel('Plantempo Gehen (km/h)').blur()
+  await page.getByLabel('Plantempo Laufen (km/h)').fill('7.6')
+  await expect(page.getByLabel('Plantempo Laufen (min/km)')).toHaveValue('7:54')
+  await page.getByLabel('Plantempo Laufen (km/h)').blur()
   await expect(page.getByText('Plantempo gespeichert.')).toBeVisible()
+  // The typed speed is stored exactly, not via whole seconds per kilometre.
+  await expect(page.getByLabel('Plantempo Laufen (km/h)')).toHaveValue('7.6')
   // A fading toast would fail the contrast check in expectHealthy later on.
   await page.mouse.move(1, 1)
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
@@ -430,6 +431,8 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
     'aria-checked',
     'true',
   )
+  // Strength joins the time view as a fourth series.
+  await expect(page.locator('[data-volume-filter="strength"]')).toBeVisible()
   const runFilter = page.locator('[data-volume-filter="run"]')
   await runFilter.click()
   await expect(runFilter).toHaveAttribute('aria-pressed', 'true')
@@ -514,6 +517,8 @@ test(
       .getByRole('button', { name: 'Training eintragen', exact: true })
       .click()
     const form = page.getByRole('dialog', { name: 'Training eintragen' })
+    await form.getByRole('combobox', { name: 'Kontext', exact: true }).click()
+    await page.getByRole('option', { name: 'Straße', exact: true }).click()
     await form.getByLabel('Ø Pace (min/km)').fill('6:00')
     await form.getByLabel('Dauer (m:ss / h:mm:ss)').fill('36')
     await expect(form.getByLabel('Distanz (km)')).toHaveValue('6')
@@ -685,9 +690,6 @@ test(
     await expect(journal).toContainText('Gehen')
     await expect(journal).toContainText('5 % · 300 Hm · 5,7 MET')
     await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
-    await expect(
-      page.locator('[data-walking-record="climb"]'),
-    ).toContainText('300 Hm')
     await expect(
       page.locator('[data-walking-record="climbRate"]'),
     ).toContainText('257 Hm/h')

@@ -25,6 +25,8 @@ export const disciplines = ['swim', 'bike', 'run'] as const
 export const trainingIcons = { ...disciplineIcons, strength: Dumbbell }
 // Gleicher Wert wie --sport-color für Krafttraining in triathlon-tracker.css.
 export const trainingColors = { ...disciplineColors, strength: '#6b7280' }
+// Gleicher Wert wie --sport-fill für Krafttraining in triathlon-tracker.css.
+export const trainingFillColors = { ...disciplineFillColors, strength: '#5b616b' }
 
 type TrainingKind = { discipline: TrainingDiscipline; isWalk?: boolean }
 
