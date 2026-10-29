@@ -1340,6 +1340,8 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
   const series = allSeries.filter(
     ({ discipline }) => focus === null || focus === discipline,
   )
+  // The legend reads top to bottom, so bars stack from its last entry upwards.
+  const stack = [...series].reverse()
   const totalOf = (point: WeeklyVolumeChartPoint) =>
     series.reduce((sum, { dataKey }) => sum + point[dataKey], 0)
   const formatVolume = (value: number) =>
@@ -1365,9 +1367,9 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
     pinnedWeek && weekStart !== pinnedWeek ? dimmedOpacity : 1
   // The rounded top belongs to the highest visible segment of each week.
   const topKey = (point: WeeklyVolumeChartPoint) =>
-    [...series].reverse().find(({ dataKey }) => point[dataKey] > 0)?.dataKey
-  const bottomKey = (point: WeeklyVolumeChartPoint) =>
     series.find(({ dataKey }) => point[dataKey] > 0)?.dataKey
+  const bottomKey = (point: WeeklyVolumeChartPoint) =>
+    stack.find(({ dataKey }) => point[dataKey] > 0)?.dataKey
 
   return (
     <Card className="min-w-0 shadow-none" data-weekly-volume>
@@ -1439,6 +1441,9 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
             <div className="h-48 min-w-0 sm:h-56" ref={canvasRef}>
               <ResponsiveContainer height="100%" width="100%">
                 <BarChart
+                  // Recharts stacks bars in registration order, which a filter
+                  // change would scramble; remounting keeps the JSX order.
+                  key={`${volumeKind}-${focus ?? 'all'}`}
                   data={points}
                   barCategoryGap="28%"
                   margin={{ bottom: 6, left: 4, right: 12, top: 12 }}
@@ -1501,7 +1506,7 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                       }
                     />
                   )}
-                  {series.map(({ dataKey, discipline }) => (
+                  {stack.map(({ dataKey, discipline }) => (
                     <Bar
                       dataKey={dataKey}
                       maxBarSize={30}
@@ -1518,7 +1523,11 @@ function WeeklyVolumeCard({ points }: { points: WeeklyVolumeChartPoint[] }) {
                         const week = bar.payload.weekStart
                         const isTop = topKey(bar.payload) === dataKey
                         return (
-                          <g>
+                          <g
+                            data-volume-segment={discipline}
+                            data-volume-week={week}
+                            data-volume-top={isTop || undefined}
+                          >
                             <Rectangle
                               {...bar}
                               fillOpacity={barOpacity(week)}

@@ -433,11 +433,38 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   )
   // Strength joins the time view as a fourth series.
   await expect(page.locator('[data-volume-filter="strength"]')).toBeVisible()
-  const runFilter = page.locator('[data-volume-filter="run"]')
-  await runFilter.click()
-  await expect(runFilter).toHaveAttribute('aria-pressed', 'true')
-  await runFilter.click()
-  await expect(runFilter).toHaveAttribute('aria-pressed', 'false')
+  const swimFilter = page.locator('[data-volume-filter="swim"]')
+  await swimFilter.click()
+  await expect(swimFilter).toHaveAttribute('aria-pressed', 'true')
+  await swimFilter.click()
+  await expect(swimFilter).toHaveAttribute('aria-pressed', 'false')
+  // After a filter round trip the stack keeps the legend order from top to
+  // bottom, and only the highest segment is rounded.
+  const stacks = await page
+    .locator('[data-volume-segment]')
+    .evaluateAll((segments) =>
+      segments
+        // Empty segments have no height and no position in the stack.
+        .filter((segment) => segment.getBoundingClientRect().height > 0)
+        .map((segment) => ({
+          discipline: segment.getAttribute('data-volume-segment'),
+          week: segment.getAttribute('data-volume-week'),
+          top: segment.hasAttribute('data-volume-top'),
+          y: segment.getBoundingClientRect().top,
+        })),
+    )
+  for (const week of new Set(stacks.map((segment) => segment.week))) {
+    const order = stacks
+      .filter((segment) => segment.week === week)
+      .sort((a, b) => a.y - b.y)
+    expect(order.map((segment) => segment.top)).toEqual(
+      order.map((_, index) => index === 0),
+    )
+    const rank = order.map((segment) =>
+      ['swim', 'bike', 'run', 'strength'].indexOf(segment.discipline ?? ''),
+    )
+    expect(rank).toEqual([...rank].sort((a, b) => a - b))
+  }
   await page.getByRole('radio', { name: '4W' }).click()
 
   await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
