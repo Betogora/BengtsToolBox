@@ -213,14 +213,11 @@ export function DashboardPage({ lobby }: { lobby?: Lobby }) {
     lobby ? `/lobbies/${lobby.id}${app.href}` : app.href
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 pb-6 pt-8 sm:px-6 lg:gap-8 lg:pb-8 lg:pt-12">
+    <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 pb-6 pt-4 sm:px-6 lg:gap-8 lg:pb-8 lg:pt-6">
       <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
-        <div className="min-w-0">
-          <h1 className="type-dashboard-title text-foreground">
-            {t('dashboard.title')}
-          </h1>
-          <div className="mt-5 h-2 w-16 rounded-full bg-primary sm:w-20" />
-        </div>
+        <h1 className="type-dashboard-title min-w-0 text-foreground">
+          <span className="title-highlight">{t('dashboard.title')}</span>
+        </h1>
 
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 justify-self-end max-[28rem]:justify-start max-[28rem]:justify-self-start">
           <Card className="h-[72px] w-fit max-w-60 border-primary/20 shadow-[0_18px_46px_-30px_rgba(6,52,79,0.55)]">
