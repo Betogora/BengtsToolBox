@@ -88,3 +88,29 @@ test('Farbschema wechselt global, wird gespeichert und ist im Dunkelmodus barrie
   await expect(root).toHaveClass(/\bdark\b/)
   await app.expectHealthy()
 })
+
+test('Nachgeladenes Englisch wechselt live und startet gespeichert ohne deutschen Zwischenstand @desktop', async ({ app, page }) => {
+  await app.open('/')
+  const root = page.locator('html')
+  await page.getByRole('radio', { name: 'Sprache auf Englisch wechseln' }).click()
+  await expect(page.getByRole('radiogroup', { name: 'Choose language' })).toBeVisible()
+  await expect(root).toHaveAttribute('lang', 'en')
+  await page.getByRole('radio', { name: 'Switch language to German' }).click()
+  await expect(page.getByRole('radiogroup', { name: 'Sprache auswählen' })).toBeVisible()
+
+  // Registriert nach der Fixture und gilt damit bei jedem weiteren Laden.
+  await page.addInitScript(() => {
+    window.localStorage.setItem('bengtstoolbox.language', 'en')
+    // Init-Skripte laufen vor dem Parsen; document existiert dann schon, documentElement noch nicht.
+    new MutationObserver(() => {
+      if (document.querySelector('[aria-label="Sprache auswählen"]')) {
+        document.documentElement.dataset.germanShown = 'true'
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
+  await page.reload()
+  await expect(page.getByRole('radiogroup', { name: 'Choose language' })).toBeVisible()
+  await expect(root).toHaveAttribute('lang', 'en')
+  await expect(root).not.toHaveAttribute('data-german-shown')
+  await app.expectHealthy()
+})

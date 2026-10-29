@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from 'react'
@@ -11,7 +13,7 @@ import {
   type Language,
   type TranslationParams,
 } from '@/lib/i18n/context'
-import { translations } from '@/lib/i18n/translations'
+import { dictionaryFor, isLanguageLoaded, loadLanguage } from '@/lib/i18n/dictionaries'
 import { localStore } from '@/lib/firebase/localStore'
 
 const defaultLanguage: Language = 'de'
@@ -66,12 +68,62 @@ function normalizeDate(value: Date | number | string) {
 
 export function LanguageProvider({ children }: PropsWithChildren) {
   const [language, setLanguageState] = useState<Language>(readStoredLanguage)
+  // A stored non-default language renders only once its texts are there, so the
+  // first paint is never German for English users.
+  const [isReady, setIsReady] = useState(() => isLanguageLoaded(language))
+  const requestedLanguage = useRef(language)
   const locale = locales[language]
 
   useEffect(() => {
     document.documentElement.lang = language
     writeStoredLanguage(language)
   }, [language])
+
+  useEffect(() => {
+    if (isReady) {
+      return undefined
+    }
+
+    let isActive = true
+    void loadLanguage(language).then(() => {
+      if (isActive) setIsReady(true)
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [isReady, language])
+
+  useEffect(() => {
+    if (!isReady || isLanguageLoaded('en')) {
+      return undefined
+    }
+
+    // Preload English while idle so switching stays instant.
+    const preload = () => void loadLanguage('en')
+    // Safari has no requestIdleCallback; a short delay serves the same purpose.
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(preload, { timeout: 3_000 })
+      return () => window.cancelIdleCallback(id)
+    }
+
+    const timeout = window.setTimeout(preload, 1_000)
+    return () => window.clearTimeout(timeout)
+  }, [isReady])
+
+  const setLanguage = useCallback((nextLanguage: Language) => {
+    requestedLanguage.current = nextLanguage
+
+    if (isLanguageLoaded(nextLanguage)) {
+      setLanguageState(nextLanguage)
+      return
+    }
+
+    // Keep the current texts until the dictionary arrives; German stays the fallback if it fails.
+    void loadLanguage(nextLanguage).then(() => {
+      if (requestedLanguage.current === nextLanguage) setLanguageState(nextLanguage)
+    })
+  }, [])
 
   const value = useMemo<I18nContextValue>(
     () => ({
@@ -85,11 +137,15 @@ export function LanguageProvider({ children }: PropsWithChildren) {
         new Intl.DateTimeFormat(locale, options).format(normalizeDate(dateValue)),
       language,
       locale,
-      setLanguage: setLanguageState,
-      t: (key, params) => interpolate(translations[language][key], params),
+      setLanguage,
+      t: (key, params) => interpolate(dictionaryFor(language)[key], params),
     }),
-    [language, locale],
+    [language, locale, setLanguage],
   )
+
+  if (!isReady) {
+    return null
+  }
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }

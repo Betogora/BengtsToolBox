@@ -5,6 +5,7 @@ import {
   UsersRound,
   type LucideIcon,
 } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -25,7 +26,14 @@ import { useColorScheme } from '@/lib/colorScheme'
 import type { TranslationKey } from '@/lib/i18n'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { useTrackLobbyDevice } from '@/lobbies/useTrackLobbyDevice'
+
+// Firebase stays out of the startup bundle but starts loading immediately, so sign-in does not wait for the first render.
+const lobbyDeviceTrackerImport = import('@/lobbies/LobbyDeviceTracker')
+const LazyLobbyDeviceTracker = lazy(() =>
+  lobbyDeviceTrackerImport.then(({ LobbyDeviceTracker }) => ({
+    default: LobbyDeviceTracker,
+  })),
+)
 
 type NavigationItem = {
   href: string
@@ -58,10 +66,11 @@ export function AppShell() {
   const usesDefaultLobby =
     location.pathname.startsWith('/apps/') || location.pathname === '/schlag-den-raab'
 
-  useTrackLobbyDevice(usesDefaultLobby ? 'default' : undefined)
-
   return (
     <div className="min-h-svh">
+      <Suspense fallback={null}>
+        <LazyLobbyDeviceTracker lobbyId={usesDefaultLobby ? 'default' : undefined} />
+      </Suspense>
       <header className="app-shell-header sticky top-0 z-40 px-2 py-2 sm:px-4">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-1.5 rounded-lg border bg-card/95 px-2.5 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:gap-3 sm:px-6">
           <Link
