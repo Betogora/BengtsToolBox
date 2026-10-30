@@ -270,9 +270,11 @@ function ActualTrainingDialogContent({
   // Speed in km/h only exists alongside a pace per kilometre.
   const hasSpeed = discipline !== 'swim'
   const metricSpan = hasSpeed ? 'sm:col-span-3' : 'sm:col-span-4'
+  // Records and estimates skip interval sessions, so they are never tests.
+  const hasIntervals = intervals.length > 0
   // Interval runs are always flat; only continuous treadmill sessions incline.
   const showIncline =
-    discipline === 'run' && context === 'treadmill' && intervals.length === 0
+    discipline === 'run' && context === 'treadmill' && !hasIntervals
   const detailSpan = showIncline ? 'sm:col-span-3' : 'sm:col-span-4'
   // Running phases are the source of the totals. Only the distance stays
   // editable while a phase has no speed yet.
@@ -377,7 +379,7 @@ function ActualTrainingDialogContent({
       return
     }
     const nextTraining: ActualTrainingInput = {
-      isBenchmark: !isStrength && isBenchmark,
+      isBenchmark: !isStrength && !hasIntervals && isBenchmark,
       isWalk: discipline === 'run' && isWalk,
       inclinePercent: parsedIncline,
       intensity: discipline === 'run' && !isWalk ? intensity : null,
@@ -612,15 +614,17 @@ function ActualTrainingDialogContent({
                   }
                 />
               </div>
-              <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-12">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={isBenchmark}
-                  onChange={(event) => setIsBenchmark(event.target.checked)}
-                />
-                {t('triathlon.form.benchmark')}
-              </label>
+              {!hasIntervals && (
+                <label className="type-ui col-span-2 flex items-center gap-3 rounded-md bg-muted p-3 sm:col-span-12">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={isBenchmark}
+                    onChange={(event) => setIsBenchmark(event.target.checked)}
+                  />
+                  {t('triathlon.form.benchmark')}
+                </label>
+              )}
             </fieldset>
 
             <section>

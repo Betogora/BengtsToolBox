@@ -889,6 +889,8 @@ export const en: Record<TranslationKey, string> = {
   'triathlon.intervals.createTable': 'Create table',
   'triathlon.intervals.description': 'Enter work and rest segments manually.',
   'triathlon.intervals.durationWarning': 'The segment duration differs from the total duration. Save anyway?',
+  'triathlon.intervals.elapsed': 'Elapsed time at the end of the phase',
+  'triathlon.intervals.elapsedShort': 'until',
   'triathlon.intervals.empty': 'No intervals entered.',
   'triathlon.intervals.endHeartRate': 'Heart rate at the end of the phase',
   'triathlon.intervals.heartRateShort': 'End HR',

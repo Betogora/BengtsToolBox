@@ -891,6 +891,8 @@ export const de = {
   'triathlon.intervals.createTable': 'Tabelle erzeugen',
   'triathlon.intervals.description': 'Belastungs- und Pausenabschnitte manuell erfassen.',
   'triathlon.intervals.durationWarning': 'Die Abschnittsdauer weicht von der Gesamtdauer ab. Trotzdem speichern?',
+  'triathlon.intervals.elapsed': 'Gesamtzeit am Phasenende',
+  'triathlon.intervals.elapsedShort': 'bis',
   'triathlon.intervals.empty': 'Keine Intervalle erfasst.',
   'triathlon.intervals.endHeartRate': 'Puls am Phasenende',
   'triathlon.intervals.heartRateShort': 'Endpuls',

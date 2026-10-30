@@ -5,7 +5,6 @@ import {
   BarChart3,
   CalendarDays,
   NotebookPen,
-  Plus,
   Trophy,
 } from 'lucide-react'
 import { lazy, memo, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
@@ -36,7 +35,6 @@ import type { PlanPaces } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { useI18n } from '@/lib/i18n'
@@ -180,23 +178,7 @@ export function TriathlonTrackerPage() {
     >
       <header className="flex flex-wrap items-center justify-between gap-3">
         <AppPageTitle Icon={Activity} title={t('app.triathlonTracker.title')} />
-        <div className="flex flex-wrap items-center gap-2">
-          {tracker.isPending && <SyncStatus />}
-          <Button
-            variant="outline"
-            aria-label={t('triathlon.calendar.plan')}
-            onClick={() => openPlan(today)}
-          >
-            <CalendarDays aria-hidden="true" />
-            <span className="hidden sm:inline">
-              {t('triathlon.calendar.plan')}
-            </span>
-          </Button>
-          <Button onClick={() => openActual()}>
-            <Plus aria-hidden="true" />
-            {t('triathlon.actual.add')}
-          </Button>
-        </div>
+        {tracker.isPending && <SyncStatus />}
       </header>
       {tracker.error && (
         <p
@@ -258,6 +240,7 @@ export function TriathlonTrackerPage() {
                   today={today}
                   onAdd={openPlan}
                   onLog={logPlanned}
+                  onLogActual={() => openActual()}
                   onEdit={(training) => openPlan(training.localDate, training)}
                   onCopy={(training) => {
                     openPlan(training.localDate)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildIntervalScheme,
+  elapsedAtPhaseEnds,
   insertIntervalPair,
   intervalDistanceMeters,
   intervalPhaseAt,
@@ -133,5 +134,10 @@ describe('interval speeds and totals', () => {
       { durationSeconds: 600, distanceMeters: 1_500 },
       { durationSeconds: 240, distanceMeters: null },
     ])).toEqual({ durationSeconds: 840, distanceMeters: null })
+  })
+
+  it('counts elapsed time up to the first phase without a duration', () => {
+    expect(elapsedAtPhaseEnds([900, 240, 180])).toEqual([900, 1_140, 1_320])
+    expect(elapsedAtPhaseEnds([900, null, 180])).toEqual([900, null, null])
   })
 })

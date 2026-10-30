@@ -24,9 +24,7 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   })
   await app.expectHealthy()
 
-  await page
-    .getByRole('button', { name: 'Plan hinzufügen', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Planen', exact: true }).click()
   const plan = page.getByRole('dialog', { name: 'Plan hinzufügen' })
   const dateInput = plan.getByLabel('Datum', { exact: true })
   const toLocalDate = (value: string) =>
@@ -780,7 +778,13 @@ test('Geplante Intervalle öffnen eine Phasentabelle, die unterwegs ausfüllbar 
   await expect(phases).toHaveCount(7)
   await expect(phases.first()).toContainText('Einlaufen')
   await expect(phases.last()).toContainText('Auslaufen')
+  // Each phase shows the running time at which it ends.
+  await expect(form.locator('[data-phase-elapsed]')).toHaveText([
+    '10:00', '14:00', '18:00', '22:00', '26:00', '30:00', '35:00',
+  ])
   await expect(form.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('35:00')
+  // Interval sessions never feed records or estimates, so they are no tests.
+  await expect(form.getByLabel('Maximaler Leistungstest / Wettkampf')).toHaveCount(0)
   // Interval runs stay flat, even on the treadmill.
   await form.getByRole('combobox', { name: 'Kontext', exact: true }).click()
   await page.getByRole('option', { name: 'Laufband', exact: true }).click()

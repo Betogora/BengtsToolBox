@@ -259,6 +259,20 @@ export function intervalTotals(
   }
 }
 
+/**
+ * Elapsed time at the end of each phase, as a treadmill or watch counts it;
+ * unknown from the first phase without a duration on.
+ */
+export function elapsedAtPhaseEnds(
+  durations: readonly (number | null)[],
+): (number | null)[] {
+  let elapsed: number | null = 0
+  return durations.map((duration) => {
+    elapsed = elapsed === null || duration === null ? null : elapsed + duration
+    return elapsed
+  })
+}
+
 export type IntervalDraft = {
   id: string
   kind: IntervalSegment['kind']

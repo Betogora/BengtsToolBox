@@ -15,6 +15,7 @@ import {
 import { useI18n } from '@/lib/i18n'
 import {
   buildIntervalScheme,
+  elapsedAtPhaseEnds,
   inheritedPhaseSpeeds,
   insertIntervalPair,
   intervalKindAt,
@@ -191,7 +192,10 @@ export function IntervalEditor({
 
 // Narrow columns leave the phase name readable at 320 px.
 const phaseGridClass =
-  'grid grid-cols-[minmax(0,1fr)_3.5rem_2.75rem_2.75rem_1.75rem] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem_2.25rem] sm:gap-2'
+  'grid grid-cols-[minmax(0,1fr)_3.5rem_2.75rem_2.75rem_1.75rem] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_3.5rem_4.5rem_4.5rem_4.5rem_2.25rem] sm:gap-2'
+// The elapsed time stands below the phase name on phones and gets its own
+// column left of the duration from `sm` on.
+const elapsedCellClass = 'flex min-w-0 flex-col sm:contents'
 const phaseInputClass = 'h-9 px-1 text-center tabular-nums'
 
 type SchemeDraft = Record<keyof IntervalScheme, string>
@@ -296,6 +300,9 @@ export function RunIntervalTable({
 }) {
   const { formatNumber, t } = useI18n()
   const speeds = inheritedPhaseSpeeds(phases)
+  const elapsed = elapsedAtPhaseEnds(
+    phases.map((phase) => parseTrainingDuration(phase.durationMinutes)),
+  )
 
   if (phases.length === 0 || !totals) {
     return (
@@ -358,7 +365,12 @@ export function RunIntervalTable({
         aria-hidden="true"
         className={`${phaseGridClass} type-caption px-1 text-center text-muted-foreground`}
       >
-        <span />
+        <div className={elapsedCellClass}>
+          <span />
+          <span className="hidden sm:block" title={t('triathlon.intervals.elapsed')}>
+            {t('triathlon.intervals.elapsedShort')}
+          </span>
+        </div>
         <span>{t('triathlon.journal.duration')}</span>
         <span>km/h</span>
         <span title={t('triathlon.intervals.endHeartRate')}>
@@ -380,11 +392,20 @@ export function RunIntervalTable({
             data-phase-kind={kind}
             key={phase.id}
           >
-            <span
-              className={`type-caption leading-tight break-words ${kind === 'work' ? 'font-semibold' : 'text-muted-foreground'}`}
-            >
-              {phaseLabel(index)}
-            </span>
+            <div className={elapsedCellClass}>
+              <span
+                className={`type-caption leading-tight break-words ${kind === 'work' ? 'font-semibold' : 'text-muted-foreground'}`}
+              >
+                {phaseLabel(index)}
+              </span>
+              <span
+                className="type-caption tabular-nums text-muted-foreground sm:text-center"
+                data-phase-elapsed
+                title={t('triathlon.intervals.elapsed')}
+              >
+                {formatTrainingDurationInput(elapsed[index])}
+              </span>
+            </div>
             {phaseInput(phase, index, 'durationMinutes', t('triathlon.journal.duration'))}
             {phaseInput(phase, index, 'speed', t('triathlon.form.averageSpeed'), inherited)}
             {phaseInput(phase, index, 'endHeartRateBpm', t('triathlon.intervals.endHeartRate'))}
@@ -408,10 +429,14 @@ export function RunIntervalTable({
         )
       })}
       <div className={`${phaseGridClass} type-caption border-t px-1 pt-2 font-semibold tabular-nums`}>
-        <span>{t('triathlon.intervals.total')}</span>
-        <span className="text-center">
-          {formatTrainingDurationInput(totals.durationSeconds)}
-        </span>
+        {/* The total sits under the running time it ends, not the inputs. */}
+        <div className={elapsedCellClass}>
+          <span>{t('triathlon.intervals.total')}</span>
+          <span className="sm:text-center">
+            {formatTrainingDurationInput(totals.durationSeconds)}
+          </span>
+        </div>
+        <span />
         <span className="col-span-2 text-center">
           {totals.distanceMeters === null
             ? ''

@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
@@ -92,6 +93,8 @@ type PlanCalendarProps = {
   onEdit: (training: PlannedTraining) => void
   onCopy: (training: PlannedTraining) => void
   onLog: (training: PlannedTraining) => void
+  /** Logs a training without a plan. */
+  onLogActual: () => void
   onCopyWeek: () => void
   onMove: (training: PlannedTraining, date: string) => Promise<void>
 }
@@ -106,6 +109,7 @@ export function PlanCalendar({
   onEdit,
   onCopy,
   onLog,
+  onLogActual,
   onCopyWeek,
   onMove,
 }: PlanCalendarProps) {
@@ -164,10 +168,22 @@ export function PlanCalendar({
         <div className="min-w-0">
           <h2 className="type-section-title flex min-h-12 items-center">{title}</h2>
         </div>
-        <Button onClick={() => onAdd(activeLocalDate)}>
-          <Plus aria-hidden="true" />
-          {t('triathlon.plan.add')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            aria-label={t('triathlon.calendar.plan')}
+            onClick={() => onAdd(activeLocalDate)}
+          >
+            <CalendarDays aria-hidden="true" />
+            <span className="hidden sm:inline">
+              {t('triathlon.calendar.plan')}
+            </span>
+          </Button>
+          <Button onClick={onLogActual}>
+            <Plus aria-hidden="true" />
+            {t('triathlon.actual.add')}
+          </Button>
+        </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
