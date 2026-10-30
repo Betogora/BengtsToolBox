@@ -48,8 +48,8 @@
       "gzipBytes": 15225
     },
     "app:triathlon-tracker": {
-      "rawBytes": 64906,
-      "gzipBytes": 17219
+      "rawBytes": 80147,
+      "gzipBytes": 20505
     },
     "dataset:next-question/questions.ndjson": {
       "rawBytes": 850297,
