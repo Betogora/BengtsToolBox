@@ -8,7 +8,7 @@ import {
   Plus,
   Trophy,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, memo, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -54,6 +54,15 @@ function preloadStatistics() {
   void loadTrainingStatistics()
   void import('./TrainingCharts')
 }
+
+// Hidden tabs keep their last render, so a tab switch only renders the tab being shown;
+// a hidden tab catches up with changed data as soon as it becomes visible again.
+const RenderWhenActive = memo(
+  function RenderWhenActive({ children }: { active: boolean; children: ReactNode }) {
+    return children
+  },
+  (_previous, next) => !next.active,
+)
 
 async function requireSuccessfulSync<T extends { ok: boolean; error: unknown }>(
   resultPromise: Promise<T>,
@@ -256,74 +265,78 @@ export function TriathlonTrackerPage() {
               forceMount
               className="grid gap-4 data-[state=inactive]:hidden"
             >
-              <PlanCalendar
-                activeLocalDate={activeLocalDate}
-                onDateChange={setActiveLocalDate}
-                plannedTrainings={tracker.plannedTrainings}
-                completedIds={completedPlanIds}
-                today={today}
-                onAdd={openPlan}
-                onLog={logPlanned}
-                onEdit={(training) => openPlan(training.localDate, training)}
-                onCopy={(training) => {
-                  openPlan(training.localDate)
-                  setPlanTemplate(training)
-                }}
-                onCopyWeek={() => setCopyDialogOpen(true)}
-                onMove={async (training, localDate) => {
-                  try {
-                    await requireSuccessfulSync(
-                      tracker.updatePlannedTraining(training.id, { localDate }),
-                    )
-                    toast.success(t('triathlon.plan.saved'))
-                  } catch {
-                    toast.error(t('triathlon.form.saveFailed'))
+              <RenderWhenActive active={activeTab === 'calendar'}>
+                <PlanCalendar
+                  activeLocalDate={activeLocalDate}
+                  onDateChange={setActiveLocalDate}
+                  plannedTrainings={tracker.plannedTrainings}
+                  completedIds={completedPlanIds}
+                  today={today}
+                  onAdd={openPlan}
+                  onLog={logPlanned}
+                  onEdit={(training) => openPlan(training.localDate, training)}
+                  onCopy={(training) => {
+                    openPlan(training.localDate)
+                    setPlanTemplate(training)
+                  }}
+                  onCopyWeek={() => setCopyDialogOpen(true)}
+                  onMove={async (training, localDate) => {
+                    try {
+                      await requireSuccessfulSync(
+                        tracker.updatePlannedTraining(training.id, { localDate }),
+                      )
+                      toast.success(t('triathlon.plan.saved'))
+                    } catch {
+                      toast.error(t('triathlon.form.saveFailed'))
+                    }
+                  }}
+                />
+                <TrackerSettingsPanel
+                  weightKg={tracker.settings.weightKg}
+                  restingHeartRateBpm={tracker.settings.restingHeartRateBpm ?? null}
+                  planPaces={planPaces}
+                  onUpdateWeight={(weightKg) =>
+                    requireSuccessfulSync(tracker.updateSettings({ weightKg }))
                   }
-                }}
-              />
-              <TrackerSettingsPanel
-                weightKg={tracker.settings.weightKg}
-                restingHeartRateBpm={tracker.settings.restingHeartRateBpm ?? null}
-                planPaces={planPaces}
-                onUpdateWeight={(weightKg) =>
-                  requireSuccessfulSync(tracker.updateSettings({ weightKg }))
-                }
-                onUpdateRestingHeartRate={(restingHeartRateBpm) =>
-                  requireSuccessfulSync(
-                    tracker.updateSettings({ restingHeartRateBpm }),
-                  )
-                }
-                onUpdatePlanPace={(variant, paceSeconds) =>
-                  requireSuccessfulSync(
-                    tracker.updateSettings({
-                      planPaceSecondsPerKilometer: {
-                        ...planPaces,
-                        [variant]: paceSeconds,
-                      },
-                    }),
-                  )
-                }
-              />
+                  onUpdateRestingHeartRate={(restingHeartRateBpm) =>
+                    requireSuccessfulSync(
+                      tracker.updateSettings({ restingHeartRateBpm }),
+                    )
+                  }
+                  onUpdatePlanPace={(variant, paceSeconds) =>
+                    requireSuccessfulSync(
+                      tracker.updateSettings({
+                        planPaceSecondsPerKilometer: {
+                          ...planPaces,
+                          [variant]: paceSeconds,
+                        },
+                      }),
+                    )
+                  }
+                />
+              </RenderWhenActive>
             </TabsContent>
             <TabsContent
               value="records"
               forceMount
               className="data-[state=inactive]:hidden"
             >
-              <PersonalBestsPanel
-                actualTrainings={tracker.actualTrainings}
-                settings={tracker.settings}
-                today={today}
-                onEdit={(training) => {
-                  openActual(training)
-                  setActualReturnTab('records')
-                }}
-                onAdd={(template) => {
-                  openActual()
-                  setActualTemplate(template)
-                  setActualReturnTab('records')
-                }}
-              />
+              <RenderWhenActive active={activeTab === 'records'}>
+                <PersonalBestsPanel
+                  actualTrainings={tracker.actualTrainings}
+                  settings={tracker.settings}
+                  today={today}
+                  onEdit={(training) => {
+                    openActual(training)
+                    setActualReturnTab('records')
+                  }}
+                  onAdd={(template) => {
+                    openActual()
+                    setActualTemplate(template)
+                    setActualReturnTab('records')
+                  }}
+                />
+              </RenderWhenActive>
             </TabsContent>
             {/* Inactive statistics keep their width (invisible, zero height),
                 so charts need no full redraw when the tab is shown again. */}
@@ -346,12 +359,14 @@ export function TriathlonTrackerPage() {
               forceMount
               className="data-[state=inactive]:hidden"
             >
-              <TrainingJournal
-                actualTrainings={tracker.actualTrainings}
-                onEdit={openActual}
-                onDelete={deleteActual}
-                onAdd={() => openActual()}
-              />
+              <RenderWhenActive active={activeTab === 'journal'}>
+                <TrainingJournal
+                  actualTrainings={tracker.actualTrainings}
+                  onEdit={openActual}
+                  onDelete={deleteActual}
+                  onAdd={() => openActual()}
+                />
+              </RenderWhenActive>
             </TabsContent>
           </Tabs>
         </>
