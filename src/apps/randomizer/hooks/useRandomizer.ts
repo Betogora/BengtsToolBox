@@ -5,6 +5,7 @@ import {
   rollRandomInteger,
 } from '@/apps/randomizer/random'
 import type { RandomizerState, RollResult } from '@/apps/randomizer/types'
+import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -41,10 +42,7 @@ export function useRandomizer(lobbyId?: string) {
   const roll = () => {
     const value = rollRandomInteger(store.data.min, store.data.max)
     const result: RollResult = {
-      id:
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      id: createRandomId(),
       value,
       createdAt: new Date().toISOString(),
     }

@@ -94,6 +94,13 @@ export function statusVariant(status: PlayerStatus) {
   return status === 'inactive' ? ('secondary' as const) : ('outline' as const)
 }
 
+export const singleLineSelectTriggerClass =
+  'min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap'
+
+export function shouldShowPairingCountBadge(format?: Tournament['format']) {
+  return format !== 'marioKart'
+}
+
 export const pairingHintBadgeClassName = 'type-action uppercase'
 
 export const fixedPairingHintClassName = cn(

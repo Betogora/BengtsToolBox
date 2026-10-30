@@ -1,6 +1,6 @@
-export const DEFAULT_LOBBY_ID = 'default'
+const DEFAULT_LOBBY_ID = 'default'
 
-export type LobbyKind = 'default' | 'custom'
+type LobbyKind = 'default' | 'custom'
 
 export type Lobby = {
   id: string

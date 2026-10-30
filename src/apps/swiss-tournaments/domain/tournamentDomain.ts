@@ -1,10 +1,20 @@
 import { createTournament } from './tournamentCreation'
-import { inspectTournament } from './tournamentInspection'
-import { transitionTournament } from './tournamentLifecycle'
+import {
+  inspectTournament,
+  normalizeTournament,
+  summarizeTournamentResults,
+} from './tournamentInspection'
+import {
+  getFixedPairingPlayerIds,
+  transitionTournament,
+} from './tournamentLifecycle'
 
 export const tournamentDomain = {
   create: createTournament,
+  fixedPairingPlayerIds: getFixedPairingPlayerIds,
   inspect: inspectTournament,
+  normalize: normalizeTournament,
+  summarize: summarizeTournamentResults,
   transition: transitionTournament,
 }
 
@@ -23,3 +33,4 @@ export type {
   TournamentPlanningAvailability,
   TournamentProgress,
 } from './tournamentDomainTypes'
+export type { TournamentResultSummary } from './tournamentInspection'

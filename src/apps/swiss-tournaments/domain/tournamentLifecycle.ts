@@ -20,11 +20,10 @@ import {
 import {
   correctClosedMarioKartLobby,
   deleteLatestEmptyMarioKartLobby,
-  getMarioKartPlanningAvailability,
   planNextMarioKartLobby,
   rerollLatestEmptyMarioKartLobby,
   setMarioKartLobbyReservation,
-} from '@/apps/swiss-tournaments/marioKart'
+} from './marioKartFormat'
 import { getTournamentProgress } from './tournamentProgress'
 import type { Pairing, Tournament } from '@/apps/swiss-tournaments/types'
 import { normalizeTournament } from './tournamentInspection'
@@ -62,6 +61,14 @@ function pairingScoringPlayerIds(pairing: Pairing) {
   }
 
   return pairingPlayerIds(pairing)
+}
+
+export function getFixedPairingPlayerIds(pairings: readonly Pairing[]) {
+  return new Set(
+    pairings
+      .filter((pairing) => pairing.isManual)
+      .flatMap(pairingScoringPlayerIds),
+  )
 }
 
 function sameTournament(left: Tournament, right: Tournament) {
@@ -254,11 +261,7 @@ function pinPairing(
     return reject(tournament, { code: 'invalid-state', subject: 'round' })
   }
 
-  const fixedPlayerIds = new Set(
-    existing.pairings
-      .filter((pairing) => pairing.isManual)
-      .flatMap(pairingScoringPlayerIds),
-  )
+  const fixedPlayerIds = getFixedPairingPlayerIds(existing.pairings)
   const requestedPlayerIds =
     command.assignment.kind === 'standard'
       ? [
@@ -594,10 +597,4 @@ export function transitionTournament(
   return decision.status === 'changed'
     ? decision
     : { ...decision, tournament: value }
-}
-
-export function getCurrentPlanningAvailability(tournament: Tournament) {
-  return tournament.format === 'marioKart'
-    ? getMarioKartPlanningAvailability(tournament)
-    : null
 }

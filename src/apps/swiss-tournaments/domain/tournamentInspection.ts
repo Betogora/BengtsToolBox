@@ -17,7 +17,7 @@ import {
   getMarioKartRacers,
   isLatestEmptyMarioKartLobby,
   MARIO_KART_MAX_PLACEMENT,
-} from '@/apps/swiss-tournaments/marioKart'
+} from './marioKartFormat'
 import { getTournamentProgress } from './tournamentProgress'
 import type { Tournament } from '@/apps/swiss-tournaments/types'
 import type {
@@ -160,7 +160,7 @@ export function inspectTournament(value: Tournament): TournamentInspection {
     standings,
     beerStandings:
       tournament.format === 'marioKart'
-        ? createMarioKartBeerStandingRows(tournament)
+        ? createMarioKartBeerStandingRows(tournament, standings)
         : [],
     standingsCsv: standingsToCsv(standings, tournament.format),
     progress,
@@ -180,4 +180,74 @@ export function inspectTournament(value: Tournament): TournamentInspection {
       },
     },
   }
+}
+
+export type TournamentResultSummary = {
+  tournament: Tournament
+  standings: TournamentInspection['standings']
+  completedUnitCount: number
+}
+
+const resultSummaryCache = new Map<
+  string,
+  { source: Tournament; summary: TournamentResultSummary }
+>()
+
+function isSameStoredValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true
+  }
+
+  if (
+    typeof left !== 'object' ||
+    typeof right !== 'object' ||
+    left === null ||
+    right === null ||
+    Object.getPrototypeOf(left) !== Object.getPrototypeOf(right)
+  ) {
+    return false
+  }
+
+  if (
+    Array.isArray(left) &&
+    left.length !== (right as unknown[]).length
+  ) {
+    return false
+  }
+
+  const leftKeys = Object.keys(left)
+  const rightKeys = Object.keys(right)
+
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key, index) =>
+        key === rightKeys[index] &&
+        isSameStoredValue(
+          (left as Record<string, unknown>)[key],
+          (right as Record<string, unknown>)[key],
+        ),
+    )
+  )
+}
+
+// Archivierte Turniere ändern sich selten; inhaltsgleiche Snapshots verwenden das letzte Ergebnis weiter.
+export function summarizeTournamentResults(
+  value: Tournament,
+): TournamentResultSummary {
+  const cached = resultSummaryCache.get(value.id)
+
+  if (cached && isSameStoredValue(cached.source, value)) {
+    return cached.summary
+  }
+
+  const inspection = inspectTournament(value)
+  const summary = {
+    tournament: inspection.tournament,
+    standings: inspection.standings,
+    completedUnitCount: inspection.progress.completedUnitCount,
+  }
+
+  resultSummaryCache.set(value.id, { source: value, summary })
+  return summary
 }

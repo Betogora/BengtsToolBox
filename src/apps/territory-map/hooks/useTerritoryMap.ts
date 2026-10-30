@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 
 import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
+import { getLocalDateKey } from '@/apps/territory-map/eventDates'
 import type {
   TerritoryClaim,
   TerritoryClaimOwner,
@@ -29,7 +30,7 @@ import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
-export const territoryColorPresets = [...participantColorPresets]
+const territoryColorPresets = [...participantColorPresets]
 
 const activeDatasetId = 'dataset-current'
 const legacyUnitedKingdomTerritoryId = 'gb'
@@ -180,32 +181,6 @@ export function migrateLegacyUnitedKingdomEvents(
   return changed ? migrated : events
 }
 
-function compareEventsAscending(
-  left: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
-  right: Pick<TerritoryVisitEvent, 'createdAtClientIso' | 'position'>,
-) {
-  return (
-    getLocalDateKey(left.createdAtClientIso).localeCompare(
-      getLocalDateKey(right.createdAtClientIso),
-    ) ||
-    left.position - right.position
-  )
-}
-
-function getLocalDateKey(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-
-  const year = String(date.getFullYear())
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
 function normalizeEvent(
   event: TerritoryVisitEvent,
   index: number,
@@ -266,8 +241,15 @@ export function getCurrentClaims(
     germany: {},
   }
 
-  ;[...events].sort(compareEventsAscending).forEach((event) => {
-    const eventDay = getLocalDateKey(event.createdAtClientIso)
+  const datedEvents = events
+    .map((event) => ({ event, eventDay: getLocalDateKey(event.createdAtClientIso) }))
+    .sort(
+      (left, right) =>
+        left.eventDay.localeCompare(right.eventDay) ||
+        left.event.position - right.event.position,
+    )
+
+  datedEvents.forEach(({ event, eventDay }) => {
     const currentDay = latestDaysByTerritory[event.mapId][event.territoryId]
 
     if (!eventDay) {

@@ -1,12 +1,18 @@
 import type {
   PlayerScore,
+  ProgressDataset,
   ProgressDrinkIcon,
   ProgressEvent,
   ProgressEventDelta,
+  ProgressEventIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import { createRandomId } from '@/apps/shared/utils'
-import { getParticipantColorByPosition } from '@/lib/theme'
+import {
+  getParticipantColorByPosition,
+  normalizeParticipantColor,
+  normalizeThemeColor,
+} from '@/lib/theme'
 
 export const defaultProgressDrinkIcon: ProgressDrinkIcon = 'beer'
 
@@ -35,13 +41,7 @@ export function getPlayerScores(
   events: ProgressEvent[],
 ): PlayerScore[] {
   const scores = new Map(players.map((player) => [player.id, 0]))
-  const sortedEvents = [...events].sort(
-    (left, right) =>
-      Date.parse(left.createdAtClientIso) - Date.parse(right.createdAtClientIso) ||
-      left.position - right.position,
-  )
-
-  sortedEvents.forEach((event) => {
+  getSortedEvents(events).forEach((event) => {
     if (!scores.has(event.playerId)) {
       return
     }
@@ -54,4 +54,164 @@ export function getPlayerScores(
     player,
     score: scores.get(player.id) ?? 0,
   }))
+}
+
+// Zeitstempel werden einmal je Ereignis gelesen statt in jedem Sortiervergleich.
+export function getTimedEvents(events: ProgressEvent[]) {
+  return events
+    .map((event) => ({ event, time: Date.parse(event.createdAtClientIso) }))
+    .sort(
+      (left, right) =>
+        left.time - right.time || left.event.position - right.event.position,
+    )
+}
+
+export function getSortedEvents(events: ProgressEvent[]) {
+  return getTimedEvents(events).map(({ event }) => event)
+}
+
+// Neueste Ereignisse zuerst.
+export function getEventTable(events: ProgressEvent[]) {
+  return events
+    .map((event) => ({ event, time: Date.parse(event.createdAtClientIso) }))
+    .sort(
+      (left, right) =>
+        right.time - left.time || right.event.position - left.event.position,
+    )
+    .map(({ event }) => event)
+}
+
+export function rankPlayerScores<T extends PlayerScore>(scores: readonly T[]) {
+  return [...scores].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.player.position - right.player.position,
+  )
+}
+
+export const defaultUnit = 'Getränke'
+const legacyDefaultChartTitle = 'Fortschritt über Zeit'
+const emptyUnitDefaultChartTitle = 'Dashboard'
+
+export function getDefaultChartTitle(unit: string) {
+  const trimmedUnit = unit.trim()
+
+  return trimmedUnit ? `${trimmedUnit}-Dashboard` : emptyUnitDefaultChartTitle
+}
+
+export function isDefaultChartTitle(title: string, unit: string) {
+  const trimmedTitle = title.trim()
+
+  return (
+    !trimmedTitle ||
+    trimmedTitle === legacyDefaultChartTitle ||
+    trimmedTitle === getDefaultChartTitle(unit)
+  )
+}
+
+function fallbackPlayerName(player: Pick<ProgressPlayer, 'id' | 'position'>) {
+  const position = Number.isFinite(player.position)
+    ? player.position
+    : Number(player.id.replace('person-', ''))
+
+  return `Person ${Number.isFinite(position) ? position : 1}`
+}
+
+export function sanitizeName(
+  name: string,
+  player: Pick<ProgressPlayer, 'id' | 'position'>,
+) {
+  const trimmedName = name.trim()
+
+  return trimmedName || fallbackPlayerName(player)
+}
+
+export function sanitizeColor(color: string, fallback: string) {
+  return normalizeParticipantColor(color, fallback)
+}
+
+function normalizeEventIcon(icon: unknown, valueDelta: number): ProgressEventIcon {
+  if (
+    icon === 'plus' ||
+    icon === 'minus' ||
+    icon === 'wine' ||
+    icon === 'beer' ||
+    icon === 'schnaps' ||
+    icon === 'funnel'
+  ) {
+    return icon
+  }
+
+  return valueDelta < 0 ? 'minus' : 'plus'
+}
+
+function isProgressDrinkIcon(icon: unknown): icon is ProgressDrinkIcon {
+  return icon === 'wine' || icon === 'beer' || icon === 'schnaps' || icon === 'funnel'
+}
+
+export function normalizeDrinkIcon(icon: unknown): ProgressDrinkIcon {
+  return isProgressDrinkIcon(icon) ? icon : defaultProgressDrinkIcon
+}
+
+function normalizeDatasetName(name: string | undefined) {
+  const trimmedName = name?.trim()
+
+  if (!trimmedName || trimmedName === 'Aktueller Datensatz') {
+    return 'Datensatz'
+  }
+
+  return trimmedName
+}
+
+export function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer {
+  const position = Number.isFinite(player.position)
+    ? Number(player.position)
+    : index + 1
+  const fallbackColor = getParticipantColorByPosition(position)
+  const name = sanitizeName(player.name ?? '', { id: player.id, position })
+  const color = sanitizeColor(player.color ?? fallbackColor, fallbackColor)
+
+  return {
+    ...player,
+    position,
+    name,
+    color,
+    defaultEventIcon: normalizeDrinkIcon(player.defaultEventIcon),
+  }
+}
+
+export function normalizeDataset(
+  dataset: ProgressDataset,
+  players: ProgressPlayer[],
+): ProgressDataset {
+  const hasUnit = typeof dataset.unit === 'string'
+  const unit = hasUnit ? dataset.unit : defaultUnit
+  const chartTitle = dataset.chartTitle?.trim()
+
+  return {
+    ...dataset,
+    chartTitle:
+      !chartTitle || chartTitle === legacyDefaultChartTitle
+        ? getDefaultChartTitle(unit)
+        : chartTitle,
+    createdAtClientIso: dataset.createdAtClientIso || new Date().toISOString(),
+    archivedAtClientIso: dataset.archivedAtClientIso ?? null,
+    events: (dataset.events ?? []).map((event, index) => ({
+      ...event,
+      playerColor:
+        players.find((player) => player.id === event.playerId)?.color ??
+        normalizeThemeColor(event.playerColor, index),
+      valueDelta: Number.isFinite(Number(event.valueDelta))
+        ? Number(event.valueDelta)
+        : 1,
+      icon: normalizeEventIcon(event.icon, Number(event.valueDelta) || 1),
+      position: Number.isFinite(event.position) ? event.position : index + 1,
+      createdAtClientIso: event.createdAtClientIso || new Date().toISOString(),
+      createdAtLabel: event.createdAtLabel || event.createdAtClientIso,
+    })),
+    name: normalizeDatasetName(dataset.name),
+    position: Number.isFinite(dataset.position) ? dataset.position : 1,
+    status: dataset.status === 'archived' ? 'archived' : 'active',
+    unit,
+  }
 }

@@ -30,6 +30,42 @@ export function getTerritoryClaimOwners(claim?: TerritoryClaim) {
     : []
 }
 
+export function getTerritoryPatternId(prefix: string, territoryId: string) {
+  return `${prefix}-${territoryId.replace(/[^a-zA-Z0-9_-]/g, '-')}`
+}
+
+export function getTerritoryOwnerAppearance({
+  claim,
+  patternId,
+  players,
+  unclaimedFill,
+  unvisitedLabel,
+}: {
+  claim?: TerritoryClaim
+  patternId: string
+  players: TerritoryPlayer[]
+  unclaimedFill: string
+  unvisitedLabel: string
+}) {
+  const owners = getTerritoryClaimOwners(claim)
+  const fill =
+    owners.length > 1
+      ? `url(#${patternId})`
+      : owners.length === 1
+        ? getTerritoryClaimColor(
+            owners[0].playerId,
+            owners[0].playerColor,
+            players,
+          )
+        : unclaimedFill
+  const label =
+    owners.length > 0
+      ? owners.map((owner) => owner.playerName).join(', ')
+      : unvisitedLabel
+
+  return { fill, label, owners }
+}
+
 export function getAdaptiveStripeWidth({
   ownerCount,
   screenHeight,

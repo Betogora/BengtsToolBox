@@ -1,176 +1,22 @@
 import { Download, Printer, Trash2, Trophy } from 'lucide-react';
-import { useId } from 'react';
-import { formatPoints } from '@/apps/swiss-tournaments/components/tournamentUiPresentation'
+import { RankPlacement } from '@/apps/swiss-tournaments/components/RankPlacement'
+import {
+  completedUnitLabelKey,
+  formatPoints,
+  statusLabelKeys,
+  statusVariant,
+  tournamentFormatLabelKey,
+} from '@/apps/swiss-tournaments/components/tournamentUiPresentation'
 import type { TournamentInspection } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments';
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton';
 import { EmptyState } from '@/apps/shared/components/EmptyState';
-import type { PlayerStatus, Round, Tournament } from '@/apps/swiss-tournaments/types';
+import type { Round, Tournament } from '@/apps/swiss-tournaments/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useI18n, type TranslationKey } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-
-const marioKartRankGradients: Record<number | 'default', readonly string[]> = {
-  1: ['#fff7a8', '#ffd83f', '#b58c18', '#ffe877'],
-  2: ['#ffffff', '#dff6f7', '#9fb3bb', '#f4ffff'],
-  3: ['#ffe6ca', '#d99c62', '#a56936', '#f7cfaa'],
-  default: ['#f4f7f8', '#9aa8ae', '#4d6870', '#c8d2d6'],
-}
-
-function ordinalSuffix(rank: number) {
-  const remainder = rank % 100
-
-  if (remainder >= 11 && remainder <= 13) {
-    return 'th'
-  }
-
-  switch (rank % 10) {
-    case 1:
-      return 'st'
-    case 2:
-      return 'nd'
-    case 3:
-      return 'rd'
-    default:
-      return 'th'
-  }
-}
-
-function RankPlacement({
-  className,
-  isMarioKart,
-  rank,
-}: {
-  className?: string
-  isMarioKart: boolean
-  rank: number
-}) {
-  const gradientId = `mario-kart-rank-gradient-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const shadowId = `mario-kart-rank-shadow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-
-  if (!isMarioKart || !Number.isInteger(rank) || rank < 1) {
-    return <>{rank}</>
-  }
-
-  const rankText = String(rank)
-  const rankDigitCount = rankText.length
-  const gradientStops = marioKartRankGradients[rank] ?? marioKartRankGradients.default
-  const isCompactRank = rankDigitCount <= 2
-  const viewBoxWidth = rankDigitCount === 1 ? 86 : rankDigitCount === 2 ? 96 : 116
-  const numberFontSize = isCompactRank ? (rankDigitCount === 1 ? 45 : 40) : 34
-  const suffixFontSize = isCompactRank ? (rankDigitCount === 1 ? 17 : 14) : 12
-  const letterSpacing = rankDigitCount === 1 ? -3 : -4
-
-  return (
-    <span
-      aria-label={String(rank)}
-      className={cn('inline-flex h-[30px] w-16 max-w-full items-center align-middle', className)}
-    >
-      <span className="sr-only">{rank}</span>
-      <svg
-        aria-hidden="true"
-        className="block h-full w-full"
-        focusable="false"
-        preserveAspectRatio="xMidYMid meet"
-        viewBox={`0 0 ${viewBoxWidth} 46`}
-      >
-        <defs>
-          <linearGradient
-            id={gradientId}
-            x1="8"
-            x2={viewBoxWidth - 8}
-            y1="2"
-            y2="45"
-            gradientUnits="userSpaceOnUse"
-          >
-            {gradientStops.map((color, index) => (
-              <stop
-                key={color}
-                offset={index === 0 ? '0' : index === 1 ? '0.48' : index === 2 ? '0.72' : '1'}
-                stopColor={color}
-              />
-            ))}
-          </linearGradient>
-          <filter id={shadowId} x="-20%" y="-30%" width="140%" height="160%">
-            <feDropShadow
-              dx="2"
-              dy="2"
-              floodColor="#1b2228"
-              floodOpacity="0.58"
-              stdDeviation="1.1"
-            />
-          </filter>
-        </defs>
-        <g filter={`url(#${shadowId})`} transform="translate(3 0) skewX(-8)">
-          <text
-            dominantBaseline="alphabetic"
-            fill={`url(#${gradientId})`}
-            fontFamily="Arial Black, Impact, sans-serif"
-            fontWeight="900"
-            paintOrder="stroke"
-            stroke="#26313a"
-            strokeLinejoin="round"
-            strokeWidth={rankDigitCount === 1 ? 5 : 4.5}
-            x={rankDigitCount === 1 ? 6 : 4}
-            y={rankDigitCount === 1 ? 40 : 39}
-          >
-            <tspan
-              fontSize={numberFontSize}
-              letterSpacing={letterSpacing}
-            >
-              {rankText}
-            </tspan>
-            <tspan
-              dx="3"
-              dy="-1"
-              fontSize={suffixFontSize}
-              letterSpacing="-1"
-              strokeWidth={rankDigitCount === 1 ? 3.5 : 3}
-            >
-              {ordinalSuffix(rank)}
-            </tspan>
-          </text>
-        </g>
-      </svg>
-    </span>
-  )
-}
-
-const statusLabelKeys: Record<PlayerStatus, TranslationKey> = {
-  active: 'swiss.status.active',
-  inactive: 'swiss.status.inactive',
-  withdrawn: 'swiss.status.withdrawn',
-}
-
-function tournamentFormatLabelKey(format?: Tournament['format']): TranslationKey {
-  if (format === 'roundRobin') {
-    return 'swiss.format.roundRobin'
-  }
-
-  if (format === 'handAndBrain') {
-    return 'swiss.format.handAndBrain'
-  }
-
-  if (format === 'marioKart') {
-    return 'swiss.format.marioKart'
-  }
-
-  return 'swiss.format.swiss'
-}
-
-function completedUnitLabelKey(format?: Tournament['format']): TranslationKey {
-  return format === 'marioKart' ? 'swiss.marioKartGames' : 'swiss.rounds'
-}
-
-function statusVariant(status: PlayerStatus) {
-  if (status === 'active') {
-    return 'default' as const
-  }
-
-  return status === 'inactive' ? ('secondary' as const) : ('outline' as const)
-}
 
 function formatSwissDateTime(
   value: string | undefined,

@@ -2,7 +2,7 @@ import territoryOptions from '@/apps/territory-map/data/territory-options.source
 
 import type { Territory, TerritoryMapId } from '@/apps/territory-map/types'
 
-export type TerritoryOption = Pick<Territory, 'id' | 'name' | 'isoCode'>
+type TerritoryOption = Pick<Territory, 'id' | 'name' | 'isoCode'>
 
 export const mapViewBoxes: Record<TerritoryMapId, string> = {
   world: '0 0 960 520',

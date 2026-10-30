@@ -17,7 +17,6 @@ import { EmptyState } from "@/apps/shared/components/EmptyState";
 import type {
   ByePolicy,
   ByeScore,
-  Round,
   Tournament,
   TournamentFormat,
 } from "@/apps/swiss-tournaments/types";
@@ -41,10 +40,13 @@ import {
 import { TabsContent } from "@/components/ui/tabs";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { PairingsTable } from "@/apps/swiss-tournaments/components/TournamentTables";
+import { PairingsTable } from "@/apps/swiss-tournaments/components/PairingsTable";
+import { RoundStatusBadge } from "@/apps/swiss-tournaments/components/RoundStatusBadge";
 import {
   byeScoreOptions,
   plannedUnitLabelKey,
+  shouldShowPairingCountBadge,
+  singleLineSelectTriggerClass,
   tournamentFormatLabelKey,
 } from "@/apps/swiss-tournaments/components/tournamentUiPresentation";
 import { NewTournamentDialog } from "@/apps/swiss-tournaments/components/TournamentCreatorDialog";
@@ -59,13 +61,6 @@ const byePolicyOptions: Array<{ value: ByePolicy; labelKey: TranslationKey }> =
     },
     { value: "lowestScore", labelKey: "swiss.byePolicy.lowestScore" },
   ];
-
-const singleLineSelectTriggerClass =
-  "min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap";
-
-function shouldShowPairingCountBadge(format?: Tournament["format"]) {
-  return format !== "marioKart";
-}
 
 function currentUnitLabelKey(format?: Tournament["format"]): TranslationKey {
   return format === "marioKart" ? "swiss.currentLobby" : "swiss.currentRound";
@@ -99,20 +94,6 @@ function renderTournamentFormatIcon(format?: Tournament["format"]) {
   }
 
   return <Swords className="size-5 shrink-0" />;
-}
-
-function RoundStatusBadge({ status }: { status: Round["status"] }) {
-  const { t } = useI18n();
-
-  return (
-    <Badge className="type-ui align-middle" variant={status === "draft" ? "default" : "secondary"}>
-      {t(
-        status === "draft"
-          ? "swiss.unitStatus.active"
-          : "swiss.unitStatus.closed",
-      )}
-    </Badge>
-  );
 }
 
 function RoundProgress({

@@ -1,5 +1,5 @@
-import type { ByeScore, Color, GameResult, HandBrainSide, Pairing, PairingWarning, Player, PlayerScoreSummary, PlayerStatus, Tournament } from '@/apps/swiss-tournaments/types'
-import { getMarioKartExtraRacers as marioKartExtraRacers, getMarioKartRacers as marioKartRacers, getMarioKartScoringRacers as marioKartScoringRacers, getMarioKartScoringPlacement, getMarioKartTournamentPoints, isMarioKartPairingComplete } from '@/apps/swiss-tournaments/marioKart'
+import type { ByeScore, Color, GameResult, HandBrainSide, Pairing, Player, PlayerScoreSummary, PlayerStatus, Tournament } from '@/apps/swiss-tournaments/types'
+import { getMarioKartExtraRacers, getMarioKartRacers, getMarioKartScoringRacers, getMarioKartScoringPlacement, getMarioKartTournamentPoints, isMarioKartPairingComplete } from './marioKartFormat'
 import { createRandomId } from '@/apps/shared/utils'
 
 export function warning(id: string, message: string, severity: 'hard' | 'soft' = 'soft') {
@@ -43,11 +43,7 @@ export function pairingKind(pairing: Pairing) {
 }
 
 export function marioKartScoringPlayerIds(pairing: Pairing) {
-  return marioKartScoringRacers(pairing).map((racer) => racer.playerId)
-}
-
-export function hasCompleteMarioKartResult(pairing: Pairing) {
-  return isMarioKartPairingComplete(pairing)
+  return getMarioKartScoringRacers(pairing).map((racer) => racer.playerId)
 }
 
 export function isPairingComplete(pairing: Pairing) {
@@ -56,7 +52,7 @@ export function isPairingComplete(pairing: Pairing) {
   }
 
   if (pairingKind(pairing) === 'marioKart') {
-    return hasCompleteMarioKartResult(pairing)
+    return isMarioKartPairingComplete(pairing)
   }
 
   return Boolean(pairing.result)
@@ -64,7 +60,7 @@ export function isPairingComplete(pairing: Pairing) {
 
 export function hasEnteredResult(pairing: Pairing) {
   if (pairing.kind === 'marioKart') {
-    return marioKartRacers(pairing).some(
+    return getMarioKartRacers(pairing).some(
       (racer) => racer.placement || racer.event,
     )
   }
@@ -96,7 +92,7 @@ export function pairingPlayerIds(pairing: Pairing) {
   return [
     ...whiteSidePlayerIds(pairing),
     ...blackSidePlayerIds(pairing),
-    ...marioKartRacers(pairing).map((racer) => racer.playerId),
+    ...getMarioKartRacers(pairing).map((racer) => racer.playerId),
     ...(pairing.byePlayerId ? [pairing.byePlayerId] : []),
   ]
 }
@@ -177,11 +173,11 @@ function teammateIdsForPlayer(pairing: Pairing, playerId: string) {
   return sideIds.filter((id) => id !== playerId)
 }
 
-function wereOpponents(pairing: Pairing, leftId: string, rightId: string) {
+export function wereOpponents(pairing: Pairing, leftId: string, rightId: string) {
   return opponentIdsForPlayer(pairing, leftId).includes(rightId)
 }
 
-function wereTeammates(pairing: Pairing, leftId: string, rightId: string) {
+export function wereTeammates(pairing: Pairing, leftId: string, rightId: string) {
   return teammateIdsForPlayer(pairing, leftId).includes(rightId)
 }
 
@@ -220,7 +216,7 @@ export function resultPoints(
   }
 
   if (pairingKind(pairing) === 'marioKart') {
-    const scoringRacers = marioKartScoringRacers(pairing)
+    const scoringRacers = getMarioKartScoringRacers(pairing)
     const racer = scoringRacers.find((entry) => entry.playerId === playerId)
 
     return racer ? getMarioKartTournamentPoints(pairing, racer) : 0
@@ -281,36 +277,26 @@ export function countGamesBetweenBeforeRound(
   return count
 }
 
-export function countGamesBetween(
-  tournament: Tournament,
-  leftId: string,
-  rightId: string,
-) {
-  return tournament.rounds.reduce(
-    (count, round) =>
-      count +
-      round.pairings.filter(
-        (pairing) =>
-          !pairing.isBye &&
-          wereOpponents(pairing, leftId, rightId),
-      ).length,
-    0,
-  )
-}
+export function countMarioKartEventsByPlayer(tournament: Tournament) {
+  const counts = new Map<string, number>()
 
-export function countMarioKartEvents(tournament: Tournament, playerId: string) {
-  return tournament.rounds.reduce(
-    (count, round) =>
-      count +
-      round.pairings.filter(
-        (pairing) =>
-          pairing.kind === 'marioKart' &&
-          marioKartRacers(pairing).some(
-            (racer) => racer.playerId === playerId && racer.event,
-          ),
-      ).length,
-    0,
-  )
+  tournament.rounds.forEach((round) => {
+    round.pairings.forEach((pairing) => {
+      if (pairing.kind !== 'marioKart') {
+        return
+      }
+
+      new Set(
+        getMarioKartRacers(pairing)
+          .filter((racer) => racer.event)
+          .map((racer) => racer.playerId),
+      ).forEach((playerId) => {
+        counts.set(playerId, (counts.get(playerId) ?? 0) + 1)
+      })
+    })
+  })
+
+  return counts
 }
 
 export function getSummaryBeforeRound(
@@ -352,20 +338,20 @@ export function getSummaryBeforeRound(
       const marioKartCycleByPairingId = new Map<string, number>()
 
       round.pairings.forEach((pairing) => {
-        marioKartRacers(pairing).forEach((racer) => {
+        getMarioKartRacers(pairing).forEach((racer) => {
           if (racer.event && summaries[racer.playerId]) {
             summaries[racer.playerId].marioKartEvents += 1
           }
         })
 
-        marioKartExtraRacers(pairing).forEach((racer) => {
+        getMarioKartExtraRacers(pairing).forEach((racer) => {
           if (summaries[racer.playerId]) {
             summaries[racer.playerId].marioKartExtraRides += 1
           }
         })
 
         if (pairingKind(pairing) === 'marioKart') {
-          const scoringRacers = marioKartScoringRacers(pairing)
+          const scoringRacers = getMarioKartScoringRacers(pairing)
           const previousGameCounts = scoringRacers.map(
             (racer) => summaries[racer.playerId]?.marioKartScoringRaces ?? 0,
           )
@@ -400,13 +386,13 @@ export function getSummaryBeforeRound(
         }
 
         if (pairingKind(pairing) === 'marioKart') {
-          const scoringRacers = marioKartScoringRacers(pairing)
+          const scoringRacers = getMarioKartScoringRacers(pairing)
           const ownRacer = scoringRacers.find((racer) => racer.playerId === player.id)
           const ownScoringPlacement = ownRacer
             ? getMarioKartScoringPlacement(pairing, ownRacer)
             : undefined
           const opponentIds = opponentIdsForPlayer(pairing, player.id)
-          const isCompleteMarioKartPairing = hasCompleteMarioKartResult(pairing)
+          const isCompleteMarioKartPairing = isMarioKartPairingComplete(pairing)
           const cycleNumber = marioKartCycleByPairingId.get(pairing.id) ?? 1
 
           if (opponentIds.length > 0) {
@@ -489,136 +475,6 @@ export function getSummaryBeforeRound(
   return summaries
 }
 
-export function colorPenalty(player: Player, color: Color, summary: PlayerScoreSummary) {
-  if (color === '-') {
-    return 0
-  }
-
-  const whiteCount = summary.colors.filter((entry) => entry === 'W').length
-  const blackCount = summary.colors.filter((entry) => entry === 'B').length
-  const lastColors = summary.colors.filter((entry) => entry !== '-').slice(-2)
-  const nextWhiteCount = whiteCount + (color === 'W' ? 1 : 0)
-  const nextBlackCount = blackCount + (color === 'B' ? 1 : 0)
-  const nextColorDiff = nextWhiteCount - nextBlackCount
-  let penalty = 0
-
-  if (Math.abs(nextColorDiff) > 2) {
-    penalty += 1000
-  }
-
-  if (lastColors.length > 0 && lastColors[lastColors.length - 1] === color) {
-    penalty += 4
-  }
-
-  if (lastColors.length === 2 && lastColors.every((entry) => entry === color)) {
-    penalty += 1000
-  }
-
-  penalty += Math.abs(nextColorDiff) * 20
-
-  return penalty + player.initialSeed / 1000
-}
-
-function previousColorAgainstBeforeRound(
-  tournament: Tournament,
-  playerId: string,
-  opponentId: string,
-  beforeRoundNumber: number,
-): Color | null {
-  const previousPairing = [...tournament.rounds]
-    .filter((round) => round.roundNumber < beforeRoundNumber)
-    .sort((left, right) => right.roundNumber - left.roundNumber)
-    .flatMap((round) => round.pairings)
-    .find(
-      (pairing) =>
-        !pairing.isBye &&
-        wereOpponents(pairing, playerId, opponentId),
-    )
-
-  if (!previousPairing) {
-    return null
-  }
-
-  return playerColor(previousPairing, playerId)
-}
-
-export function assignColors(
-  whiteCandidate: Player,
-  blackCandidate: Player,
-  summaries: Record<string, PlayerScoreSummary>,
-  tournament: Tournament,
-  roundNumber: number,
-) {
-  const asGiven = colorAssignmentPenalty(
-    whiteCandidate,
-    blackCandidate,
-    summaries,
-    tournament,
-    roundNumber,
-  )
-  const swapped = colorAssignmentPenalty(
-    blackCandidate,
-    whiteCandidate,
-    summaries,
-    tournament,
-    roundNumber,
-  )
-
-  return asGiven <= swapped
-    ? { whitePlayerId: whiteCandidate.id, blackPlayerId: blackCandidate.id }
-    : { whitePlayerId: blackCandidate.id, blackPlayerId: whiteCandidate.id }
-}
-
-export function assignSinglePairingColors(
-  left: Player,
-  right: Player,
-  summaries: Record<string, PlayerScoreSummary>,
-) {
-  const leftWhiteCount = summaries[left.id].colors.filter((entry) => entry === 'W').length
-  const rightWhiteCount = summaries[right.id].colors.filter((entry) => entry === 'W').length
-
-  if (leftWhiteCount !== rightWhiteCount) {
-    return leftWhiteCount < rightWhiteCount
-      ? { whitePlayerId: left.id, blackPlayerId: right.id }
-      : { whitePlayerId: right.id, blackPlayerId: left.id }
-  }
-
-  const leftBlackCount = summaries[left.id].colors.filter((entry) => entry === 'B').length
-  const rightBlackCount = summaries[right.id].colors.filter((entry) => entry === 'B').length
-
-  if (leftBlackCount !== rightBlackCount) {
-    return leftBlackCount > rightBlackCount
-      ? { whitePlayerId: left.id, blackPlayerId: right.id }
-      : { whitePlayerId: right.id, blackPlayerId: left.id }
-  }
-
-  return left.initialSeed > right.initialSeed
-    ? { whitePlayerId: left.id, blackPlayerId: right.id }
-    : { whitePlayerId: right.id, blackPlayerId: left.id }
-}
-
-function colorAssignmentPenalty(
-  white: Player,
-  black: Player,
-  summaries: Record<string, PlayerScoreSummary>,
-  tournament: Tournament,
-  roundNumber: number,
-) {
-  const repeatedWhiteCandidateColor = previousColorAgainstBeforeRound(
-    tournament,
-    white.id,
-    black.id,
-    roundNumber,
-  )
-  const repeatAsGivenPenalty = repeatedWhiteCandidateColor === 'W' ? 60 : 0
-
-  return (
-    colorPenalty(white, 'W', summaries[white.id]) +
-    colorPenalty(black, 'B', summaries[black.id]) +
-    repeatAsGivenPenalty
-  )
-}
-
 export function sideAveragePoints(
   playerIds: string[],
   summaries: Record<string, PlayerScoreSummary>,
@@ -656,7 +512,7 @@ export function hasSameTeamBeforeRound(
     )
 }
 
-function hasSameRoleWithTeammateBeforeRound(
+export function hasSameRoleWithTeammateBeforeRound(
   tournament: Tournament,
   side: HandBrainSide,
   beforeRoundNumber: number,
@@ -678,229 +534,6 @@ function hasSameRoleWithTeammateBeforeRound(
         )
       }),
     )
-}
-
-export function validatePairing(
-  tournament: Tournament,
-  pairing: Pairing,
-  roundNumber: number,
-  summaries: Record<string, PlayerScoreSummary>,
-) {
-  const warnings: PairingWarning[] = []
-
-  if (pairing.isBye) {
-    const player = tournament.players.find((entry) => entry.id === pairing.byePlayerId)
-
-    const activePlayers = tournament.players.filter(
-      (entry) =>
-        entry.addedInRound <= roundNumber &&
-        getPlayerStatusForRound(entry, roundNumber) === 'active',
-    )
-    const fewestByes = Math.min(
-      ...activePlayers.map((entry) => summaries[entry.id]?.byes ?? 0),
-    )
-
-    if (
-      player &&
-      summaries[player.id].byes > fewestByes
-    ) {
-      warnings.push(warning('multiple-byes', `${player.name} hat bereits ein Bye erhalten.`))
-    }
-
-    if (marioKartRacers(pairing).length > 0) {
-      warnings.push(warning('mario-kart-bye-extra', 'Dieses Bye enthält eine optionale Extra-Fahrt ohne Wertung.'))
-    }
-
-    return warnings
-  }
-
-  if (pairingKind(pairing) === 'marioKart') {
-    const scoringRacers = marioKartScoringRacers(pairing)
-    const extraRacers = marioKartExtraRacers(pairing)
-    const scoringIds = scoringRacers.map((racer) => racer.playerId)
-    const allRacerIds = marioKartRacers(pairing).map((racer) => racer.playerId)
-    const uniqueScoringIds = new Set(scoringIds)
-    const uniqueAllRacerIds = new Set(allRacerIds)
-
-    const minimumScoringRacers = extraRacers.length > 0 ? 1 : 2
-
-    if (scoringRacers.length < minimumScoringRacers || scoringRacers.length > 4) {
-      warnings.push(warning('missing-player', 'Diese Mario-Kart-Lobby braucht 2 bis 4 Fahrer und mindestens einen zählenden Fahrer.', 'hard'))
-    }
-
-    if (uniqueScoringIds.size !== scoringIds.length || uniqueAllRacerIds.size !== allRacerIds.length) {
-      warnings.push(warning('duplicate-round-player', 'Ein Fahrer darf in derselben Lobby nur einmal vorkommen.', 'hard'))
-    }
-
-    if (scoringRacers.length + extraRacers.length > 4) {
-      warnings.push(warning('missing-player', 'Eine Mario-Kart-Lobby darf maximal 4 Fahrer enthalten.', 'hard'))
-    }
-
-    allRacerIds.forEach((playerId) => {
-      const player = tournament.players.find((entry) => entry.id === playerId)
-
-      if (!player) {
-        warnings.push(warning('missing-player', 'Ein Fahrer fehlt in dieser Lobby.', 'hard'))
-        return
-      }
-
-      if (getPlayerStatusForRound(player, roundNumber) !== 'active') {
-        warnings.push(warning('inactive-player', `${player.name} ist nicht aktiv.`, 'hard'))
-      }
-    })
-
-    if (scoringRacers.length === 3) {
-      warnings.push(warning('mario-kart-three-player-lobby', 'Diese Lobby hat nur drei zählende Fahrer.'))
-    }
-
-    const scores = scoringIds.map((playerId) => summaries[playerId]?.points ?? 0)
-    const scoreGap = Math.max(...scores) - Math.min(...scores)
-
-    if (scores.length > 0 && scoreGap > 1) {
-      warnings.push(warning('mario-kart-score-gap', 'Die Score-Differenz dieser Lobby ist ungewöhnlich hoch.'))
-    }
-
-    return warnings
-  }
-
-  if (pairingKind(pairing) === 'handAndBrain') {
-    const whiteIds = whiteSidePlayerIds(pairing)
-    const blackIds = blackSidePlayerIds(pairing)
-    const playerIds = [...whiteIds, ...blackIds]
-    const uniquePlayerIds = new Set(playerIds)
-
-    if (whiteIds.length !== 2 || blackIds.length !== 2 || uniquePlayerIds.size !== 4) {
-      warnings.push(warning('missing-player', 'Dieses Hand-and-Brain-Brett ist unvollständig.', 'hard'))
-    }
-
-    playerIds.forEach((playerId) => {
-      const player = tournament.players.find((entry) => entry.id === playerId)
-
-      if (!player) {
-        warnings.push(warning('missing-player', 'Ein Spieler fehlt in diesem Brett.', 'hard'))
-        return
-      }
-
-      if (getPlayerStatusForRound(player, roundNumber) !== 'active') {
-        warnings.push(warning('inactive-player', `${player.name} ist nicht aktiv.`, 'hard'))
-      }
-    })
-
-    if (hasSameTeamBeforeRound(tournament, whiteIds, blackIds, roundNumber)) {
-      warnings.push(warning('repeat-hand-brain-team', 'Diese Team-gegen-Team-Konstellation gab es bereits.', 'hard'))
-    }
-
-    if (pairing.handBrainSides) {
-      ;[pairing.handBrainSides.white, pairing.handBrainSides.black].forEach((side) => {
-        if (countTeammateGamesBeforeRound(tournament, side.brainPlayerId, side.handPlayerId, roundNumber) > 0) {
-          warnings.push(warning('repeat-hand-brain-partner', 'Diese Spieler waren bereits auf derselben Seite.'))
-        }
-
-        if (hasSameRoleWithTeammateBeforeRound(tournament, side, roundNumber)) {
-          warnings.push(warning('repeat-hand-brain-roles', 'Dieses Duo hatte bereits dieselbe Hand/Brain-Verteilung.'))
-        }
-      })
-    }
-
-    const pointDiff = Math.abs(
-      sideAveragePoints(whiteIds, summaries) - sideAveragePoints(blackIds, summaries),
-    )
-
-    if (pointDiff > 1) {
-      warnings.push(warning('large-point-gap', 'Die Punktdifferenz der Seiten ist ungewöhnlich hoch.'))
-    }
-
-    ;[
-      ...whiteIds.map((playerId) => [playerId, 'W' as const] as const),
-      ...blackIds.map((playerId) => [playerId, 'B' as const] as const),
-    ].forEach(([playerId, color]) => {
-      const player = tournament.players.find((entry) => entry.id === playerId)
-      const summary = summaries[playerId]
-
-      if (!player || !summary) {
-        return
-      }
-
-      const recent = summary.colors.filter((entry) => entry !== '-').slice(-2)
-      const whiteCount = summary.colors.filter((entry) => entry === 'W').length
-      const blackCount = summary.colors.filter((entry) => entry === 'B').length
-      const nextColorDiff =
-        whiteCount + (color === 'W' ? 1 : 0) - blackCount - (color === 'B' ? 1 : 0)
-
-      if (recent.length === 2 && recent.every((entry) => entry === color)) {
-        warnings.push(warning('third-color', `${player.name} würde zum dritten Mal in Folge ${color === 'W' ? 'Weiß' : 'Schwarz'} erhalten.`))
-      }
-
-      if (Math.abs(nextColorDiff) > 2) {
-        warnings.push(warning('color-imbalance', `${player.name} hätte eine Farbdifferenz größer als 2.`))
-      }
-    })
-
-    return warnings
-  }
-
-  const white = tournament.players.find((player) => player.id === pairing.whitePlayerId)
-  const black = tournament.players.find((player) => player.id === pairing.blackPlayerId)
-
-  if (!white || !black) {
-    warnings.push(warning('missing-player', 'Diese Paarung ist unvollständig.', 'hard'))
-    return warnings
-  }
-
-  if (white.id === black.id) {
-    warnings.push(warning('same-player', 'Ein Spieler kann nicht gegen sich selbst spielen.', 'hard'))
-  }
-
-  for (const player of [white, black]) {
-    if (getPlayerStatusForRound(player, roundNumber) !== 'active') {
-      warnings.push(warning('inactive-player', `${player.name} ist nicht aktiv.`, 'hard'))
-    }
-  }
-
-  const previousGames = countGamesBetweenBeforeRound(
-    tournament,
-    white.id,
-    black.id,
-    roundNumber,
-  )
-  const targetGames =
-    tournament.format === 'roundRobin'
-      ? normalizeRoundRobinCycles(tournament.settings.roundRobinCycles)
-      : 1
-
-  if (previousGames >= targetGames) {
-    warnings.push(warning('repeat-pairing', 'Diese Spieler haben bereits gegeneinander gespielt.', 'hard'))
-  }
-
-  const pointDiff = Math.abs(summaries[white.id].points - summaries[black.id].points)
-
-  if (pointDiff > 1) {
-    warnings.push(warning('large-point-gap', 'Die Punktdifferenz ist ungewöhnlich hoch.'))
-  }
-
-  const nextColors: Array<[Player, 'W' | 'B']> = [
-    [white, 'W' as const],
-    [black, 'B' as const],
-  ]
-
-  nextColors.forEach(([player, color]) => {
-    const summary = summaries[player.id]
-    const recent = summary.colors.filter((entry) => entry !== '-').slice(-2)
-    const whiteCount = summary.colors.filter((entry) => entry === 'W').length
-    const blackCount = summary.colors.filter((entry) => entry === 'B').length
-    const nextColorDiff =
-      whiteCount + (color === 'W' ? 1 : 0) - blackCount - (color === 'B' ? 1 : 0)
-
-    if (recent.length === 2 && recent.every((entry) => entry === color)) {
-      warnings.push(warning('third-color', `${player.name} würde zum dritten Mal in Folge ${color === 'W' ? 'Weiß' : 'Schwarz'} erhalten.`))
-    }
-
-    if (Math.abs(nextColorDiff) > 2) {
-      warnings.push(warning('color-imbalance', `${player.name} hätte eine Farbdifferenz größer als 2.`))
-    }
-  })
-
-  return warnings
 }
 
 export function chooseByePlayer(
@@ -933,26 +566,6 @@ export function chooseByePlayer(
       right.initialSeed - left.initialSeed
     )
   })[0]
-}
-
-function countTeammateGamesBeforeRound(
-  tournament: Tournament,
-  leftId: string,
-  rightId: string,
-  beforeRoundNumber: number,
-) {
-  return tournament.rounds
-    .filter((round) => round.roundNumber < beforeRoundNumber)
-    .reduce(
-      (count, round) =>
-        count +
-        round.pairings.filter(
-          (pairing) =>
-            !pairing.isBye &&
-            wereTeammates(pairing, leftId, rightId),
-        ).length,
-      0,
-    )
 }
 
 function teammateRoundsBeforeRound(
@@ -1089,42 +702,6 @@ export function handBrainSideRoleOptions(
       score: handBrainSideRolePenalty(side, summaries, tournament, roundNumber),
     }))
     .sort((left, right) => left.score - right.score)
-}
-
-export function playerById(tournament: Tournament, playerId: string, fallback: Player) {
-  return tournament.players.find((player) => player.id === playerId) ?? fallback
-}
-
-export function handBrainTeamColorPenalty(
-  whiteIds: string[],
-  blackIds: string[],
-  tournament: Tournament,
-  summaries: Record<string, PlayerScoreSummary>,
-  roundNumber: number,
-) {
-  const fallbackPlayer = tournament.players[0]
-  const whitePenalty = whiteIds.reduce((sum, playerId) => {
-    const player = playerById(tournament, playerId, fallbackPlayer)
-
-    return sum + colorPenalty(player, 'W', summaries[playerId])
-  }, 0)
-  const blackPenalty = blackIds.reduce((sum, playerId) => {
-    const player = playerById(tournament, playerId, fallbackPlayer)
-
-    return sum + colorPenalty(player, 'B', summaries[playerId])
-  }, 0)
-  const repeatedOpponentColorPenalty = whiteIds.reduce(
-    (sum, whiteId) =>
-      sum +
-      blackIds.filter(
-        (blackId) =>
-          previousColorAgainstBeforeRound(tournament, whiteId, blackId, roundNumber) === 'W',
-      ).length *
-        60,
-    0,
-  )
-
-  return whitePenalty + blackPenalty + repeatedOpponentColorPenalty
 }
 
 export function normalizeRoundPairings(pairings: Pairing[]) {

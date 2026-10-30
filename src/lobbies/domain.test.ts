@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   createLobbyCode,
   isValidDeviceName,
-  isValidLobbyId,
   isValidLobbyName,
   normalizeDeviceName,
   normalizeLobbyName,
@@ -24,8 +23,5 @@ describe('lobby domain', () => {
     const code = createLobbyCode(new Uint32Array([0, 1, 2, 3, 4, 5]))
 
     expect(code).toBe('ABCDEF')
-    expect(isValidLobbyId(code)).toBe(true)
-    expect(isValidLobbyId('A0O1I2')).toBe(false)
-    expect(isValidLobbyId('default')).toBe(true)
   })
 })

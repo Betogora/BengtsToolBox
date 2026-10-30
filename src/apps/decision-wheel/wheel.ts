@@ -1,7 +1,7 @@
 import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
 import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
 
-export type WheelSegment = DecisionWheelEntry & {
+type WheelSegment = DecisionWheelEntry & {
   startAngle: number
   endAngle: number
   midAngle: number

@@ -500,18 +500,23 @@ export function TerritoryMapCanvas({
                   {t('territory.loadingMap')}
                 </text>
               )}
-              {territories.map((territory) => (
-                <TerritoryShape
-                  key={territory.id}
-                  claim={claims[territory.id]}
-                  isDisabled={isDisabled}
-                  isSelected={selectedTerritoryId === territory.id}
-                  onSelect={onSelect}
-                  players={players}
-                  territory={territory}
-                  zoom={view.zoom}
-                />
-              ))}
+              {territories.map((territory) => {
+                const claim = claims[territory.id]
+
+                return (
+                  <TerritoryShape
+                    key={territory.id}
+                    claim={claim}
+                    isDisabled={isDisabled}
+                    isSelected={selectedTerritoryId === territory.id}
+                    onSelect={onSelect}
+                    players={players}
+                    territory={territory}
+                    // Nur gestreifte Gebiete mehrerer Touristen messen den Zoom, alle anderen bleiben memoisiert.
+                    zoom={(claim?.owners?.length ?? 0) > 1 ? view.zoom : undefined}
+                  />
+                )
+              })}
             </g>
           </svg>
         </div>

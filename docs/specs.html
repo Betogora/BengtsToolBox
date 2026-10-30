@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:b312d3ca1b190887af0675da05cba09ad31afe74f6608c8cdcbb25412e9e1402">
+  <meta name="specs-source-sha256" content="sha256:bf242ad6cac3a1eb6a6cefe17b2b40a21500d7be96ca783418f900fdb429f3ba">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -700,6 +700,7 @@
             <ul>
             <li>Der statische NDJSON-Datensatz enthält 5.044 Fragen in zehn Kategorien.</li>
             <li>Jede Frage benötigt ID, Kategorie, Frage und Antwort; ungültige Datensätze verhindern das Laden.</li>
+            <li>Ausgeliefert werden nur diese vier Felder; weitere Metadaten bleiben in der Quelldatei.</li>
             <li>Der Katalog wird beim Öffnen der App als gehashtes NDJSON-Asset geladen und langfristig per HTTP sowie für die laufende Sitzung im Speicher gecacht. Ohne Service Worker bleibt Offline-Nutzung nach einem erfolgreichen Abruf best-effort; ein nicht verfügbarer Katalog zeigt einen wiederholbaren Fehlerzustand.</li>
             <li>Gespeichert werden Kartenposition und Sichtbarkeit der Antwort, nicht der Fragenkatalog.</li>
             <li>Vor und Zurück laufen zyklisch über Anfang und Ende des Katalogs.</li>

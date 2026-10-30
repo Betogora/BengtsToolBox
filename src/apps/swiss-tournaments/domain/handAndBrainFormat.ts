@@ -1,5 +1,7 @@
 import type { Pairing, PairingWarning, Player, PlayerScoreSummary, Tournament } from '@/apps/swiss-tournaments/types'
-import { assignSinglePairingColors, byeResult, chooseByePlayer, chooseSinglePairing, compareNumberLists, getPlayerStatusForRound, getRoundByeScore, getSummaryBeforeRound, handBrainHardshipCount, handBrainSideRoleOptions, handBrainTeamColorPenalty, hasSameTeamBeforeRound, makeId, normalizeRoundPairings, pairingPlayerIds, sideAveragePoints, teammateRepeatPenalty, validatePairing, warning } from './pairingSupport'
+import { assignSinglePairingColors, handBrainTeamColorPenalty } from './colorAssignment'
+import { byeResult, chooseByePlayer, chooseSinglePairing, compareNumberLists, getPlayerStatusForRound, getRoundByeScore, getSummaryBeforeRound, handBrainHardshipCount, handBrainSideRoleOptions, hasSameTeamBeforeRound, makeId, normalizeRoundPairings, pairingPlayerIds, sideAveragePoints, teammateRepeatPenalty, warning } from './pairingSupport'
+import { validatePairing } from './pairingValidation'
 import { playerOrder, seedOrder } from './swissFormat'
 
 function createHandBrainBoardCandidate(

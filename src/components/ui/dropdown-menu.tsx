@@ -1,5 +1,5 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
-import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react'
+import { CircleIcon } from 'lucide-react'
 import type * as React from 'react'
 
 import { cn } from '@/lib/utils'
@@ -64,32 +64,6 @@ function DropdownMenuItem({
   )
 }
 
-function DropdownMenuCheckboxItem({
-  className,
-  children,
-  checked,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>) {
-  return (
-    <DropdownMenuPrimitive.CheckboxItem
-      data-slot="dropdown-menu-checkbox-item"
-      className={cn(
-        'type-ui relative flex cursor-default items-center rounded-[8px] py-1.5 pl-8 pr-2.5 outline-none select-none focus:bg-muted focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-        className,
-      )}
-      checked={checked}
-      {...props}
-    >
-      <span className="absolute left-2 flex size-3.5 items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      {children}
-    </DropdownMenuPrimitive.CheckboxItem>
-  )
-}
-
 function DropdownMenuRadioItem({
   className,
   children,
@@ -114,26 +88,6 @@ function DropdownMenuRadioItem({
   )
 }
 
-function DropdownMenuLabel({
-  className,
-  inset,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
-  inset?: boolean
-}) {
-  return (
-    <DropdownMenuPrimitive.Label
-      data-slot="dropdown-menu-label"
-      data-inset={inset}
-      className={cn(
-        'type-label px-2 py-1.5 data-[inset=true]:pl-8',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
 function DropdownMenuSeparator({
   className,
   ...props
@@ -142,65 +96,6 @@ function DropdownMenuSeparator({
     <DropdownMenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
       className={cn('-mx-1 my-1 h-px bg-border', className)}
-      {...props}
-    />
-  )
-}
-
-function DropdownMenuShortcut({
-  className,
-  ...props
-}: React.ComponentProps<'span'>) {
-  return (
-    <span
-      data-slot="dropdown-menu-shortcut"
-      className={cn('type-caption ml-auto text-subtle-foreground', className)}
-      {...props}
-    />
-  )
-}
-
-function DropdownMenuSub({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
-  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
-}
-
-function DropdownMenuSubTrigger({
-  className,
-  inset,
-  children,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
-  inset?: boolean
-}) {
-  return (
-    <DropdownMenuPrimitive.SubTrigger
-      data-slot="dropdown-menu-sub-trigger"
-      data-inset={inset}
-      className={cn(
-        'type-ui flex cursor-default items-center rounded-[8px] px-2.5 py-1.5 outline-none select-none focus:bg-muted focus:text-foreground data-[inset=true]:pl-8',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <ChevronRightIcon className="ml-auto size-4" />
-    </DropdownMenuPrimitive.SubTrigger>
-  )
-}
-
-function DropdownMenuSubContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
-  return (
-    <DropdownMenuPrimitive.SubContent
-      data-slot="dropdown-menu-sub-content"
-      className={cn(
-        'z-50 min-w-[8rem] overflow-hidden rounded-[12px] border bg-popover p-1 text-popover-foreground shadow-overlay',
-        className,
-      )}
       {...props}
     />
   )
@@ -219,16 +114,10 @@ function DropdownMenuRadioGroup({
 
 export {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 }

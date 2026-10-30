@@ -1,6 +1,8 @@
 import type { GameResult, Pairing, Player, PlayerStatus, Round, Tournament } from '@/apps/swiss-tournaments/types'
-import { getMarioKartEntryCycle, getMarioKartPlanningAvailability, getMarioKartRacers as marioKartRacers, setMarioKartPlayerStatus, updateMarioKartRacer } from '@/apps/swiss-tournaments/marioKart'
-import { assignColors, blackSidePlayerIds, getPlayerStatusForRound, getSummaryBeforeRound, hasEnteredResult, makeId, marioKartScoringPlayerIds, pairingKind, pairingPlayerIds, sameStringSet, validatePairing, whiteSidePlayerIds } from './pairingSupport'
+import { getMarioKartEntryCycle, getMarioKartPlanningAvailability, getMarioKartRacers, setMarioKartPlayerStatus, updateMarioKartRacer } from './marioKartFormat'
+import { assignColors } from './colorAssignment'
+import { blackSidePlayerIds, getPlayerStatusForRound, getSummaryBeforeRound, hasEnteredResult, makeId, marioKartScoringPlayerIds, pairingKind, pairingPlayerIds, sameStringSet, whiteSidePlayerIds } from './pairingSupport'
+import { validatePairing } from './pairingValidation'
 import { generatePairings } from './pairingGeneration'
 
 export function updateResult(
@@ -168,7 +170,7 @@ export function canRemovePlayerFromTournament(
   })
 }
 
-export function regenerateCurrentDraftRoundIfUnscored(
+function regenerateCurrentDraftRoundIfUnscored(
   tournament: Tournament,
 ): Tournament {
   const existing = getCurrentDraftRound(tournament)
@@ -466,7 +468,7 @@ function preserveExistingResults(pairings: Pairing[], existingPairings: Pairing[
   const existingMarioKartPairings = existingPairings.filter(
     (pairing) =>
       pairingKind(pairing) === 'marioKart' &&
-      marioKartRacers(pairing).some(
+      getMarioKartRacers(pairing).some(
         (racer) => racer.placement || racer.event,
       ),
   )
@@ -485,11 +487,11 @@ function preserveExistingResults(pairings: Pairing[], existingPairings: Pairing[
   return pairings.map((pairing) => {
     if (pairingKind(pairing) === 'marioKart') {
       const scoringIds = marioKartScoringPlayerIds(pairing)
-      const racerIds = marioKartRacers(pairing).map((racer) => racer.playerId)
+      const racerIds = getMarioKartRacers(pairing).map((racer) => racer.playerId)
       const existingMarioKartPairing =
         existingMarioKartPairings.find((existing) =>
           sameStringSet(
-            marioKartRacers(existing).map((racer) => racer.playerId),
+            getMarioKartRacers(existing).map((racer) => racer.playerId),
             racerIds,
           ),
         ) ??
@@ -503,8 +505,8 @@ function preserveExistingResults(pairings: Pairing[], existingPairings: Pairing[
 
       return {
         ...pairing,
-        marioKartRacers: marioKartRacers(pairing).map((racer) => {
-          const existingRacer = marioKartRacers(existingMarioKartPairing).find(
+        marioKartRacers: getMarioKartRacers(pairing).map((racer) => {
+          const existingRacer = getMarioKartRacers(existingMarioKartPairing).find(
             (entry) => entry.playerId === racer.playerId,
           )
 

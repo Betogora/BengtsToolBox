@@ -9,15 +9,14 @@ import {
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import {
-  ArchiveDatasetCard,
-  DashboardProgressChart,
-  EventTable,
-  PlayerSetupList,
-  ProgressChart,
-  ProgressEntryDialog,
-} from '@/apps/progress-dashboard/components'
+import { ArchiveDatasetCard } from '@/apps/progress-dashboard/ArchiveDatasetCard'
+import { DashboardProgressChart } from '@/apps/progress-dashboard/DashboardProgressChart'
+import { EventTable } from '@/apps/progress-dashboard/EventTable'
+import { PlayerSetupList } from '@/apps/progress-dashboard/PlayerSetupList'
+import { ProgressChart } from '@/apps/progress-dashboard/ProgressChart'
+import { ProgressEntryDialog } from '@/apps/progress-dashboard/ProgressEntryDialog'
 import { formatNumber } from '@/apps/progress-dashboard/format'
+import { rankPlayerScores } from '@/apps/progress-dashboard/logic'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import type {
   PlayerScore,
@@ -83,11 +82,7 @@ function ProgressDashboardPresenter({
 }) {
   const { t } = useI18n()
   const podiumLabels = ['Gold', 'Silber', 'Bronze'] as const
-  const rankedPlayerScores = [...playerScores].sort(
-    (left, right) =>
-      right.score - left.score ||
-      left.player.position - right.player.position,
-  )
+  const rankedPlayerScores = rankPlayerScores(playerScores)
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
@@ -215,11 +210,7 @@ export function ProgressDashboardPage() {
   // Der Schlüssel setzt den Dialog bei jedem Öffnen auf den Ausgangszustand zurück.
   const [entry, setEntry] = useState({ key: 0, open: false })
   const appTitle = t('app.progressDashboard.title')
-  const rankedPlayerScores = [...playerScores].sort(
-    (left, right) =>
-      right.score - left.score ||
-      left.player.position - right.player.position,
-  )
+  const rankedPlayerScores = rankPlayerScores(playerScores)
   // Ohne Punkte führt niemand.
   const shownLeader = leader && leader.score > 0 ? leader : undefined
 

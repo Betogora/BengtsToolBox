@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
 import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
@@ -38,6 +38,34 @@ export function WheelGraphic({
   const labelFontSize = useMemo(
     () => getWheelLabelFontSize(segments),
     [segments],
+  )
+  // Labels are measured on a canvas, so measure again once web fonts finish loading.
+  const [fontLoadCount, setFontLoadCount] = useState(0)
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts
+    if (!fonts) return undefined
+    const handleLoadingDone = () => setFontLoadCount((count) => count + 1)
+    fonts.addEventListener('loadingdone', handleLoadingDone)
+    return () => fonts.removeEventListener('loadingdone', handleLoadingDone)
+  }, [])
+  const labelTexts = useMemo(
+    () =>
+      segments.map((segment, index) => {
+        const availableLabelWidth = getSegmentLabelWidth(segment)
+
+        return canRenderWheelLabel(segment, availableLabelWidth)
+          ? shortenWheelLabelToWidth(
+              getEntryDisplayText(segment, index, (number) =>
+                t('decisionWheel.fallbackOption', { number }),
+              ),
+              availableLabelWidth,
+              labelFontSize,
+            )
+          : ''
+      }),
+    // fontLoadCount only invalidates the canvas measurements.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fontLoadCount, labelFontSize, segments, t],
   )
   const hasHighlightedSegment =
     highlightedEntryId !== null &&
@@ -88,19 +116,10 @@ export function WheelGraphic({
         <circle cx={wheelCenter} cy={wheelCenter} r={wheelRadius + 5} fill="#ffffff" />
         {segments.map((segment, index) => {
           const segmentSize = getSegmentSize(segment)
-          const availableLabelWidth = getSegmentLabelWidth(segment)
           const isHighlighted =
             hasHighlightedSegment && segment.id === highlightedEntryId
           const isDimmed = hasHighlightedSegment && !isHighlighted
-          const labelText = canRenderWheelLabel(segment, availableLabelWidth)
-            ? shortenWheelLabelToWidth(
-                getEntryDisplayText(segment, index, (number) =>
-                  t('decisionWheel.fallbackOption', { number }),
-                ),
-                availableLabelWidth,
-                labelFontSize,
-              )
-            : ''
+          const labelText = labelTexts[index]
           const labelPosition = {
             x:
               wheelCenter +

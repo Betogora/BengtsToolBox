@@ -95,8 +95,8 @@ export function useSwissTournaments(lobbyId?: string) {
   )
   const storedTournaments = useMemo(
     () =>
-      tournamentsStore.data.map(
-        (tournament) => tournamentDomain.inspect(tournament).tournament,
+      tournamentsStore.data.map((tournament) =>
+        tournamentDomain.normalize(tournament),
       ),
     [tournamentsStore.data],
   )
@@ -473,6 +473,7 @@ export function useSwissTournaments(lobbyId?: string) {
     setRoundByeScore,
     shouldConfirmResultCorrection,
     standings,
+    summarizeTournament: tournamentDomain.summarize,
     tournaments,
     updatePlayer,
     updateSettings,

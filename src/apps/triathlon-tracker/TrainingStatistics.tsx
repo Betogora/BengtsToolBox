@@ -2,45 +2,61 @@ import { lazy, memo, Suspense, useMemo, useState } from 'react'
 import {
   addDaysToLocalDate,
   addMonthsToLocalDate,
+  getCurrentLocalDate,
+} from './domain/dates'
+import { getEfficiencyTrend } from './domain/efficiency'
+import {
   analyzeBike,
   analyzeRun,
   analyzeSwim,
   calculateDisciplineProgressIndex,
   calculateOverallProgressIndex,
-  getCurrentLocalDate,
   getDistanceActivityPerformancePoints,
-  getEfficiencyTrend,
   getPowerActivityPerformancePoints,
-  summarizeWeeks,
-} from './domain'
+} from './domain/performance'
+import { summarizeWeeks } from './domain/weeklyStats'
 import type {
   ActualTraining,
   BikePerformanceAnalysis,
   CyclingContext,
+  Discipline,
   DistancePerformanceAnalysis,
+  InsufficientPerformanceAnalysis,
   RunningContext,
   SwimmingContext,
   TrackerSettings,
+  TrainingContext,
 } from './types'
 import { defaultTrainingContexts, trainingContexts } from './types'
 import type {
   ChartRange,
   EfficiencyPlot,
   PerformanceActivityPoint,
+  PerformanceChartPoint,
   PerformancePlot,
   ProgressChartPoint,
   WeeklyVolumeChartPoint,
-} from './TrainingCharts'
+} from './charts/chartTypes'
 import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Select, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
 import { formatTrainingDuration } from './presentation'
 const TrainingCharts = lazy(() => import('./TrainingCharts'))
-type HistoricalAnalysis = {
+
+type I18n = ReturnType<typeof useI18n>
+
+/** Weekly model estimates of one distance discipline at two race distances. */
+type DistanceHistoryPoint = {
   localDate: string
-  run: ReturnType<typeof analyzeRun>
-  swim: ReturnType<typeof analyzeSwim>
-  bike: ReturnType<typeof analyzeBike>
+  basis: PerformanceChartPoint['basis']
+  primary: number | null
+  secondary: number | null
+}
+
+type BikeHistoryPoint = {
+  localDate: string
+  basis: PerformanceChartPoint['basis']
+  bike: ReturnType<typeof bikeMetric>
 }
 
 function dateAtNoon(localDate: string) {
@@ -99,6 +115,107 @@ function speedAtDistance(
     : (distanceMeters / durationSeconds) * 3.6
 }
 
+function distanceHistory(
+  asOfLocalDates: readonly string[],
+  analyze: (
+    asOfLocalDate: string,
+  ) => DistancePerformanceAnalysis | InsufficientPerformanceAnalysis,
+  primaryDistanceMeters: number,
+  secondaryDistanceMeters: number,
+): DistanceHistoryPoint[] {
+  return asOfLocalDates.map((localDate) => {
+    const analysis = analyze(localDate)
+    return analysis.status === 'ready'
+      ? {
+          localDate,
+          basis: analysis.basis,
+          primary: estimateAt(analysis, primaryDistanceMeters),
+          secondary: estimateAt(analysis, secondaryDistanceMeters),
+        }
+      : { localDate, basis: null, primary: null, secondary: null }
+  })
+}
+
+function formatPointLabel(
+  formatDateTime: I18n['formatDateTime'],
+  localDate: string,
+) {
+  return formatDateTime(dateAtNoon(localDate), { day: '2-digit', month: 'short' })
+}
+
+function toActivityPoint(
+  formatDateTime: I18n['formatDateTime'],
+  point: { activityId: string; localDate: string },
+  value: number,
+): PerformanceActivityPoint {
+  return {
+    activityId: point.activityId,
+    localDate: point.localDate,
+    label: formatPointLabel(formatDateTime, point.localDate),
+    value,
+  }
+}
+
+function distanceActivityPoints(
+  formatDateTime: I18n['formatDateTime'],
+  trainings: readonly ActualTraining[],
+  options: Parameters<typeof getDistanceActivityPerformancePoints>[1],
+) {
+  return getDistanceActivityPerformancePoints(trainings, options).map((point) =>
+    toActivityPoint(formatDateTime, point, point.speedKilometersPerHour),
+  )
+}
+
+function distanceModelPoints(
+  formatDateTime: I18n['formatDateTime'],
+  history: readonly DistanceHistoryPoint[],
+  primaryDistanceMeters: number,
+  secondaryDistanceMeters: number,
+): PerformanceChartPoint[] {
+  return history.map((point) => ({
+    localDate: point.localDate,
+    label: formatPointLabel(formatDateTime, point.localDate),
+    basis: point.basis,
+    primaryValue: speedAtDistance(primaryDistanceMeters, point.primary),
+    secondaryValue: speedAtDistance(secondaryDistanceMeters, point.secondary),
+    primaryDisplayValue: point.primary,
+    secondaryDisplayValue: point.secondary,
+  }))
+}
+
+function efficiencyPlot(
+  t: I18n['t'],
+  trainings: readonly ActualTraining[],
+  discipline: Discipline,
+  context: TrainingContext,
+  isWalk: boolean,
+  options: {
+    fromLocalDate: string
+    asOfLocalDate: string
+    restingHeartRateBpm: number | null
+  },
+): EfficiencyPlot {
+  const trend = getEfficiencyTrend(trainings, {
+    discipline,
+    context,
+    fromLocalDate: options.fromLocalDate,
+    asOfLocalDate: options.asOfLocalDate,
+    isWalk,
+    restingHeartRateBpm: options.restingHeartRateBpm,
+  })
+  // Plots without sessions stay as empty, selectable charts.
+  return {
+    key: isWalk ? 'walk' : discipline,
+    id: discipline,
+    title: isWalk
+      ? t('triathlon.variant.walk')
+      : t(`triathlon.discipline.${discipline}`),
+    unitNote: isWalk ? t('triathlon.charts.runningEquivalent') : undefined,
+    referenceHeartRateBpm: trend?.referenceHeartRateBpm ?? 0,
+    points: trend?.points ?? [],
+  }
+}
+
 function TrainingStatistics({
   actualTrainings,
   settings,
@@ -118,14 +235,28 @@ function TrainingStatistics({
   const [bikeContext, setBikeContext] = useState<CyclingContext>(
     defaultTrainingContexts.bike,
   )
+  // Every analysis only reads its own discipline, so each one works on its
+  // pre-filtered sessions and a context change recomputes only that one.
+  const runTrainings = useMemo(
+    () => actualTrainings.filter((training) => training.discipline === 'run'),
+    [actualTrainings],
+  )
+  const swimTrainings = useMemo(
+    () => actualTrainings.filter((training) => training.discipline === 'swim'),
+    [actualTrainings],
+  )
+  const bikeTrainings = useMemo(
+    () => actualTrainings.filter((training) => training.discipline === 'bike'),
+    [actualTrainings],
+  )
   const currentBike = useMemo(
     () =>
-      analyzeBike(actualTrainings, {
+      analyzeBike(bikeTrainings, {
         asOfLocalDate: today,
         context: bikeContext,
         weightKg: settings.weightKg,
       }),
-    [actualTrainings, bikeContext, settings.weightKg, today],
+    [bikeContext, bikeTrainings, settings.weightKg, today],
   )
   const startLocalDate = useMemo(
     () => rangeStart(chartRange, today, actualTrainings),
@@ -156,94 +287,99 @@ function TrainingStatistics({
       ),
     [actualTrainings, startLocalDate, today],
   )
-  const allHistory = useMemo<HistoricalAnalysis[]>(
+  const historyLocalDates = useMemo(
     () =>
-      allWeeklyStats.map((week) => {
-        const asOfLocalDate = [
-          addDaysToLocalDate(week.weekStart, 6),
-          today,
-        ].sort()[0]
+      allWeeklyStats.map(
+        (week) => [addDaysToLocalDate(week.weekStart, 6), today].sort()[0],
+      ),
+    [allWeeklyStats, today],
+  )
+  const runHistory = useMemo(
+    () =>
+      distanceHistory(
+        historyLocalDates,
+        (asOfLocalDate) =>
+          analyzeRun(runTrainings, { asOfLocalDate, context: runContext }),
+        5_000,
+        10_000,
+      ),
+    [historyLocalDates, runContext, runTrainings],
+  )
+  const swimHistory = useMemo(
+    () =>
+      distanceHistory(
+        historyLocalDates,
+        (asOfLocalDate) =>
+          analyzeSwim(swimTrainings, { asOfLocalDate, context: swimContext }),
+        750,
+        1_500,
+      ),
+    [historyLocalDates, swimContext, swimTrainings],
+  )
+  const bikeHistory = useMemo<BikeHistoryPoint[]>(
+    () =>
+      historyLocalDates.map((localDate) => {
+        const analysis = analyzeBike(bikeTrainings, {
+          asOfLocalDate: localDate,
+          context: bikeContext,
+          weightKg: settings.weightKg,
+        })
         return {
-          localDate: asOfLocalDate,
-          run: analyzeRun(actualTrainings, {
-            asOfLocalDate,
-            context: runContext,
-          }),
-          swim: analyzeSwim(actualTrainings, {
-            asOfLocalDate,
-            context: swimContext,
-          }),
-          bike: analyzeBike(actualTrainings, {
-            asOfLocalDate,
-            context: bikeContext,
-            weightKg: settings.weightKg,
-          }),
+          localDate,
+          basis: analysis.status === 'ready' ? analysis.basis : null,
+          bike: bikeMetric(analysis),
         }
       }),
-    [
-      actualTrainings,
-      allWeeklyStats,
-      bikeContext,
-      runContext,
-      settings.weightKg,
-      swimContext,
-      today,
-    ],
+    [bikeContext, bikeTrainings, historyLocalDates, settings.weightKg],
   )
-  const allHistoricalMetrics = useMemo(
-    () =>
-      allHistory.map((point) => ({
-        localDate: point.localDate,
-        runBasis: point.run.status === 'ready' ? point.run.basis : null,
-        swimBasis: point.swim.status === 'ready' ? point.swim.basis : null,
-        bikeBasis: point.bike.status === 'ready' ? point.bike.basis : null,
-        run5k:
-          point.run.status === 'ready' ? estimateAt(point.run, 5_000) : null,
-        run10k:
-          point.run.status === 'ready' ? estimateAt(point.run, 10_000) : null,
-        swim750:
-          point.swim.status === 'ready' ? estimateAt(point.swim, 750) : null,
-        swim1500:
-          point.swim.status === 'ready' ? estimateAt(point.swim, 1_500) : null,
-        bike: bikeMetric(point.bike),
-      })),
-    [allHistory],
+  const visibleRunHistory = useMemo(
+    () => runHistory.filter((point) => point.localDate >= startLocalDate),
+    [runHistory, startLocalDate],
   )
-  const historicalMetrics = useMemo(
-    () =>
-      allHistoricalMetrics.filter((point) => point.localDate >= startLocalDate),
-    [allHistoricalMetrics, startLocalDate],
+  const visibleSwimHistory = useMemo(
+    () => swimHistory.filter((point) => point.localDate >= startLocalDate),
+    [swimHistory, startLocalDate],
+  )
+  const visibleBikeHistory = useMemo(
+    () => bikeHistory.filter((point) => point.localDate >= startLocalDate),
+    [bikeHistory, startLocalDate],
   )
   const bikeMetricKind =
     bikeMetric(currentBike)?.kind ??
-    allHistoricalMetrics.findLast((point) => point.bike !== null)?.bike?.kind ??
+    bikeHistory.findLast((point) => point.bike !== null)?.bike?.kind ??
     null
   const bikeBaseline =
-    allHistoricalMetrics.find((point) => point.bike?.kind === bikeMetricKind)
-      ?.bike?.primary ?? null
+    bikeHistory.find((point) => point.bike?.kind === bikeMetricKind)?.bike
+      ?.primary ?? null
   const runBaseline =
-    allHistoricalMetrics.find((point) => point.run5k !== null)?.run5k ?? null
+    runHistory.find((point) => point.primary !== null)?.primary ?? null
   const swimBaseline =
-    allHistoricalMetrics.find((point) => point.swim750 !== null)?.swim750 ??
-    null
+    swimHistory.find((point) => point.primary !== null)?.primary ?? null
 
   const progressPoints = useMemo<ProgressChartPoint[]>(
     () =>
-      historicalMetrics.map((point) => {
+      // All histories share the same weeks, so equal indices align.
+      visibleRunHistory.map((runPoint, index) => {
+        const swimPoint = visibleSwimHistory[index]
+        const bikePoint = visibleBikeHistory[index]
         const run =
-          runBaseline === null || point.run5k === null
+          runBaseline === null || runPoint.primary === null
             ? null
-            : calculateDisciplineProgressIndex(runBaseline, point.run5k, false)
+            : calculateDisciplineProgressIndex(
+                runBaseline,
+                runPoint.primary,
+                false,
+              )
         const swim =
-          swimBaseline === null || point.swim750 === null
+          swimBaseline === null || swimPoint.primary === null
             ? null
             : calculateDisciplineProgressIndex(
                 swimBaseline,
-                point.swim750,
+                swimPoint.primary,
                 false,
               )
         const comparableBike =
-          point.bike?.kind === bikeMetricKind ? point.bike.primary : null
+          bikePoint.bike?.kind === bikeMetricKind ? bikePoint.bike.primary : null
         const bike =
           bikeBaseline === null || comparableBike === null
             ? null
@@ -253,11 +389,8 @@ function TrainingStatistics({
                 bikeMetricKind === 'power',
               )
         return {
-          localDate: point.localDate,
-          label: formatDateTime(dateAtNoon(point.localDate), {
-            day: '2-digit',
-            month: 'short',
-          }),
+          localDate: runPoint.localDate,
+          label: formatPointLabel(formatDateTime, runPoint.localDate),
           swim,
           bike,
           run,
@@ -268,196 +401,184 @@ function TrainingStatistics({
       bikeBaseline,
       bikeMetricKind,
       formatDateTime,
-      historicalMetrics,
       runBaseline,
       swimBaseline,
+      visibleBikeHistory,
+      visibleRunHistory,
+      visibleSwimHistory,
     ],
   )
 
-  const performancePlots = useMemo<PerformancePlot[]>(() => {
-    const formatPointLabel = (localDate: string) =>
-      formatDateTime(dateAtNoon(localDate), { day: '2-digit', month: 'short' })
-    const toActivityPoint = (
-      point: { activityId: string; localDate: string },
-      value: number,
-    ): PerformanceActivityPoint => ({
-      activityId: point.activityId,
-      localDate: point.localDate,
-      label: formatPointLabel(point.localDate),
-      value,
-    })
-    const runActivityPoints = getDistanceActivityPerformancePoints(
-      actualTrainings,
-      {
+  const runPlot = useMemo<PerformancePlot>(
+    () => ({
+      id: 'run',
+      title: t('triathlon.discipline.run'),
+      primaryLabel: '5 km',
+      secondaryLabel: '10 km',
+      activityLabel: t('triathlon.charts.trainingPace'),
+      modelUnit: 'seconds',
+      unit: 'kilometers-per-hour',
+      activityPoints: distanceActivityPoints(formatDateTime, runTrainings, {
         discipline: 'run',
         context: runContext,
         fromLocalDate: startLocalDate,
         asOfLocalDate: today,
-      },
-    ).map((point) => toActivityPoint(point, point.speedKilometersPerHour))
-    const swimActivityPoints = getDistanceActivityPerformancePoints(
-      actualTrainings,
-      {
+      }),
+      points: distanceModelPoints(
+        formatDateTime,
+        visibleRunHistory,
+        5_000,
+        10_000,
+      ),
+    }),
+    [
+      formatDateTime,
+      runContext,
+      runTrainings,
+      startLocalDate,
+      t,
+      today,
+      visibleRunHistory,
+    ],
+  )
+  const swimPlot = useMemo<PerformancePlot>(
+    () => ({
+      id: 'swim',
+      title: t('triathlon.discipline.swim'),
+      primaryLabel: '750 m',
+      secondaryLabel: '1500 m',
+      activityLabel: t('triathlon.charts.trainingPace'),
+      modelUnit: 'seconds',
+      unit: 'kilometers-per-hour',
+      activityPoints: distanceActivityPoints(formatDateTime, swimTrainings, {
         discipline: 'swim',
         context: swimContext,
         fromLocalDate: startLocalDate,
         asOfLocalDate: today,
-      },
-    ).map((point) => toActivityPoint(point, point.speedKilometersPerHour))
+      }),
+      points: distanceModelPoints(
+        formatDateTime,
+        visibleSwimHistory,
+        750,
+        1_500,
+      ),
+    }),
+    [
+      formatDateTime,
+      startLocalDate,
+      swimContext,
+      swimTrainings,
+      t,
+      today,
+      visibleSwimHistory,
+    ],
+  )
+  const bikePlot = useMemo<PerformancePlot>(() => {
     const bikePowerActivityPoints = getPowerActivityPerformancePoints(
-      actualTrainings,
+      bikeTrainings,
       {
         context: bikeContext,
         fromLocalDate: startLocalDate,
         asOfLocalDate: today,
       },
-    ).map((point) => toActivityPoint(point, point.averagePowerWatts))
-    const bikeDistanceActivityPoints = getDistanceActivityPerformancePoints(
-      actualTrainings,
-      {
-        discipline: 'bike',
-        context: bikeContext,
-        fromLocalDate: startLocalDate,
-        asOfLocalDate: today,
-      },
-    ).map((point) => toActivityPoint(point, point.speedKilometersPerHour))
+    ).map((point) =>
+      toActivityPoint(formatDateTime, point, point.averagePowerWatts),
+    )
     const bikePlotKind =
       bikeMetricKind ?? (bikePowerActivityPoints.length > 0 ? 'power' : 'time')
 
-    return [
-      {
-        id: 'run',
-        title: t('triathlon.discipline.run'),
-        primaryLabel: '5 km',
-        secondaryLabel: '10 km',
-        activityLabel: t('triathlon.charts.trainingPace'),
-        modelUnit: 'seconds',
-        unit: 'kilometers-per-hour',
-        activityPoints: runActivityPoints,
-        points: historicalMetrics.map((point) => ({
-          localDate: point.localDate,
-          label: formatPointLabel(point.localDate),
-          basis: point.runBasis,
-          primaryValue: speedAtDistance(5_000, point.run5k),
-          secondaryValue: speedAtDistance(10_000, point.run10k),
-          primaryDisplayValue: point.run5k,
-          secondaryDisplayValue: point.run10k,
-        })),
-      },
-      {
-        id: 'swim',
-        title: t('triathlon.discipline.swim'),
-        primaryLabel: '750 m',
-        secondaryLabel: '1500 m',
-        activityLabel: t('triathlon.charts.trainingPace'),
-        modelUnit: 'seconds',
-        unit: 'kilometers-per-hour',
-        activityPoints: swimActivityPoints,
-        points: historicalMetrics.map((point) => ({
-          localDate: point.localDate,
-          label: formatPointLabel(point.localDate),
-          basis: point.swimBasis,
-          primaryValue: speedAtDistance(750, point.swim750),
-          secondaryValue: speedAtDistance(1_500, point.swim1500),
-          primaryDisplayValue: point.swim750,
-          secondaryDisplayValue: point.swim1500,
-        })),
-      },
-      {
-        id: 'bike',
-        title: t('triathlon.discipline.bike'),
-        primaryLabel:
-          bikePlotKind === 'power'
-            ? t('triathlon.performance.bikeCp')
-            : '20 km',
-        secondaryLabel: bikePlotKind === 'time' ? '40 km' : null,
-        activityLabel:
-          bikePlotKind === 'power'
-            ? t('triathlon.charts.trainingPower')
-            : t('triathlon.charts.trainingSpeed'),
-        modelUnit: bikePlotKind === 'power' ? 'watts' : 'seconds',
-        unit: bikePlotKind === 'power' ? 'watts' : 'kilometers-per-hour',
-        activityPoints:
-          bikePlotKind === 'power'
-            ? bikePowerActivityPoints
-            : bikeDistanceActivityPoints,
-        points: historicalMetrics.map((point) => ({
-          localDate: point.localDate,
-          label: formatPointLabel(point.localDate),
-          basis: point.bikeBasis,
-          primaryValue:
-            point.bike?.kind !== bikePlotKind
-              ? null
-              : bikePlotKind === 'power'
-                ? point.bike.primary
-                : speedAtDistance(20_000, point.bike.primary),
-          secondaryValue:
-            point.bike?.kind === 'time' && bikePlotKind === 'time'
-              ? speedAtDistance(40_000, point.bike.secondary)
-              : null,
-          primaryDisplayValue:
-            point.bike?.kind === bikePlotKind ? point.bike.primary : null,
-          secondaryDisplayValue:
-            point.bike?.kind === 'time' && bikePlotKind === 'time'
-              ? point.bike.secondary
-              : null,
-        })),
-      },
-    ]
+    return {
+      id: 'bike',
+      title: t('triathlon.discipline.bike'),
+      primaryLabel:
+        bikePlotKind === 'power'
+          ? t('triathlon.performance.bikeCp')
+          : '20 km',
+      secondaryLabel: bikePlotKind === 'time' ? '40 km' : null,
+      activityLabel:
+        bikePlotKind === 'power'
+          ? t('triathlon.charts.trainingPower')
+          : t('triathlon.charts.trainingSpeed'),
+      modelUnit: bikePlotKind === 'power' ? 'watts' : 'seconds',
+      unit: bikePlotKind === 'power' ? 'watts' : 'kilometers-per-hour',
+      activityPoints:
+        bikePlotKind === 'power'
+          ? bikePowerActivityPoints
+          : distanceActivityPoints(formatDateTime, bikeTrainings, {
+              discipline: 'bike',
+              context: bikeContext,
+              fromLocalDate: startLocalDate,
+              asOfLocalDate: today,
+            }),
+      points: visibleBikeHistory.map((point) => ({
+        localDate: point.localDate,
+        label: formatPointLabel(formatDateTime, point.localDate),
+        basis: point.basis,
+        primaryValue:
+          point.bike?.kind !== bikePlotKind
+            ? null
+            : bikePlotKind === 'power'
+              ? point.bike.primary
+              : speedAtDistance(20_000, point.bike.primary),
+        secondaryValue:
+          point.bike?.kind === 'time' && bikePlotKind === 'time'
+            ? speedAtDistance(40_000, point.bike.secondary)
+            : null,
+        primaryDisplayValue:
+          point.bike?.kind === bikePlotKind ? point.bike.primary : null,
+        secondaryDisplayValue:
+          point.bike?.kind === 'time' && bikePlotKind === 'time'
+            ? point.bike.secondary
+            : null,
+      })),
+    }
   }, [
-    actualTrainings,
     bikeContext,
     bikeMetricKind,
+    bikeTrainings,
     formatDateTime,
-    historicalMetrics,
-    runContext,
-    swimContext,
     startLocalDate,
     t,
     today,
+    visibleBikeHistory,
   ])
+  const performancePlots = useMemo(
+    () => [runPlot, swimPlot, bikePlot],
+    [bikePlot, runPlot, swimPlot],
+  )
 
-  const efficiencyPlots = useMemo<EfficiencyPlot[]>(
+  const efficiencyOptions = useMemo(
+    () => ({
+      fromLocalDate: startLocalDate,
+      asOfLocalDate: today,
+      restingHeartRateBpm: settings.restingHeartRateBpm ?? null,
+    }),
+    [settings.restingHeartRateBpm, startLocalDate, today],
+  )
+  const runEfficiency = useMemo(
     () =>
-      (
-        [
-          ['run', runContext, false],
-          // Inclined walking only exists on the treadmill.
-          ['run', 'treadmill', true],
-          ['bike', bikeContext, false],
-          ['swim', swimContext, false],
-        ] as const
-      ).map(([discipline, context, isWalk]) => {
-        const trend = getEfficiencyTrend(actualTrainings, {
-          discipline,
-          context,
-          fromLocalDate: startLocalDate,
-          asOfLocalDate: today,
-          isWalk,
-          restingHeartRateBpm: settings.restingHeartRateBpm ?? null,
-        })
-        // Plots without sessions stay as empty, selectable charts.
-        return {
-          key: isWalk ? 'walk' : discipline,
-          id: discipline,
-          title: isWalk
-            ? t('triathlon.variant.walk')
-            : t(`triathlon.discipline.${discipline}`),
-          unitNote: isWalk ? t('triathlon.charts.runningEquivalent') : undefined,
-          referenceHeartRateBpm: trend?.referenceHeartRateBpm ?? 0,
-          points: trend?.points ?? [],
-        }
-      }),
-    [
-      actualTrainings,
-      bikeContext,
-      runContext,
-      settings.restingHeartRateBpm,
-      startLocalDate,
-      swimContext,
-      t,
-      today,
-    ],
+      efficiencyPlot(t, runTrainings, 'run', runContext, false, efficiencyOptions),
+    [efficiencyOptions, runContext, runTrainings, t],
+  )
+  // Inclined walking only exists on the treadmill.
+  const walkEfficiency = useMemo(
+    () =>
+      efficiencyPlot(t, runTrainings, 'run', 'treadmill', true, efficiencyOptions),
+    [efficiencyOptions, runTrainings, t],
+  )
+  const bikeEfficiency = useMemo(
+    () =>
+      efficiencyPlot(t, bikeTrainings, 'bike', bikeContext, false, efficiencyOptions),
+    [bikeContext, bikeTrainings, efficiencyOptions, t],
+  )
+  const swimEfficiency = useMemo(
+    () =>
+      efficiencyPlot(t, swimTrainings, 'swim', swimContext, false, efficiencyOptions),
+    [efficiencyOptions, swimContext, swimTrainings, t],
+  )
+  const efficiencyPlots = useMemo(
+    () => [runEfficiency, walkEfficiency, bikeEfficiency, swimEfficiency],
+    [bikeEfficiency, runEfficiency, swimEfficiency, walkEfficiency],
   )
 
   const weeklyVolume = useMemo<WeeklyVolumeChartPoint[]>(

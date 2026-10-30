@@ -173,14 +173,14 @@ const review = {
     tagebuch: { path: '/apps/triathlon-tracker', click: ['Tagebuch'] },
     wochenvolumen: {
       path: '/apps/triathlon-tracker',
-      click: ['Verlauf'],
+      click: ['Statistik'],
       run: async ({ page }) => {
         await page.locator('[data-weekly-volume]').scrollIntoViewIfNeeded()
       },
     },
     leistung: {
       path: '/apps/triathlon-tracker',
-      click: ['Verlauf'],
+      click: ['Statistik'],
       run: async ({ page }) => {
         await page
           .locator('[data-performance-plot=run]')
@@ -189,7 +189,7 @@ const review = {
     },
     'leistung-rad': {
       path: '/apps/triathlon-tracker',
-      click: ['Verlauf'],
+      click: ['Statistik'],
       run: async ({ page }) => {
         await page
           .locator('[data-performance-plot=bike]')
@@ -298,10 +298,10 @@ Object.assign(review.scenes, {
     path: '/apps/triathlon-tracker?review-empty=1',
     click: ['Tagebuch'],
   },
-  verlauf: { path: '/apps/triathlon-tracker', click: ['Verlauf'] },
+  verlauf: { path: '/apps/triathlon-tracker', click: ['Statistik'] },
   'leistung-schwimmen': {
     path: '/apps/triathlon-tracker',
-    click: ['Verlauf'],
+    click: ['Statistik'],
     run: async ({ page }) => {
       await page
         .locator('[data-performance-plot=swim]')
@@ -310,7 +310,7 @@ Object.assign(review.scenes, {
   },
   fortschritt: {
     path: '/apps/triathlon-tracker',
-    click: ['Verlauf'],
+    click: ['Statistik'],
     run: async ({ page }) => {
       const details = page
         .locator('details')
@@ -328,7 +328,7 @@ Object.assign(review.scenes, {
   },
   datentabellen: {
     path: '/apps/triathlon-tracker',
-    click: ['Verlauf'],
+    click: ['Statistik'],
     run: async ({ page }) => {
       const tables = page.locator('[data-chart-tables]')
       const summary = tables.locator('summary')
@@ -340,7 +340,7 @@ Object.assign(review.scenes, {
   },
   'verlauf-leer': {
     path: '/apps/triathlon-tracker?review-empty=1',
-    click: ['Verlauf'],
+    click: ['Statistik'],
   },
   intervalle: {
     path: '/apps/triathlon-tracker',
@@ -554,7 +554,7 @@ Object.assign(review.scenes, {
   },
 })
 
-const triathlonTabs = new Set(['Rekorde', 'Planung', 'Tagebuch', 'Verlauf'])
+const triathlonTabs = new Set(['Rekorde', 'Planung', 'Tagebuch', 'Statistik'])
 const disciplineLabels = { swim: 'Schwimmen', bike: 'Rad', run: 'Laufen' }
 const sceneDisciplines = {
   rekorde: 'swim',

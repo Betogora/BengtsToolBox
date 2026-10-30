@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getSchlagDenRaabSummary } from '@/apps/schlag-den-raab/hooks/useSchlagDenRaabScoreboard'
 import {
   defaultSchlagDenRaabTiebreak,
+  getSchlagDenRaabSummary,
   initialSchlagDenRaabState,
   normalizeSchlagDenRaabState,
 } from '@/apps/schlag-den-raab/scoreboardState'

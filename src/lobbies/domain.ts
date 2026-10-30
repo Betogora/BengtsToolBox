@@ -22,10 +22,6 @@ export function isValidDeviceName(value: string) {
   return normalized.length > 0 && normalized.length <= deviceNameMaxLength
 }
 
-export function isValidLobbyId(value: string) {
-  return value === 'default' || new RegExp(`^[${lobbyAlphabet}]{${lobbyCodeLength}}$`).test(value)
-}
-
 export function createLobbyCode(randomValues?: Uint32Array) {
   const values = randomValues ?? crypto.getRandomValues(new Uint32Array(lobbyCodeLength))
 

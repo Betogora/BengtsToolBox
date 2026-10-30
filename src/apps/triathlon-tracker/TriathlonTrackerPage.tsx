@@ -11,14 +11,8 @@ import {
 import { lazy, memo, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
-import {
-  ActualTrainingDialog,
-  CurrentWeekSummary,
-  LoadingState,
-  PlannedTrainingDialog,
-  SyncStatus,
-  WeekCopyDialog,
-} from './components'
+import { ActualTrainingDialog } from './ActualTrainingDialog'
+import { CurrentWeekSummary, LoadingState, SyncStatus } from './components'
 import { getCurrentLocalDate, getWeekStartLocalDate } from './domain/dates'
 import {
   intervalSegmentsFromScheme,
@@ -31,10 +25,12 @@ import type {
   PlannedTrainingInput,
 } from './hooks/useTriathlonTracker'
 import { PlanCalendar } from './PlanCalendar'
+import { PlannedTrainingDialog } from './PlannedTrainingDialog'
 import { PersonalBestsPanel } from './PersonalBestsPanel'
 import { TrackerSettingsPanel } from './TrackerSettingsPanel'
 import { summarizeWeek } from './domain/weeklyStats'
 import { TrainingJournal } from './TrainingJournal'
+import { WeekCopyDialog } from './WeekCopyDialog'
 import { defaultPlanPaces, newTrainingContexts } from './types'
 import type { PlanPaces } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
@@ -215,19 +211,7 @@ export function TriathlonTrackerPage() {
       ) : (
         <>
           {tracker.actualTrainings.length > 0 && (
-            <CurrentWeekSummary
-              actualCount={week.totalTrainingCount}
-              totalDurationSeconds={week.totalDurationSeconds}
-              swimDistanceMeters={week.byDiscipline.swim.distanceMeters}
-              swimDurationSeconds={week.byDiscipline.swim.durationSeconds}
-              swimTrainingCount={week.byDiscipline.swim.trainingCount}
-              bikeDistanceMeters={week.byDiscipline.bike.distanceMeters}
-              bikeDurationSeconds={week.byDiscipline.bike.durationSeconds}
-              bikeTrainingCount={week.byDiscipline.bike.trainingCount}
-              runDistanceMeters={week.byDiscipline.run.distanceMeters}
-              runDurationSeconds={week.byDiscipline.run.durationSeconds}
-              runTrainingCount={week.byDiscipline.run.trainingCount}
-            />
+            <CurrentWeekSummary week={week} />
           )}
           <Tabs
             value={activeTab}

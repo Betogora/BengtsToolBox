@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/i18n';
 import { syncErrorMessageKey } from '@/lib/firebase/syncError';
 import { cn } from '@/lib/utils';
-import { StandingsTable } from '@/apps/swiss-tournaments/components/TournamentTables'
+import { StandingsTable } from '@/apps/swiss-tournaments/components/StandingsTable'
 import { tournamentFormatLabelKey, tournamentWebsiteQrUrl } from '@/apps/swiss-tournaments/components/tournamentUiPresentation';
 import { NewTournamentDialog } from '@/apps/swiss-tournaments/components/TournamentCreatorDialog';
 import { SwissStandingsPresenter } from '@/apps/swiss-tournaments/components/TournamentOverview'
@@ -51,6 +51,7 @@ export function SwissTournamentsPage() {
   const inspection = app.inspection
   const archivedTournaments = app.archivedTournaments
   const inspectTournament = app.inspectTournament
+  const summarizeTournament = app.summarizeTournament
   const [newPlayerName, setNewPlayerName] = useState('')
   const [newPlayerRating, setNewPlayerRating] = useState('')
   const [printTournament, setPrintTournament] = useState<Tournament | null>(null)
@@ -58,16 +59,16 @@ export function SwissTournamentsPage() {
   const archivedTournamentSummaries = useMemo(
     () =>
       archivedTournaments.map((entry) => {
-        const archivedInspection = inspectTournament(entry)
+        const summary = summarizeTournament(entry)
 
         return {
           category: t(tournamentFormatLabelKey(entry.format)),
-          completedRounds: archivedInspection.progress.completedUnitCount,
-          standings: archivedInspection.standings,
-          tournament: archivedInspection.tournament,
+          completedRounds: summary.completedUnitCount,
+          standings: summary.standings,
+          tournament: summary.tournament,
         }
       }),
-    [archivedTournaments, inspectTournament, t],
+    [archivedTournaments, summarizeTournament, t],
   )
   const visibleStandingsTournament = printTournament ?? tournament
   const visibleInspection = useMemo(

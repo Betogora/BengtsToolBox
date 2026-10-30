@@ -1,5 +1,7 @@
 import type { Pairing, Player, PlayerScoreSummary, Tournament } from '@/apps/swiss-tournaments/types'
-import { assignColors, byeResult, colorPenalty, compareNumberLists, countGamesBetween, countGamesBetweenBeforeRound, getPlayerStatusForRound, getRoundByeScore, getSummaryBeforeRound, makeId, normalizeRoundPairings, normalizeRoundRobinCycles, roundRobinRoundsForPlayerCount, validatePairing } from './pairingSupport'
+import { assignColors, colorPenalty } from './colorAssignment'
+import { byeResult, compareNumberLists, countGamesBetweenBeforeRound, getPlayerStatusForRound, getRoundByeScore, getSummaryBeforeRound, makeId, normalizeRoundPairings, normalizeRoundRobinCycles, roundRobinRoundsForPlayerCount } from './pairingSupport'
+import { validatePairing } from './pairingValidation'
 import { seedOrder } from './swissFormat'
 import type { PlannedPairing } from './swissFormat'
 
@@ -134,45 +136,6 @@ export function getRoundRobinEligiblePlayers(tournament: Tournament, roundNumber
     .filter((player) => player.addedInRound <= roundNumber)
     .filter((player) => getPlayerStatusForRound(player, roundNumber) === 'active')
     .sort(seedOrder)
-}
-
-export function getRoundRobinRequiredRoundCount(tournament: Tournament) {
-  if (tournament.format !== 'roundRobin') {
-    return tournament.numberOfRounds
-  }
-
-  const cycles = getRoundRobinTargetGames(tournament)
-  const players = tournament.players.filter((player) => player.status === 'active')
-  const boardCount = Math.floor(players.length / 2)
-
-  if (players.length <= 1 || boardCount === 0) {
-    return Math.max(1, ...tournament.rounds.map((round) => round.roundNumber))
-  }
-
-  let remainingGames = 0
-
-  players.forEach((left, leftIndex) => {
-    players.slice(leftIndex + 1).forEach((right) => {
-      remainingGames += Math.max(
-        0,
-        cycles - countGamesBetween(tournament, left.id, right.id),
-      )
-    })
-  })
-
-  const highestCompletedRound = tournament.rounds.reduce(
-    (highestRound, round) =>
-      round.status === 'completed'
-        ? Math.max(highestRound, round.roundNumber)
-        : highestRound,
-    0,
-  )
-
-  return Math.max(
-    roundRobinRoundsForPlayerCount(players.length, cycles),
-    highestCompletedRound + Math.ceil(remainingGames / boardCount),
-    ...tournament.rounds.map((round) => round.roundNumber),
-  )
 }
 
 function findBestRoundRobinPairings(

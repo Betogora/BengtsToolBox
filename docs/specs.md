@@ -242,6 +242,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 
 - Der statische NDJSON-Datensatz enthält 5.044 Fragen in zehn Kategorien.
 - Jede Frage benötigt ID, Kategorie, Frage und Antwort; ungültige Datensätze verhindern das Laden.
+- Ausgeliefert werden nur diese vier Felder; weitere Metadaten bleiben in der Quelldatei.
 - Der Katalog wird beim Öffnen der App als gehashtes NDJSON-Asset geladen und langfristig per HTTP sowie für die laufende Sitzung im Speicher gecacht. Ohne Service Worker bleibt Offline-Nutzung nach einem erfolgreichen Abruf best-effort; ein nicht verfügbarer Katalog zeigt einen wiederholbaren Fehlerzustand.
 - Gespeichert werden Kartenposition und Sichtbarkeit der Antwort, nicht der Fragenkatalog.
 - Vor und Zurück laufen zyklisch über Anfang und Ende des Katalogs.

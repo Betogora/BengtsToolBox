@@ -401,46 +401,51 @@ function averagePlacement(entry: MarioKartLedgerEntry) {
     : null
 }
 
+function completedLobbyScoringRacers(tournament: Tournament) {
+  return sortedRounds(tournament).flatMap((round) =>
+    round.status === 'completed'
+      ? round.pairings
+          .filter(isMarioKartPairingComplete)
+          .map(getMarioKartScoringRacers)
+      : [],
+  )
+}
+
 function directEncounterScore(
-  tournament: Tournament,
+  lobbies: () => MarioKartRacer[][],
   playerId: string,
   tiedPlayerIds: Set<string>,
 ) {
+  if (
+    tiedPlayerIds.size === 0 ||
+    (tiedPlayerIds.size === 1 && tiedPlayerIds.has(playerId))
+  ) {
+    return null
+  }
+
   let score = 0
   let encounters = 0
 
-  sortedRounds(tournament).forEach((round) => {
-    if (round.status !== 'completed') {
+  lobbies().forEach((scoringRacers) => {
+    const ownRacer = scoringRacers.find((racer) => racer.playerId === playerId)
+
+    if (!ownRacer || ownRacer.placement === undefined) {
       return
     }
 
-    round.pairings.forEach((pairing) => {
-      if (!isMarioKartPairingComplete(pairing)) {
+    const ownPlacement = ownRacer.placement
+
+    scoringRacers.forEach((opponent) => {
+      if (
+        opponent.playerId === playerId ||
+        !tiedPlayerIds.has(opponent.playerId) ||
+        opponent.placement === undefined
+      ) {
         return
       }
 
-      const ownRacer = getMarioKartScoringRacers(pairing).find(
-        (racer) => racer.playerId === playerId,
-      )
-
-      if (!ownRacer || ownRacer.placement === undefined) {
-        return
-      }
-
-      const ownPlacement = ownRacer.placement
-
-      getMarioKartScoringRacers(pairing).forEach((opponent) => {
-        if (
-          opponent.playerId === playerId ||
-          !tiedPlayerIds.has(opponent.playerId) ||
-          opponent.placement === undefined
-        ) {
-          return
-        }
-
-        encounters += 1
-        score += ownPlacement < opponent.placement ? 1 : 0
-      })
+      encounters += 1
+      score += ownPlacement < opponent.placement ? 1 : 0
     })
   })
 
@@ -496,6 +501,8 @@ export function createMarioKartStandingRows(tournament: Tournament): StandingRow
     directGroups.set(key, new Set([...(directGroups.get(key) ?? []), row.playerId]))
   })
 
+  let lobbies: MarioKartRacer[][] | null = null
+  const getLobbies = () => (lobbies ??= completedLobbyScoringRacers(tournament))
   const ranked = rows
     .map((row) => {
       const key = [
@@ -507,7 +514,7 @@ export function createMarioKartStandingRows(tournament: Tournament): StandingRow
       return {
         ...row,
         directEncounterScore: directEncounterScore(
-          tournament,
+          getLobbies,
           row.playerId,
           directGroups.get(key) ?? new Set<string>(),
         ),
@@ -545,8 +552,11 @@ export function createMarioKartStandingRows(tournament: Tournament): StandingRow
   }, [])
 }
 
-export function createMarioKartBeerStandingRows(tournament: Tournament) {
-  const rows = createMarioKartStandingRows(tournament).sort(
+export function createMarioKartBeerStandingRows(
+  tournament: Tournament,
+  standingRows: readonly StandingRow[] = createMarioKartStandingRows(tournament),
+) {
+  const rows = [...standingRows].sort(
     (left, right) =>
       right.marioKartEvents - left.marioKartEvents || left.rank - right.rank,
   )

@@ -12,21 +12,80 @@ type Mutation<T> = {
   confirmed?: boolean
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object') return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+// Returns `previous` (or its equal parts) when `next` has the same content, so
+// metadata-only snapshots and acknowledgements keep stable references.
+export function replaceEqualDeep<T>(previous: unknown, next: T): T {
+  if (Object.is(previous, next)) return previous as T
+
+  if (Array.isArray(previous) && Array.isArray(next)) {
+    let isEqual = previous.length === next.length
+    const shared = next.map((item, index) => {
+      const sharedItem = replaceEqualDeep(previous[index], item)
+      if (sharedItem !== previous[index]) isEqual = false
+      return sharedItem
+    })
+    return (isEqual ? previous : shared) as T
+  }
+
+  if (isPlainObject(previous) && isPlainObject(next)) {
+    const previousKeys = Object.keys(previous)
+    const nextKeys = Object.keys(next)
+    let isEqual = previousKeys.length === nextKeys.length
+    const shared: Record<string, unknown> = {}
+    for (const key of nextKeys) {
+      shared[key] = replaceEqualDeep(previous[key], next[key])
+      if (shared[key] !== previous[key] || !Object.hasOwn(previous, key)) isEqual = false
+    }
+    return (isEqual ? previous : shared) as T
+  }
+
+  if (
+    previous !== null &&
+    typeof previous === 'object' &&
+    next !== null &&
+    typeof next === 'object' &&
+    previous.constructor === next.constructor &&
+    typeof (previous as { isEqual?: unknown }).isEqual === 'function' &&
+    (previous as { isEqual: (other: unknown) => boolean }).isEqual(next)
+  ) {
+    return previous as T
+  }
+
+  return next
+}
+
 export class OptimisticState<T> {
   private confirmed: T
   private mutations: Mutation<T>[] = []
   private nextId = 1
   private snapshotPending = false
+  private currentValue: T
+  private isValueStale = false
 
   constructor(initialValue: T) {
     this.confirmed = initialValue
+    this.currentValue = initialValue
   }
 
   get value() {
-    return this.mutations.reduce(
-      (value, mutation) => mutation.apply(value),
-      this.confirmed,
-    )
+    if (this.isValueStale) {
+      this.currentValue = replaceEqualDeep(
+        this.currentValue,
+        this.mutations.reduce(
+          (value, mutation) => mutation.apply(value),
+          this.confirmed,
+        ),
+      )
+      this.isValueStale = false
+    }
+
+    return this.currentValue
   }
 
   get isPending() {
@@ -37,11 +96,13 @@ export class OptimisticState<T> {
     const id = this.nextId
     this.nextId += 1
     this.mutations.push({ id, apply })
+    this.isValueStale = true
     return id
   }
 
   reject(id: number) {
     this.mutations = this.mutations.filter((mutation) => mutation.id !== id)
+    this.isValueStale = true
     this.confirmCompleted()
   }
 
@@ -61,6 +122,7 @@ export class OptimisticState<T> {
     while (this.mutations[0]?.confirmed) {
       const mutation = this.mutations.shift()!
       this.confirmed = mutation.apply(this.confirmed)
+      this.isValueStale = true
     }
   }
 
@@ -69,6 +131,7 @@ export class OptimisticState<T> {
 
     if (!hasPendingWrites) {
       this.confirmed = value
+      this.isValueStale = true
     }
   }
 
@@ -76,6 +139,7 @@ export class OptimisticState<T> {
     this.confirmed = value
     this.mutations = []
     this.snapshotPending = false
+    this.isValueStale = true
   }
 }
 

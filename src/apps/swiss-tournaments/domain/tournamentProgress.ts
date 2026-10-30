@@ -1,5 +1,5 @@
 import { isPairingComplete } from './pairingSupport'
-import { getMarioKartCycleProgress } from '@/apps/swiss-tournaments/marioKart'
+import { getMarioKartCycleProgress } from './marioKartFormat'
 import type {
   Round,
   Tournament,

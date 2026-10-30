@@ -6,10 +6,8 @@ import {
   Trophy,
 } from 'lucide-react'
 
-import {
-  getSchlagDenRaabSummary,
-  useSchlagDenRaabScoreboard,
-} from '@/apps/schlag-den-raab/hooks/useSchlagDenRaabScoreboard'
+import { useSchlagDenRaabScoreboard } from '@/apps/schlag-den-raab/hooks/useSchlagDenRaabScoreboard'
+import { getSchlagDenRaabSummary } from '@/apps/schlag-den-raab/scoreboardState'
 import { ScoreProgressPie } from '@/apps/schlag-den-raab/ScoreProgressPie'
 import type {
   SchlagDenRaabArchivedDataset,

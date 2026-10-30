@@ -3,8 +3,16 @@ import { useEffect, useMemo, useRef } from 'react'
 import {
   createProgressPlayer,
   defaultProgressDrinkIcon,
+  defaultUnit,
+  getDefaultChartTitle,
   getDrinkIconEventDelta,
   getPlayerScores,
+  isDefaultChartTitle,
+  normalizeDataset,
+  normalizeDrinkIcon,
+  normalizePlayer,
+  sanitizeColor,
+  sanitizeName,
 } from '@/apps/progress-dashboard/logic'
 import type {
   ProgressDataset,
@@ -23,38 +31,13 @@ import {
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { commitSyncBatch } from '@/lib/firebase/syncBatch'
-import {
-  getParticipantColorByPosition,
-  normalizeParticipantColor,
-  normalizeThemeColor,
-  participantColorPresets,
-} from '@/lib/theme'
+import { participantColorPresets } from '@/lib/theme'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 export const progressColorPresets = [...participantColorPresets]
-
-const defaultUnit = 'Getränke'
-const legacyDefaultChartTitle = 'Fortschritt über Zeit'
-const emptyUnitDefaultChartTitle = 'Dashboard'
-
-function getDefaultChartTitle(unit: string) {
-  const trimmedUnit = unit.trim()
-
-  return trimmedUnit ? `${trimmedUnit}-Dashboard` : emptyUnitDefaultChartTitle
-}
-
-function isDefaultChartTitle(title: string, unit: string) {
-  const trimmedTitle = title.trim()
-
-  return (
-    !trimmedTitle ||
-    trimmedTitle === legacyDefaultChartTitle ||
-    trimmedTitle === getDefaultChartTitle(unit)
-  )
-}
 
 export const progressEventIcons: {
   id: ProgressEventIcon
@@ -118,27 +101,6 @@ function omitDatasetId(dataset: ProgressDataset): Omit<ProgressDataset, 'id'> {
   return value
 }
 
-function fallbackPlayerName(player: Pick<ProgressPlayer, 'id' | 'position'>) {
-  const position = Number.isFinite(player.position)
-    ? player.position
-    : Number(player.id.replace('person-', ''))
-
-  return `Person ${Number.isFinite(position) ? position : 1}`
-}
-
-function sanitizeName(
-  name: string,
-  player: Pick<ProgressPlayer, 'id' | 'position'>,
-) {
-  const trimmedName = name.trim()
-
-  return trimmedName || fallbackPlayerName(player)
-}
-
-function sanitizeColor(color: string, fallback: string) {
-  return normalizeParticipantColor(color, fallback)
-}
-
 function formatArchiveDatasetName(value: string) {
   const date = new Date(value)
 
@@ -155,92 +117,6 @@ function sequenceDatasetNames(datasets: ProgressDataset[]) {
       getGeneratedDatasetBaseName(dataset.name, date),
     getTimestamp: (dataset) => dataset.archivedAtClientIso,
   })
-}
-
-function normalizeEventIcon(icon: unknown, valueDelta: number): ProgressEventIcon {
-  if (
-    icon === 'plus' ||
-    icon === 'minus' ||
-    icon === 'wine' ||
-    icon === 'beer' ||
-    icon === 'schnaps' ||
-    icon === 'funnel'
-  ) {
-    return icon
-  }
-
-  return valueDelta < 0 ? 'minus' : 'plus'
-}
-
-function isProgressDrinkIcon(icon: unknown): icon is ProgressDrinkIcon {
-  return icon === 'wine' || icon === 'beer' || icon === 'schnaps' || icon === 'funnel'
-}
-
-function normalizeDrinkIcon(icon: unknown): ProgressDrinkIcon {
-  return isProgressDrinkIcon(icon) ? icon : defaultProgressDrinkIcon
-}
-
-function normalizeDatasetName(name: string | undefined) {
-  const trimmedName = name?.trim()
-
-  if (!trimmedName || trimmedName === 'Aktueller Datensatz') {
-    return 'Datensatz'
-  }
-
-  return trimmedName
-}
-
-function normalizePlayer(player: ProgressPlayer, index: number): ProgressPlayer {
-  const position = Number.isFinite(player.position)
-    ? Number(player.position)
-    : index + 1
-  const fallbackColor = getParticipantColorByPosition(position)
-  const name = sanitizeName(player.name ?? '', { id: player.id, position })
-  const color = sanitizeColor(player.color ?? fallbackColor, fallbackColor)
-
-  return {
-    ...player,
-    position,
-    name,
-    color,
-    defaultEventIcon: normalizeDrinkIcon(player.defaultEventIcon),
-  }
-}
-
-function normalizeDataset(
-  dataset: ProgressDataset,
-  players: ProgressPlayer[],
-): ProgressDataset {
-  const hasUnit = typeof dataset.unit === 'string'
-  const unit = hasUnit ? dataset.unit : defaultUnit
-  const chartTitle = dataset.chartTitle?.trim()
-
-  return {
-    ...dataset,
-    chartTitle:
-      !chartTitle || chartTitle === legacyDefaultChartTitle
-        ? getDefaultChartTitle(unit)
-        : chartTitle,
-    createdAtClientIso: dataset.createdAtClientIso || new Date().toISOString(),
-    archivedAtClientIso: dataset.archivedAtClientIso ?? null,
-    events: (dataset.events ?? []).map((event, index) => ({
-      ...event,
-      playerColor:
-        players.find((player) => player.id === event.playerId)?.color ??
-        normalizeThemeColor(event.playerColor, index),
-      valueDelta: Number.isFinite(Number(event.valueDelta))
-        ? Number(event.valueDelta)
-        : 1,
-      icon: normalizeEventIcon(event.icon, Number(event.valueDelta) || 1),
-      position: Number.isFinite(event.position) ? event.position : index + 1,
-      createdAtClientIso: event.createdAtClientIso || new Date().toISOString(),
-      createdAtLabel: event.createdAtLabel || event.createdAtClientIso,
-    })),
-    name: normalizeDatasetName(dataset.name),
-    position: Number.isFinite(dataset.position) ? dataset.position : 1,
-    status: dataset.status === 'archived' ? 'archived' : 'active',
-    unit,
-  }
 }
 
 export function useProgressDashboard(lobbyId?: string) {

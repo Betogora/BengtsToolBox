@@ -20,7 +20,6 @@ import { useSwissTournaments } from "@/apps/swiss-tournaments/hooks/useSwissTour
 import { ConfirmButton } from "@/apps/shared/components/ConfirmButton";
 import type {
   MarioKartRacer,
-  Pairing,
   Round,
   Tournament,
 } from "@/apps/swiss-tournaments/types";
@@ -37,42 +36,24 @@ import {
 import { TabsContent } from "@/components/ui/tabs";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { PairingsTable } from "@/apps/swiss-tournaments/components/TournamentTables";
+import { PairingsTable } from "@/apps/swiss-tournaments/components/PairingsTable";
+import { RoundStatusBadge } from "@/apps/swiss-tournaments/components/RoundStatusBadge";
 import {
   completedUnitLabelKey,
   fixedPairingHintClassName,
+  shouldShowPairingCountBadge,
+  singleLineSelectTriggerClass,
   statusLabelKeys,
 } from "@/apps/swiss-tournaments/components/tournamentUiPresentation";
-import type { TournamentInspection } from "@/apps/swiss-tournaments/domain/tournamentDomain";
-
-function pairingPlayerIds(pairing: Pairing) {
-  return [
-    pairing.whitePlayerId,
-    pairing.blackPlayerId,
-    pairing.byePlayerId,
-    pairing.handBrainSides?.white.brainPlayerId,
-    pairing.handBrainSides?.white.handPlayerId,
-    pairing.handBrainSides?.black.brainPlayerId,
-    pairing.handBrainSides?.black.handPlayerId,
-    ...(pairing.marioKartRacers?.map((racer) => racer.playerId) ?? []),
-  ].filter((playerId): playerId is string => typeof playerId === "string");
-}
-
-function pairingScoringPlayerIds(pairing: Pairing) {
-  if (pairing.isBye) {
-    return pairing.byePlayerId ? [pairing.byePlayerId] : [];
-  }
-
-  if (pairing.kind === "marioKart") {
-    return (
-      pairing.marioKartRacers
-        ?.filter((racer) => racer.scoringCycleNumber !== null)
-        .map((racer) => racer.playerId) ?? []
-    );
-  }
-
-  return pairingPlayerIds(pairing);
-}
+import {
+  useDraftStore,
+  useDraftValue,
+  type DraftStore,
+} from "@/apps/swiss-tournaments/components/draftStore";
+import {
+  tournamentDomain,
+  type TournamentInspection,
+} from "@/apps/swiss-tournaments/domain/tournamentDomain";
 
 type MarioKartCorrectionDraft = {
   tournamentId: string;
@@ -81,9 +62,6 @@ type MarioKartCorrectionDraft = {
 };
 
 const emptyPlayerSlotValue = "__empty-player-slot__";
-
-const singleLineSelectTriggerClass =
-  "min-w-0 [&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap";
 
 function roleLabel(icon: ReactNode, label: string) {
   return (
@@ -94,10 +72,6 @@ function roleLabel(icon: ReactNode, label: string) {
   );
 }
 
-function shouldShowPairingCountBadge(format?: Tournament["format"]) {
-  return format !== "marioKart";
-}
-
 function newUnitLabelKey(format?: Tournament["format"]): TranslationKey {
   return format === "marioKart" ? "swiss.newLobby" : "swiss.newRound";
 }
@@ -106,20 +80,6 @@ function firstUnitHintLabelKey(format?: Tournament["format"]): TranslationKey {
   return format === "marioKart"
     ? "swiss.firstLobbyHint"
     : "swiss.firstRoundHint";
-}
-
-function RoundStatusBadge({ status }: { status: Round["status"] }) {
-  const { t } = useI18n();
-
-  return (
-    <Badge className="type-ui align-middle" variant={status === "draft" ? "default" : "secondary"}>
-      {t(
-        status === "draft"
-          ? "swiss.unitStatus.active"
-          : "swiss.unitStatus.closed",
-      )}
-    </Badge>
-  );
 }
 
 function TournamentCompleteBanner({
@@ -152,6 +112,533 @@ function MarioKartPlanningBanner({ label }: { label: string }) {
     <div className="type-action flex items-center gap-2 rounded-md border border-amber-300 bg-amber-100 px-4 py-3 text-amber-950">
       <TriangleAlert className="size-5 shrink-0" />
       <span>{label}</span>
+    </div>
+  );
+}
+
+type MarioKartReservationDraft = {
+  slots: DraftStore<string[]>;
+  isEditing: DraftStore<boolean>;
+};
+
+function MarioKartReservationPanel({
+  draft,
+  tournament,
+  onSetMarioKartLobbyReservation,
+}: {
+  draft: MarioKartReservationDraft;
+  tournament: Tournament;
+  onSetMarioKartLobbyReservation: ReturnType<
+    typeof useSwissTournaments
+  >["setMarioKartLobbyReservation"];
+}) {
+  const { t } = useI18n();
+  const [marioKartReservationDraft, setMarioKartReservationDraft] =
+    useDraftValue(draft.slots);
+  const [isEditingMarioKartReservation, setIsEditingMarioKartReservation] =
+    useDraftValue(draft.isEditing);
+  const selectedMarioKartReservationIds =
+    marioKartReservationDraft.filter(Boolean);
+  const canSaveMarioKartReservation =
+    selectedMarioKartReservationIds.length >= 2 &&
+    selectedMarioKartReservationIds.length <= 4 &&
+    new Set(selectedMarioKartReservationIds).size ===
+      selectedMarioKartReservationIds.length;
+  const marioKartReservationOptionFor = (slotIndex: number) =>
+    tournament.players.filter(
+      (player) =>
+        player.id === marioKartReservationDraft[slotIndex] ||
+        !selectedMarioKartReservationIds.includes(player.id),
+    );
+
+  return (
+    <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+      {tournament.marioKartLobbyReservation &&
+      !isEditingMarioKartReservation ? (
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+          <div className="grid gap-3">
+            <div className="type-action flex items-center gap-2">
+              <Pin className="size-4 text-primary" />
+              {t("swiss.marioKartFixLobby")}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {tournament.marioKartLobbyReservation.playerIds.map(
+                (playerId) => {
+                  const player = tournament.players.find(
+                    (entry) => entry.id === playerId,
+                  );
+
+                  return (
+                    <span
+                      key={playerId}
+                      className={fixedPairingHintClassName}
+                    >
+                      <span className="px-2 py-0.5">
+                        {player?.name ?? playerId} · {t("swiss.fixed")}
+                      </span>
+                    </span>
+                  );
+                },
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 md:items-end">
+            <Badge className="w-fit" variant="secondary">
+              {t("swiss.marioKartFixLobbyWaiting")}
+            </Badge>
+            <div className="flex flex-col gap-2 md:flex-row">
+              <Button
+                className="w-full md:w-auto"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setMarioKartReservationDraft(
+                    [
+                      ...tournament.marioKartLobbyReservation!
+                        .playerIds,
+                      "",
+                      "",
+                      "",
+                      "",
+                    ].slice(0, 4),
+                  );
+                  setIsEditingMarioKartReservation(true);
+                }}
+              >
+                <Pencil className="size-4" />
+                {t("common.edit")}
+              </Button>
+              <Button
+                className="w-full md:w-auto"
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  await onSetMarioKartLobbyReservation(null);
+                  setMarioKartReservationDraft(["", "", "", ""]);
+                }}
+              >
+                <X className="size-4" />
+                {t("swiss.marioKartFixLobbyRemove")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="type-action flex items-center gap-2">
+            <Pin className="size-4 text-primary" />
+            {t("swiss.marioKartFixLobby")}
+          </div>
+          <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_9rem]">
+            {marioKartReservationDraft.map((playerId, slotIndex) => (
+              <Select
+                key={slotIndex}
+                value={playerId || emptyPlayerSlotValue}
+                onValueChange={(value) =>
+                  setMarioKartReservationDraft((current) =>
+                    current.map((entry, index) =>
+                      index === slotIndex
+                        ? value === emptyPlayerSlotValue
+                          ? ""
+                          : value
+                        : entry,
+                    ),
+                  )
+                }
+              >
+                <IftaSelectTrigger
+                  aria-label={t("swiss.marioKartFixedPlayerAria", {
+                    number: slotIndex + 1,
+                  })}
+                  className={singleLineSelectTriggerClass}
+                  label={roleLabel(
+                    <Gamepad2 className="size-3 shrink-0 text-primary" />,
+                    t("swiss.marioKartFixedPlayer", {
+                      number: slotIndex + 1,
+                    }),
+                  )}
+                >
+                  <SelectValue placeholder={t("swiss.result.open")} />
+                </IftaSelectTrigger>
+                <SelectContent>
+                  <SelectItem value={emptyPlayerSlotValue}>
+                    {t("swiss.result.open")}
+                  </SelectItem>
+                  {marioKartReservationOptionFor(slotIndex).map(
+                    (player) => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.name} ·{" "}
+                        {t(statusLabelKeys[player.status])}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+            ))}
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+              <Button
+                className="h-9 w-full lg:h-11"
+                disabled={!canSaveMarioKartReservation}
+                size="ifta"
+                onClick={async () => {
+                  const result = await onSetMarioKartLobbyReservation(
+                    selectedMarioKartReservationIds,
+                  );
+                  if (result?.status !== "changed" && result?.status !== "unchanged") return;
+                  setMarioKartReservationDraft(["", "", "", ""]);
+                  setIsEditingMarioKartReservation(false);
+                  toast.success(t("swiss.marioKartFixLobbySaved"));
+                }}
+              >
+                <Pin className="size-4" />
+                {t("swiss.marioKartFixLobbyAction")}
+              </Button>
+              {isEditingMarioKartReservation && (
+                <Button
+                  className="w-full"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setMarioKartReservationDraft(["", "", "", ""]);
+                    setIsEditingMarioKartReservation(false);
+                  }}
+                >
+                  {t("common.cancel")}
+                </Button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+type ManualPairingDraft = {
+  white: DraftStore<string>;
+  black: DraftStore<string>;
+  whiteBrain: DraftStore<string>;
+  whiteHand: DraftStore<string>;
+  blackBrain: DraftStore<string>;
+  blackHand: DraftStore<string>;
+};
+
+function ManualPairingForm({
+  draft,
+  draftRound,
+  tournament,
+  onAddManualHandBrainPairing,
+  onAddManualPairing,
+}: {
+  draft: ManualPairingDraft;
+  draftRound: Round;
+  tournament: Tournament;
+  onAddManualHandBrainPairing: ReturnType<
+    typeof useSwissTournaments
+  >["addManualHandBrainPairing"];
+  onAddManualPairing: ReturnType<
+    typeof useSwissTournaments
+  >["addManualPairing"];
+}) {
+  const { t } = useI18n();
+  const [manualWhite, setManualWhite] = useDraftValue(draft.white);
+  const [manualBlack, setManualBlack] = useDraftValue(draft.black);
+  const [manualWhiteBrain, setManualWhiteBrain] = useDraftValue(
+    draft.whiteBrain,
+  );
+  const [manualWhiteHand, setManualWhiteHand] = useDraftValue(draft.whiteHand);
+  const [manualBlackBrain, setManualBlackBrain] = useDraftValue(
+    draft.blackBrain,
+  );
+  const [manualBlackHand, setManualBlackHand] = useDraftValue(draft.blackHand);
+  const manuallyUsedPlayerIds = tournamentDomain.fixedPairingPlayerIds(
+    draftRound.pairings,
+  );
+  const manualHandBrainIds = [
+    manualWhiteBrain,
+    manualWhiteHand,
+    manualBlackBrain,
+    manualBlackHand,
+  ];
+  const manualWhiteOptions = tournament.players.filter(
+    (player) =>
+      !manuallyUsedPlayerIds.has(player.id) && player.id !== manualBlack,
+  );
+  const manualBlackOptions = tournament.players.filter(
+    (player) =>
+      !manuallyUsedPlayerIds.has(player.id) && player.id !== manualWhite,
+  );
+  const canAddManualPairing =
+    Boolean(manualWhite) &&
+    Boolean(manualBlack) &&
+    manualWhite !== manualBlack &&
+    !manuallyUsedPlayerIds.has(manualWhite) &&
+    !manuallyUsedPlayerIds.has(manualBlack);
+  const handBrainOptionFor = (currentPlayerId: string) =>
+    tournament.players.filter(
+      (player) =>
+        !manuallyUsedPlayerIds.has(player.id) &&
+        (player.id === currentPlayerId ||
+          !manualHandBrainIds.some((playerId) => playerId === player.id)),
+    );
+  const canAddManualHandBrainPairing =
+    tournament.format === "handAndBrain" &&
+    manualHandBrainIds.every(Boolean) &&
+    new Set(manualHandBrainIds).size === 4 &&
+    manualHandBrainIds.every(
+      (playerId) => !manuallyUsedPlayerIds.has(playerId),
+    );
+
+  return (
+    <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+      {tournament.format === "handAndBrain" && (
+        <div className="grid gap-2">
+          <div className="type-action flex items-center gap-2">
+            <Brain className="size-4 text-primary" />
+            {t("swiss.handAndBrainFixBoard")}
+          </div>
+          <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
+            <div className="grid gap-2 sm:grid-cols-2 lg:contents">
+              <Select
+                value={manualWhiteBrain}
+                onValueChange={setManualWhiteBrain}
+              >
+                <IftaSelectTrigger
+                  aria-label={t("swiss.whiteBrain")}
+                  className={singleLineSelectTriggerClass}
+                  label={roleLabel(
+                    <Brain className="size-3 shrink-0 text-primary" />,
+                    t("swiss.whiteBrain"),
+                  )}
+                >
+                  <SelectValue
+                    placeholder={t("swiss.result.open")}
+                  />
+                </IftaSelectTrigger>
+                <SelectContent>
+                  {handBrainOptionFor(
+                    manualWhiteBrain,
+                  ).map((player) => (
+                    <SelectItem
+                      key={player.id}
+                      value={player.id}
+                    >
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={manualWhiteHand}
+                onValueChange={setManualWhiteHand}
+              >
+                <IftaSelectTrigger
+                  aria-label={t("swiss.whiteHand")}
+                  className={singleLineSelectTriggerClass}
+                  label={roleLabel(
+                    <Hand className="size-3 shrink-0 text-primary" />,
+                    t("swiss.whiteHand"),
+                  )}
+                >
+                  <SelectValue
+                    placeholder={t("swiss.result.open")}
+                  />
+                </IftaSelectTrigger>
+                <SelectContent>
+                  {handBrainOptionFor(
+                    manualWhiteHand,
+                  ).map((player) => (
+                    <SelectItem
+                      key={player.id}
+                      value={player.id}
+                    >
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:contents">
+              <Select
+                value={manualBlackBrain}
+                onValueChange={setManualBlackBrain}
+              >
+                <IftaSelectTrigger
+                  aria-label={t("swiss.blackBrain")}
+                  className={singleLineSelectTriggerClass}
+                  label={roleLabel(
+                    <Brain className="size-3 shrink-0 text-primary" />,
+                    t("swiss.blackBrain"),
+                  )}
+                >
+                  <SelectValue
+                    placeholder={t("swiss.result.open")}
+                  />
+                </IftaSelectTrigger>
+                <SelectContent>
+                  {handBrainOptionFor(
+                    manualBlackBrain,
+                  ).map((player) => (
+                    <SelectItem
+                      key={player.id}
+                      value={player.id}
+                    >
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={manualBlackHand}
+                onValueChange={setManualBlackHand}
+              >
+                <IftaSelectTrigger
+                  aria-label={t("swiss.blackHand")}
+                  className={singleLineSelectTriggerClass}
+                  label={roleLabel(
+                    <Hand className="size-3 shrink-0 text-primary" />,
+                    t("swiss.blackHand"),
+                  )}
+                >
+                  <SelectValue
+                    placeholder={t("swiss.result.open")}
+                  />
+                </IftaSelectTrigger>
+                <SelectContent>
+                  {handBrainOptionFor(
+                    manualBlackHand,
+                  ).map((player) => (
+                    <SelectItem
+                      key={player.id}
+                      value={player.id}
+                    >
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="h-9 w-full lg:h-11"
+              size="ifta"
+              disabled={!canAddManualHandBrainPairing}
+              onClick={async () => {
+                if (!canAddManualHandBrainPairing) {
+                  return;
+                }
+
+                const result = await onAddManualHandBrainPairing(
+                  draftRound.roundNumber,
+                  {
+                    white: {
+                      brainPlayerId: manualWhiteBrain,
+                      handPlayerId: manualWhiteHand,
+                    },
+                    black: {
+                      brainPlayerId: manualBlackBrain,
+                      handPlayerId: manualBlackHand,
+                    },
+                  },
+                );
+                if (result?.status !== "changed") return;
+                setManualWhiteBrain("");
+                setManualWhiteHand("");
+                setManualBlackBrain("");
+                setManualBlackHand("");
+                toast.success(
+                  t("swiss.handAndBrainFixed"),
+                );
+              }}
+            >
+              <Pin className="size-4" />
+              {t("swiss.handAndBrainFix")}
+            </Button>
+          </div>
+        </div>
+      )}
+      <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
+        <Select
+          value={manualWhite}
+          onValueChange={setManualWhite}
+        >
+          <IftaSelectTrigger
+            aria-label={t("swiss.white")}
+            className={singleLineSelectTriggerClass}
+            containerClassName="lg:col-span-2"
+            label={roleLabel(
+              <ChessKing className="size-3 shrink-0 text-primary" />,
+              t("swiss.white"),
+            )}
+          >
+            <SelectValue
+              placeholder={t("swiss.result.open")}
+            />
+          </IftaSelectTrigger>
+          <SelectContent>
+            {manualWhiteOptions.map((player) => (
+              <SelectItem
+                key={player.id}
+                value={player.id}
+              >
+                {player.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={manualBlack}
+          onValueChange={setManualBlack}
+        >
+          <IftaSelectTrigger
+            aria-label={t("swiss.black")}
+            className={singleLineSelectTriggerClass}
+            containerClassName="lg:col-span-2"
+            label={roleLabel(
+              <ChessKing className="size-3 shrink-0 text-primary" />,
+              t("swiss.black"),
+            )}
+          >
+            <SelectValue
+              placeholder={t("swiss.result.open")}
+            />
+          </IftaSelectTrigger>
+          <SelectContent>
+            {manualBlackOptions.map((player) => (
+              <SelectItem
+                key={player.id}
+                value={player.id}
+              >
+                {player.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          className="h-9 w-full lg:h-11"
+          size="ifta"
+          disabled={!canAddManualPairing}
+          onClick={async () => {
+            if (!canAddManualPairing) {
+              return;
+            }
+
+            const result = await onAddManualPairing(
+              draftRound.roundNumber,
+              manualWhite,
+              manualBlack,
+            );
+            if (result?.status !== "changed") return;
+            setManualWhite("");
+            setManualBlack("");
+            toast.success(t("swiss.manualPairingFixed"));
+          }}
+        >
+          <Pin className="size-4" />
+          {tournament.format === "handAndBrain"
+            ? t("swiss.singleGameFix")
+            : t("swiss.fix")}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -220,20 +707,18 @@ export function TournamentPairingsWorkflow({
   onSetRoundByeScore,
 }: TournamentPairingsWorkflowProps) {
   const { t, formatNumber } = useI18n();
-  const [manualWhite, setManualWhite] = useState("");
-  const [manualBlack, setManualBlack] = useState("");
-  const [manualWhiteBrain, setManualWhiteBrain] = useState("");
-  const [manualWhiteHand, setManualWhiteHand] = useState("");
-  const [manualBlackBrain, setManualBlackBrain] = useState("");
-  const [manualBlackHand, setManualBlackHand] = useState("");
-  const [marioKartReservationDraft, setMarioKartReservationDraft] = useState([
-    "",
-    "",
-    "",
-    "",
-  ]);
-  const [isEditingMarioKartReservation, setIsEditingMarioKartReservation] =
-    useState(false);
+  const manualPairingDraft: ManualPairingDraft = {
+    white: useDraftStore(""),
+    black: useDraftStore(""),
+    whiteBrain: useDraftStore(""),
+    whiteHand: useDraftStore(""),
+    blackBrain: useDraftStore(""),
+    blackHand: useDraftStore(""),
+  };
+  const marioKartReservationDraft: MarioKartReservationDraft = {
+    slots: useDraftStore(["", "", "", ""]),
+    isEditing: useDraftStore(false),
+  };
   const [marioKartCorrection, setMarioKartCorrection] =
     useState<MarioKartCorrectionDraft | null>(null);
   const currentRound = inspection?.latestRound ?? null;
@@ -249,63 +734,59 @@ export function TournamentPairingsWorkflow({
         : [],
     [inspection],
   );
+  const marioKartCorrectionInspections = useMemo(() => {
+    const inspections = new Map<Round, TournamentInspection>();
+
+    if (
+      tournament.format !== "marioKart" ||
+      !marioKartCorrection ||
+      marioKartCorrection.tournamentId !== tournament.id
+    ) {
+      return inspections;
+    }
+
+    displayedRounds.forEach((round) => {
+      const marioKartPairing = round.pairings.find(
+        (pairing) => pairing.kind === "marioKart",
+      );
+
+      if (
+        round.roundNumber !== marioKartCorrection.roundNumber ||
+        !marioKartPairing
+      ) {
+        return;
+      }
+
+      inspections.set(
+        round,
+        inspectTournament({
+          ...tournament,
+          rounds: tournament.rounds.map((entry) =>
+            entry.roundNumber === round.roundNumber
+              ? {
+                  ...entry,
+                  pairings: entry.pairings.map((pairing) =>
+                    pairing.id === marioKartPairing.id
+                      ? {
+                          ...pairing,
+                          marioKartRacers: marioKartCorrection.racers,
+                        }
+                      : pairing,
+                  ),
+                }
+              : entry,
+          ),
+        }),
+      );
+    });
+
+    return inspections;
+  }, [displayedRounds, inspectTournament, marioKartCorrection, tournament]);
   const tournamentProgress = inspection?.progress ?? null;
   const completedRounds = tournamentProgress?.completedUnitCount ?? 0;
   const completionBannerBeforeRoundNumber =
     tournamentProgress?.completionRoundNumber ?? null;
   const isMarioKartTournament = tournament.format === "marioKart";
-  const manuallyUsedPlayerIds = new Set(
-    (draftRound?.pairings ?? [])
-      .filter((pairing) => pairing.isManual)
-      .flatMap(pairingScoringPlayerIds),
-  );
-  const manualHandBrainIds = [
-    manualWhiteBrain,
-    manualWhiteHand,
-    manualBlackBrain,
-    manualBlackHand,
-  ];
-  const manualWhiteOptions = tournament.players.filter(
-    (player) =>
-      !manuallyUsedPlayerIds.has(player.id) && player.id !== manualBlack,
-  );
-  const manualBlackOptions = tournament.players.filter(
-    (player) =>
-      !manuallyUsedPlayerIds.has(player.id) && player.id !== manualWhite,
-  );
-  const canAddManualPairing =
-    Boolean(manualWhite) &&
-    Boolean(manualBlack) &&
-    manualWhite !== manualBlack &&
-    !manuallyUsedPlayerIds.has(manualWhite) &&
-    !manuallyUsedPlayerIds.has(manualBlack);
-  const handBrainOptionFor = (currentPlayerId: string) =>
-    tournament.players.filter(
-      (player) =>
-        !manuallyUsedPlayerIds.has(player.id) &&
-        (player.id === currentPlayerId ||
-          !manualHandBrainIds.some((playerId) => playerId === player.id)),
-    );
-  const canAddManualHandBrainPairing =
-    tournament.format === "handAndBrain" &&
-    manualHandBrainIds.every(Boolean) &&
-    new Set(manualHandBrainIds).size === 4 &&
-    manualHandBrainIds.every(
-      (playerId) => !manuallyUsedPlayerIds.has(playerId),
-    );
-  const selectedMarioKartReservationIds =
-    marioKartReservationDraft.filter(Boolean);
-  const canSaveMarioKartReservation =
-    selectedMarioKartReservationIds.length >= 2 &&
-    selectedMarioKartReservationIds.length <= 4 &&
-    new Set(selectedMarioKartReservationIds).size ===
-      selectedMarioKartReservationIds.length;
-  const marioKartReservationOptionFor = (slotIndex: number) =>
-    tournament.players.filter(
-      (player) =>
-        player.id === marioKartReservationDraft[slotIndex] ||
-        !selectedMarioKartReservationIds.includes(player.id),
-    );
 
   return (
     <TabsContent value="pairings" className="grid gap-4">
@@ -320,165 +801,11 @@ export function TournamentPairingsWorkflow({
         </CardHeader>
         <CardContent className="grid gap-4">
           {isMarioKartTournament && (
-            <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
-              {tournament.marioKartLobbyReservation &&
-              !isEditingMarioKartReservation ? (
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-                  <div className="grid gap-3">
-                    <div className="type-action flex items-center gap-2">
-                      <Pin className="size-4 text-primary" />
-                      {t("swiss.marioKartFixLobby")}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {tournament.marioKartLobbyReservation.playerIds.map(
-                        (playerId) => {
-                          const player = tournament.players.find(
-                            (entry) => entry.id === playerId,
-                          );
-
-                          return (
-                            <span
-                              key={playerId}
-                              className={fixedPairingHintClassName}
-                            >
-                              <span className="px-2 py-0.5">
-                                {player?.name ?? playerId} · {t("swiss.fixed")}
-                              </span>
-                            </span>
-                          );
-                        },
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2 md:items-end">
-                    <Badge className="w-fit" variant="secondary">
-                      {t("swiss.marioKartFixLobbyWaiting")}
-                    </Badge>
-                    <div className="flex flex-col gap-2 md:flex-row">
-                      <Button
-                        className="w-full md:w-auto"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setMarioKartReservationDraft(
-                            [
-                              ...tournament.marioKartLobbyReservation!
-                                .playerIds,
-                              "",
-                              "",
-                              "",
-                              "",
-                            ].slice(0, 4),
-                          );
-                          setIsEditingMarioKartReservation(true);
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                        {t("common.edit")}
-                      </Button>
-                      <Button
-                        className="w-full md:w-auto"
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          await onSetMarioKartLobbyReservation(null);
-                          setMarioKartReservationDraft(["", "", "", ""]);
-                        }}
-                      >
-                        <X className="size-4" />
-                        {t("swiss.marioKartFixLobbyRemove")}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="type-action flex items-center gap-2">
-                    <Pin className="size-4 text-primary" />
-                    {t("swiss.marioKartFixLobby")}
-                  </div>
-                  <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_9rem]">
-                    {marioKartReservationDraft.map((playerId, slotIndex) => (
-                      <Select
-                        key={slotIndex}
-                        value={playerId || emptyPlayerSlotValue}
-                        onValueChange={(value) =>
-                          setMarioKartReservationDraft((current) =>
-                            current.map((entry, index) =>
-                              index === slotIndex
-                                ? value === emptyPlayerSlotValue
-                                  ? ""
-                                  : value
-                                : entry,
-                            ),
-                          )
-                        }
-                      >
-                        <IftaSelectTrigger
-                          aria-label={t("swiss.marioKartFixedPlayerAria", {
-                            number: slotIndex + 1,
-                          })}
-                          className={singleLineSelectTriggerClass}
-                          label={roleLabel(
-                            <Gamepad2 className="size-3 shrink-0 text-primary" />,
-                            t("swiss.marioKartFixedPlayer", {
-                              number: slotIndex + 1,
-                            }),
-                          )}
-                        >
-                          <SelectValue placeholder={t("swiss.result.open")} />
-                        </IftaSelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={emptyPlayerSlotValue}>
-                            {t("swiss.result.open")}
-                          </SelectItem>
-                          {marioKartReservationOptionFor(slotIndex).map(
-                            (player) => (
-                              <SelectItem key={player.id} value={player.id}>
-                                {player.name} ·{" "}
-                                {t(statusLabelKeys[player.status])}
-                              </SelectItem>
-                            ),
-                          )}
-                        </SelectContent>
-                      </Select>
-                    ))}
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                      <Button
-                        className="h-9 w-full lg:h-11"
-                        disabled={!canSaveMarioKartReservation}
-                        size="ifta"
-                        onClick={async () => {
-                          const result = await onSetMarioKartLobbyReservation(
-                            selectedMarioKartReservationIds,
-                          );
-                          if (result?.status !== "changed" && result?.status !== "unchanged") return;
-                          setMarioKartReservationDraft(["", "", "", ""]);
-                          setIsEditingMarioKartReservation(false);
-                          toast.success(t("swiss.marioKartFixLobbySaved"));
-                        }}
-                      >
-                        <Pin className="size-4" />
-                        {t("swiss.marioKartFixLobbyAction")}
-                      </Button>
-                      {isEditingMarioKartReservation && (
-                        <Button
-                          className="w-full"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setMarioKartReservationDraft(["", "", "", ""]);
-                            setIsEditingMarioKartReservation(false);
-                          }}
-                        >
-                          {t("common.cancel")}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <MarioKartReservationPanel
+              draft={marioKartReservationDraft}
+              tournament={tournament}
+              onSetMarioKartLobbyReservation={onSetMarioKartLobbyReservation}
+            />
           )}
           {displayedRounds.length > 0 ? (
             displayedRounds.map((round, index) => {
@@ -521,24 +848,7 @@ export function TournamentPairingsWorkflow({
                 : round.pairings;
               const correctionInspection =
                 correctionDraft && marioKartPairing
-                  ? inspectTournament({
-                      ...tournament,
-                      rounds: tournament.rounds.map((entry) =>
-                        entry.roundNumber === round.roundNumber
-                          ? {
-                              ...entry,
-                              pairings: entry.pairings.map((pairing) =>
-                                pairing.id === marioKartPairing.id
-                                  ? {
-                                      ...pairing,
-                                      marioKartRacers: correctionDraft.racers,
-                                    }
-                                  : pairing,
-                              ),
-                            }
-                          : entry,
-                      ),
-                    })
+                  ? (marioKartCorrectionInspections.get(round) ?? null)
                   : inspection;
               const correctionIsValid =
                 !correctionDraft ||
@@ -848,256 +1158,15 @@ export function TournamentPairingsWorkflow({
                       {isEditable &&
                         draftRound &&
                         tournament.format !== "marioKart" && (
-                          <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
-                            {tournament.format === "handAndBrain" && (
-                              <div className="grid gap-2">
-                                <div className="type-action flex items-center gap-2">
-                                  <Brain className="size-4 text-primary" />
-                                  {t("swiss.handAndBrainFixBoard")}
-                                </div>
-                                <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
-                                  <div className="grid gap-2 sm:grid-cols-2 lg:contents">
-                                    <Select
-                                      value={manualWhiteBrain}
-                                      onValueChange={setManualWhiteBrain}
-                                    >
-                                      <IftaSelectTrigger
-                                        aria-label={t("swiss.whiteBrain")}
-                                        className={singleLineSelectTriggerClass}
-                                        label={roleLabel(
-                                          <Brain className="size-3 shrink-0 text-primary" />,
-                                          t("swiss.whiteBrain"),
-                                        )}
-                                      >
-                                        <SelectValue
-                                          placeholder={t("swiss.result.open")}
-                                        />
-                                      </IftaSelectTrigger>
-                                      <SelectContent>
-                                        {handBrainOptionFor(
-                                          manualWhiteBrain,
-                                        ).map((player) => (
-                                          <SelectItem
-                                            key={player.id}
-                                            value={player.id}
-                                          >
-                                            {player.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Select
-                                      value={manualWhiteHand}
-                                      onValueChange={setManualWhiteHand}
-                                    >
-                                      <IftaSelectTrigger
-                                        aria-label={t("swiss.whiteHand")}
-                                        className={singleLineSelectTriggerClass}
-                                        label={roleLabel(
-                                          <Hand className="size-3 shrink-0 text-primary" />,
-                                          t("swiss.whiteHand"),
-                                        )}
-                                      >
-                                        <SelectValue
-                                          placeholder={t("swiss.result.open")}
-                                        />
-                                      </IftaSelectTrigger>
-                                      <SelectContent>
-                                        {handBrainOptionFor(
-                                          manualWhiteHand,
-                                        ).map((player) => (
-                                          <SelectItem
-                                            key={player.id}
-                                            value={player.id}
-                                          >
-                                            {player.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="grid gap-2 sm:grid-cols-2 lg:contents">
-                                    <Select
-                                      value={manualBlackBrain}
-                                      onValueChange={setManualBlackBrain}
-                                    >
-                                      <IftaSelectTrigger
-                                        aria-label={t("swiss.blackBrain")}
-                                        className={singleLineSelectTriggerClass}
-                                        label={roleLabel(
-                                          <Brain className="size-3 shrink-0 text-primary" />,
-                                          t("swiss.blackBrain"),
-                                        )}
-                                      >
-                                        <SelectValue
-                                          placeholder={t("swiss.result.open")}
-                                        />
-                                      </IftaSelectTrigger>
-                                      <SelectContent>
-                                        {handBrainOptionFor(
-                                          manualBlackBrain,
-                                        ).map((player) => (
-                                          <SelectItem
-                                            key={player.id}
-                                            value={player.id}
-                                          >
-                                            {player.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Select
-                                      value={manualBlackHand}
-                                      onValueChange={setManualBlackHand}
-                                    >
-                                      <IftaSelectTrigger
-                                        aria-label={t("swiss.blackHand")}
-                                        className={singleLineSelectTriggerClass}
-                                        label={roleLabel(
-                                          <Hand className="size-3 shrink-0 text-primary" />,
-                                          t("swiss.blackHand"),
-                                        )}
-                                      >
-                                        <SelectValue
-                                          placeholder={t("swiss.result.open")}
-                                        />
-                                      </IftaSelectTrigger>
-                                      <SelectContent>
-                                        {handBrainOptionFor(
-                                          manualBlackHand,
-                                        ).map((player) => (
-                                          <SelectItem
-                                            key={player.id}
-                                            value={player.id}
-                                          >
-                                            {player.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <Button
-                                    className="h-9 w-full lg:h-11"
-                                    size="ifta"
-                                    disabled={!canAddManualHandBrainPairing}
-                                    onClick={async () => {
-                                      if (!canAddManualHandBrainPairing) {
-                                        return;
-                                      }
-
-                                      const result = await onAddManualHandBrainPairing(
-                                        draftRound.roundNumber,
-                                        {
-                                          white: {
-                                            brainPlayerId: manualWhiteBrain,
-                                            handPlayerId: manualWhiteHand,
-                                          },
-                                          black: {
-                                            brainPlayerId: manualBlackBrain,
-                                            handPlayerId: manualBlackHand,
-                                          },
-                                        },
-                                      );
-                                      if (result?.status !== "changed") return;
-                                      setManualWhiteBrain("");
-                                      setManualWhiteHand("");
-                                      setManualBlackBrain("");
-                                      setManualBlackHand("");
-                                      toast.success(
-                                        t("swiss.handAndBrainFixed"),
-                                      );
-                                    }}
-                                  >
-                                    <Pin className="size-4" />
-                                    {t("swiss.handAndBrainFix")}
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                            <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
-                              <Select
-                                value={manualWhite}
-                                onValueChange={setManualWhite}
-                              >
-                                <IftaSelectTrigger
-                                  aria-label={t("swiss.white")}
-                                  className={singleLineSelectTriggerClass}
-                                  containerClassName="lg:col-span-2"
-                                  label={roleLabel(
-                                    <ChessKing className="size-3 shrink-0 text-primary" />,
-                                    t("swiss.white"),
-                                  )}
-                                >
-                                  <SelectValue
-                                    placeholder={t("swiss.result.open")}
-                                  />
-                                </IftaSelectTrigger>
-                                <SelectContent>
-                                  {manualWhiteOptions.map((player) => (
-                                    <SelectItem
-                                      key={player.id}
-                                      value={player.id}
-                                    >
-                                      {player.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Select
-                                value={manualBlack}
-                                onValueChange={setManualBlack}
-                              >
-                                <IftaSelectTrigger
-                                  aria-label={t("swiss.black")}
-                                  className={singleLineSelectTriggerClass}
-                                  containerClassName="lg:col-span-2"
-                                  label={roleLabel(
-                                    <ChessKing className="size-3 shrink-0 text-primary" />,
-                                    t("swiss.black"),
-                                  )}
-                                >
-                                  <SelectValue
-                                    placeholder={t("swiss.result.open")}
-                                  />
-                                </IftaSelectTrigger>
-                                <SelectContent>
-                                  {manualBlackOptions.map((player) => (
-                                    <SelectItem
-                                      key={player.id}
-                                      value={player.id}
-                                    >
-                                      {player.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                className="h-9 w-full lg:h-11"
-                                size="ifta"
-                                disabled={!canAddManualPairing}
-                                onClick={async () => {
-                                  if (!canAddManualPairing) {
-                                    return;
-                                  }
-
-                                  const result = await onAddManualPairing(
-                                    draftRound.roundNumber,
-                                    manualWhite,
-                                    manualBlack,
-                                  );
-                                  if (result?.status !== "changed") return;
-                                  setManualWhite("");
-                                  setManualBlack("");
-                                  toast.success(t("swiss.manualPairingFixed"));
-                                }}
-                              >
-                                <Pin className="size-4" />
-                                {tournament.format === "handAndBrain"
-                                  ? t("swiss.singleGameFix")
-                                  : t("swiss.fix")}
-                              </Button>
-                            </div>
-                          </div>
+                          <ManualPairingForm
+                            draft={manualPairingDraft}
+                            draftRound={draftRound}
+                            tournament={tournament}
+                            onAddManualHandBrainPairing={
+                              onAddManualHandBrainPairing
+                            }
+                            onAddManualPairing={onAddManualPairing}
+                          />
                         )}
                     </CardContent>
                   </Card>

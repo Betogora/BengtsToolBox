@@ -1,6 +1,6 @@
-import type { GameResult, Pairing, StandingRoundCell, StandingRow, Tournament } from '@/apps/swiss-tournaments/types'
-import { createMarioKartStandingRows, getMarioKartRacers as marioKartRacers, getMarioKartScoringRacers as marioKartScoringRacers, getMarioKartScoringPlacement } from '@/apps/swiss-tournaments/marioKart'
-import { averageOpponentPoints, countMarioKartEvents, getSummaryBeforeRound, hasCompleteMarioKartResult, opponentIdsForPlayer, pairingKind, playerColor, playerRole, resultPoints, roundRobinRoundsForPlayerCount, scoringPairingPlayerIds } from './pairingSupport'
+import type { GameResult, Pairing, Player, Round, StandingRoundCell, StandingRow, Tournament } from '@/apps/swiss-tournaments/types'
+import { createMarioKartStandingRows, getMarioKartRacers, getMarioKartScoringRacers, getMarioKartScoringPlacement, isMarioKartPairingComplete } from './marioKartFormat'
+import { averageOpponentPoints, countMarioKartEventsByPlayer, getSummaryBeforeRound, opponentIdsForPlayer, pairingKind, playerColor, playerRole, resultPoints, roundRobinRoundsForPlayerCount, scoringPairingPlayerIds } from './pairingSupport'
 import { getRoundRobinEligiblePlayers } from './roundRobinFormat'
 
 export function getRoundDisplayLabel(tournament: Tournament, roundNumber: number) {
@@ -37,7 +37,7 @@ function getDirectScore(tournament: Tournament, playerId: string, tiedIds: strin
       if (
         pairing.isBye ||
         (pairingKind(pairing) === 'marioKart'
-          ? !hasCompleteMarioKartResult(pairing)
+          ? !isMarioKartPairingComplete(pairing)
           : !pairing.result)
       ) {
         return
@@ -97,13 +97,53 @@ function resultTitle(result?: GameResult) {
   return formatResult(result)
 }
 
-function createOpenRoundCell(tournament: Tournament, roundNumber: number): StandingRoundCell {
+type RoundHistoryContext = {
+  tournament: Tournament
+  playerById: Map<string, Player>
+  roundByNumber: Map<number, Round>
+  visibleRoundCount: number
+  roundDisplayLabel: (roundNumber: number) => string
+}
+
+function createRoundHistoryContext(tournament: Tournament): RoundHistoryContext {
+  const roundByNumber = new Map<number, Round>()
+  const displayLabelByRoundNumber = new Map<number, string>()
+
+  tournament.rounds.forEach((round) => {
+    if (!roundByNumber.has(round.roundNumber)) {
+      roundByNumber.set(round.roundNumber, round)
+    }
+  })
+
+  return {
+    tournament,
+    playerById: new Map(tournament.players.map((player) => [player.id, player])),
+    roundByNumber,
+    visibleRoundCount: Math.max(
+      0,
+      ...tournament.rounds.map((round) => round.roundNumber),
+    ),
+    roundDisplayLabel: (roundNumber) => {
+      const cached = displayLabelByRoundNumber.get(roundNumber)
+
+      if (cached !== undefined) {
+        return cached
+      }
+
+      const label = getRoundDisplayLabel(tournament, roundNumber)
+      displayLabelByRoundNumber.set(roundNumber, label)
+      return label
+    },
+  }
+}
+
+function createOpenRoundCell(context: RoundHistoryContext, roundNumber: number): StandingRoundCell {
   return {
     roundNumber,
     label: '-',
     title:
-      tournament.format === 'marioKart'
-        ? `${getRoundDisplayLabel(tournament, roundNumber)}: keine Lobby`
+      context.tournament.format === 'marioKart'
+        ? `${context.roundDisplayLabel(roundNumber)}: keine Lobby`
         : `Runde ${roundNumber}: keine Partie`,
     color: '-',
     outcome: 'open',
@@ -111,33 +151,29 @@ function createOpenRoundCell(tournament: Tournament, roundNumber: number): Stand
 }
 
 function createRoundHistory(
-  tournament: Tournament,
+  context: RoundHistoryContext,
   row: StandingRow,
   rankByPlayerId: Map<string, number>,
 ) {
-  const playerById = new Map(tournament.players.map((player) => [player.id, player]))
-  const visibleRoundCount = Math.max(
-    0,
-    ...tournament.rounds.map((round) => round.roundNumber),
-  )
+  const { playerById } = context
 
-  return Array.from({ length: visibleRoundCount }, (_, index) => {
+  return Array.from({ length: context.visibleRoundCount }, (_, index) => {
     const roundNumber = index + 1
-    const round = tournament.rounds.find((entry) => entry.roundNumber === roundNumber)
+    const round = context.roundByNumber.get(roundNumber)
 
     if (!round) {
-      return createOpenRoundCell(tournament, roundNumber)
+      return createOpenRoundCell(context, roundNumber)
     }
 
     const pairing = round.pairings.find(
       (entry) =>
         scoringPairingPlayerIds(entry).includes(row.playerId) ||
         (entry.kind === 'marioKart' &&
-          marioKartRacers(entry).some((racer) => racer.playerId === row.playerId)),
+          getMarioKartRacers(entry).some((racer) => racer.playerId === row.playerId)),
     )
 
     if (!pairing) {
-      return createOpenRoundCell(tournament, roundNumber)
+      return createOpenRoundCell(context, roundNumber)
     }
 
     if (pairing.isBye && pairing.byePlayerId === row.playerId) {
@@ -153,8 +189,8 @@ function createRoundHistory(
     }
 
     if (pairing.kind === 'marioKart') {
-      const scoringRacers = marioKartScoringRacers(pairing)
-      const ownRacer = marioKartRacers(pairing).find(
+      const scoringRacers = getMarioKartScoringRacers(pairing)
+      const ownRacer = getMarioKartRacers(pairing).find(
         (racer) => racer.playerId === row.playerId,
       )
       const isScoringRacer =
@@ -180,7 +216,7 @@ function createRoundHistory(
           : isScoringRacer
             ? 'offen'
             : 'ohne Wertung'
-      const lobbyLabel = getRoundDisplayLabel(tournament, roundNumber)
+      const lobbyLabel = context.roundDisplayLabel(roundNumber)
       const shortLobbyLabel =
         pairing.marioKartCycleNumber && pairing.marioKartCycleLobbyNumber
           ? `${pairing.marioKartCycleNumber}.${pairing.marioKartCycleLobbyNumber}`
@@ -207,7 +243,7 @@ function createRoundHistory(
     const opponentIds = opponentIdsForPlayer(pairing, row.playerId)
 
     if (opponentIds.length === 0 || color === '-') {
-      return createOpenRoundCell(tournament, roundNumber)
+      return createOpenRoundCell(context, roundNumber)
     }
 
     const opponentRanks = opponentIds.map((opponentId) => rankByPlayerId.get(opponentId) ?? '?')
@@ -248,14 +284,16 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
     const rankByPlayerId = new Map(
       rankedRows.map((row) => [row.playerId, row.rank] as const),
     )
+    const historyContext = createRoundHistoryContext(tournament)
 
     return rankedRows.map((row) => ({
       ...row,
-      roundHistory: createRoundHistory(tournament, row, rankByPlayerId),
+      roundHistory: createRoundHistory(historyContext, row, rankByPlayerId),
     }))
   }
 
   const summaries = getSummaryBeforeRound(tournament)
+  const marioKartEventsByPlayerId = countMarioKartEventsByPlayer(tournament)
   const rows = tournament.players.map((player) => {
     const summary = summaries[player.id]
     const buchholz = summary.opponentGroups.reduce(
@@ -296,7 +334,7 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
       marioKartExtraRides: summary.marioKartExtraRides,
       marioKartPhysicalRaces: summary.marioKartPhysicalRaces,
       marioKartScoringRaces: summary.marioKartScoringRaces,
-      marioKartEvents: countMarioKartEvents(tournament, player.id),
+      marioKartEvents: marioKartEventsByPlayerId.get(player.id) ?? 0,
       status: player.status,
     } satisfies StandingRow
   })
@@ -331,10 +369,11 @@ export function recalculateStandings(tournament: Tournament): StandingRow[] {
   const rankByPlayerId = new Map(
     rankedRows.map((row) => [row.playerId, row.rank] as const),
   )
+  const historyContext = createRoundHistoryContext(tournament)
 
   return rankedRows.map((row) => ({
     ...row,
-    roundHistory: createRoundHistory(tournament, row, rankByPlayerId),
+    roundHistory: createRoundHistory(historyContext, row, rankByPlayerId),
   }))
 }
 

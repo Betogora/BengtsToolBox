@@ -13,7 +13,7 @@ import type {
   TrainingContext,
 } from '@/apps/triathlon-tracker/types'
 import { defaultTrainingContexts } from '@/apps/triathlon-tracker/types'
-import { isInRollingMonthWindow } from './dates'
+import { getRollingMonthWindowStart, isInLocalDateWindow } from './dates'
 
 type DistanceSample = {
   training: ActualTraining
@@ -215,6 +215,10 @@ function eligibleDistanceSamples(
   context: TrainingContext,
   asOfLocalDate: string,
 ): DistanceSample[] {
+  const windowStart = getRollingMonthWindowStart(
+    asOfLocalDate,
+    performanceWindowMonths,
+  )
   return trainings.flatMap((training) => {
     if (
       !isComparableContinuousTraining(
@@ -224,11 +228,7 @@ function eligibleDistanceSamples(
         asOfLocalDate,
         'distance',
       ) ||
-      !isInRollingMonthWindow(
-        training.localDate,
-        asOfLocalDate,
-        performanceWindowMonths,
-      ) ||
+      !isInLocalDateWindow(training.localDate, windowStart, asOfLocalDate) ||
       training.durationSeconds === null ||
       !Number.isFinite(training.durationSeconds) ||
       training.durationSeconds <= 0 ||
@@ -629,6 +629,10 @@ function eligiblePowerSamples(
   context: CyclingContext,
   asOfLocalDate: string,
 ): PowerSample[] {
+  const windowStart = getRollingMonthWindowStart(
+    asOfLocalDate,
+    performanceWindowMonths,
+  )
   return trainings.flatMap((training) => {
     if (
       !isComparableContinuousTraining(
@@ -638,11 +642,7 @@ function eligiblePowerSamples(
         asOfLocalDate,
         'power',
       ) ||
-      !isInRollingMonthWindow(
-        training.localDate,
-        asOfLocalDate,
-        performanceWindowMonths,
-      ) ||
+      !isInLocalDateWindow(training.localDate, windowStart, asOfLocalDate) ||
       training.durationSeconds === null ||
       !Number.isFinite(training.durationSeconds) ||
       training.durationSeconds <= 0 ||

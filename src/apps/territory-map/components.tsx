@@ -6,15 +6,18 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ReactNode,
   type RefObject,
 } from 'react'
 
 import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import { unclaimedValue } from '@/apps/territory-map/mapConfig'
+import { getLocalDateKey } from '@/apps/territory-map/eventDates'
 import {
   getAdaptiveStripeWidth,
   getTerritoryClaimColor,
-  getTerritoryClaimOwners,
+  getTerritoryOwnerAppearance,
+  getTerritoryPatternId,
 } from '@/apps/territory-map/ownershipPattern'
 import type {
   Territory,
@@ -28,6 +31,7 @@ import type { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { Button } from '@/components/ui/button'
+import { CardHeader, CardTitle } from '@/components/ui/card'
 import { DatePicker } from '@/components/ui/DatePicker'
 import {
   Dialog,
@@ -36,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import {
   Select,
@@ -53,20 +58,6 @@ import {
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 
-function toDateInputValue(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-
-  const year = String(date.getFullYear())
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
 function fromDateInputValue(value: string, fallback: string) {
   if (!value) {
     return fallback
@@ -78,15 +69,45 @@ function fromDateInputValue(value: string, fallback: string) {
   return Number.isNaN(date.getTime()) ? fallback : date.toISOString()
 }
 
-function getEventDateKey(event: TerritoryVisitEvent) {
-  return toDateInputValue(event.createdAtClientIso)
+function getEventTable(events: TerritoryVisitEvent[]) {
+  return events
+    .map((event) => ({ dateKey: getLocalDateKey(event.createdAtClientIso), event }))
+    .sort(
+      (left, right) =>
+        right.dateKey.localeCompare(left.dateKey) ||
+        right.event.position - left.event.position,
+    )
+    .map(({ event }) => event)
 }
 
-function getEventTable(events: TerritoryVisitEvent[]) {
-  return [...events].sort(
-    (left, right) =>
-      getEventDateKey(right).localeCompare(getEventDateKey(left)) ||
-      right.position - left.position,
+export function CollapsibleCardHeader({
+  icon,
+  isOpen,
+  onToggle,
+  title,
+}: {
+  icon: ReactNode
+  isOpen: boolean
+  onToggle: () => void
+  title: string
+}) {
+  return (
+    <CardHeader className="p-4 sm:p-6">
+      <button
+        aria-expanded={isOpen}
+        className="flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-md px-0 py-1 text-left outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+        type="button"
+        onClick={onToggle}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 text-primary">{icon}</span>
+          <CardTitle className="min-w-0 truncate text-base">
+            {title}
+          </CardTitle>
+        </span>
+        <DisclosureIndicator isOpen={isOpen} />
+      </button>
+    </CardHeader>
   )
 }
 
@@ -194,26 +215,22 @@ export const TerritoryShape = memo(function TerritoryShape({
   onSelect: (territoryId: string) => void
   players: TerritoryPlayer[]
   territory: Territory
-  zoom: number
+  zoom?: number
 }) {
   const { t } = useI18n()
   const pathRef = useRef<SVGPathElement>(null)
-  const owners = getTerritoryClaimOwners(claim)
-  const patternId = `territory-shared-${territory.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`
-  const ownerColor =
-    owners.length > 1
-      ? `url(#${patternId})`
-      : owners.length === 1
-        ? getTerritoryClaimColor(
-            owners[0].playerId,
-            owners[0].playerColor,
-            players,
-          )
-        : 'url(#territory-unclaimed)'
-  const ownerLabel =
-    owners.length > 0
-      ? owners.map((owner) => owner.playerName).join(', ')
-      : t('territory.unvisited')
+  const patternId = getTerritoryPatternId('territory-shared', territory.id)
+  const {
+    fill: ownerColor,
+    label: ownerLabel,
+    owners,
+  } = getTerritoryOwnerAppearance({
+    claim,
+    patternId,
+    players,
+    unclaimedFill: 'url(#territory-unclaimed)',
+    unvisitedLabel: t('territory.unvisited'),
+  })
 
   return (
     <>
@@ -367,7 +384,7 @@ function TerritoryEventDate({
   onUpdateEvent: ReturnType<typeof useTerritoryMap>['updateEvent']
 }) {
   const { t } = useI18n()
-  const originalDate = toDateInputValue(event.createdAtClientIso)
+  const originalDate = getLocalDateKey(event.createdAtClientIso)
   const [draft, setDraft] = useState(originalDate)
   const [previousDate, setPreviousDate] = useState(originalDate)
   if (previousDate !== originalDate) {

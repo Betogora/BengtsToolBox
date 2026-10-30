@@ -1,4 +1,9 @@
 import type { IntervalSegment, RunIntensity } from '@/apps/triathlon-tracker/types'
+import {
+  formatTrainingDurationInput,
+  optionalNumber,
+  parseTrainingDuration,
+} from './units'
 
 /**
  * Running intervals alternate strictly: a session starts easy, every odd
@@ -252,4 +257,68 @@ export function intervalTotals(
     durationSeconds: complete(segments.map((segment) => segment.durationSeconds)),
     distanceMeters: complete(segments.map((segment) => segment.distanceMeters)),
   }
+}
+
+export type IntervalDraft = {
+  id: string
+  kind: IntervalSegment['kind']
+  durationMinutes: string
+  distanceMeters: string
+  /** km/h; running phases derive their distance from it. */
+  speed: string
+  averageHeartRateBpm: string
+  averagePowerWatts: string
+  endHeartRateBpm: string
+}
+
+const optionalText = (value: number | null | undefined) =>
+  value == null ? '' : `${value}`
+
+export function intervalToDraft(interval: IntervalSegment): IntervalDraft {
+  return {
+    id: interval.id,
+    kind: interval.kind,
+    durationMinutes: formatTrainingDurationInput(interval.durationSeconds),
+    distanceMeters: optionalText(interval.distanceMeters),
+    speed: optionalText(intervalSpeedKilometersPerHour(interval)),
+    averageHeartRateBpm: optionalText(interval.averageHeartRateBpm),
+    averagePowerWatts: optionalText(interval.averagePowerWatts),
+    endHeartRateBpm: optionalText(interval.endHeartRateBpm),
+  }
+}
+
+/** A speed of 0 km/h stands for a standing rest. */
+export function parsePhaseSpeed(value: string) {
+  const speed = optionalNumber(value)
+  return speed !== null && speed >= 0 ? speed : null
+}
+
+/** An empty speed repeats the one of the previous phase of the same kind. */
+export function inheritedPhaseSpeeds(phases: readonly IntervalDraft[]) {
+  const speeds: (number | null)[] = []
+  phases.forEach((phase, index) => {
+    speeds.push(
+      phase.speed.trim() === ''
+        ? (speeds[index - 2] ?? null)
+        : parsePhaseSpeed(phase.speed),
+    )
+  })
+  return speeds
+}
+
+export function runIntervalSegments(phases: readonly IntervalDraft[]): IntervalSegment[] {
+  const speeds = inheritedPhaseSpeeds(phases)
+  return phases.map((phase, index) => {
+    const durationSeconds = parseTrainingDuration(phase.durationMinutes)
+    return {
+      id: phase.id,
+      position: index + 1,
+      kind: intervalKindAt(index),
+      durationSeconds,
+      distanceMeters: intervalDistanceMeters(durationSeconds, speeds[index]),
+      averageHeartRateBpm: optionalNumber(phase.averageHeartRateBpm),
+      averagePowerWatts: optionalNumber(phase.averagePowerWatts),
+      endHeartRateBpm: optionalNumber(phase.endHeartRateBpm),
+    }
+  })
 }

@@ -77,6 +77,7 @@ export function useFirestoreDoc<T extends DocumentData>(
     (source: SyncErrorSource, error: SyncError | null) => {
       setErrors((current) => {
         if (error) return { ...current, [source]: error }
+        if (!(source in current)) return current
 
         const next = { ...current }
         delete next[source]

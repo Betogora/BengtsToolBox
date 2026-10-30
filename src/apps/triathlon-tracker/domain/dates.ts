@@ -59,20 +59,44 @@ export function getLocalDateRange(from: string, to: string): string[] {
   return dates
 }
 
+/** First day of the rolling window ending on `asOfLocalDate`; null for invalid input. */
+export function getRollingMonthWindowStart(
+  asOfLocalDate: string,
+  months = 12,
+): string | null {
+  if (
+    !isValidLocalDate(asOfLocalDate) ||
+    !Number.isInteger(months) ||
+    months <= 0
+  ) {
+    return null
+  }
+
+  return addMonthsToLocalDate(asOfLocalDate, -months)
+}
+
+/** Window check against a precomputed `getRollingMonthWindowStart` result. */
+export function isInLocalDateWindow(
+  localDate: string,
+  windowStart: string | null,
+  windowEnd: string,
+): boolean {
+  return (
+    windowStart !== null &&
+    isValidLocalDate(localDate) &&
+    localDate >= windowStart &&
+    localDate <= windowEnd
+  )
+}
+
 export function isInRollingMonthWindow(
   localDate: string,
   asOfLocalDate: string,
   months = 12,
 ): boolean {
-  if (
-    !isValidLocalDate(localDate) ||
-    !isValidLocalDate(asOfLocalDate) ||
-    !Number.isInteger(months) ||
-    months <= 0
-  ) {
-    return false
-  }
-
-  const windowStart = addMonthsToLocalDate(asOfLocalDate, -months)
-  return localDate >= windowStart && localDate <= asOfLocalDate
+  return isInLocalDateWindow(
+    localDate,
+    getRollingMonthWindowStart(asOfLocalDate, months),
+    asOfLocalDate,
+  )
 }

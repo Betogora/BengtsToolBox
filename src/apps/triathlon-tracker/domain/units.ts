@@ -253,3 +253,28 @@ export function updatePlanMetrics(
   }
   return next
 }
+
+export function minutesToTime(minutes: number | null) {
+  if (minutes === null) return ''
+  return (
+    `${Math.floor(minutes / 60)}`.padStart(2, '0') +
+    ':' +
+    `${minutes % 60}`.padStart(2, '0')
+  )
+}
+
+export function timeToMinutes(value: string) {
+  if (!value) return null
+  const [hours, minutes] = value.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
+export function optionalNumber(value: string) {
+  if (value.trim() === '') return null
+  const parsed = Number(value.replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+export function inclineToInput(inclinePercent: number | null | undefined) {
+  return inclinePercent == null ? '' : `${inclinePercent}`
+}
