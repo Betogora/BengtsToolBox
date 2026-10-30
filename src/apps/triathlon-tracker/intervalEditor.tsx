@@ -1,9 +1,10 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { KeyboardEvent } from 'react'
 import { useState } from 'react'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
 import {
@@ -97,21 +98,18 @@ export function IntervalEditor({
                 <Badge variant="outline">
                   {t('triathlon.intervals.number', { number: index + 1 })}
                 </Badge>
-                <Button
+                <DeleteButton
+                  tone="quiet"
                   aria-label={t('triathlon.intervals.remove', {
                     number: index + 1,
                   })}
-                  size="icon"
                   type="button"
-                  variant="ghost"
                   onClick={() =>
                     onChange(
                       intervals.filter((entry) => entry.id !== interval.id),
                     )
                   }
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
+                />
               </div>
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                 <Select
@@ -410,18 +408,15 @@ export function RunIntervalTable({
             {phaseInput(phase, index, 'speed', t('triathlon.form.averageSpeed'), inherited)}
             {phaseInput(phase, index, 'endHeartRateBpm', t('triathlon.intervals.endHeartRate'))}
             {removable ? (
-              <Button
+              <DeleteButton
+                tone="quiet"
                 aria-label={t('triathlon.intervals.removePhase', {
                   phase: phaseLabel(index),
                 })}
                 className="size-7 sm:size-9"
-                size="icon"
                 type="button"
-                variant="ghost"
                 onClick={() => onChange(removeIntervalPhase(phases, index))}
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
+              />
             ) : (
               <span />
             )}
