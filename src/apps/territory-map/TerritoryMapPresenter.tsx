@@ -62,7 +62,7 @@ function PresenterTerritoryShape({
         className="territory-shape"
         fill={ownerColor}
         opacity={claim ? 0.94 : 1}
-        stroke="var(--background)"
+        stroke="var(--map-territory-stroke)"
         strokeWidth={0.75}
         vectorEffect="non-scaling-stroke"
       >

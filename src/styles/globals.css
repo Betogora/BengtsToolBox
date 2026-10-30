@@ -134,6 +134,7 @@
   --secondary-hover: #eceef1;
   --selection-track: #e9eef1;
   --selection-indicator-shadow: 0 2px 6px rgb(27 45 59 / 7%);
+  --map-territory-stroke: #b3bbc5;
   --podium-1: rgb(246 227 165 / 65%);
   --podium-2: rgb(230 232 235 / 70%);
   --podium-3: rgb(232 192 160 / 55%);
@@ -182,6 +183,7 @@
     --ring: #7ab8e3;
     --selection-track: #0b1016;
     --selection-indicator-shadow: 0 2px 6px rgb(0 0 0 / 45%);
+    --map-territory-stroke: var(--background);
     --podium-1: rgb(201 150 26 / 20%);
     --podium-2: rgb(170 176 184 / 14%);
     --podium-3: rgb(184 121 79 / 20%);

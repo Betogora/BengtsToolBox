@@ -259,7 +259,7 @@ export const TerritoryShape = memo(function TerritoryShape({
         data-territory-id={territory.id}
         fill={ownerColor}
         opacity={claim ? 0.94 : 1}
-        stroke={isSelected ? 'var(--foreground)' : 'var(--background)'}
+        stroke={isSelected ? 'var(--foreground)' : 'var(--map-territory-stroke)'}
         strokeWidth={isSelected ? 2.2 : 0.75}
         vectorEffect="non-scaling-stroke"
         onKeyDown={(event) => {

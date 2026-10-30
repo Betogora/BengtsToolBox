@@ -318,7 +318,7 @@ export function TerritoryMapCanvas({
         <div className="flex min-w-0 items-center justify-between gap-2">
           <SegmentedControl
             aria-label={t('territory.map')}
-            className="h-10 min-w-0 flex-1 sm:h-9"
+            className="h-10 min-w-0 flex-1 sm:h-9 sm:[&>.selection-item]:min-h-0"
             value={mapId}
             onValueChange={(value) => handleMapChange(value as TerritoryMapId)}
             options={[
