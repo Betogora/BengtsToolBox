@@ -88,15 +88,3 @@ export function isInLocalDateWindow(
     localDate <= windowEnd
   )
 }
-
-export function isInRollingMonthWindow(
-  localDate: string,
-  asOfLocalDate: string,
-  months = 12,
-): boolean {
-  return isInLocalDateWindow(
-    localDate,
-    getRollingMonthWindowStart(asOfLocalDate, months),
-    asOfLocalDate,
-  )
-}

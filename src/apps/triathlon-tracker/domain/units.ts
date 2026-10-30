@@ -1,21 +1,5 @@
 import type { Discipline } from '@/apps/triathlon-tracker/types'
 
-export function kilometersToMeters(kilometers: number): number {
-  return kilometers * 1_000
-}
-
-export function metersToKilometers(meters: number): number {
-  return meters / 1_000
-}
-
-export function minutesToSeconds(minutes: number): number {
-  return minutes * 60
-}
-
-export function secondsToMinutes(seconds: number): number {
-  return seconds / 60
-}
-
 export function paceSecondsPerKilometer(
   durationSeconds: number,
   distanceMeters: number,

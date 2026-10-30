@@ -5,9 +5,10 @@ import {
   addMonthsToLocalDate,
   getCurrentLocalDate,
   getIsoWeekNumber,
+  getRollingMonthWindowStart,
   getWeekLocalDates,
   getWeekStartLocalDate,
-  isInRollingMonthWindow,
+  isInLocalDateWindow,
   isValidLocalDate,
 } from './dates'
 
@@ -39,9 +40,11 @@ describe('tracker calendar dates', () => {
   })
 
   it('defines a closed rolling twelve-month window without future data', () => {
-    expect(isInRollingMonthWindow('2025-08-22', '2026-08-22')).toBe(true)
-    expect(isInRollingMonthWindow('2025-08-21', '2026-08-22')).toBe(false)
-    expect(isInRollingMonthWindow('2026-08-23', '2026-08-22')).toBe(false)
+    const windowStart = getRollingMonthWindowStart('2026-08-22')
+
+    expect(isInLocalDateWindow('2025-08-22', windowStart, '2026-08-22')).toBe(true)
+    expect(isInLocalDateWindow('2025-08-21', windowStart, '2026-08-22')).toBe(false)
+    expect(isInLocalDateWindow('2026-08-23', windowStart, '2026-08-22')).toBe(false)
   })
 
   it.each([

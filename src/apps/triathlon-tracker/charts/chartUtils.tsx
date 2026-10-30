@@ -50,8 +50,8 @@ export const tickStyle = { fill: 'var(--muted-foreground)', fontSize: 11 }
 export const activityOpacity = 0.45
 export const secondaryOpacity = 0.55
 export const dimmedOpacity = 0.25
-export const halfDayMs = 43_200_000
-export const dayMs = 2 * halfDayMs
+const halfDayMs = 43_200_000
+const dayMs = 2 * halfDayMs
 
 export function canHover() {
   return (

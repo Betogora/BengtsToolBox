@@ -28,7 +28,7 @@ export type ProgressChartSegment = {
   value: number
 }
 
-export type ProgressChartSeries = {
+type ProgressChartSeries = {
   eventValues: {
     event: ProgressEvent
     time: number

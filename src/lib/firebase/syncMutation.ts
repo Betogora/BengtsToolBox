@@ -20,7 +20,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 // Returns `previous` (or its equal parts) when `next` has the same content, so
 // metadata-only snapshots and acknowledgements keep stable references.
-export function replaceEqualDeep<T>(previous: unknown, next: T): T {
+function replaceEqualDeep<T>(previous: unknown, next: T): T {
   if (Object.is(previous, next)) return previous as T
 
   if (Array.isArray(previous) && Array.isArray(next)) {
