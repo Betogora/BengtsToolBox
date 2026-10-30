@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
+import { dateTimeFormat } from '@/lib/i18n/formatters'
 
 /** Marks modelled values: * = estimate, ** = beyond measured distances. */
 export function EstimateMark({ extrapolated = false }: { extrapolated?: boolean }) {
@@ -105,7 +106,7 @@ export function PersonalBestsPanel({
       : `${(distance / 1000).toLocaleString(locale)} km`
   }
   const formattedDate = (date: string) =>
-    new Intl.DateTimeFormat(locale, {
+    dateTimeFormat(locale, {
       day: '2-digit',
       month: '2-digit',
       year: '2-digit',

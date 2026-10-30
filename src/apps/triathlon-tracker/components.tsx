@@ -64,6 +64,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
+import { numberFormat } from '@/lib/i18n/formatters'
 import {
   updatePlanMetrics,
   updateTrainingMetrics,
@@ -185,7 +186,7 @@ function RpeSelect({
 
 function formatDistance(meters: number | null, locale: string) {
   if (meters === null) return null
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(meters / 1000)} km`
+  return `${numberFormat(locale, { maximumFractionDigits: 2 }).format(meters / 1000)} km`
 }
 
 function getDisciplineLabel(

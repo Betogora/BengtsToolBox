@@ -14,6 +14,7 @@ import {
   type TranslationParams,
 } from '@/lib/i18n/context'
 import { dictionaryFor, isLanguageLoaded, loadLanguage } from '@/lib/i18n/dictionaries'
+import { dateTimeFormat, numberFormat } from '@/lib/i18n/formatters'
 import { localStore } from '@/lib/firebase/localStore'
 
 const defaultLanguage: Language = 'de'
@@ -128,13 +129,13 @@ export function LanguageProvider({ children }: PropsWithChildren) {
   const value = useMemo<I18nContextValue>(
     () => ({
       formatDateTime: (dateValue, options) =>
-        new Intl.DateTimeFormat(locale, options ?? defaultDateTimeOptions).format(
+        dateTimeFormat(locale, options ?? defaultDateTimeOptions).format(
           normalizeDate(dateValue),
         ),
       formatNumber: (numberValue, options) =>
-        new Intl.NumberFormat(locale, options).format(numberValue),
+        numberFormat(locale, options).format(numberValue),
       formatTime: (dateValue, options) =>
-        new Intl.DateTimeFormat(locale, options).format(normalizeDate(dateValue)),
+        dateTimeFormat(locale, options).format(normalizeDate(dateValue)),
       language,
       locale,
       setLanguage,
