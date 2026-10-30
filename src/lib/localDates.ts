@@ -30,13 +30,16 @@ function formatLocalDate(date: Date): string {
   ].join('-')
 }
 
+// Created once: pages call getCurrentLocalDate on every render.
+const berlinDateFormat = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'Europe/Berlin',
+  year: 'numeric',
+})
+
 export function getCurrentLocalDate(now = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: 'Europe/Berlin',
-    year: 'numeric',
-  }).formatToParts(now)
+  const parts = berlinDateFormat.formatToParts(now)
   const values = Object.fromEntries(
     parts.map((part) => [part.type, part.value]),
   )
