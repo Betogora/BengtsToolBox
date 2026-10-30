@@ -71,6 +71,29 @@ function hasFirebaseModule(chunk) {
   })
 }
 
+// Everything index.html loads before the first render: its entry chunk, the static
+// import closure and the CSS of those chunks. Lazy chunks stay outside.
+function initialAppOutputs(bundle, chunks) {
+  const entry = chunks.find(
+    (chunk) => chunk.isEntry && normalizePath(chunk.facadeModuleId ?? '').endsWith('/index.html'),
+  )
+  const chunkNames = new Set()
+  const visit = (fileName) => {
+    if (chunkNames.has(fileName) || !bundle[fileName]) return
+    chunkNames.add(fileName)
+    bundle[fileName].imports?.forEach(visit)
+  }
+
+  if (entry) visit(entry.fileName)
+  const cssNames = [...chunkNames].flatMap((fileName) => [
+    ...(bundle[fileName].viteMetadata?.importedCss ?? []),
+  ])
+
+  return [...new Set([...chunkNames, ...cssNames])]
+    .map((fileName) => bundle[fileName])
+    .filter(Boolean)
+}
+
 export function createBundleMetrics(bundle, toolchain = {}) {
   const outputs = Object.values(bundle)
   const chunks = outputs.filter((output) => output.type === 'chunk')
@@ -86,6 +109,7 @@ export function createBundleMetrics(bundle, toolchain = {}) {
     .filter((asset) => asset.fileName.endsWith('.css'))
     .forEach((asset) => addMetricOutput('entry:css', asset))
   chunks.filter(hasFirebaseModule).forEach((chunk) => addMetricOutput('firebase', chunk))
+  initialAppOutputs(bundle, chunks).forEach((output) => addMetricOutput('initial:app', output))
 
   chunks.forEach((chunk) => {
     const appId = appIdFromChunk(chunk)

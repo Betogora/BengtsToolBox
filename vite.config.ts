@@ -6,10 +6,11 @@ import path from 'path'
 import { defineConfig } from 'vite'
 
 import { bundleMetricsPlugin } from './scripts/bundleMetrics.mjs'
+import { questionCatalogPlugin } from './scripts/questionCatalogPlugin.mjs'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), bundleMetricsPlugin()],
+  plugins: [react(), tailwindcss(), questionCatalogPlugin(), bundleMetricsPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

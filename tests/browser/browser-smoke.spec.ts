@@ -28,6 +28,30 @@ test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
   await app.expectHealthy()
 })
 
+test('Navigationsmenü öffnet auch nach einem Klick vor dem Nachladen @desktop', async ({ app, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  let releaseMenu = () => {}
+  const menuReleased = new Promise<void>((resolve) => {
+    releaseMenu = resolve
+  })
+  await page.route(/\/src\/components\/layout\/NavigationMenu\.tsx/, async (route) => {
+    await menuReleased
+    await route.continue()
+  })
+  await app.open('/')
+
+  const navigation = page.getByRole('button', { name: 'Navigation' })
+  // Der Austausch des Platzhalters fällt zwischen Drücken und Loslassen.
+  await navigation.hover()
+  await page.mouse.down()
+  releaseMenu()
+  await expect(page.getByRole('menuitem', { name: 'App Hub' })).toBeVisible()
+  await page.mouse.up()
+  await page.keyboard.press('Escape')
+  await expect(navigation).toBeFocused()
+  await app.expectHealthy()
+})
+
 test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung responsiv', async ({
   app,
   page,

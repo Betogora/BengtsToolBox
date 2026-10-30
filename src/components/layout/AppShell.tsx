@@ -3,27 +3,14 @@ import {
   Menu,
   Target,
   UsersRound,
-  type LucideIcon,
 } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { ColorSchemeSelector } from '@/components/layout/ColorSchemeSelector'
-import { colorSchemeOptions } from '@/components/layout/colorSchemeOptions'
 import { LanguageSelector } from '@/components/layout/LanguageSelector'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import type { ColorScheme } from '@/lib/colorScheme'
-import { useColorScheme } from '@/lib/colorScheme'
-import type { TranslationKey } from '@/lib/i18n'
+import type { NavigationItem } from '@/components/layout/NavigationMenu'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -35,11 +22,13 @@ const LazyLobbyDeviceTracker = lazy(() =>
   })),
 )
 
-type NavigationItem = {
-  href: string
-  labelKey: TranslationKey
-  Icon: LucideIcon
-}
+// The dropdown (Radix menu and positioning) stays out of the startup bundle and loads right away.
+const navigationMenuImport = import('@/components/layout/NavigationMenu')
+const LazyNavigationMenu = lazy(() =>
+  navigationMenuImport.then(({ NavigationMenu }) => ({
+    default: NavigationMenu,
+  })),
+)
 
 const navigationItems: readonly NavigationItem[] = [
   {
@@ -61,7 +50,7 @@ const navigationItems: readonly NavigationItem[] = [
 
 export function AppShell() {
   const { t } = useI18n()
-  const { colorScheme, setColorScheme } = useColorScheme()
+  const [menuRequest, setMenuRequest] = useState({ open: false, focus: false })
   const location = useLocation()
   const usesDefaultLobby =
     location.pathname.startsWith('/apps/') || location.pathname === '/schlag-den-raab'
@@ -104,37 +93,39 @@ export function AppShell() {
             </nav>
 
             <div className="lg:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="icon" aria-label={t('nav.menu')}>
+              <Suspense
+                fallback={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    aria-label={t('nav.menu')}
+                    aria-haspopup="menu"
+                    aria-expanded={false}
+                    data-state="closed"
+                    // Same open gestures as the Radix trigger, recorded before the swap can split a click.
+                    onPointerDown={(event) => {
+                      if (event.button === 0 && !event.ctrlKey) setMenuRequest({ open: true, focus: true })
+                    }}
+                    onKeyDown={(event) => {
+                      if (['Enter', ' ', 'ArrowDown'].includes(event.key)) {
+                        event.preventDefault()
+                        setMenuRequest({ open: true, focus: true })
+                      }
+                    }}
+                    onFocus={() => setMenuRequest((request) => ({ ...request, focus: true }))}
+                    onBlur={() => setMenuRequest((request) => ({ ...request, focus: false }))}
+                  >
                     <Menu className="size-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {navigationItems.map(({ href, labelKey, Icon }) => (
-                    <DropdownMenuItem key={href} asChild>
-                      <Link to={href} className="gap-2">
-                        <Icon className="size-4" />
-                        {t(labelKey)}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator className="min-[360px]:hidden" />
-                  <DropdownMenuRadioGroup
-                    aria-label={t('colorScheme.selectorLabel')}
-                    className="min-[360px]:hidden"
-                    value={colorScheme}
-                    onValueChange={(value) => setColorScheme(value as ColorScheme)}
-                  >
-                    {colorSchemeOptions.map(({ Icon, labelKey, value }) => (
-                      <DropdownMenuRadioItem key={value} value={value} className="gap-2">
-                        <Icon className="size-4" />
-                        {t(labelKey)}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                }
+              >
+                <LazyNavigationMenu
+                  items={navigationItems}
+                  openOnMount={menuRequest.open}
+                  focusOnMount={menuRequest.focus}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

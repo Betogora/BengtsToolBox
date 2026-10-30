@@ -37,6 +37,14 @@ describe('bundle metrics', () => {
         fileName: 'assets/index-abc123.js',
         code: 'entry code',
         isEntry: true,
+        facadeModuleId: 'C:\\repo\\index.html',
+        imports: ['assets/react-abc123.js'],
+        dynamicImports: ['assets/swiss-tournaments-abc123.js'],
+      }),
+      'assets/react-abc123.js': chunk({
+        fileName: 'assets/react-abc123.js',
+        code: 'shared startup code',
+        viteMetadata: { importedCss: new Set(['assets/index-def456.css']) },
       }),
       'assets/index-def456.css': asset({
         fileName: 'assets/index-def456.css',
@@ -72,8 +80,13 @@ describe('bundle metrics', () => {
       'entry:css',
       'entry:js',
       'firebase',
+      'initial:app',
     ])
     expect(report.metrics['entry:js'].rawBytes).toBe(Buffer.byteLength('entry code'))
+    // Statische Importe und deren CSS zählen zum Erstladen, nachgeladene Apps nicht.
+    expect(report.metrics['initial:app'].rawBytes).toBe(
+      Buffer.byteLength('entry codeshared startup codeglobal css'),
+    )
     expect(report.metrics.firebase.rawBytes).toBe(Buffer.byteLength('firebase code'))
   })
 
