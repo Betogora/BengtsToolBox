@@ -22,10 +22,12 @@ import { cn } from '@/lib/utils'
 export function DashboardProgressChart({
   className,
   dataset,
+  emptyMessage,
   players,
 }: {
   className?: string
   dataset: ProgressDataset
+  emptyMessage?: string
   players: ProgressPlayer[]
 }) {
   const { t, locale } = useI18n()
@@ -67,7 +69,6 @@ export function DashboardProgressChart({
       ...getProgressChartLayout(chartModel, locale, {
         height: Math.max(height, 1),
         maxTimeTicks: isNarrow ? 5 : 8,
-        niceTicks: true,
         padding: getFittedChartPadding(width),
         width: Math.max(width, 1),
       }),
@@ -96,7 +97,7 @@ export function DashboardProgressChart({
     <div ref={containerRef} className={cn('relative min-w-0', className)}>
       {width > 0 && !chartData.hasValidEvents && (
         <EmptyState className="absolute inset-0 flex items-center justify-center p-4">
-          {t('progress.emptyEvents')}
+          {emptyMessage ?? t('progress.emptyEvents')}
         </EmptyState>
       )}
       {width > 0 && chartData.hasValidEvents && (
@@ -110,14 +111,6 @@ export function DashboardProgressChart({
           onClick={clearHighlightedPlayer}
           onPointerLeave={clearHoveredPlayer}
         >
-          <text
-            x={0}
-            y={12}
-            className="type-caption"
-            fill="var(--muted-foreground)"
-          >
-            {dataset.unit}
-          </text>
           {chartData.yTicks.map((tick) => (
             <g key={`y-${tick}`}>
               <line

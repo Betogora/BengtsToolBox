@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 
 import {
   addDaysToLocalDate,
@@ -38,6 +38,31 @@ type DatePickerProps = {
   compact?: boolean
 }
 
+// Formatierer sind teuer anzulegen; lange Listen mit vielen Datumsfeldern teilen sie sich.
+const formattersByLocale = new Map<string, Record<'month' | 'monthYear' | 'weekday' | 'weekdayShort' | 'day', Intl.DateTimeFormat>>()
+
+function getFormatters(locale: string) {
+  let formatters = formattersByLocale.get(locale)
+  if (!formatters) {
+    formatters = {
+      month: new Intl.DateTimeFormat(locale, { month: 'long' }),
+      monthYear: new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }),
+      weekday: new Intl.DateTimeFormat(locale, { weekday: 'long' }),
+      weekdayShort: new Intl.DateTimeFormat(locale, { weekday: 'short' }),
+      day: new Intl.DateTimeFormat(locale, {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      }),
+    }
+    formattersByLocale.set(locale, formatters)
+  }
+  return formatters
+}
+
+// Der Kalender wird erst beim Öffnen berechnet, nicht für jedes geschlossene Feld.
+function RenderWhenOpen({ children }: { children: () => ReactNode }) {
+  return children()
+}
+
 function parseDateInput(value: string) {
   const germanDate = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value)
   const canonical = germanDate
@@ -57,15 +82,7 @@ export function DatePicker({
   compact = false,
 }: DatePickerProps) {
   const { t, locale, language } = useI18n()
-  const formatters = useMemo(() => ({
-    month: new Intl.DateTimeFormat(locale, { month: 'long' }),
-    monthYear: new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }),
-    weekday: new Intl.DateTimeFormat(locale, { weekday: 'long' }),
-    weekdayShort: new Intl.DateTimeFormat(locale, { weekday: 'short' }),
-    day: new Intl.DateTimeFormat(locale, {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    }),
-  }), [locale])
+  const formatters = getFormatters(locale)
   const titleId = useId()
   const calendarRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -79,11 +96,6 @@ export function DatePicker({
       : value
   const [viewDate, setViewDate] = useState(initialDate)
   const [focusedDate, setFocusedDate] = useState(initialDate)
-  const monthStart = `${viewDate.slice(0, 7)}-01`
-  const gridStart = getWeekStartLocalDate(monthStart)
-  const dates = Array.from({ length: 42 }, (_, index) =>
-    addDaysToLocalDate(gridStart, index),
-  )
   const month = Number(viewDate.slice(5, 7))
   const year = Number(viewDate.slice(0, 4))
   const dateLabel = (date: string, formatter: Intl.DateTimeFormat) =>
@@ -277,153 +289,166 @@ export function DatePicker({
             ?.focus()
         }}
       >
-        <h3 id={titleId} className="sr-only">
-          {label}
-        </h3>
-        <p className="sr-only" aria-live="polite">
-          {dateLabel(viewDate, formatters.monthYear)}
-        </p>
-        <div className="mb-3 flex items-center gap-1">
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            aria-label={t('ui.picker.previousMonth')}
-            onClick={() => {
-              const date = addMonthsToLocalDate(viewDate, -1)
-              changeView(date)
-            }}
-          >
-            <ChevronLeft aria-hidden="true" />
-          </Button>
-          <Select
-            value={String(month)}
-            onValueChange={(next) => {
-              const date = addMonthsToLocalDate(viewDate, Number(next) - month)
-              changeView(date)
-            }}
-          >
-            <SelectTrigger
-              aria-label={t('ui.picker.month')}
-              className="min-w-0 flex-1 border-0 bg-transparent px-2 shadow-none"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, index) => (
-                <SelectItem key={index} value={String(index + 1)}>
-                  {dateLabel(
-                    `${year}-${String(index + 1).padStart(2, '0')}-01`,
-                    formatters.month,
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <input
-            key={year}
-            defaultValue={year}
-            aria-label={t('ui.picker.year')}
-            inputMode="numeric"
-            maxLength={4}
-            className="type-action h-9 w-14 rounded-md bg-muted text-center tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onBlur={(event) => {
-              const next = Number(event.currentTarget.value)
-              if (/^\d{4}$/.test(event.currentTarget.value) && next >= 1000) {
-                const date = `${next}-${String(month).padStart(2, '0')}-01`
-                changeView(date)
-              } else event.currentTarget.value = String(year)
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                event.currentTarget.blur()
-              }
-            }}
-          />
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            aria-label={t('ui.picker.nextMonth')}
-            onClick={() => {
-              const date = addMonthsToLocalDate(viewDate, 1)
-              changeView(date)
-            }}
-          >
-            <ChevronRight aria-hidden="true" />
-          </Button>
-        </div>
-        <div
-          ref={calendarRef}
-          role="grid"
-          aria-label={dateLabel(viewDate, formatters.monthYear)}
-        >
-          <div role="row" className="mb-1 grid grid-cols-7">
-            {dates.slice(0, 7).map((date) => (
-              <span
-                role="columnheader"
-                aria-label={dateLabel(date, formatters.weekday)}
-                key={date}
-                className="type-caption py-2 text-center text-muted-foreground"
-              >
-                {dateLabel(date, formatters.weekdayShort)}
-              </span>
-            ))}
-          </div>
-          {Array.from({ length: 6 }, (_, week) => (
-            <div role="row" key={week} className="grid grid-cols-7 gap-0.5">
-              {dates.slice(week * 7, week * 7 + 7).map((date) => (
-                <div role="gridcell" key={date} aria-selected={date === value}>
-                  <button
+        <RenderWhenOpen>
+          {() => {
+            const gridStart = getWeekStartLocalDate(`${viewDate.slice(0, 7)}-01`)
+            const dates = Array.from({ length: 42 }, (_, index) =>
+              addDaysToLocalDate(gridStart, index),
+            )
+
+            return (
+              <>
+                <h3 id={titleId} className="sr-only">
+                  {label}
+                </h3>
+                <p className="sr-only" aria-live="polite">
+                  {dateLabel(viewDate, formatters.monthYear)}
+                </p>
+                <div className="mb-3 flex items-center gap-1">
+                  <Button
                     type="button"
-                    data-picker-date={date}
-                    disabled={!isValidLocalDate(date)}
-                    tabIndex={date === focusedDate ? 0 : -1}
-                    aria-label={dateLabel(date, formatters.day)}
-                    aria-current={date === today ? 'date' : undefined}
-                    className={cn(
-                      'type-ui h-9 w-full rounded-md tabular-nums outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-                      date.slice(0, 7) !== viewDate.slice(0, 7) &&
-                        'text-muted-foreground',
-                      date === today &&
-                        date !== value &&
-                        'font-semibold text-primary underline decoration-primary/50 underline-offset-4',
-                      date === value &&
-                        'bg-primary font-semibold text-primary-foreground hover:bg-primary/90',
-                    )}
-                    onFocus={() => setFocusedDate(date)}
-                    onKeyDown={(event) => navigateDay(event, date)}
-                    onClick={() => selectDate(date)}
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t('ui.picker.previousMonth')}
+                    onClick={() => {
+                      const date = addMonthsToLocalDate(viewDate, -1)
+                      changeView(date)
+                    }}
                   >
-                    {Number(date.slice(8))}
-                  </button>
+                    <ChevronLeft aria-hidden="true" />
+                  </Button>
+                  <Select
+                    value={String(month)}
+                    onValueChange={(next) => {
+                      const date = addMonthsToLocalDate(viewDate, Number(next) - month)
+                      changeView(date)
+                    }}
+                  >
+                    <SelectTrigger
+                      aria-label={t('ui.picker.month')}
+                      className="min-w-0 flex-1 border-0 bg-transparent px-2 shadow-none"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, index) => (
+                        <SelectItem key={index} value={String(index + 1)}>
+                          {dateLabel(
+                            `${year}-${String(index + 1).padStart(2, '0')}-01`,
+                            formatters.month,
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <input
+                    key={year}
+                    defaultValue={year}
+                    aria-label={t('ui.picker.year')}
+                    inputMode="numeric"
+                    maxLength={4}
+                    className="type-action h-9 w-14 rounded-md bg-muted text-center tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onBlur={(event) => {
+                      const next = Number(event.currentTarget.value)
+                      if (/^\d{4}$/.test(event.currentTarget.value) && next >= 1000) {
+                        const date = `${next}-${String(month).padStart(2, '0')}-01`
+                        changeView(date)
+                      } else event.currentTarget.value = String(year)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        event.currentTarget.blur()
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t('ui.picker.nextMonth')}
+                    onClick={() => {
+                      const date = addMonthsToLocalDate(viewDate, 1)
+                      changeView(date)
+                    }}
+                  >
+                    <ChevronRight aria-hidden="true" />
+                  </Button>
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex items-center justify-between border-t pt-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => selectDate(today)}
-          >
-            {t('common.today')}
-          </Button>
-          {!required && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={!value}
-              onClick={() => selectDate('')}
-            >
-              {t('ui.picker.clear')}
-            </Button>
-          )}
-        </div>
+                <div
+                  ref={calendarRef}
+                  role="grid"
+                  aria-label={dateLabel(viewDate, formatters.monthYear)}
+                >
+                  <div role="row" className="mb-1 grid grid-cols-7">
+                    {dates.slice(0, 7).map((date) => (
+                      <span
+                        role="columnheader"
+                        aria-label={dateLabel(date, formatters.weekday)}
+                        key={date}
+                        className="type-caption py-2 text-center text-muted-foreground"
+                      >
+                        {dateLabel(date, formatters.weekdayShort)}
+                      </span>
+                    ))}
+                  </div>
+                  {Array.from({ length: 6 }, (_, week) => (
+                    <div role="row" key={week} className="grid grid-cols-7 gap-0.5">
+                      {dates.slice(week * 7, week * 7 + 7).map((date) => (
+                        <div role="gridcell" key={date} aria-selected={date === value}>
+                          <button
+                            type="button"
+                            data-picker-date={date}
+                            disabled={!isValidLocalDate(date)}
+                            tabIndex={date === focusedDate ? 0 : -1}
+                            aria-label={dateLabel(date, formatters.day)}
+                            aria-current={date === today ? 'date' : undefined}
+                            className={cn(
+                              'type-ui h-9 w-full rounded-md tabular-nums outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                              date.slice(0, 7) !== viewDate.slice(0, 7) &&
+                                'text-muted-foreground',
+                              date === today &&
+                                date !== value &&
+                                'font-semibold text-primary underline decoration-primary/50 underline-offset-4',
+                              date === value &&
+                                'bg-primary font-semibold text-primary-foreground hover:bg-primary/90',
+                            )}
+                            onFocus={() => setFocusedDate(date)}
+                            onKeyDown={(event) => navigateDay(event, date)}
+                            onClick={() => selectDate(date)}
+                          >
+                            {Number(date.slice(8))}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t pt-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => selectDate(today)}
+                  >
+                    {t('common.today')}
+                  </Button>
+                  {!required && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={!value}
+                      onClick={() => selectDate('')}
+                    >
+                      {t('ui.picker.clear')}
+                    </Button>
+                  )}
+                </div>
+              </>
+            )
+          }}
+        </RenderWhenOpen>
       </PopoverContent>
     </Popover>
   )

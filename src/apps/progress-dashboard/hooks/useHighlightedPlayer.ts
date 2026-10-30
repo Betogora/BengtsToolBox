@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 
-import type { ProgressChartData } from '@/apps/progress-dashboard/progressChartModel'
+import type { getProgressChartLayout } from '@/apps/progress-dashboard/progressChartModel'
 import type { ProgressPlayer } from '@/apps/progress-dashboard/types'
 
-// Hover und Anheften teilen sich beide Diagramme; die aktive Person wird zuletzt gezeichnet.
+// Hover und Anheften einer Person im Diagramm; die aktive Person wird zuletzt gezeichnet.
 export function useHighlightedPlayer(
   players: ProgressPlayer[],
-  chartData: Pick<ProgressChartData, 'chartSeries' | 'eventPoints'>,
+  chartData: Pick<ReturnType<typeof getProgressChartLayout>, 'chartSeries' | 'eventPoints'>,
 ) {
   const [hoveredPlayerId, setHoveredPlayerId] = useState<string | null>(null)
   const [pinnedPlayerId, setPinnedPlayerId] = useState<string | null>(null)

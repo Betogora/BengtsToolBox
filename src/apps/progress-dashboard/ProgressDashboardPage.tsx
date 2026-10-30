@@ -13,7 +13,6 @@ import { ArchiveDatasetCard } from '@/apps/progress-dashboard/ArchiveDatasetCard
 import { DashboardProgressChart } from '@/apps/progress-dashboard/DashboardProgressChart'
 import { EventTable } from '@/apps/progress-dashboard/EventTable'
 import { PlayerSetupList } from '@/apps/progress-dashboard/PlayerSetupList'
-import { ProgressChart } from '@/apps/progress-dashboard/ProgressChart'
 import { ProgressEntryDialog } from '@/apps/progress-dashboard/ProgressEntryDialog'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { rankPlayerScores } from '@/apps/progress-dashboard/logic'
@@ -101,7 +100,11 @@ function ProgressDashboardPresenter({
             {unitLabel ? ` ${unitLabel}` : ''}
           </Badge>
         </div>
-        <ProgressChart dataset={activeDataset} players={players} />
+        <DashboardProgressChart
+          className="h-[320px] md:h-[440px]"
+          dataset={activeDataset}
+          players={players}
+        />
       </section>
 
       <aside className="grid content-start gap-4">

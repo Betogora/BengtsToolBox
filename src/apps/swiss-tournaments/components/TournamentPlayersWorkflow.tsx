@@ -1,4 +1,4 @@
-import { CirclePlus, Trash2, UsersRound } from "lucide-react";
+import { CirclePlus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import type { TournamentDecision } from "@/apps/swiss-tournaments/domain/tournamentDomain";
 
@@ -9,6 +9,7 @@ import {
 } from "@/apps/swiss-tournaments/components/tournamentUiPresentation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IftaInput, IftaSelectTrigger } from "@/components/ui/ifta-field";
 import { Input } from "@/components/ui/input";
@@ -200,19 +201,17 @@ export function TournamentPlayersWorkflow({
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button
+                    <DeleteButton
                       aria-label={t("swiss.playerRemoveAria", {
                         name: player.name,
                       })}
-                      className="h-11 w-9 px-0"
-                      size="ifta"
+                      className="h-11 w-9"
                       disabled={!canRemove}
                       title={
                         canRemove
                           ? t("swiss.playerRemoveAria", { name: player.name })
                           : t("swiss.playerAlreadyUsed")
                       }
-                      variant="destructive"
                       onClick={async () => {
                         if (!canRemove) {
                           return;
@@ -223,9 +222,7 @@ export function TournamentPlayersWorkflow({
                           t("swiss.playerRemoved", { name: player.name }),
                         );
                       }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    />
                   </div>
                 </div>
               );
@@ -321,13 +318,11 @@ export function TournamentPlayersWorkflow({
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button
+                        <DeleteButton
                           aria-label={t("swiss.playerRemoveAria", {
                             name: player.name,
                           })}
-                          className="h-9"
                           disabled={!canRemove}
-                          size="sm"
                           title={
                             canRemove
                               ? t("swiss.playerRemoveAria", {
@@ -335,7 +330,6 @@ export function TournamentPlayersWorkflow({
                                 })
                               : t("swiss.playerAlreadyUsed")
                           }
-                          variant="destructive"
                           onClick={async () => {
                             if (!canRemove) {
                               return;
@@ -346,9 +340,7 @@ export function TournamentPlayersWorkflow({
                               t("swiss.playerRemoved", { name: player.name }),
                             );
                           }}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

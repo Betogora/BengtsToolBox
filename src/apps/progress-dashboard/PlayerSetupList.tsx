@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type { PlayerScore } from '@/apps/progress-dashboard/types'
@@ -6,6 +6,7 @@ import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/ColorPicker'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 
 // Spieler verwalten: Name, Farbe, Löschen, Hinzufügen und Einheit.
@@ -54,14 +55,11 @@ export function PlayerSetupList({
               description={t('progress.playerDeleteDescription', { name: player.name })}
               onConfirm={() => onRemove(player.id)}
               trigger={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 text-muted-foreground hover:text-destructive"
+                <DeleteButton
+                  tone="quiet"
+                  className="size-11 sm:size-9"
                   aria-label={t('shared.playerCard.removeAria', { name: player.name })}
-                >
-                  <Trash2 />
-                </Button>
+                />
               }
             />
           </li>

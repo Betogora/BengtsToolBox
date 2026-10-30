@@ -2,7 +2,6 @@ import {
   CornerDownLeft,
   Minus,
   Plus,
-  Trash2,
 } from 'lucide-react'
 import { useMemo, useRef, useState, type FormEvent } from 'react'
 
@@ -30,6 +29,7 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 
 export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) {
@@ -151,14 +151,10 @@ export function ScoreTargetCard({
             description={t('scoreboard.removeDescription', { name: target.name })}
             onConfirm={onRemove}
             trigger={
-              <Button
-                variant="destructive"
-                size="icon"
+              <DeleteButton
                 className="size-11 sm:size-9"
                 aria-label={t('scoreboard.removeAria', { name: target.name })}
-              >
-                <Trash2 className="size-4" />
-              </Button>
+              />
             }
           />
         </div>
@@ -276,14 +272,10 @@ export function RosterPlayerCard({
             description={t('scoreboard.removeDescription', { name: player.name })}
             onConfirm={onRemove}
             trigger={
-              <Button
-                variant="destructive"
-                size="icon"
+              <DeleteButton
                 className="size-11 sm:size-9"
                 aria-label={t('scoreboard.removeAria', { name: player.name })}
-              >
-                <Trash2 className="size-4" />
-              </Button>
+              />
             }
           />
         </div>
@@ -451,11 +443,7 @@ export function ArchiveCard({
           title={t('scoreboard.archiveDeleteTitle')}
           description={t('scoreboard.archiveDeleteDescription')}
           onConfirm={onDelete}
-          trigger={
-            <Button variant="destructive" size="icon" aria-label={t('common.archive.delete')}>
-              <Trash2 className="size-4" />
-            </Button>
-          }
+          trigger={<DeleteButton aria-label={t('common.archive.delete')} />}
         />
       </div>
 

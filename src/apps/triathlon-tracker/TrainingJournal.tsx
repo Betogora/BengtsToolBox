@@ -9,7 +9,6 @@ import {
   Pencil,
   Plus,
   Trophy,
-  Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { getTrainingIntensity } from './domain/incline'
@@ -37,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -399,13 +399,10 @@ export function TrainingJournal({
                           title={t('triathlon.actual.deleteTitle')}
                           description={t('triathlon.actual.deleteDescription')}
                           trigger={
-                            <Button
-                              variant="ghost"
-                              size="icon"
+                            <DeleteButton
+                              tone="quiet"
                               aria-label={`${t('common.delete')}: ${label}`}
-                            >
-                              <Trash2 aria-hidden="true" />
-                            </Button>
+                            />
                           }
                           onConfirm={async () => {
                             setError(null)

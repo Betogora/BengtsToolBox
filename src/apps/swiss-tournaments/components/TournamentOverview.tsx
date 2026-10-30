@@ -1,4 +1,4 @@
-import { Download, Printer, Trash2, Trophy } from 'lucide-react';
+import { Download, Printer, Trophy } from 'lucide-react';
 import { RankPlacement } from '@/apps/swiss-tournaments/components/RankPlacement'
 import {
   completedUnitLabelKey,
@@ -15,6 +15,7 @@ import type { Round, Tournament } from '@/apps/swiss-tournaments/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -86,13 +87,10 @@ export function ArchivedTournamentsList({
         confirmLabel={t('common.delete')}
         onConfirm={() => onDelete(tournament)}
         trigger={
-          <Button
+          <DeleteButton
             aria-label={t('swiss.playerRemoveAria', { name: tournament.name })}
-            size="sm"
-            variant="destructive"
-          >
-            <Trash2 className="size-4" />
-          </Button>
+            className="size-8"
+          />
         }
       />
     </div>

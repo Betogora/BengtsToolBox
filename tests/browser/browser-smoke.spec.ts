@@ -123,7 +123,6 @@ test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung re
   const viewportWidth = page.viewportSize()!.width
 
   await expect(chart).toBeVisible()
-  await expect(chart.locator('text').filter({ hasText: /^Getränke$/ })).toBeVisible()
   await expect(chart.locator('path[stroke="#facc15" i]')).toHaveCount(1)
   await expect(page.locator('[data-progress-leader]')).toContainText('Person 1')
   await expect(progressItems).toHaveCount(5)

@@ -543,6 +543,81 @@ Object.assign(review.scenes, {
   'progress-leer': { path: `${progressPath}?review-empty=1` },
 })
 
+// Schweizer Turnier: Turnier über die Oberfläche anlegen, eine Runde auswerten, zweite Runde erzeugen.
+const swissPath = '/apps/swiss-tournaments'
+const startSwiss = async (page) => {
+  await page.getByRole('button', { name: 'Neues Turnier' }).click()
+  await page.getByRole('dialog', { name: 'Neues Turnier anlegen' })
+    .getByRole('button', { name: 'Turnier starten' }).click()
+  await page.getByRole('dialog').waitFor({ state: 'hidden' })
+  await page.addStyleTag({ content: '[data-sonner-toaster] { display: none !important; }' })
+}
+const playSwissRound = async (page) => {
+  await page.getByRole('tab', { name: 'Paarungen' }).click()
+  await page.getByRole('button', { name: 'Neue Runde' }).click()
+  const results = page.locator('[role="combobox"]:visible:is(:not([aria-label]), [aria-label="Ergebnis"])')
+  const count = await results.count()
+  for (let index = 0; index < count; index += 1) {
+    await results.nth(index).click()
+    await page.getByRole('option', { name: '1 - 0', exact: true }).click()
+  }
+  await page.getByRole('button', { name: 'Neue Runde' }).click()
+  await page.waitForTimeout(400)
+}
+Object.assign(review.scenes, {
+  'swiss-anlegen': {
+    path: swissPath,
+    run: async ({ page }) => {
+      await page.getByRole('button', { name: 'Neues Turnier' }).click()
+      const dialog = page.getByRole('dialog', { name: 'Neues Turnier anlegen' })
+      await dialog.getByRole('button', { name: /entfernen/ }).filter({ visible: true }).first()
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+      await page.waitForTimeout(300)
+    },
+  },
+  'swiss-spieler': {
+    path: swissPath,
+    run: async ({ page }) => {
+      await startSwiss(page)
+      await page.getByRole('tab', { name: 'Spieler' }).click()
+      await page.getByRole('button', { name: /entfernen/ }).filter({ visible: true }).first()
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+      await page.waitForTimeout(300)
+    },
+  },
+  'swiss-paarungen': {
+    path: swissPath,
+    run: async ({ page }) => {
+      await startSwiss(page)
+      await playSwissRound(page)
+      await page.getByRole('combobox', { name: /korrigieren/ }).first()
+        .evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    },
+  },
+  // Wie oben, Maus über der ersten Ergebniskorrektur.
+  'swiss-paarungen-hover': {
+    path: swissPath,
+    run: async ({ page }) => {
+      await review.scenes['swiss-paarungen'].run({ page })
+      await page.getByRole('combobox', { name: /korrigieren/ }).first().hover()
+      await page.waitForTimeout(300)
+    },
+    keepPointer: true,
+  },
+  'swiss-archiv': {
+    path: swissPath,
+    run: async ({ page }) => {
+      await startSwiss(page)
+      await startSwiss(page)
+      await page.getByRole('tab', { name: 'Übersicht' }).click()
+      const archive = page.getByRole('button', { name: /Alte Datensätze/ })
+      await archive.click()
+      await archive.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+      await page.waitForTimeout(300)
+    },
+  },
+})
+
 Object.assign(review.scenes, {
   hub: { path: '/' },
   'hub-qr': {
@@ -591,7 +666,7 @@ for (const scene of Object.values(review.scenes)) {
     }
     if (scene.discipline) await focusDiscipline(context.page, scene.discipline)
     await run?.(context)
-    await context.page.mouse.move(0, 0)
+    if (!scene.keepPointer) await context.page.mouse.move(0, 0)
     await context.page.waitForTimeout(250)
   }
 }

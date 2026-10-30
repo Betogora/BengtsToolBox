@@ -1,29 +1,11 @@
 import type {
-  PlayerScore,
   ProgressDataset,
   ProgressEvent,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
-import { getTimedEvents, rankPlayerScores } from '@/apps/progress-dashboard/logic'
+import { getTimedEvents } from '@/apps/progress-dashboard/logic'
 
-export const chartWidth = 1040
-export const chartHeight = 420
-export const chartPadding = {
-  top: 38,
-  right: 36,
-  bottom: 96,
-  left: 128,
-}
-export const mobileSparklineWidth = 240
-export const mobileSparklineHeight = 56
-export const mobileSparklinePadding = {
-  top: 8,
-  right: 8,
-  bottom: 8,
-  left: 8,
-}
-
-export type ProgressChartSegment = {
+type ProgressChartSegment = {
   time: number
   value: number
 }
@@ -37,14 +19,6 @@ type ProgressChartSeries = {
   player: ProgressPlayer
   score: number
   segments: ProgressChartSegment[]
-}
-
-type ArchivePlayerSummary = {
-  eventCount: number
-  firstEventAt: string | null
-  lastEventAt: string | null
-  player: ProgressPlayer
-  score: number
 }
 
 function getArchivePlayerName(event: ProgressEvent, position: number) {
@@ -76,39 +50,6 @@ export function getArchivePlayers(sortedEvents: ProgressEvent[]) {
   )
 }
 
-export function getArchivePlayerSummaries(
-  sortedEvents: ProgressEvent[],
-  players: ProgressPlayer[],
-) {
-  const summariesByPlayerId = new Map<string, ArchivePlayerSummary>(
-    players.map((player) => [
-      player.id,
-      {
-        eventCount: 0,
-        firstEventAt: null,
-        lastEventAt: null,
-        player,
-        score: 0,
-      },
-    ]),
-  )
-
-  sortedEvents.forEach((event) => {
-    const summary = summariesByPlayerId.get(event.playerId)
-
-    if (!summary) {
-      return
-    }
-
-    summary.eventCount += 1
-    summary.firstEventAt = summary.firstEventAt ?? event.createdAtClientIso
-    summary.lastEventAt = event.createdAtClientIso
-    summary.score = Math.max(0, summary.score + event.valueDelta)
-  })
-
-  return rankPlayerScores([...summariesByPlayerId.values()])
-}
-
 function createStepPath(
   segments: ProgressChartSegment[],
   xScale: (time: number) => number,
@@ -125,9 +66,8 @@ function createStepPath(
 
 type ProgressChartLayout = {
   height: number
-  maxTimeTicks?: number
-  niceTicks?: boolean
-  padding: typeof chartPadding
+  maxTimeTicks: number
+  padding: ReturnType<typeof getFittedChartPadding>
   width: number
 }
 
@@ -231,17 +171,10 @@ export function getProgressChartModel(
       entry.eventValues.map((eventValue) => eventValue.value),
     ),
   )
-  const rankedSeries = rankPlayerScores(series)
-  const rankedScores: PlayerScore[] = rankedSeries.map(({ player, score }) => ({
-    player,
-    score,
-  }))
 
   return {
     hasValidEvents,
     maxValue,
-    rankedScores,
-    rankedSeries,
     series,
     xDomainMax,
     xDomainMin,
@@ -252,41 +185,19 @@ export function getProgressChartModel(
 export function getProgressChartLayout(
   model: ReturnType<typeof getProgressChartModel>,
   locale: string,
-  layout: ProgressChartLayout = {
-    height: chartHeight,
-    padding: chartPadding,
-    width: chartWidth,
-  },
+  layout: ProgressChartLayout,
 ) {
   const { height, padding: chartPadding, width: chartWidth } = layout
   const { maxValue, series, xDomainMax, xDomainMin } = model
-  const niceValueAxis = layout.niceTicks ? getNiceValueAxis(maxValue) : null
-  const yDomainMax = niceValueAxis?.max ?? Math.max(1, Math.ceil(maxValue * 1.12))
+  const { max: yDomainMax, ticks: yTicks } = getNiceValueAxis(maxValue)
   const plotWidth = chartWidth - chartPadding.left - chartPadding.right
   const plotHeight = height - chartPadding.top - chartPadding.bottom
-  const plotCenterX = chartPadding.left + plotWidth / 2
-  const plotCenterY = chartPadding.top + plotHeight / 2
   const xScale = (time: number) =>
     chartPadding.left +
     ((time - xDomainMin) / (xDomainMax - xDomainMin || 1)) * plotWidth
   const yScale = (value: number) =>
     chartPadding.top + plotHeight - (value / yDomainMax) * plotHeight
-  const yTicks =
-    niceValueAxis?.ticks ??
-    Array.from({ length: 5 }, (_, index) => (yDomainMax / 4) * index)
-  const xTicks = layout.niceTicks
-    ? getNiceTimeTicks(xDomainMin, xDomainMax, layout.maxTimeTicks ?? 5, locale)
-    : Array.from({ length: 5 }, (_, index) => {
-    const time = xDomainMin + ((xDomainMax - xDomainMin) / 4) * index
-
-    return {
-      time,
-      label: new Date(time).toLocaleTimeString(locale, {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    }
-  })
+  const xTicks = getNiceTimeTicks(xDomainMin, xDomainMax, layout.maxTimeTicks, locale)
   const chartSeries = series.flatMap(({ player, segments }) => {
     if (segments.length < 2) {
       return []
@@ -310,50 +221,13 @@ export function getProgressChartLayout(
   return {
     chartSeries,
     eventPoints,
-    plotCenterX,
-    plotCenterY,
     xScale,
     xTicks,
     yScale,
     yTicks,
-    yDomainMax,
   }
 }
 
-export function getProgressChartData(
-  dataset: ProgressDataset,
-  players: ProgressPlayer[],
-  locale: string,
-  layout?: ProgressChartLayout,
-) {
-  const model = getProgressChartModel(dataset, players)
-
-  return { ...model, ...getProgressChartLayout(model, locale, layout) }
-}
-
-export type ProgressChartData = ReturnType<typeof getProgressChartData>
-
-export function getPlayerTimelinePath(
-  segments: ProgressChartSegment[],
-  chartData: Pick<ProgressChartData, 'xDomainMax' | 'xDomainMin' | 'yDomainMax'>,
-) {
-  const plotWidth =
-    mobileSparklineWidth - mobileSparklinePadding.left - mobileSparklinePadding.right
-  const plotHeight =
-    mobileSparklineHeight - mobileSparklinePadding.top - mobileSparklinePadding.bottom
-  const xScale = (time: number) =>
-    mobileSparklinePadding.left +
-    ((time - chartData.xDomainMin) /
-      (chartData.xDomainMax - chartData.xDomainMin || 1)) *
-      plotWidth
-  const yScale = (value: number) =>
-    mobileSparklinePadding.top +
-    plotHeight -
-    (value / chartData.yDomainMax) * plotHeight
-
-  return createStepPath(segments, xScale, yScale)
-}
-
 export function getFittedChartPadding(width: number) {
-  return { top: 28, right: 12, bottom: 32, left: width >= 560 ? 44 : 32 }
+  return { top: 14, right: 12, bottom: 32, left: width >= 560 ? 44 : 32 }
 }

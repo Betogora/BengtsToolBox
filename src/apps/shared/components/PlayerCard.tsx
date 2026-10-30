@@ -1,12 +1,12 @@
 import type { LucideIcon } from 'lucide-react'
-import { Minus, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 
+import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { appTeams, isTeamId, type TeamId } from '@/apps/shared/teams'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -71,11 +71,6 @@ export function PlayerCard({
   score,
 }: PlayerCardProps) {
   const { t } = useI18n()
-  const [isEditingName, setIsEditingName] = useState(false)
-  const saveName = (name: string) => {
-    onNameChange(name)
-    setIsEditingName(false)
-  }
 
   return (
     <Card
@@ -87,55 +82,20 @@ export function PlayerCard({
     >
       <div className="flex items-center gap-1">
         <div className="min-w-0 flex-1">
-          {isEditingName ? (
-            <Input
-              key={player.name}
-              aria-label={t('shared.playerCard.nameAria', {
-                number: player.position,
-              })}
-              autoFocus
-              defaultValue={player.name}
-              onBlur={(event) => saveName(event.currentTarget.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur()
-                }
-
-                if (event.key === 'Escape') {
-                  setIsEditingName(false)
-                }
-              }}
-              className="h-10 text-[1.375rem] font-[650]"
-            />
-          ) : (
-            <h2
-              className="truncate text-[1.375rem] font-[650] leading-tight tracking-tight"
-              title={player.name}
-            >
-              {player.name}
-            </h2>
-          )}
+          <InlineTextEdit
+            ariaLabel={t('shared.playerCard.nameAria', { number: player.position })}
+            className="text-[1.375rem] font-[650] tracking-tight"
+            fallback={player.name}
+            inputClassName="h-10 text-[1.375rem] font-[650]"
+            value={player.name}
+            onSave={onNameChange}
+          />
         </div>
-        {!isEditingName && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label={t('shared.playerCard.editAria', { name: player.name })}
-            onClick={() => setIsEditingName(true)}
-          >
-            <Pencil />
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:bg-destructive-soft hover:text-destructive"
+        <DeleteButton
+          tone="quiet"
           aria-label={t('shared.playerCard.removeAria', { name: player.name })}
           onClick={onRemove}
-        >
-          <Trash2 />
-        </Button>
+        />
       </div>
 
       <SegmentedControl

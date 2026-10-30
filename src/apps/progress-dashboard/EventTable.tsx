@@ -1,5 +1,10 @@
-import { Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 
 import type {
   ProgressDataset,
@@ -12,8 +17,8 @@ import { eventIconComponents } from '@/apps/progress-dashboard/eventIcons'
 import { getEventTable } from '@/apps/progress-dashboard/logic'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
-import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { TimePicker } from '@/components/ui/TimePicker'
 import {
   Select,
@@ -32,6 +37,23 @@ import {
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { isValidLocalDate } from '@/lib/localDates'
+
+// Nur eine Darstellung wird aufgebaut; beide gleichzeitig verdoppeln die teuren Zeilen.
+const desktopQuery = '(min-width: 48rem)'
+const subscribeDesktop = (onChange: () => void) => {
+  const query = window.matchMedia(desktopQuery)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
+}
+const useIsDesktop = () =>
+  useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(desktopQuery).matches,
+    () => false,
+  )
+
+// So viele Zeilen erscheinen sofort beim Aufklappen, der Rest folgt im Hintergrund.
+const initialRowCount = 12
 
 const drinkValueOptions = [
   0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10,
@@ -127,7 +149,14 @@ export function EventTable({
   ) => void
 }) {
   const { t } = useI18n()
-  const events = getEventTable(dataset.events)
+  const isDesktop = useIsDesktop()
+  const allEvents = useMemo(() => getEventTable(dataset.events), [dataset.events])
+  const [showAllRows, setShowAllRows] = useState(false)
+  const events = showAllRows ? allEvents : allEvents.slice(0, initialRowCount)
+
+  useEffect(() => {
+    startTransition(() => setShowAllRows(true))
+  }, [])
 
   if (events.length === 0) {
     return (
@@ -237,17 +266,13 @@ export function EventTable({
       title={t('common.event.delete')}
       description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}
-      trigger={
-        <Button variant="destructive" size="icon" aria-label={t('common.event.delete')}>
-          <Trash2 className="size-4" />
-        </Button>
-      }
+      trigger={<DeleteButton aria-label={t('common.event.delete')} />}
     />
   )
 
-  return (
-    <>
-      <div className="grid gap-2 md:hidden">
+  if (!isDesktop) {
+    return (
+      <div className="grid gap-2">
         {events.map((event) => (
           <div
             key={event.id}
@@ -280,43 +305,45 @@ export function EventTable({
           </div>
         ))}
       </div>
+    )
+  }
 
-      <Table className="min-w-[760px]" containerClassName="hidden md:block">
-        <TableHeader>
-            <TableHead>{t('progress.time')}</TableHead>
-            <TableHead>{t('common.player')}</TableHead>
-            <TableHead>{t('progress.eventValue')}</TableHead>
-            <TableHead>Icon</TableHead>
-            <TableHead className="text-right">{t('decisionWheel.action')}</TableHead>
-        </TableHeader>
-        <TableBody>
-          {events.map((event) => (
-            <TableRow key={event.id}>
-              <TableCell>
-                {renderDateInput(event)}
-              </TableCell>
-              <TableCell>
-                <div className="type-label flex items-center gap-2">
-                  <span
-                    className="size-3 rounded-full"
-                    style={{ backgroundColor: event.playerColor }}
-                  />
-                  {event.playerName}
-                </div>
-              </TableCell>
-              <TableCell>
-                {renderValueControls(event)}
-              </TableCell>
-              <TableCell>
-                {renderIconSelect(event)}
-              </TableCell>
-              <TableCell className="text-right">
-                {renderDeleteButton(event)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </>
+  return (
+    <Table className="min-w-[760px]">
+      <TableHeader>
+          <TableHead>{t('progress.time')}</TableHead>
+          <TableHead>{t('common.player')}</TableHead>
+          <TableHead>{t('progress.eventValue')}</TableHead>
+          <TableHead>Icon</TableHead>
+          <TableHead className="text-right">{t('decisionWheel.action')}</TableHead>
+      </TableHeader>
+      <TableBody>
+        {events.map((event) => (
+          <TableRow key={event.id}>
+            <TableCell>
+              {renderDateInput(event)}
+            </TableCell>
+            <TableCell>
+              <div className="type-label flex items-center gap-2">
+                <span
+                  className="size-3 rounded-full"
+                  style={{ backgroundColor: event.playerColor }}
+                />
+                {event.playerName}
+              </div>
+            </TableCell>
+            <TableCell>
+              {renderValueControls(event)}
+            </TableCell>
+            <TableCell>
+              {renderIconSelect(event)}
+            </TableCell>
+            <TableCell className="text-right">
+              {renderDeleteButton(event)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }

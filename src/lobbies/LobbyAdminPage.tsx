@@ -3,7 +3,6 @@ import {
   KeyRound,
   LoaderCircle,
   ShieldCheck,
-  Trash2,
   UsersRound,
 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
@@ -21,6 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 import {
   deleteLobby,
@@ -196,13 +196,9 @@ export function LobbyAdminPage() {
                       title={t('lobbyAdmin.deleteTitle')}
                       onConfirm={() => removeLobby(lobby.id)}
                       trigger={
-                        <Button
+                        <DeleteButton
                           aria-label={t('lobbyAdmin.deleteAria', { name: lobby.name })}
-                          size="icon"
-                          variant="destructive"
-                        >
-                          <Trash2 />
-                        </Button>
+                        />
                       }
                     />
                   )}

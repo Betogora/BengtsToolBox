@@ -3,7 +3,6 @@ import {
   CirclePlus,
   ListOrdered,
   Pencil,
-  Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 
 export function SushiScoreCard({
@@ -140,15 +140,11 @@ export function SushiScoreCard({
                   {isEditing && (
                     <TableCell className="px-0 py-1.5 pr-1 text-right md:pr-2">
                       {removableIds.has(player.id) && (
-                        <Button
-                          variant="destructive"
-                          size="icon"
+                        <DeleteButton
                           className="size-7 md:size-8"
                           aria-label={t('shared.playerCard.removeAria', { name: player.name })}
                           onClick={() => void onRemove(player.id)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        />
                       )}
                     </TableCell>
                   )}

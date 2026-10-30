@@ -1,4 +1,4 @@
-import { ArrowRight, Brain, CirclePlus, Gamepad2, GitBranch, Plus, Swords, Trash2 } from 'lucide-react';
+import { ArrowRight, Brain, CirclePlus, Gamepad2, GitBranch, Plus, Swords } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments';
@@ -6,6 +6,7 @@ import { getNextDefaultTournamentName } from '@/apps/swiss-tournaments/historica
 import type { ByeScore, InitialPlayerStatus, SeedingMode, Tournament, TournamentFormat } from '@/apps/swiss-tournaments/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DeleteButton } from '@/components/ui/DeleteButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -499,22 +500,18 @@ function TournamentCreator({
                         <SelectItem value="inactive">{t('swiss.status.inactive')}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button
+                    <DeleteButton
                       aria-label={t('swiss.playerRemoveAria', {
                         name: player.name || t('common.player'),
                       })}
-                      className="h-11 w-9 px-0"
-                      size="ifta"
+                      className="h-11 w-9"
                       type="button"
-                      variant="destructive"
                       onClick={() =>
                         setPlayers((currentPlayers) =>
                           currentPlayers.filter((entry) => entry.id !== player.id),
                         )
                       }
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    />
                   </div>
                 </div>
               ))}
@@ -611,13 +608,10 @@ function TournamentCreator({
                             <SelectItem value="inactive">{t('swiss.status.inactive')}</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button
+                        <DeleteButton
                           aria-label={t('swiss.playerRemoveAria', {
                             name: player.name || t('common.player'),
                           })}
-                          className="h-9"
-                          size="sm"
-                          variant="destructive"
                           onClick={() =>
                             setPlayers((currentPlayers) =>
                               currentPlayers.filter(
@@ -625,9 +619,7 @@ function TournamentCreator({
                               ),
                             )
                           }
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

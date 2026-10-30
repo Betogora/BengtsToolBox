@@ -110,6 +110,7 @@ import { dashboardApps } from '@/apps/registry'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
@@ -316,7 +317,7 @@ function ConfirmationDemo({ reset = false }: { reset?: boolean }) {
     {reset ? <AppResetButton title="Beispiel zurücksetzen?" description="Nur dieser Beispielzähler wird zurückgesetzt." onConfirm={() => setCount(count + 1)} /> :
       <div className="flex flex-wrap items-center gap-3">
         <ConfirmButton title="Beispiel löschen?" description="Hier werden nur Beispieldaten verwendet." onConfirm={() => setCount(count + 1)} trigger={<Button variant="destructive"><Trash2 />Löschen</Button>} />
-        <ConfirmButton mode="popover" title="Zeile löschen?" description="Icon-Auslöser bestätigen im Popover." onConfirm={() => setCount(count + 1)} trigger={<Button variant="destructive" size="icon" aria-label="Zeile löschen"><Trash2 /></Button>} />
+        <ConfirmButton mode="popover" title="Zeile löschen?" description="Icon-Auslöser bestätigen im Popover." onConfirm={() => setCount(count + 1)} trigger={<DeleteButton aria-label="Zeile löschen" />} />
       </div>}
     <span role="status">{count > 0 && `${count}× bestätigt`}</span>
   </div>
@@ -367,6 +368,10 @@ const demos: Record<string, ReactNode> = {
   'Shared PlayerCard': <PlayerDemo />,
   EmptyState: <EmptyState icon={Trophy} action={<Button variant="outline" size="sm"><Plus />Erste Runde starten</Button>}>Noch keine Ergebnisse</EmptyState>,
   ConfirmButton: <ConfirmationDemo />,
+  DeleteButton: <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
+    <div className="grid justify-items-center gap-2"><DeleteButton aria-label="Zeile löschen" /><span className="type-caption text-subtle-foreground">solid · Zeilen</span></div>
+    <div className="grid justify-items-center gap-2"><DeleteButton tone="quiet" aria-label="Datensatz löschen" /><span className="type-caption text-subtle-foreground">quiet · Kopfzeilen, Verwaltung</span></div>
+  </div>,
   AppResetButton: <ConfirmationDemo reset />,
   Aufklappen: <div className="w-full max-w-sm divide-y rounded-lg border bg-card">
     <details open className="group px-3.5"><DisclosureSummary>Zusatzangaben</DisclosureSummary><div className="pb-3.5"><IftaInput label="Notiz" defaultValue="Nächste Runde" /></div></details>

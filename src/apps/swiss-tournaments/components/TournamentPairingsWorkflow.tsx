@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Save,
   Swords,
-  Trash2,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -25,6 +24,7 @@ import type {
 } from "@/apps/swiss-tournaments/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IftaSelectTrigger } from "@/components/ui/ifta-field";
 import {
@@ -1026,16 +1026,12 @@ export function TournamentPairingsWorkflow({
                                     <RefreshCw className="size-4" />
                                     {t("swiss.regenerate")}
                                   </Button>
-                                  <Button
+                                  <DeleteButton
                                     aria-label={t("swiss.deleteRound")}
-                                    className="h-8 w-full p-0 md:w-10"
-                                    size="sm"
+                                    className="h-8 w-full md:w-10"
                                     title={t("swiss.deleteRound")}
-                                    variant="destructive"
                                     onClick={() => void onDeleteLatestRound()}
-                                  >
-                                    <Trash2 className="size-4" />
-                                  </Button>
+                                  />
                                 </>
                               )}
                             </>
@@ -1081,15 +1077,11 @@ export function TournamentPairingsWorkflow({
                                   );
                                 }}
                                 trigger={
-                                  <Button
+                                  <DeleteButton
                                     aria-label={t("swiss.deleteRound")}
-                                    className="h-8 w-full p-0 md:w-10"
-                                    size="sm"
+                                    className="h-8 w-full md:w-10"
                                     title={t("swiss.deleteRound")}
-                                    variant="destructive"
-                                  >
-                                    <Trash2 className="size-4" />
-                                  </Button>
+                                  />
                                 }
                               />
                             </>

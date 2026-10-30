@@ -1,11 +1,9 @@
-import { Trash2 } from 'lucide-react'
-
 import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
 import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
-import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 
 type EntryControlMode = 'mobile' | 'table'
@@ -167,14 +165,10 @@ export function RemoveEntryButton({
   )
 
   return (
-    <Button
+    <DeleteButton
       aria-label={t('decisionWheel.option.deleteAria', { option: entryLabel })}
-      className={mode === 'mobile' ? 'w-11 px-0' : 'h-9 w-9 px-0'}
-      size={mode === 'mobile' ? 'ifta' : 'icon'}
-      variant="destructive"
+      className={mode === 'mobile' ? 'size-11' : undefined}
       onClick={() => onRemoveEntry(entry.id)}
-    >
-      <Trash2 className="size-4" />
-    </Button>
+    />
   )
 }

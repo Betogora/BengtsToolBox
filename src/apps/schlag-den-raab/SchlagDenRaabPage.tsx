@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   Archive,
   RotateCcw,
-  Trash2,
   Trophy,
 } from 'lucide-react'
 
@@ -35,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
@@ -404,11 +404,7 @@ function ArchiveDatasetCard({
           title={t('common.dataset.delete')}
           description={t('raab.archive.deleteDescription')}
           onConfirm={() => onDelete(dataset.id)}
-          trigger={
-            <Button variant="destructive" size="icon" aria-label={t('common.archive.delete')}>
-              <Trash2 className="size-4" />
-            </Button>
-          }
+          trigger={<DeleteButton aria-label={t('common.archive.delete')} />}
         />
       </div>
       {isOpen && (

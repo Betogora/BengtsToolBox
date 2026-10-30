@@ -1,7 +1,4 @@
 import {
-  Trash2,
-} from 'lucide-react'
-import {
   memo,
   useLayoutEffect,
   useRef,
@@ -56,6 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 
 function fromDateInputValue(value: string, fallback: string) {
@@ -548,14 +546,10 @@ export function TerritoryEventTable({
       description={t('common.event.deleteDescription')}
       onConfirm={() => onDeleteEvent(event.id)}
       trigger={
-        <Button
+        <DeleteButton
           disabled={disabled}
-          variant="destructive"
-          size="icon"
           aria-label={t('territory.claimDeleteTitle')}
-        >
-          <Trash2 className="size-4" />
-        </Button>
+        />
       }
     />
   )
