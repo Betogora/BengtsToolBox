@@ -1,4 +1,4 @@
-import { Check, Minus, Plus } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 
 import type {
@@ -53,7 +53,6 @@ export function ProgressEntryDialog({
     setIcon(nextIcon)
     setAmount(getDrinkIconEventDelta(nextIcon))
   }
-  const presetValue = entryAmountPresets.includes(amount) ? String(amount) : ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,40 +126,16 @@ export function ProgressEntryDialog({
 
         <fieldset className="grid min-w-0 gap-2">
           <legend className="type-label mb-2 text-muted-foreground">{t('progress.entry.amount')}</legend>
-          <div className="grid gap-3 min-[400px]:grid-cols-[minmax(0,1fr)_auto] min-[400px]:items-center">
-            <SegmentedControl
-              aria-label={t('progress.entry.amount')}
-              style={{ width: '100%' }}
-              value={presetValue}
-              options={entryAmountPresets.map((preset) => ({
-                value: String(preset),
-                label: preset === 0.25 ? '¼' : preset === 0.5 ? '½' : String(preset),
-              }))}
-              onValueChange={(value) => setAmount(Number(value))}
-            />
-            <div className="flex items-center justify-center gap-1">
-              <Button
-                aria-label={t('progress.entry.less')}
-                disabled={amount <= 0.25}
-                size="icon"
-                variant="outline"
-                onClick={() => setAmount((value) => Math.max(0.25, value - (value > 1 ? 1 : 0.25)))}
-              >
-                <Minus />
-              </Button>
-              <span className="type-metric-sm w-12 text-center tabular-nums" aria-live="polite">
-                {formatNumber(amount)}
-              </span>
-              <Button
-                aria-label={t('progress.entry.more')}
-                size="icon"
-                variant="outline"
-                onClick={() => setAmount((value) => value + (value >= 1 ? 1 : 0.25))}
-              >
-                <Plus />
-              </Button>
-            </div>
-          </div>
+          <SegmentedControl
+            aria-label={t('progress.entry.amount')}
+            style={{ width: '100%' }}
+            value={String(amount)}
+            options={entryAmountPresets.map((preset) => ({
+              value: String(preset),
+              label: preset === 0.25 ? '¼' : preset === 0.5 ? '½' : String(preset),
+            }))}
+            onValueChange={(value) => setAmount(Number(value))}
+          />
         </fieldset>
 
         <Button

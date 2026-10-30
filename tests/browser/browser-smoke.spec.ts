@@ -52,7 +52,7 @@ test('Navigationsmenü öffnet auch nach einem Klick vor dem Nachladen @desktop'
   await app.expectHealthy()
 })
 
-test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung responsiv', async ({
+test('Fortschritts-Dashboard zeigt Diagramm, Rangliste und zentrale Eintragung responsiv', async ({
   app,
   page,
 }) => {
@@ -118,7 +118,7 @@ test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung re
   await app.open('/apps/progress-dashboard')
 
   const chart = page.getByRole('group', { name: 'Getränke-Dashboard' })
-  const progressList = page.getByRole('list', { name: 'Topliste' })
+  const progressList = page.getByRole('list', { name: 'Rangliste' })
   const progressItems = progressList.getByRole('listitem')
   const viewportWidth = page.viewportSize()!.width
 
@@ -132,7 +132,7 @@ test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung re
   await expect(progressItems.nth(3)).toContainText('Eddy')
   await expect(progressItems.nth(4)).toContainText('Bengt')
 
-  // Ab Desktop-Breite steht die Topliste neben dem Diagramm, darunter sonst.
+  // Ab Desktop-Breite steht die Rangliste neben dem Diagramm, darunter sonst.
   const chartBounds = (await chart.boundingBox())!
   const listBounds = (await progressList.boundingBox())!
   if (viewportWidth >= 1024) expect(listBounds.x).toBeGreaterThan(chartBounds.x + chartBounds.width)
@@ -193,7 +193,7 @@ test('Fortschritts-Dashboard zeigt Diagramm, Topliste und zentrale Eintragung re
   await app.expectHealthy()
 })
 
-test('Fortschritts-Dashboard zeigt Topliste ohne Führung auch ohne Ereignisse', async ({
+test('Fortschritts-Dashboard zeigt Rangliste ohne Führung auch ohne Ereignisse', async ({
   app,
   page,
 }) => {
@@ -231,7 +231,7 @@ test('Fortschritts-Dashboard zeigt Topliste ohne Führung auch ohne Ereignisse',
 
   await app.open('/apps/progress-dashboard')
 
-  const progressList = page.getByRole('list', { name: 'Topliste' })
+  const progressList = page.getByRole('list', { name: 'Rangliste' })
 
   await expect(page.getByText('Noch keine Ereignisse im aktuellen Datensatz.')).toBeVisible()
   await expect(progressList.getByRole('listitem')).toHaveCount(2)

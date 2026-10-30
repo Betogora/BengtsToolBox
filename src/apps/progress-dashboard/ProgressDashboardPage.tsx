@@ -6,7 +6,7 @@ import {
   Trophy,
   UsersRound,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useDeferredValue, useState } from 'react'
 import { toast } from 'sonner'
 
 import { ArchiveDatasetCard } from '@/apps/progress-dashboard/ArchiveDatasetCard'
@@ -16,6 +16,7 @@ import { PlayerSetupList } from '@/apps/progress-dashboard/PlayerSetupList'
 import { ProgressEntryDialog } from '@/apps/progress-dashboard/ProgressEntryDialog'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { rankPlayerScores } from '@/apps/progress-dashboard/logic'
+import { getPodiumRankClass } from '@/apps/progress-dashboard/podium'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import type {
   PlayerScore,
@@ -50,15 +51,6 @@ function getPodiumRowClass(rank: number) {
     rank === 1 && 'border-[#c9961a]/45 bg-podium-1',
     rank === 2 && 'border-[#aab0b8]/50 bg-podium-2',
     rank === 3 && 'border-[#b8794f]/45 bg-podium-3',
-  )
-}
-
-function getPodiumRankClass(rank: number) {
-  return cn(
-    'type-action inline-flex size-9 items-center justify-center rounded-md border bg-card tabular-nums',
-    rank === 1 && 'border-[#c9961a]/50 bg-podium-1-strong',
-    rank === 2 && 'border-[#aab0b8]/60 bg-podium-2-strong',
-    rank === 3 && 'border-[#b8794f]/50 bg-podium-3-strong',
   )
 }
 
@@ -128,7 +120,7 @@ function ProgressDashboardPresenter({
           <div className="flex items-center gap-2">
             <Trophy className="size-5 text-primary" />
             <h2 className="type-section-title">
-              {t('progress.topList')}
+              {t('progress.ranking')}
             </h2>
           </div>
           <div className="mt-5 grid gap-3">
@@ -150,7 +142,7 @@ function ProgressDashboardPresenter({
                           ? `${podiumLabel}: ${t('progress.rank', { rank })}`
                           : t('progress.rank', { rank })
                       }
-                      className={getPodiumRankClass(rank)}
+                      className={cn(getPodiumRankClass(rank), 'type-action size-9')}
                       title={podiumLabel}
                     >
                       {rank}
@@ -209,6 +201,8 @@ export function ProgressDashboardPage() {
   const totalScore = playerScores.reduce((sum, entry) => sum + entry.score, 0)
   const unitLabel = activeDataset.unit.trim()
   const [isActiveDatasetOpen, setIsActiveDatasetOpen] = useState(false)
+  // Der Pfeil dreht sofort; die teure Tabelle folgt unterbrechbar im Hintergrund.
+  const isActiveDatasetContentOpen = useDeferredValue(isActiveDatasetOpen)
   const [isPlayerSetupOpen, setIsPlayerSetupOpen] = useState(false)
   // Der Schlüssel setzt den Dialog bei jedem Öffnen auf den Ausgangszustand zurück.
   const [entry, setEntry] = useState({ key: 0, open: false })
@@ -306,7 +300,7 @@ export function ProgressDashboardPage() {
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
-        {/* Auf schmalen Ansichten bleibt das Diagramm angeheftet, solange die Topliste läuft. */}
+        {/* Auf schmalen Ansichten bleibt das Diagramm angeheftet, solange die Rangliste läuft. */}
         <div className="sticky top-[4.5rem] z-10 -mx-4 border-b bg-background px-4 pb-2 sm:-mx-6 sm:px-6 lg:top-[5.5rem] lg:mx-0 lg:border-0 lg:px-0 lg:pb-0">
           <DashboardProgressChart
             className="h-[250px] md:h-[400px] lg:h-[540px]"
@@ -318,7 +312,7 @@ export function ProgressDashboardPage() {
         <section className="grid gap-3" aria-labelledby="progress-top-list-title">
           <div className="flex items-center justify-between gap-3">
             <h2 id="progress-top-list-title" className="type-section-title">
-              {t('progress.topList')}
+              {t('progress.ranking')}
             </h2>
             <span className="type-ui tabular-nums text-muted-foreground">
               {formatNumber(totalScore)}
@@ -335,7 +329,7 @@ export function ProgressDashboardPage() {
                     key={player.id}
                     className="grid min-h-14 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 px-3"
                   >
-                    <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'size-8')}>
+                    <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'type-action size-8')}>
                       {index + 1}
                     </span>
                     <span className="flex min-w-0 items-center gap-2">
@@ -430,7 +424,7 @@ export function ProgressDashboardPage() {
             />
           </div>
         </CardHeader>
-        {isActiveDatasetOpen && (
+        {isActiveDatasetContentOpen && (
           <CardContent>
           <EventTable
             dataset={activeDataset}
@@ -447,10 +441,10 @@ export function ProgressDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <h2 className="flex min-h-11 items-center gap-2">
             <Archive className="size-5 text-primary" />
-            {t('common.oldDatasets')}
-          </CardTitle>
+            <span className="type-action">{t('common.oldDatasets')}</span>
+          </h2>
         </CardHeader>
         <CardContent className="grid gap-3">
           {archivedDatasets.length === 0 ? (

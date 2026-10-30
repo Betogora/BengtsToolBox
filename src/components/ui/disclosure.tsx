@@ -3,12 +3,13 @@ import type { ComponentProps } from 'react'
 
 import { cn } from '@/lib/utils'
 
+// Eigene Ebene: die Drehung läuft im Compositor weiter, auch wenn der aufgeklappte Inhalt den Hauptthread belegt.
 export function DisclosureIndicator({ isOpen, className }: { isOpen?: boolean; className?: string }) {
   return <ChevronDown
     aria-hidden="true"
     data-slot="disclosure-indicator"
     className={cn(
-      'size-4 shrink-0 text-subtle-foreground transition-transform',
+      'size-4 shrink-0 text-subtle-foreground transition-transform will-change-transform',
       isOpen === undefined ? 'group-open:rotate-180' : isOpen && 'rotate-180',
       className,
     )}
