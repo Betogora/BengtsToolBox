@@ -82,7 +82,7 @@ Die Projektregeln zu Port, Prüfbreiten, Zuständen und Kennzeichnung gelten zus
 - Unmarkierte Browserfälle laufen bei 320 und 1440 Pixel; nur Fälle mit eigenen Layoutzweigen zwischen diesen Breiten erhalten `@layout` und laufen zusätzlich bei 390 und 768. Größenunabhängige Fälle laufen mit `@desktop` einmal, reine Touchfälle erhalten `@touch`. Keine Screenshot-Vorschauen ohne eigenen Prüfzweck hinzufügen.
 - Für angeforderte UI-/Screenshot-Reviews eine Prüfmatrix in CSS-Pixeln verwenden: Smartphone 320, 360, 375, 390, 393, 412, 430 und 440; Tablet 768, 820 und 1024; Desktop 1280, 1440 und 1920. Betroffene Layoutwechsel zusätzlich unmittelbar unter und über dem Breakpoint prüfen. Das erweitert nicht automatisch die reguläre Browser-Test-Suite.
 - In solchen Vorschauen relevante Zustände und getrennte Ansichten (zum Beispiel Spieler, Spielleitung und Presenter) zeigen; Ist-Stand, Beispieldaten und Layoutentwürfe ausdrücklich kennzeichnen. Seitliches Überlaufen, lange Namen, Fehlerzustände und Lesbarkeit prüfen.
-- Testschichten und Messregeln stehen in [Abschnitt 7.4 der Spezifikation](docs/specs.md#74-testsystem); die Suite-Prüfung mit Vorher-/Nachherwerten steht im [Testbericht](docs/test-suite-review.md).
+- Testschichten und Messregeln stehen in [Abschnitt 7.4 der Spezifikation](docs/specs.md#74-testsystem).
 
 Mindestens für Codeänderungen:
 
