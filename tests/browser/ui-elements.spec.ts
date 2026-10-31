@@ -1,28 +1,41 @@
+import type { Page } from '@playwright/test'
+
 import { expect, test } from './browserApp'
 
-test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
-  const errors: string[] = []
+// Vier unabhängige Abschnitte statt eines langen Ablaufs, damit sie parallel laufen.
+let errors: string[]
+
+test.beforeEach(async ({ page }) => {
+  errors = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto('/docs/ui-elements.html')
-  const demo = (name: string) => page.locator(`[data-demo="${name}"]`)
-  await expect(demo('Card-Familie').locator('[data-slot="card"]')).toBeVisible()
-  await expect(demo('Table-Familie').getByRole('row')).toHaveCount(3)
+})
+
+test.afterEach(() => {
+  expect(errors).toEqual([])
+})
+
+const demo = (page: Page, name: string) => page.locator(`[data-demo="${name}"]`)
+
+test('Katalog zeigt Grundbausteine und Rückmeldungen @desktop', async ({ page }) => {
+  await expect(demo(page, 'Card-Familie').locator('[data-slot="card"]')).toBeVisible()
+  await expect(demo(page, 'Table-Familie').getByRole('row')).toHaveCount(3)
   await expect(page.locator('[data-icon-name] svg')).toHaveCount(93)
 
-  const invalidName = demo('Input').getByRole('textbox', { name: 'Name', exact: true })
+  const invalidName = demo(page, 'Input').getByRole('textbox', { name: 'Name', exact: true })
   await expect(invalidName).toHaveAttribute('aria-invalid', 'true')
   await expect(invalidName).toHaveAccessibleDescription('Bitte einen Namen eingeben.')
-  const feedback = demo('Laufzeit- und Rückmeldungszustände')
+  const feedback = demo(page, 'Laufzeit- und Rückmeldungszustände')
   const draft = feedback.getByRole('textbox', { name: 'Name nach fehlgeschlagenem Speichern' })
   await draft.fill('Sommerabend mit Freunden')
   await feedback.getByRole('button', { name: 'Erneut versuchen' }).click()
   await expect(draft).toHaveValue('Sommerabend mit Freunden')
   await expect(feedback.getByRole('status')).toHaveText('Name gespeichert.')
-  await demo('Toaster / Sonner').getByRole('button', { name: 'Erfolg anzeigen' }).click()
+  await demo(page, 'Toaster / Sonner').getByRole('button', { name: 'Erfolg anzeigen' }).click()
   await expect(page.locator('[data-sonner-toast]')).toContainText('Änderung gespeichert')
   await page.locator('[data-sonner-toast] [data-close-button]').click()
 
-  await demo('Dialog-Familie').getByRole('button', { name: 'Dialog öffnen' }).click()
+  await demo(page, 'Dialog-Familie').getByRole('button', { name: 'Dialog öffnen' }).click()
   const close = page.getByRole('dialog').getByRole('button', { name: 'Schließen', exact: true }).last()
   expect((await close.boundingBox())!.width).toBe(36)
   await page.getByRole('dialog').getByRole('textbox').focus()
@@ -30,7 +43,7 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await expect(page.getByRole('dialog').getByRole('textbox')).toHaveCSS('outline-width', '2px')
   await close.click()
 
-  const confirm = demo('ConfirmButton')
+  const confirm = demo(page, 'ConfirmButton')
   const deleteTrigger = confirm.getByRole('button', { name: 'Löschen', exact: true })
   await deleteTrigger.click()
   const inlineConfirm = confirm.getByRole('group', { name: 'Beispiel löschen?' })
@@ -43,7 +56,7 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await expect(confirm.getByRole('status')).toHaveText('1× bestätigt')
   await expect(deleteTrigger).toBeVisible()
 
-  const reset = demo('AppResetButton')
+  const reset = demo(page, 'AppResetButton')
   const resetButton = reset.getByRole('button')
   await expect(resetButton).toHaveAttribute('title', 'Nur dieser Beispielzähler wird zurückgesetzt.')
   await resetButton.click()
@@ -63,13 +76,15 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await page.waitForTimeout(1700)
   await page.keyboard.up('Enter')
   await expect(reset.getByRole('status')).toHaveText('2× bestätigt')
+})
 
-  const personOption = demo('PersonOption')
+test('Katalog-Eingaben für Personen, Punkte und Texte reagieren @desktop', async ({ page }) => {
+  const personOption = demo(page, 'PersonOption')
   await personOption.getByRole('radio', { name: /Lena Müller/ }).click()
   await expect(personOption.getByRole('radio', { name: /Lena Müller/ })).toHaveAttribute('aria-checked', 'true')
   await expect(personOption.getByRole('radio', { name: /Tim/ })).toHaveAttribute('aria-checked', 'false')
 
-  const player = demo('Shared PlayerCard')
+  const player = demo(page, 'Shared PlayerCard')
   const playerScore = player.locator('[data-player-score]')
   const blueTeam = player.getByRole('radio', { name: 'Team Blau' })
   await blueTeam.click()
@@ -86,8 +101,8 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await increaseFive.click()
   await expect(playerScore).toHaveText('17')
 
-  const disclosure = demo('Aufklappen').locator('summary').first()
-  const note = demo('Aufklappen').getByRole('textbox', { name: 'Notiz' })
+  const disclosure = demo(page, 'Aufklappen').locator('summary').first()
+  const note = demo(page, 'Aufklappen').getByRole('textbox', { name: 'Notiz' })
   await expect(note).toBeVisible()
   await disclosure.focus()
   await disclosure.press('Enter')
@@ -95,7 +110,7 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await disclosure.press('Enter')
   await expect(note).toBeVisible()
 
-  const text = demo('InlineTextEdit')
+  const text = demo(page, 'InlineTextEdit')
   await text.getByRole('button', { name: 'Spielername bearbeiten' }).click()
   await text.getByRole('textbox', { name: 'Spielername' }).fill('Verworfen')
   await text.getByRole('button', { name: 'Abbrechen' }).click()
@@ -104,30 +119,32 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await text.getByRole('textbox', { name: 'Spielername' }).fill('Alex')
   await text.getByRole('textbox', { name: 'Spielername' }).press('Enter')
   await expect(text.getByText('Alex')).toHaveCount(2)
+})
 
-  await demo('Select-Familie').getByRole('combobox').click()
+test('Katalog-Overlays und Auswahlfelder öffnen und schließen @desktop', async ({ page }) => {
+  await demo(page, 'Select-Familie').getByRole('combobox').click()
   await page.getByRole('option', { name: '2 Punkte' }).click()
-  await expect(demo('Select-Familie').getByRole('combobox')).toHaveText('2 Punkte')
+  await expect(demo(page, 'Select-Familie').getByRole('combobox')).toHaveText('2 Punkte')
 
-  await demo('DropdownMenu-Familie').getByRole('button', { name: 'Aktionen' }).click()
+  await demo(page, 'DropdownMenu-Familie').getByRole('button', { name: 'Aktionen' }).click()
   await page.getByRole('menuitem', { name: 'Duplizieren' }).click()
-  await expect(demo('DropdownMenu-Familie').getByRole('status')).toHaveText('Kopie erstellt')
+  await expect(demo(page, 'DropdownMenu-Familie').getByRole('status')).toHaveText('Kopie erstellt')
 
-  await demo('Popover-Familie').getByRole('button', { name: 'Popover öffnen' }).click()
+  await demo(page, 'Popover-Familie').getByRole('button', { name: 'Popover öffnen' }).click()
   await expect(page.getByRole('textbox', { name: 'Kurznotiz' })).toBeVisible()
   await page.keyboard.press('Escape')
 
-  await demo('Tooltip').getByRole('button', { name: 'Als erledigt eintragen' }).hover()
+  await demo(page, 'Tooltip').getByRole('button', { name: 'Als erledigt eintragen' }).hover()
   await expect(page.getByRole('tooltip')).toHaveText('Als erledigt eintragen')
   await page.keyboard.press('Escape')
   await expect(page.getByRole('tooltip')).toBeHidden()
 
-  await demo('DatePicker').getByRole('button').click()
+  await demo(page, 'DatePicker').getByRole('button').click()
   await expect(page.getByRole('grid')).toBeVisible()
   await page.keyboard.press('Escape')
 
-  const time = demo('TimePicker').getByRole('textbox', { name: 'Uhrzeit' })
-  await demo('TimePicker').getByRole('button', { name: 'Uhrzeit wählen: Uhrzeit' }).click()
+  const time = demo(page, 'TimePicker').getByRole('textbox', { name: 'Uhrzeit' })
+  await demo(page, 'TimePicker').getByRole('button', { name: 'Uhrzeit wählen: Uhrzeit' }).click()
   const timePicker = page.locator('[data-time-picker]')
   const hours = timePicker.getByRole('listbox', { name: 'Stunden' })
   await expect(hours).toBeFocused()
@@ -138,13 +155,13 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await page.keyboard.press('ArrowUp')
   await page.keyboard.press('Enter')
   await expect(time).toHaveValue('09:29')
-  await demo('TimePicker').getByRole('button', { name: 'Uhrzeit wählen: Uhrzeit' }).click()
+  await demo(page, 'TimePicker').getByRole('button', { name: 'Uhrzeit wählen: Uhrzeit' }).click()
   await hours.getByRole('option', { name: '23', exact: true }).click()
   await timePicker.getByRole('listbox', { name: 'Minuten' }).getByRole('option', { name: '07', exact: true }).click()
   await timePicker.getByRole('button', { name: 'Übernehmen' }).click()
   await expect(time).toHaveValue('23:07')
 
-  await demo('ColorPicker').getByRole('button', { name: 'Kompakte Farbe' }).click()
+  await demo(page, 'ColorPicker').getByRole('button', { name: 'Kompakte Farbe' }).click()
   const wheel = page.getByRole('slider')
   await wheel.focus()
   await wheel.press('ArrowRight')
@@ -152,11 +169,13 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await greenPreset.click()
   await expect(greenPreset).toHaveAttribute('aria-checked', 'true')
   await page.keyboard.press('Escape')
+})
 
-  const tabs = demo('Tabs-Familie')
+test('Katalog-Tabs behalten ihre Breite bei langen Namen @desktop', async ({ page }) => {
+  const tabs = demo(page, 'Tabs-Familie')
   await tabs.getByRole('tab', { name: 'Ergebnisse', exact: true }).click()
   await expect(tabs.getByRole('tabpanel', { name: 'Ergebnisse' })).toHaveText('12 · 8 · 5 Punkte')
-  for (const [group, role] of [[tabs.getByRole('tablist', { name: 'Icon-Tabs' }), 'tab'], [demo('SegmentedControl').getByRole('radiogroup', { name: 'Ansicht' }), 'radio']] as const) {
+  for (const [group, role] of [[tabs.getByRole('tablist', { name: 'Icon-Tabs' }), 'tab'], [demo(page, 'SegmentedControl').getByRole('radiogroup', { name: 'Ansicht' }), 'radio']] as const) {
     for (const viewportWidth of [320, 390, 429, 430, 431, 1440]) {
       await page.setViewportSize({ width: viewportWidth, height: 900 })
       const width = (await group.boundingBox())!.width
@@ -166,5 +185,4 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
       }
     }
   }
-  expect(errors).toEqual([])
 })
