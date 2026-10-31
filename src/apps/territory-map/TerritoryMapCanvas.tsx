@@ -1,10 +1,27 @@
 import { Minus, Plus } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import type { FocusEvent, PointerEvent } from 'react'
 
 import { TerritoryShape } from '@/apps/territory-map/components'
 import { mapViewBoxes } from '@/apps/territory-map/data/territories'
-import { mapZoomLevels, tapMoveThreshold } from '@/apps/territory-map/mapConfig'
+import { tapMoveThreshold } from '@/apps/territory-map/mapConfig'
+import {
+  defaultMapView,
+  getMapFrame,
+  getNextZoomLevel,
+  getOverscannedViewBox,
+  getStageTransform,
+  getWheelZoomFactor,
+  mapStageOverscan,
+  maxMapZoom,
+  minMapZoom,
+  panMapView,
+  parseMapViewBox,
+  shouldRedrawStage,
+  toMapPoint,
+  zoomMapView,
+} from '@/apps/territory-map/mapView'
+import type { MapPoint, MapView } from '@/apps/territory-map/mapView'
 import {
   getTerritoryClaimColor,
   getTerritoryClaimOwners,
@@ -23,33 +40,22 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
 import { dateTimeFormat } from '@/lib/i18n/formatters'
 
-type MapView = {
-  offset: {
-    x: number
-    y: number
-  }
-  zoom: number
-}
+type MapGesture =
+  | { kind: 'pan'; pointerId: number; start: MapPoint; startView: MapView }
+  | { kind: 'pinch'; startDistance: number; startMidpoint: MapPoint; startView: MapView }
 
-type SvgRenderMetrics = {
-  left: number
-  scale: number
-  top: number
-  viewBoxX: number
-  viewBoxY: number
-}
+// Safari meldet Trackpad-Pinch als GestureEvent statt als Mausrad mit ctrlKey.
+type SafariGestureEvent = UIEvent & { clientX: number; clientY: number; scale: number }
 
-type PendingDragMove = {
-  clientX: number
-  clientY: number
-  pointerId: number
-}
-
-const defaultZoomLevelIndex = 0
-const defaultMapView: MapView = {
-  offset: { x: 0, y: 0 },
-  zoom: mapZoomLevels[defaultZoomLevelIndex],
-}
+// Läuft gerade Seitenscrollen über die Karte, bleibt das Mausrad beim Seitenscrollen.
+const pageScrollGraceMs = 400
+// Eine begonnene Rad-Zoomgeste läuft auch an den Zoomgrenzen weiter, statt die Seite zu scrollen.
+const wheelGestureGraceMs = 250
+const wheelRedrawDelayMs = 160
+// Gemeinsame Kartenhöhe: der Weltausschnitt bestimmt das Seitenverhältnis beider Karten.
+const worldViewBox = parseMapViewBox(mapViewBoxes.world)
+const stageSize = `${(1 + 2 * mapStageOverscan) * 100}%`
+const stageOffset = `${-mapStageOverscan * 100}%`
 
 function getMapTransform(view: MapView) {
   return `translate(${view.offset.x}px, ${view.offset.y}px) scale(${view.zoom})`
@@ -62,6 +68,15 @@ function getTerritoryIdFromTarget(target: EventTarget | null) {
 
   return target.closest<SVGElement>('[data-territory-id]')?.dataset
     .territoryId ?? null
+}
+
+function getPointerPair(pointers: Map<number, MapPoint>) {
+  const [first, second] = [...pointers.values()]
+
+  return {
+    distance: Math.hypot(second.x - first.x, second.y - first.y),
+    midpoint: { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 },
+  }
 }
 
 export function TerritoryMapCanvas({
@@ -87,6 +102,7 @@ export function TerritoryMapCanvas({
 }) {
   const { locale, t } = useI18n()
   const isMapLoading = territories.length === 0
+  const contentViewBox = useMemo(() => parseMapViewBox(mapViewBoxes[mapId]), [mapId])
   // Gebietsname und erster Besuch je Person für den Tooltip der Karte.
   const territoryNames = useMemo(
     () => new Map(territories.map((territory) => [territory.id, territory.name])),
@@ -107,23 +123,19 @@ export function TerritoryMapCanvas({
   }, [events, mapId])
   const [tip, setTip] = useState<{ territoryId: string; x: number; y: number } | null>(null)
   const [view, setView] = useState<MapView>(defaultMapView)
-  const [zoomLevelIndex, setZoomLevelIndex] = useState(defaultZoomLevelIndex)
-  const activePointersRef = useRef(new Set<number>())
-  const dragDistanceRef = useRef(0)
-  const dragStartRef = useRef<{
-    pointerId: number
-    x: number
-    y: number
-    offsetX: number
-    offsetY: number
-  } | null>(null)
+  // Gezeichnete Ansicht auf dem SVG-Layer und Live-Ansicht der laufenden Geste.
+  const drawnViewRef = useRef<MapView>(view)
   const liveViewRef = useRef<MapView>(view)
+  const gestureRef = useRef<MapGesture | null>(null)
+  const pointersRef = useRef(new Map<number, MapPoint>())
+  const multiPointerActiveRef = useRef(false)
+  const gestureRafRef = useRef<number | null>(null)
+  const wheelTimerRef = useRef<number | null>(null)
+  const lastPageScrollRef = useRef(Number.NEGATIVE_INFINITY)
+  const lastWheelZoomRef = useRef(Number.NEGATIVE_INFINITY)
+  const safariGestureViewRef = useRef<MapView | null>(null)
   const mapLayerRef = useRef<SVGGElement | null>(null)
   const mapViewportRef = useRef<HTMLDivElement | null>(null)
-  const gestureMetricsRef = useRef<SvgRenderMetrics | null>(null)
-  const multiPointerActiveRef = useRef(false)
-  const pendingDragMoveRef = useRef<PendingDragMove | null>(null)
-  const panRafRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   const tapCandidateRef = useRef<{
     pointerId: number
@@ -131,10 +143,33 @@ export function TerritoryMapCanvas({
     x: number
     y: number
   } | null>(null)
-  const applyView = (nextView: MapView, shouldCommit = false) => {
+
+  const measureMap = () => {
+    const viewport = mapViewportRef.current
+
+    if (!viewport) {
+      return null
+    }
+
+    const rect = viewport.getBoundingClientRect()
+    const frame = getMapFrame(rect.width, rect.height, contentViewBox)
+
+    return {
+      frame,
+      toPoint: (clientX: number, clientY: number) =>
+        toMapPoint(frame, clientX - rect.left, clientY - rect.top),
+    }
+  }
+
+  // Zeichnet die Vektoren scharf neu: einmal je Gestenende statt in jedem Frame.
+  const drawView = (nextView: MapView, shouldCommit = true) => {
     liveViewRef.current = nextView
+    drawnViewRef.current = nextView
     if (mapLayerRef.current) {
       mapLayerRef.current.style.transform = getMapTransform(nextView)
+    }
+    if (svgRef.current) {
+      svgRef.current.style.transform = ''
     }
 
     if (shouldCommit) {
@@ -142,46 +177,25 @@ export function TerritoryMapCanvas({
     }
   }
 
-  const resetView = () => {
-    setZoomLevelIndex(defaultZoomLevelIndex)
-    applyView(defaultMapView, true)
-  }
-
-  const getSvgRenderMetrics = () => {
+  // Während einer Geste verschiebt und skaliert nur der Compositor die bereits gerasterte Bühne.
+  const showLiveView = (nextView: MapView) => {
     const svg = svgRef.current
+    const measured = measureMap()
 
-    if (!svg) {
-      return null
+    if (!svg || !measured) {
+      drawView(nextView, false)
+      return
     }
 
-    const rect = svg.getBoundingClientRect()
-    const viewBox = svg.viewBox.baseVal
-    const scale = Math.min(rect.width / viewBox.width, rect.height / viewBox.height)
-    const renderedWidth = viewBox.width * scale
-    const renderedHeight = viewBox.height * scale
-    const left = rect.left + (rect.width - renderedWidth) / 2
-    const top = rect.top + (rect.height - renderedHeight) / 2
+    liveViewRef.current = nextView
+    const transform = getStageTransform(drawnViewRef.current, nextView, measured.frame)
 
-    return {
-      left,
-      scale,
-      top,
-      viewBoxX: viewBox.x,
-      viewBoxY: viewBox.y,
-    }
-  }
-
-  const getSvgPoint = (clientX: number, clientY: number) => {
-    const metrics = getSvgRenderMetrics()
-
-    if (!metrics) {
-      return null
+    if (shouldRedrawStage(transform, measured.frame)) {
+      drawView(nextView, false)
+      return
     }
 
-    return {
-      x: (clientX - metrics.left) / metrics.scale + metrics.viewBoxX,
-      y: (clientY - metrics.top) / metrics.scale + metrics.viewBoxY,
-    }
+    svg.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`
   }
 
   const setMapDragging = (isDragging: boolean) => {
@@ -194,147 +208,242 @@ export function TerritoryMapCanvas({
     viewport.dataset.mapDragging = String(isDragging)
   }
 
-  const applyPendingDragMove = () => {
-    panRafRef.current = null
+  const updateGesture = () => {
+    gestureRafRef.current = null
 
-    const pendingMove = pendingDragMoveRef.current
-    pendingDragMoveRef.current = null
+    const gesture = gestureRef.current
+    const measured = measureMap()
 
-    if (!pendingMove || !activePointersRef.current.has(pendingMove.pointerId)) {
+    if (!gesture || !measured) {
       return
     }
 
-    if (activePointersRef.current.size > 1) {
-      multiPointerActiveRef.current = true
-      tapCandidateRef.current = null
-      return
-    }
+    if (gesture.kind === 'pinch') {
+      if (pointersRef.current.size < 2) {
+        return
+      }
 
-    const dragStart = dragStartRef.current
-
-    if (!dragStart || dragStart.pointerId !== pendingMove.pointerId) {
-      return
-    }
-
-    const deltaX = pendingMove.clientX - dragStart.x
-    const deltaY = pendingMove.clientY - dragStart.y
-    dragDistanceRef.current = Math.hypot(deltaX, deltaY)
-
-    const metrics = gestureMetricsRef.current
-    const svgDeltaX = metrics ? deltaX / metrics.scale : deltaX
-    const svgDeltaY = metrics ? deltaY / metrics.scale : deltaY
-
-    if (dragDistanceRef.current >= tapMoveThreshold) {
-      tapCandidateRef.current = null
-    }
-
-    applyView({
-      offset: {
-        x: dragStart.offsetX + svgDeltaX,
-        y: dragStart.offsetY + svgDeltaY,
-      },
-      zoom: liveViewRef.current.zoom,
-    })
-  }
-
-  const schedulePendingDragMove = () => {
-    if (panRafRef.current !== null) {
-      return
-    }
-
-    panRafRef.current = window.requestAnimationFrame(applyPendingDragMove)
-  }
-
-  const applyZoomAt = (
-    clientX: number,
-    clientY: number,
-    nextZoom: number,
-    shouldCommit = false,
-  ) => {
-    const point = getSvgPoint(clientX, clientY)
-    const currentView = liveViewRef.current
-
-    if (!point) {
-      applyView(
-        {
-          ...currentView,
-          zoom: nextZoom,
-        },
-        shouldCommit,
+      const { distance, midpoint } = getPointerPair(pointersRef.current)
+      showLiveView(
+        zoomMapView(
+          gesture.startView,
+          measured.toPoint(gesture.startMidpoint.x, gesture.startMidpoint.y),
+          (gesture.startView.zoom * distance) / gesture.startDistance,
+          measured.toPoint(midpoint.x, midpoint.y),
+        ),
       )
       return
     }
 
-    const mapX = (point.x - currentView.offset.x) / currentView.zoom
-    const mapY = (point.y - currentView.offset.y) / currentView.zoom
+    const pointer = pointersRef.current.get(gesture.pointerId)
 
-    applyView(
-      {
-        offset: {
-          x: point.x - mapX * nextZoom,
-          y: point.y - mapY * nextZoom,
-        },
-        zoom: nextZoom,
-      },
-      shouldCommit,
-    )
-  }
-
-  const applyZoomLevel = (nextZoomLevelIndex: number) => {
-    const nextZoom = mapZoomLevels[nextZoomLevelIndex]
-    const svg = svgRef.current
-
-    setZoomLevelIndex(nextZoomLevelIndex)
-
-    if (!svg) {
-      applyView(
-        {
-          ...liveViewRef.current,
-          zoom: nextZoom,
-        },
-        true,
-      )
+    if (!pointer) {
       return
     }
 
-    const rect = svg.getBoundingClientRect()
-    applyZoomAt(
-      rect.left + rect.width / 2,
-      rect.top + rect.height / 2,
-      nextZoom,
-      true,
-    )
+    const deltaX = pointer.x - gesture.start.x
+    const deltaY = pointer.y - gesture.start.y
+
+    if (Math.hypot(deltaX, deltaY) >= tapMoveThreshold) {
+      tapCandidateRef.current = null
+    }
+
+    // In der Übersicht passt die ganze Karte in den Ausschnitt; dort wird nicht verschoben.
+    if (gesture.startView.zoom > minMapZoom) {
+      showLiveView(panMapView(gesture.startView, measured.frame, deltaX, deltaY))
+    }
   }
 
-  const stopMapGesture = (pointerId?: number) => {
-    if (typeof pointerId === 'number') {
-      activePointersRef.current.delete(pointerId)
-    } else {
-      activePointersRef.current.clear()
+  const scheduleGestureUpdate = () => {
+    if (gestureRafRef.current === null) {
+      gestureRafRef.current = window.requestAnimationFrame(updateGesture)
+    }
+  }
+
+  const flushGestureUpdate = () => {
+    if (gestureRafRef.current !== null) {
+      window.cancelAnimationFrame(gestureRafRef.current)
+      updateGesture()
+    }
+  }
+
+  // Beginnt eine Geste ab der Live-Ansicht, auch wenn ein Finger hinzukommt oder wegfällt.
+  const startGesture = () => {
+    const pointers = pointersRef.current
+
+    if (pointers.size >= 2) {
+      const { distance, midpoint } = getPointerPair(pointers)
+      gestureRef.current = {
+        kind: 'pinch',
+        startDistance: Math.max(distance, 1),
+        startMidpoint: midpoint,
+        startView: liveViewRef.current,
+      }
+      return
     }
 
-    if (panRafRef.current !== null) {
-      window.cancelAnimationFrame(panRafRef.current)
-      applyPendingDragMove()
-    }
+    const [pointerId, start] = [...pointers][0]
+    gestureRef.current = { kind: 'pan', pointerId, start, startView: liveViewRef.current }
+  }
 
-    dragStartRef.current = null
-    gestureMetricsRef.current = null
+  const endGesture = () => {
+    gestureRef.current = null
     multiPointerActiveRef.current = false
-    pendingDragMoveRef.current = null
     tapCandidateRef.current = null
     setMapDragging(false)
-    setView(liveViewRef.current)
+    drawView(liveViewRef.current)
   }
 
-  useEffect(
-    () => () => {
-      if (panRafRef.current !== null) {
-        window.cancelAnimationFrame(panRafRef.current)
+  const releasePointer = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    flushGestureUpdate()
+    pointersRef.current.delete(event.pointerId)
+  }
+
+  const continueOrEndGesture = () => {
+    if (pointersRef.current.size === 0) {
+      endGesture()
+    } else {
+      startGesture()
+    }
+  }
+
+  const cancelPendingWheelRedraw = () => {
+    if (wheelTimerRef.current !== null) {
+      window.clearTimeout(wheelTimerRef.current)
+      wheelTimerRef.current = null
+    }
+  }
+
+  const resetView = () => {
+    cancelPendingWheelRedraw()
+    drawView(defaultMapView)
+  }
+
+  const zoomByLevel = (direction: 1 | -1) => {
+    const measured = measureMap()
+    const nextZoom = getNextZoomLevel(liveViewRef.current.zoom, direction)
+
+    cancelPendingWheelRedraw()
+
+    if (!measured) {
+      drawView({ ...liveViewRef.current, zoom: nextZoom })
+      return
+    }
+
+    const center = toMapPoint(
+      measured.frame,
+      measured.frame.width / 2,
+      measured.frame.height / 2,
+    )
+    drawView(zoomMapView(liveViewRef.current, center, nextZoom))
+  }
+
+  const zoomAtClientPoint = (clientX: number, clientY: number, nextZoom: number, from = liveViewRef.current) => {
+    const measured = measureMap()
+
+    if (measured) {
+      const anchor = measured.toPoint(clientX, clientY)
+      showLiveView(zoomMapView(from, anchor, nextZoom))
+    }
+  }
+
+  const handleWheel = useEffectEvent((event: WheelEvent) => {
+    if (isMapLoading || pointersRef.current.size > 0) {
+      return
+    }
+
+    const zoom = liveViewRef.current.zoom
+    const isPinch = event.ctrlKey
+    const continuesZoom = event.timeStamp - lastWheelZoomRef.current < wheelGestureGraceMs
+
+    if (!isPinch && !continuesZoom) {
+      const isScrollingPage = event.timeStamp - lastPageScrollRef.current < pageScrollGraceMs
+      const isAtLimit = event.deltaY > 0 ? zoom <= minMapZoom : zoom >= maxMapZoom
+
+      if (isScrollingPage || isAtLimit || event.deltaY === 0) {
+        return
       }
-    },
-    [],
-  )
+    }
+
+    event.preventDefault()
+    lastWheelZoomRef.current = event.timeStamp
+    setTip(null)
+    zoomAtClientPoint(
+      event.clientX,
+      event.clientY,
+      zoom * getWheelZoomFactor(event.deltaY, event.deltaMode, isPinch, window.innerHeight),
+    )
+    cancelPendingWheelRedraw()
+    wheelTimerRef.current = window.setTimeout(() => {
+      wheelTimerRef.current = null
+      drawView(liveViewRef.current)
+    }, wheelRedrawDelayMs)
+  })
+
+  const handleSafariGesture = useEffectEvent((event: Event) => {
+    // Auf iOS laufen dieselben Finger bereits als Pointer-Pinch.
+    if (pointersRef.current.size > 0) {
+      return
+    }
+
+    const gesture = event as SafariGestureEvent
+    event.preventDefault()
+
+    if (event.type === 'gesturestart') {
+      setTip(null)
+      safariGestureViewRef.current = liveViewRef.current
+      return
+    }
+
+    const startView = safariGestureViewRef.current
+
+    if (!startView) {
+      return
+    }
+
+    if (event.type === 'gestureend') {
+      safariGestureViewRef.current = null
+      drawView(liveViewRef.current)
+      return
+    }
+
+    zoomAtClientPoint(gesture.clientX, gesture.clientY, startView.zoom * gesture.scale, startView)
+  })
+
+  useEffect(() => {
+    const viewport = mapViewportRef.current
+
+    if (!viewport) {
+      return
+    }
+
+    const onWheel = (event: WheelEvent) => handleWheel(event)
+    const onSafariGesture = (event: Event) => handleSafariGesture(event)
+    const onScroll = (event: Event) => {
+      lastPageScrollRef.current = event.timeStamp
+    }
+    const safariGestureEvents = ['gesturestart', 'gesturechange', 'gestureend']
+
+    viewport.addEventListener('wheel', onWheel, { passive: false })
+    safariGestureEvents.forEach((type) => viewport.addEventListener(type, onSafariGesture))
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true })
+
+    return () => {
+      viewport.removeEventListener('wheel', onWheel)
+      safariGestureEvents.forEach((type) => viewport.removeEventListener(type, onSafariGesture))
+      document.removeEventListener('scroll', onScroll, { capture: true })
+      if (gestureRafRef.current !== null) {
+        window.cancelAnimationFrame(gestureRafRef.current)
+      }
+      if (wheelTimerRef.current !== null) {
+        window.clearTimeout(wheelTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleMapChange = (nextMap: TerritoryMapId) => {
     setTip(null)
@@ -344,7 +453,7 @@ export function TerritoryMapCanvas({
 
   // Ein gemeinsamer Tooltip für alle Gebiete: an der Maus beim Betreten, nie während des Ziehens.
   const showTerritoryTip = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === 'touch' || activePointersRef.current.size > 0) return
+    if (event.pointerType === 'touch' || pointersRef.current.size > 0) return
     const territoryId = getTerritoryIdFromTarget(event.target)
     if (!territoryId) {
       setTip(null)
@@ -371,6 +480,7 @@ export function TerritoryMapCanvas({
   const tipVisits = tip ? firstVisits.get(tip.territoryId) : undefined
   const formatVisitDate = (value: string | undefined) =>
     value ? dateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value)) : ''
+  const isZoomedIn = view.zoom > minMapZoom
 
   return (
     <Card className="overflow-hidden bg-secondary">
@@ -393,8 +503,8 @@ export function TerritoryMapCanvas({
             className="size-10 shrink-0 bg-background/75 sm:size-9"
             aria-label={t('territory.zoomOut')}
             title={t('territory.zoomOut')}
-            disabled={zoomLevelIndex === 0}
-            onClick={() => applyZoomLevel(zoomLevelIndex - 1)}
+            disabled={!isZoomedIn}
+            onClick={() => zoomByLevel(-1)}
           >
             <Minus className="size-4" />
           </Button>
@@ -404,8 +514,8 @@ export function TerritoryMapCanvas({
             className="size-10 shrink-0 bg-background/75 sm:size-9"
             aria-label={t('territory.zoomIn')}
             title={t('territory.zoomIn')}
-            disabled={zoomLevelIndex === mapZoomLevels.length - 1}
-            onClick={() => applyZoomLevel(zoomLevelIndex + 1)}
+            disabled={view.zoom >= maxMapZoom}
+            onClick={() => zoomByLevel(1)}
           >
             <Plus className="size-4" />
           </Button>
@@ -417,79 +527,59 @@ export function TerritoryMapCanvas({
           ref={mapViewportRef}
           data-map-dragging="false"
           className={[
-            'relative touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing',
-            mapId === 'germany'
-              ? 'h-[44svh] min-h-[300px] sm:h-[50svh] sm:min-h-[360px]'
-              : 'h-[56svh] min-h-[320px] sm:h-[62svh] sm:min-h-[420px]',
+            'relative max-h-[70svh] min-h-[21rem] w-full overflow-hidden bg-secondary sm:min-h-[22.5rem]',
+            isZoomedIn ? 'cursor-grab active:cursor-grabbing' : '',
           ].join(' ')}
+          // Übersicht: ein Finger scrollt die Seite, zwei Finger zoomen. Gezoomt: ein Finger verschiebt.
+          style={{
+            aspectRatio: `${worldViewBox.width} / ${worldViewBox.height}`,
+            touchAction: isZoomedIn ? 'none' : 'pan-x pan-y',
+          }}
           onBlur={() => setTip(null)}
           onFocus={showFocusedTerritoryTip}
           onPointerLeave={() => setTip(null)}
           onPointerOver={showTerritoryTip}
           onPointerDown={(event) => {
             setTip(null)
-            if (event.pointerType === 'mouse' && event.button !== 0) {
+            if (
+              (event.pointerType === 'mouse' && event.button !== 0) ||
+              pointersRef.current.size >= 2
+            ) {
               return
             }
 
+            flushGestureUpdate()
+            cancelPendingWheelRedraw()
             event.currentTarget.setPointerCapture(event.pointerId)
             setMapDragging(true)
-            activePointersRef.current.add(event.pointerId)
-            dragDistanceRef.current = 0
-            gestureMetricsRef.current = getSvgRenderMetrics()
-            dragStartRef.current = {
-              pointerId: event.pointerId,
-              x: event.clientX,
-              y: event.clientY,
-              offsetX: liveViewRef.current.offset.x,
-              offsetY: liveViewRef.current.offset.y,
-            }
-            tapCandidateRef.current = {
-              pointerId: event.pointerId,
-              territoryId: getTerritoryIdFromTarget(event.target),
-              x: event.clientX,
-              y: event.clientY,
-            }
+            pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
 
-            if (activePointersRef.current.size > 1) {
+            if (pointersRef.current.size > 1) {
               multiPointerActiveRef.current = true
               tapCandidateRef.current = null
-              dragStartRef.current = null
-              pendingDragMoveRef.current = null
+            } else {
+              tapCandidateRef.current = {
+                pointerId: event.pointerId,
+                territoryId: getTerritoryIdFromTarget(event.target),
+                x: event.clientX,
+                y: event.clientY,
+              }
             }
+
+            startGesture()
           }}
           onPointerMove={(event) => {
-            if (!activePointersRef.current.has(event.pointerId)) {
+            if (!pointersRef.current.has(event.pointerId)) {
               return
             }
 
-            if (activePointersRef.current.size > 1) {
-              multiPointerActiveRef.current = true
-              tapCandidateRef.current = null
-              pendingDragMoveRef.current = null
-              return
-            }
-
-            pendingDragMoveRef.current = {
-              clientX: event.clientX,
-              clientY: event.clientY,
-              pointerId: event.pointerId,
-            }
-            schedulePendingDragMove()
+            pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+            scheduleGestureUpdate()
           }}
           onPointerUp={(event) => {
             const tapCandidate = tapCandidateRef.current
 
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              event.currentTarget.releasePointerCapture(event.pointerId)
-            }
-
-            if (panRafRef.current !== null) {
-              window.cancelAnimationFrame(panRafRef.current)
-              applyPendingDragMove()
-            }
-
-            activePointersRef.current.delete(event.pointerId)
+            releasePointer(event)
 
             if (
               tapCandidate &&
@@ -505,27 +595,26 @@ export function TerritoryMapCanvas({
               onSelect(tapCandidate.territoryId)
             }
 
-            if (activePointersRef.current.size === 0) {
-              stopMapGesture()
-            }
+            continueOrEndGesture()
           }}
           onPointerCancel={(event) => {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              event.currentTarget.releasePointerCapture(event.pointerId)
-            }
-
-            if (panRafRef.current !== null) {
-              window.cancelAnimationFrame(panRafRef.current)
-              applyPendingDragMove()
-            }
-
-            stopMapGesture(event.pointerId)
+            releasePointer(event)
+            tapCandidateRef.current = null
+            continueOrEndGesture()
           }}
         >
           <svg
             ref={svgRef}
-            viewBox={mapViewBoxes[mapId]}
-            className="block size-full"
+            viewBox={getOverscannedViewBox(contentViewBox)}
+            className="absolute block"
+            style={{
+              height: stageSize,
+              left: stageOffset,
+              top: stageOffset,
+              transformOrigin: '0 0',
+              width: stageSize,
+              willChange: 'transform',
+            }}
             aria-label={t(
               mapId === 'world'
                 ? 'territory.map.world'
@@ -544,7 +633,6 @@ export function TerritoryMapCanvas({
                 <rect width="3" height="10" fill="var(--border)" opacity="0.75" />
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="var(--secondary)" />
             <g
               ref={mapLayerRef}
               className="territory-map-layer"
@@ -555,8 +643,8 @@ export function TerritoryMapCanvas({
             >
               {isMapLoading && (
                 <text
-                  x="50%"
-                  y="50%"
+                  x={contentViewBox.x + contentViewBox.width / 2}
+                  y={contentViewBox.y + contentViewBox.height / 2}
                   dominantBaseline="middle"
                   textAnchor="middle"
                   fill="var(--muted-foreground)"

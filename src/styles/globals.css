@@ -1093,12 +1093,6 @@ svg.lucide {
 
 }
 
-@media (pointer: coarse) {
-  .territory-map-layer {
-    filter: none;
-  }
-}
-
 [data-map-dragging="true"] .territory-shape {
   transition: none;
 }

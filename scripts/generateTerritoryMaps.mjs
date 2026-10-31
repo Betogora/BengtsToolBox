@@ -62,13 +62,17 @@ const mapDefinitions = {
     height: 447,
     outputFileName: 'germanyTerritories.ts',
     exportName: 'germanyTerritoryPaths',
-    width: 520,
+    // Winkeltreue Lambert-Projektion für Deutschland (EPSG:5243), damit die Karte nicht gestreckt wirkt.
+    projection:
+      '+proj=lcc +lat_1=48.6666667 +lat_2=53.6666667 +lat_0=51 +lon_0=10.5',
+    width: 331,
   },
   world: {
     gzipBudget: 38_000,
     height: 520,
     outputFileName: 'worldTerritories.ts',
     exportName: 'worldTerritoryPaths',
+    projection: '+proj=eqc',
     width: 960,
   },
 }
@@ -311,7 +315,7 @@ function generateModule(
         mapshaperPath,
         inputPath,
         '-proj',
-        '+proj=eqc',
+        definition.projection,
         '-simplify',
         'weighted',
         `${percentage}%`,

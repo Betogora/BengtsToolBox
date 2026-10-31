@@ -342,7 +342,7 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', { tag: '@
   await app.expectHealthy()
 })
 
-test('Sushi Map folgt Touch-Panning nach einem Animationsframe', { tag: '@touch' }, async ({
+test('Sushi Map verschiebt und zoomt per Touch über die Compositor-Bühne', { tag: '@touch' }, async ({
   app,
   page,
 }) => {
@@ -419,12 +419,16 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', { tag: '@touch'
   const frameState = await page.evaluate(
     () => (window as MapPanTestWindow).__territoryMapRafTest?.flush(),
   )
-  const transformAfter = await mapLayer.evaluate(
-    (layer) => (layer as SVGGElement).style.transform,
-  )
+  // Während der Geste bewegt nur der Compositor die Bühne; die Vektoren werden erst am Ende neu gezeichnet.
+  const readTransforms = () => mapLayer.evaluate((layer) => ({
+    layer: (layer as SVGGElement).style.transform,
+    stage: (layer as SVGGElement).ownerSVGElement?.style.transform,
+  }))
+  const duringPan = await readTransforms()
 
   expect(frameState).toEqual({ flushed: 1, pending: 0 })
-  expect(transformAfter).not.toBe(mapBefore.transform)
+  expect(duringPan.layer).toBe(mapBefore.transform)
+  expect(duringPan.stage).toBe('translate(-44px, 36px) scale(1)')
 
   await touchSession.send('Input.dispatchTouchEvent', {
     touchPoints: [],
@@ -433,9 +437,28 @@ test('Sushi Map folgt Touch-Panning nach einem Animationsframe', { tag: '@touch'
   await page.evaluate(() =>
     (window as MapPanTestWindow).__territoryMapRafTest?.restore(),
   )
-  await expect.poll(() => mapLayer.evaluate(
-    (layer) => (layer as SVGGElement).style.transform,
-  )).toBe(transformAfter)
+  await expect.poll(async () => {
+    const { layer, stage } = await readTransforms()
+
+    return { isLayerMoved: layer !== mapBefore.transform, stage }
+  }).toEqual({ isLayerMoved: true, stage: '' })
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  const zoomBefore = Number((await readTransforms()).layer.match(/scale\(([\d.]+)\)/)?.[1])
+  const pinch = (type: string, spread: number) => touchSession.send('Input.dispatchTouchEvent', {
+    touchPoints: spread < 0 ? [] : [
+      { id: 1, x: mapBefore.startX - spread, y: mapBefore.startY },
+      { id: 2, x: mapBefore.startX + spread, y: mapBefore.startY },
+    ],
+    type,
+  })
+  await pinch('touchStart', 20)
+  await pinch('touchMove', 50)
+  await pinch('touchMove', 80)
+  await pinch('touchEnd', -1)
+  await expect.poll(async () =>
+    Number((await readTransforms()).layer.match(/scale\(([\d.]+)\)/)?.[1]),
+  ).toBeCloseTo(zoomBefore * 4, 1)
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   await page.getByRole('radiogroup', { name: 'Karte' })

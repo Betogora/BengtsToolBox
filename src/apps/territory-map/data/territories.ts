@@ -4,9 +4,10 @@ import type { Territory, TerritoryMapId } from '@/apps/territory-map/types'
 
 type TerritoryOption = Pick<Territory, 'id' | 'name' | 'isoCode'>
 
+// Sichtbare Ausschnitte: Die Weltgeometrie füllt nur y 74–446, oben und unten liegt leeres Meer.
 export const mapViewBoxes: Record<TerritoryMapId, string> = {
-  world: '0 0 960 520',
-  germany: '0 0 520 447',
+  world: '0 68 960 384',
+  germany: '0 0 331 447',
 }
 
 export const territoryOptionsByMap: Record<
