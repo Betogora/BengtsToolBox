@@ -3,6 +3,7 @@ import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 
 import {
   colorFromWheelPosition,
+  colorPickerPresets,
   getWheelMarkerPosition,
   normalizePickerColor,
   type ColorWheelPosition,
@@ -18,6 +19,7 @@ import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 type ColorPickerProps = {
+  align?: 'start' | 'center' | 'end'
   ariaLabel: string
   className?: string
   disabled?: boolean
@@ -28,6 +30,7 @@ type ColorPickerProps = {
 }
 
 export function ColorPicker({
+  align = 'end',
   ariaLabel,
   className,
   disabled = false,
@@ -55,6 +58,11 @@ export function ColorPicker({
     setPreviewColor(nextColor)
 
     return nextColor
+  }
+
+  const applyPositionFromColor = (nextColor: string) => {
+    setPosition(wheelPositionFromColor(nextColor))
+    setPreviewColor(nextColor)
   }
 
   const flushPendingPosition = () => {
@@ -95,8 +103,7 @@ export function ColorPicker({
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
-      setPreviewColor(normalizedValue)
-      setPosition(wheelPositionFromColor(normalizedValue))
+      applyPositionFromColor(normalizedValue)
     }
 
     setIsOpen(nextOpen)
@@ -178,8 +185,8 @@ export function ColorPicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
-        className="w-[min(15rem,calc(100vw-1.5rem))]"
+        align={align}
+        className="w-[min(17rem,calc(100vw-1.5rem))]"
       >
         <div
           ref={wheelRef}
@@ -251,6 +258,36 @@ export function ColorPicker({
               top: `${markerPosition.top}%`,
             }}
           />
+        </div>
+        {/* Schnellwahl unter dem Farbrad; die gewählte Farbe trägt einen Ring. */}
+        <div
+          role="radiogroup"
+          aria-label={t('common.colorPicker.presetsAria')}
+          className="mt-3 grid grid-cols-7 justify-items-center gap-2 border-t pt-3"
+        >
+          {colorPickerPresets.map((preset) => {
+            const presetColor = normalizePickerColor(preset)
+            const isSelected = presetColor === previewColor
+
+            return (
+              <button
+                key={presetColor}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                aria-label={t('common.colorPicker.presetAria', { color: presetColor })}
+                className={cn(
+                  'size-7 rounded-full shadow-xs ring-offset-2 ring-offset-popover transition-transform outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  isSelected ? 'ring-2 ring-foreground/70' : 'hover:scale-110',
+                )}
+                style={{ backgroundColor: presetColor }}
+                onClick={() => {
+                  applyPositionFromColor(presetColor)
+                  void commitColor(presetColor)
+                }}
+              />
+            )
+          })}
         </div>
       </PopoverContent>
     </Popover>

@@ -33,7 +33,7 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 
 ## 2. Produktlandkarte und Routen
 
-Das Dashboard unter `/` zeigt alle zehn regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
+Das Dashboard unter `/` zeigt alle elf regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
 
 | Bereich | Route | Registrierung | Kernzweck |
 | --- | --- | --- | --- |
@@ -43,6 +43,7 @@ Das Dashboard unter `/` zeigt alle zehn regulär registrierten Apps. Die Registr
 | Fortschritts-Dashboard | `/apps/progress-dashboard` | Registry | Ereignisbasierte Punktestände und Zeitverlauf |
 | Scoreboard | `/apps/scoreboard` | Registry | Personen-, Team- und Änderungswertung |
 | Live-Buzzer | `/apps/live-buzzer` | Registry | Transaktionssicherer Quiz-Buzzer |
+| Kostümwettbewerb | `/apps/voting` | Registry | Anonyme QR-Abstimmung mit Auswertung und Archiv |
 | Sushi Map | `/apps/sushi` | Registry | Besuchte Länder und Bundesländer |
 | Random Number Generator | `/apps/randomizer` | Registry | Zufällige Ganzzahl in einem Bereich |
 | SK Anderten Turnier-App | `/apps/swiss-tournaments` | Registry | Swiss-, Rundenturnier-, Hand-and-Brain- und Mario-Kart-Turniere |
@@ -166,6 +167,7 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 | Live-Buzzer, nur Quelle der einmaligen Übernahme | `apps/live-buzzer/sessions/default/state/default` | `.../players` |
 | Scoreboard | `apps/scoreboard/sessions/default/state/default` | `.../players`, `.../teams`, `.../scorings`, `.../events` |
 | Fortschritts-Dashboard | `apps/progress-dashboard/sessions/default/state/default` | `.../players`, `.../datasets` |
+| Kostümwettbewerb | `apps/voting/sessions/default/state/default` | `.../people`, `.../rounds`, `.../ballots` |
 | Sushi Map | `apps/territory-map/sessions/default/state/default` | `.../players`, `.../datasets` |
 | Turnier-App | `apps/swiss-tournaments/sessions/default/state/default` | `.../tournaments` |
 | Triathlon-Tracker | `apps/triathlon-tracker/sessions/default/state/default` | `.../planned-trainings`, `.../actual-trainings` |
@@ -492,6 +494,21 @@ Die Modelle beruhen auf diesen fachlichen Grundlagen; die Oberfläche verlinkt s
 - Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.
 - Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
 - Archive sind umbenennbar, lesbar und löschbar.
+
+### 5.12 Kostümwettbewerb
+
+**Zweck:** eine Party anonym per QR-Code über eine Frage wie „Bestes Kostüm“ abstimmen lassen.
+
+- Der Hub zeigt Live-Buzzer und Kostümwettbewerb ab Tablet-Breite als zwei kleine Kacheln auf dem früheren Platz der breiten Buzzer-Kachel; mobil steht die App direkt nach dem Buzzer.
+- Seitenkopf und Hub erzeugen ihren QR-Code zur Laufzeit aus der aktuellen Adresse (mit Lobby-Pfad) im runden Punktstil; es gibt keine statische QR-Datei mehr.
+- Gäste melden sich beim ersten Besuch in einem zweistufigen Dialog mit Pflichtnamen und Farbe an und geben danach genau eine Stimme pro Runde ab. Eine Stimme lässt sich bis zum Ende überschreiben; eigene Stimmen sind erlaubt. Das Gerät merkt sich seine Person lokal und kann sie wechseln.
+- Die Personenliste wächst selbst: Anmeldungen, von der Spielleitung angelegte Personen und beim Abstimmen eingetippte Namen. Namen werden ohne Rücksicht auf Groß- und Kleinschreibung und Leerzeichen abgeglichen; wer sich unter einem schon genannten Namen anmeldet, übernimmt diesen Eintrag.
+- Jede Stimme liegt als eigenes Dokument je wählender Person unter `ballots` und trägt den Schlüssel der aktiven Runde; Stimmen anderer Runden zählen nie. Gleichstand teilt den Platz.
+- Während der Runde sehen Gäste nur die Zahl der Stimmen und wer bereits abgestimmt hat. Das Ergebnis erscheint nach dem Beenden auf allen Geräten. Wer wen gewählt hat, sieht nur die Spielleitung, bis sie die Wähler für alle freigibt.
+- Dieselbe clientseitige PIN wie bei Schlag den Raab (gemeinsam in `src/apps/shared/adminUnlock.ts`) schaltet für die `sessionStorage`-Sitzung den Bearbeitungsmodus frei: Titel, Beenden, Wiederöffnen, Zwischenstand, Wähler-Freigabe, neue Abstimmung sowie Personen anlegen, umbenennen, umfärben und löschen. Die PIN ist keine Sicherheitsgrenze.
+- Doppelte Schreibweisen werden zusammengeführt: Die Spielleitung wählt mehrere Einträge und den bleibenden Namen. Die übrigen Einträge bleiben als Alias erhalten, zählen für die Zielperson und lassen sich wieder trennen; bei zusammengeführten Wählern zählt die jüngste Stimme. Ähnliche Namen (gleicher Vorname mit Zusatz, ein abweichender Buchstabe) werden als Vorschlag angezeigt und können als verschieden markiert werden.
+- „Neue Abstimmung“ archiviert die Runde mit festem Ergebnis-Snapshot und Wählern, löscht deren Stimmen und startet mit demselben Titel und denselben Personen neu; ein Stechen ist einfach eine neue Runde. „Alle löschen“ entfernt Personen und laufende Stimmen, nicht das Archiv. Archive sind aufklappbar, für die Spielleitung umbenenn- und löschbar.
+- Der Presenter zeigt während der Runde QR-Code, Titel, Stimmenzahl und Wähler, danach Gewinner und Rangliste.
 
 ## 6. Architektur
 

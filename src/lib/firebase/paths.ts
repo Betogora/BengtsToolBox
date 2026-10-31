@@ -109,6 +109,14 @@ export const firebasePaths = {
       'apps/progress-dashboard/sessions/default/datasets',
       'datasets',
     ),
+  votingState: (lobbyId = 'default') =>
+    scopedOrLegacy(lobbyId, 'voting', 'apps/voting/sessions/default/state/default'),
+  votingPeople: (lobbyId = 'default') =>
+    scopedOrLegacy(lobbyId, 'voting', 'apps/voting/sessions/default/people', 'people'),
+  votingRounds: (lobbyId = 'default') =>
+    scopedOrLegacy(lobbyId, 'voting', 'apps/voting/sessions/default/rounds', 'rounds'),
+  votingBallots: (lobbyId = 'default') =>
+    scopedOrLegacy(lobbyId, 'voting', 'apps/voting/sessions/default/ballots', 'ballots'),
   territoryMapState: (lobbyId = 'default') =>
     scopedOrLegacy(
       lobbyId,

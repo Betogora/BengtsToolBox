@@ -103,6 +103,8 @@ import {
 
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PlayerCard } from '@/apps/shared/components/PlayerCard'
+import { PersonChip } from '@/apps/shared/components/PersonChip'
+import { PersonOption } from '@/apps/shared/components/PersonOption'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import type { TeamId } from '@/apps/shared/teams'
@@ -285,6 +287,18 @@ function InteractionDemo() {
   </div>
 }
 
+function PersonOptionDemo() {
+  const people = [
+    { id: 'ben', name: 'Ben', color: '#8ACFD0' },
+    { id: 'tim', name: 'Tim', color: '#0D8E90' },
+    { id: 'lena', name: 'Lena Müller', color: '#8B5CF6' },
+  ]
+  const [selectedId, setSelectedId] = useState('tim')
+  return <div role="radiogroup" aria-label="Person" className="grid w-full grid-cols-2 gap-2">
+    {people.map(person => <PersonOption key={person.id} checked={person.id === selectedId} color={person.color} name={person.name} trailing={person.id === 'ben' ? 'Du' : undefined} onSelect={() => setSelectedId(person.id)} />)}
+  </div>
+}
+
 function PlayerDemo() {
   const [name, setName] = useState('Paul')
   const [teamId, setTeamId] = useState<TeamId | null>(null)
@@ -405,6 +419,12 @@ const demos: Record<string, ReactNode> = {
   ColorPicker: <FieldDemo kind="ColorPicker" />,
   InlineTextEdit: <FieldDemo kind="InlineTextEdit" />,
   'Shared PlayerCard': <PlayerDemo />,
+  PersonChip: <div className="flex flex-wrap gap-1.5">
+    <PersonChip color="#8ACFD0" name="Ben" />
+    <PersonChip color="#0D8E90" name="Sven" />
+    <PersonChip color="#E5484D" name="Maximiliane von Hohenzollern" />
+  </div>,
+  PersonOption: <PersonOptionDemo />,
   EmptyState: <EmptyState icon={Trophy} action={<Button variant="outline" size="sm"><Plus />Erste Runde starten</Button>}>Noch keine Ergebnisse</EmptyState>,
   ConfirmButton: <ConfirmationDemo />,
   DeleteButton: <div className="flex flex-wrap items-end gap-x-5 gap-y-4">

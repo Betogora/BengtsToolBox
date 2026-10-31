@@ -7,6 +7,7 @@ import {
   CircleDot,
   Coins,
   Dice5,
+  Drama,
   ListOrdered,
   StepForward,
   UtensilsCrossed,
@@ -95,6 +96,19 @@ const appDefinitions: readonly HubApp[] = [
     loadPage: () =>
       import('@/apps/live-buzzer').then(({ LiveBuzzerPage }) => ({
         default: LiveBuzzerPage,
+      })),
+  },
+  {
+    id: 'voting',
+    titleKey: 'app.voting.title',
+    descriptionKey: 'app.voting.description',
+    href: '/apps/voting',
+    routePath: 'apps/voting',
+    status: 'Live',
+    Icon: Drama,
+    loadPage: () =>
+      import('@/apps/voting').then(({ VotingPage }) => ({
+        default: VotingPage,
       })),
   },
   {

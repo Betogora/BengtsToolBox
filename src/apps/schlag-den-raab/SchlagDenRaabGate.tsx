@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { LockKeyhole, Target } from 'lucide-react'
 
+import { isAdminPassword, isAdminUnlocked, setAdminUnlocked } from '@/apps/shared/adminUnlock'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -12,34 +13,19 @@ import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
 
 const unlockKey = 'bengts-toolbox:schlag-den-raab:unlocked'
-const password = '5340'
 const passwordErrorId = 'schlag-den-raab-password-error'
-
-function isUnlocked() {
-  try {
-    return window.sessionStorage.getItem(unlockKey) === 'true'
-  } catch {
-    return false
-  }
-}
-
-function unlockSession() {
-  try {
-    window.sessionStorage.setItem(unlockKey, 'true')
-  } catch { /* The current page can still be unlocked without storage. */ }
-}
 
 export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
   const { t } = useI18n()
-  const [isAllowed, setIsAllowed] = useState(isUnlocked)
+  const [isAllowed, setIsAllowed] = useState(() => isAdminUnlocked(unlockKey))
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState('')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (inputValue === password) {
-      unlockSession()
+    if (isAdminPassword(inputValue)) {
+      setAdminUnlocked(unlockKey, true)
       setIsAllowed(true)
       setError('')
       return

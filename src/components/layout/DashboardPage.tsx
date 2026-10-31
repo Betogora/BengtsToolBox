@@ -5,12 +5,7 @@ import { Link } from 'react-router-dom'
 import { dashboardApps, type HubApp } from '@/apps/registry'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip } from '@/components/ui/tooltip'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { QrCodeButton } from '@/components/ui/QrCodeButton'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { useI18n } from '@/lib/i18n'
 import { dateTimeFormat } from '@/lib/i18n/formatters'
@@ -28,7 +23,8 @@ const bentoLayout: Record<string, TileSize> = {
   coinflip: 'small',
   'progress-dashboard': 'wide',
   scoreboard: 'wide',
-  'live-buzzer': 'wide',
+  'live-buzzer': 'small',
+  voting: 'small',
   'triathlon-tracker': 'wide',
   randomizer: 'small',
   'next-question': 'small',
@@ -77,12 +73,15 @@ function AppLink({
   )
 }
 
+// Only the hover properties animate; the background must switch together with the
+// title glow when the color scheme changes.
 const tileCardClass =
-  'relative h-full overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/45 group-hover:shadow-[0_18px_46px_-34px_rgba(6,52,79,0.55)]'
+  'relative h-full overflow-hidden transition-[translate,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/45 group-hover:shadow-[0_18px_46px_-34px_rgba(6,52,79,0.55)]'
 
-// A soft card-colored halo behind the title keeps it readable over illustrations.
+// A glyph-tight card-colored glow keeps the title readable over illustrations
+// without masking a whole area of the motif.
 const titleHaloClass =
-  'relative isolate w-fit before:absolute before:-inset-x-8 before:-inset-y-6 before:-z-10 before:bg-[radial-gradient(closest-side,var(--card)_62%,color-mix(in_srgb,var(--card)_70%,transparent)_80%,transparent)]'
+  'relative w-fit [text-shadow:0_0_1px_var(--card),0_0_3px_var(--card),0_0_6px_var(--card),0_0_10px_var(--card)]'
 
 function TileIcon({ app, className }: { app: HubApp; className?: string }) {
   return (
@@ -176,38 +175,6 @@ function CompactTile({ app, href }: AppTileProps) {
   )
 }
 
-function QrCodeButton() {
-  const { t } = useI18n()
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          aria-label={t('dashboard.qrOpen')}
-          className="rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <Card className="grid h-[72px] w-[72px] place-items-center overflow-hidden bg-white p-2 shadow-[0_18px_46px_-30px_rgba(6,52,79,0.55)] transition-all hover:-translate-y-0.5 hover:border-primary/45">
-            <img
-              src="/qrcode-dots.svg"
-              alt={t('dashboard.qrAlt')}
-              className="size-full"
-            />
-          </Card>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="w-[min(calc(100%-2rem),26rem)] max-w-none p-5 sm:p-6">
-        <DialogTitle className="sr-only">{t('dashboard.qrAlt')}</DialogTitle>
-        <img
-          src="/qrcode-dots.svg"
-          alt={t('dashboard.qrAlt')}
-          className="aspect-square w-full"
-        />
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export function DashboardPage({ lobby }: { lobby?: Lobby }) {
   const { locale, t } = useI18n()
   const activeLobby = lobby ?? defaultLobby
@@ -249,7 +216,11 @@ export function DashboardPage({ lobby }: { lobby?: Lobby }) {
             </CardHeader>
           </Card>
 
-          <QrCodeButton />
+          <QrCodeButton
+            label={t('dashboard.qrAlt')}
+            openLabel={t('dashboard.qrOpen')}
+            value={`${window.location.origin}${lobby ? `/lobbies/${lobby.id}` : '/'}`}
+          />
         </div>
       </section>
 

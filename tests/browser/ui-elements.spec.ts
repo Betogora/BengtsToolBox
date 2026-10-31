@@ -64,6 +64,11 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await page.keyboard.up('Enter')
   await expect(reset.getByRole('status')).toHaveText('2× bestätigt')
 
+  const personOption = demo('PersonOption')
+  await personOption.getByRole('radio', { name: /Lena Müller/ }).click()
+  await expect(personOption.getByRole('radio', { name: /Lena Müller/ })).toHaveAttribute('aria-checked', 'true')
+  await expect(personOption.getByRole('radio', { name: /Tim/ })).toHaveAttribute('aria-checked', 'false')
+
   const player = demo('Shared PlayerCard')
   const playerScore = player.locator('[data-player-score]')
   const blueTeam = player.getByRole('radio', { name: 'Team Blau' })
@@ -143,6 +148,9 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   const wheel = page.getByRole('slider')
   await wheel.focus()
   await wheel.press('ArrowRight')
+  const greenPreset = page.getByRole('radio', { name: 'Farbe #3FA66B' })
+  await greenPreset.click()
+  await expect(greenPreset).toHaveAttribute('aria-checked', 'true')
   await page.keyboard.press('Escape')
 
   const tabs = demo('Tabs-Familie')

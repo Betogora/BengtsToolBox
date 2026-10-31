@@ -194,6 +194,59 @@ function BuzzerIllustration() {
   )
 }
 
+function CostumeContestIllustration() {
+  const pumpkin = '#F28C28'
+  const pumpkinShade = '#E2731B'
+  const glow = '#FFE2A0'
+  // Spinne und Fledermaus folgen der Schriftfarbe, damit sie auch im dunklen Modus sichtbar bleiben.
+  const ink = 'var(--foreground)'
+
+  return (
+    <SvgShell>
+      <circle cx="128" cy="88" r="62" fill={palette.paleMint} />
+      <g stroke={palette.mint} strokeWidth="1.4" fill="none">
+        <path d="M192 4V46M192 4 166 38M192 4 152 20M192 4H148" />
+        <path d="M192 18Q184 17 183 12Q179 9 178 4" />
+        <path d="M192 30Q179 29 175 22Q168 17 165 4" />
+        <path d="M192 42Q174 40 168 31Q156 25 152 4" />
+      </g>
+      <g transform="translate(98 30) rotate(10)">
+        <path d="M0 0C-4-6-11-7-16-3-12-3-11 1-12 4-8 1-4 2-2 5L0 3 2 5C4 2 8 1 12 4 11 1 12-3 16-3 11-7 4-6 0 0Z" fill={ink} />
+      </g>
+      <g transform="translate(50 0)">
+        <ellipse cx="82" cy="143" rx="54" ry="5.5" fill={palette.fog} />
+        <ellipse cx="57" cy="106" rx="27" ry="34" fill={pumpkinShade} />
+        <ellipse cx="107" cy="106" rx="27" ry="34" fill={pumpkinShade} />
+        <ellipse cx="82" cy="105" rx="28" ry="38" fill={pumpkin} />
+        <path d="M66 76Q61 92 64 110" stroke="#FFB067" strokeWidth="3" fill="none" />
+        <path d="M78 71C77 63 80 56 88 52L92 56C86 59 85 64 86 71Z" fill={palette.teal} />
+        <path d="M89 59C96 53 105 55 107 62" stroke={palette.mint} strokeWidth="2.5" fill="none" />
+        <g fill={glow} stroke="#C65A0E" strokeWidth="1">
+          <path d="M61 100H75L68 88Z" />
+          <path d="M89 100H103L96 88Z" />
+          <path d="M79 108H85L82 103Z" />
+          <path d="M59 115Q82 136 105 115L99 118 95 113 89 120 82 114 75 120 69 113 65 118Z" />
+        </g>
+      </g>
+      <path d="M60-6V38" stroke={palette.fog} strokeWidth="1.4" />
+      <g transform="translate(60 51)">
+        <g stroke={ink} strokeWidth="2.2" fill="none">
+          <path d="M-6-5Q-15-12-19-4M-7-1Q-18-3-21 4M-7 3Q-17 7-19 15M-5 6Q-12 14-12 21" />
+          <path d="M6-5Q15-12 19-4M7-1Q18-3 21 4M7 3Q17 7 19 15M5 6Q12 14 12 21" />
+        </g>
+        <ellipse cx="0" cy="5" rx="9.5" ry="11" fill={ink} />
+        <circle cx="0" cy="-7" r="6" fill={ink} />
+        <circle cx="-2.4" cy="-8" r="1.5" fill="var(--card)" />
+        <circle cx="2.4" cy="-8" r="1.5" fill="var(--card)" />
+      </g>
+      <g fill={palette.apricot}>
+        <path d="M188 120l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" />
+        <path d="M78 76l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5Z" />
+      </g>
+    </SvgShell>
+  )
+}
+
 function SushiMapIllustration() {
   return (
     <SvgShell>
@@ -298,6 +351,8 @@ function IllustrationForApp({ appId }: { appId: string }) {
       return <ScoreboardIllustration />
     case 'live-buzzer':
       return <BuzzerIllustration />
+    case 'voting':
+      return <CostumeContestIllustration />
     case 'territory-map':
       return <SushiMapIllustration />
     case 'randomizer':

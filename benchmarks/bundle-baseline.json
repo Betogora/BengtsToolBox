@@ -51,6 +51,10 @@
       "rawBytes": 80147,
       "gzipBytes": 20505
     },
+    "app:voting": {
+      "rawBytes": 44534,
+      "gzipBytes": 12950
+    },
     "dataset:next-question/questions.ndjson": {
       "rawBytes": 850297,
       "gzipBytes": 213518

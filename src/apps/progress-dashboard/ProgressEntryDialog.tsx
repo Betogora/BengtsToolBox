@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import { useState } from 'react'
 
 import type {
@@ -6,6 +5,7 @@ import type {
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import { formatNumber } from '@/apps/progress-dashboard/format'
+import { PersonOption } from '@/apps/shared/components/PersonOption'
 import { eventIconComponents } from '@/apps/progress-dashboard/eventIcons'
 import {
   defaultProgressDrinkIcon,
@@ -20,9 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { getReadableTextColor } from '@/lib/theme'
 import { useI18n } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 
 const entryAmountPresets = [0.25, 0.5, 1, 2, 3]
 
@@ -67,40 +65,15 @@ export function ProgressEntryDialog({
         <fieldset className="grid min-w-0 gap-2">
           <legend className="type-label mb-2 text-muted-foreground">{t('progress.entry.player')}</legend>
           <div role="radiogroup" aria-label={t('progress.entry.player')} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {players.map((entry) => {
-              const isSelected = entry.id === playerId
-
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  className={cn(
-                    'type-action flex min-h-11 min-w-0 items-center gap-2 rounded-md border bg-card px-3 text-left transition-colors',
-                    !isSelected && 'hover:bg-muted',
-                  )}
-                  style={
-                    isSelected
-                      ? {
-                          backgroundColor: `color-mix(in srgb, ${entry.color} 10%, var(--card))`,
-                          borderColor: entry.color,
-                          boxShadow: `inset 0 0 0 1px ${entry.color}`,
-                        }
-                      : undefined
-                  }
-                  onClick={() => selectPlayer(entry)}
-                >
-                  <span
-                    className="grid size-4 shrink-0 place-items-center rounded-full"
-                    style={{ backgroundColor: entry.color, color: getReadableTextColor(entry.color) }}
-                  >
-                    {isSelected && <Check className="size-3" strokeWidth={3} />}
-                  </span>
-                  <span className="min-w-0 truncate">{entry.name}</span>
-                </button>
-              )
-            })}
+            {players.map((entry) => (
+              <PersonOption
+                key={entry.id}
+                checked={entry.id === playerId}
+                color={entry.color}
+                name={entry.name}
+                onSelect={() => selectPlayer(entry)}
+              />
+            ))}
           </div>
         </fieldset>
 

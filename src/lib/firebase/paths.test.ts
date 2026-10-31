@@ -80,6 +80,28 @@ const appPathContracts: Record<string, readonly PathContract[]> = {
       scopedSuffix: 'players',
     },
   ],
+  voting: [
+    {
+      build: firebasePaths.votingState,
+      legacy: 'apps/voting/sessions/default/state/default',
+      scopedSuffix: 'state/default',
+    },
+    {
+      build: firebasePaths.votingPeople,
+      legacy: 'apps/voting/sessions/default/people',
+      scopedSuffix: 'people',
+    },
+    {
+      build: firebasePaths.votingRounds,
+      legacy: 'apps/voting/sessions/default/rounds',
+      scopedSuffix: 'rounds',
+    },
+    {
+      build: firebasePaths.votingBallots,
+      legacy: 'apps/voting/sessions/default/ballots',
+      scopedSuffix: 'ballots',
+    },
+  ],
   'territory-map': [
     {
       build: firebasePaths.territoryMapState,

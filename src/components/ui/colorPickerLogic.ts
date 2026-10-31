@@ -1,3 +1,22 @@
+// Schnellwahl als Regenbogen über zwei Zeilen: Jede Spalte ist ein Farbton,
+// oben kräftig und darunter dieselbe Farbe aufgehellt.
+export const colorPickerPresets = [
+  '#E5484D',
+  '#F28C28',
+  '#EDB72A',
+  '#3FA66B',
+  '#0D8E90',
+  '#3B7DD8',
+  '#8B5CF6',
+  '#F5A3A6',
+  '#F9C48F',
+  '#F6DD8E',
+  '#9ED5B3',
+  '#8ACFD0',
+  '#A4C2EE',
+  '#C9B4FA',
+] as const
+
 export type ColorWheelPosition = {
   hue: number
   intensity: number

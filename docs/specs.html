@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:b7265b2707551f4fb55d0d43230fc95be2853743078050e877b70c4d57d296c7">
+  <meta name="specs-source-sha256" content="sha256:12915eb7801e1a6f382062231bd7ca753cc3582ec50b894fcb1826e83e43eaa1">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -489,6 +489,7 @@
               <tr><td>Fortschritts-Dashboard</td><td><code>/apps/progress-dashboard</code></td><td>Registry</td><td>Punktestände und Zeitverlauf</td></tr>
               <tr><td>Scoreboard</td><td><code>/apps/scoreboard</code></td><td>Registry</td><td>Personen-, Team- und Änderungswertung</td></tr>
               <tr><td>Live-Buzzer</td><td><code>/apps/live-buzzer</code></td><td>Registry</td><td>Quiz-Buzzer und Rundensteuerung</td></tr>
+              <tr><td>Kostümwettbewerb</td><td><code>/apps/voting</code></td><td>Registry</td><td>Anonyme QR-Abstimmung mit Auswertung und Archiv</td></tr>
               <tr><td>Sushi Map</td><td><code>/apps/sushi</code></td><td>Registry</td><td>Länder- und Bundesländerbesuche</td></tr>
               <tr><td>Randomizer</td><td><code>/apps/randomizer</code></td><td>Registry</td><td>Ganzzahl in einem Bereich</td></tr>
               <tr><td>Turnier-App</td><td><code>/apps/swiss-tournaments</code></td><td>Registry</td><td>Vier Turnierformate</td></tr>
@@ -625,6 +626,7 @@
               <tr><td>Live-Buzzer, nur Übernahmequelle</td><td><code>apps/live-buzzer/sessions/default/state/default</code></td><td><code>players</code></td></tr>
               <tr><td>Scoreboard</td><td><code>apps/scoreboard/sessions/default/state/default</code></td><td><code>players</code>, <code>teams</code>, <code>scorings</code>, <code>events</code></td></tr>
               <tr><td>Fortschritts-Dashboard</td><td><code>apps/progress-dashboard/sessions/default/state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
+              <tr><td>Kostümwettbewerb</td><td><code>apps/voting/sessions/default/state/default</code></td><td><code>people</code>, <code>rounds</code>, <code>ballots</code></td></tr>
               <tr><td>Sushi Map</td><td><code>apps/territory-map/sessions/default/state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
               <tr><td>Turnier-App</td><td><code>apps/swiss-tournaments/sessions/default/state/default</code></td><td><code>tournaments</code></td></tr>
               <tr><td>Triathlon-Tracker</td><td><code>apps/triathlon-tracker/sessions/default/state/default</code></td><td><code>planned-trainings</code>, <code>actual-trainings</code></td></tr>
@@ -966,6 +968,25 @@
             <li>Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.</li>
             <li>Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.</li>
             <li>Archive sind umbenennbar, lesbar und löschbar.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="app">
+          <summary><span class="app-number">12</span><span><span class="app-summary-title">Kostümwettbewerb</span><span class="app-summary-route">/apps/voting</span></span></summary>
+          <div class="app-body">
+            <p><strong>Zweck:</strong> eine Party anonym per QR-Code über eine Frage wie „Bestes Kostüm“ abstimmen lassen.</p>
+            <ul>
+            <li>Der Hub zeigt Live-Buzzer und Kostümwettbewerb ab Tablet-Breite als zwei kleine Kacheln auf dem früheren Platz der breiten Buzzer-Kachel; mobil steht die App direkt nach dem Buzzer.</li>
+            <li>Seitenkopf und Hub erzeugen ihren QR-Code zur Laufzeit aus der aktuellen Adresse (mit Lobby-Pfad) im runden Punktstil; es gibt keine statische QR-Datei mehr.</li>
+            <li>Gäste melden sich beim ersten Besuch in einem zweistufigen Dialog mit Pflichtnamen und Farbe an und geben danach genau eine Stimme pro Runde ab. Eine Stimme lässt sich bis zum Ende überschreiben; eigene Stimmen sind erlaubt. Das Gerät merkt sich seine Person lokal und kann sie wechseln.</li>
+            <li>Die Personenliste wächst selbst: Anmeldungen, von der Spielleitung angelegte Personen und beim Abstimmen eingetippte Namen. Namen werden ohne Rücksicht auf Groß- und Kleinschreibung und Leerzeichen abgeglichen; wer sich unter einem schon genannten Namen anmeldet, übernimmt diesen Eintrag.</li>
+            <li>Jede Stimme liegt als eigenes Dokument je wählender Person unter <code>ballots</code> und trägt den Schlüssel der aktiven Runde; Stimmen anderer Runden zählen nie. Gleichstand teilt den Platz.</li>
+            <li>Während der Runde sehen Gäste nur die Zahl der Stimmen und wer bereits abgestimmt hat. Das Ergebnis erscheint nach dem Beenden auf allen Geräten. Wer wen gewählt hat, sieht nur die Spielleitung, bis sie die Wähler für alle freigibt.</li>
+            <li>Dieselbe clientseitige PIN wie bei Schlag den Raab (gemeinsam in <code>src/apps/shared/adminUnlock.ts</code>) schaltet für die <code>sessionStorage</code>-Sitzung den Bearbeitungsmodus frei: Titel, Beenden, Wiederöffnen, Zwischenstand, Wähler-Freigabe, neue Abstimmung sowie Personen anlegen, umbenennen, umfärben und löschen. Die PIN ist keine Sicherheitsgrenze.</li>
+            <li>Doppelte Schreibweisen werden zusammengeführt: Die Spielleitung wählt mehrere Einträge und den bleibenden Namen. Die übrigen Einträge bleiben als Alias erhalten, zählen für die Zielperson und lassen sich wieder trennen; bei zusammengeführten Wählern zählt die jüngste Stimme. Ähnliche Namen (gleicher Vorname mit Zusatz, ein abweichender Buchstabe) werden als Vorschlag angezeigt und können als verschieden markiert werden.</li>
+            <li>„Neue Abstimmung“ archiviert die Runde mit festem Ergebnis-Snapshot und Wählern, löscht deren Stimmen und startet mit demselben Titel und denselben Personen neu; ein Stechen ist einfach eine neue Runde. „Alle löschen“ entfernt Personen und laufende Stimmen, nicht das Archiv. Archive sind aufklappbar, für die Spielleitung umbenenn- und löschbar.</li>
+            <li>Der Presenter zeigt während der Runde QR-Code, Titel, Stimmenzahl und Wähler, danach Gewinner und Rangliste.</li>
             </ul>
           </div>
         </details>
