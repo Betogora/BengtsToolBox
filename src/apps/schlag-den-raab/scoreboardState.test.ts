@@ -39,63 +39,43 @@ function archiveFromState(
 }
 
 describe('Schlag den Raab scoreboard state', () => {
-  it('provides 15 canonical games without placeholder titles', () => {
-    expect(initialSchlagDenRaabState.games).toHaveLength(15)
-    expect(initialSchlagDenRaabState.games[0]?.title).toBe('Spiel 1')
-    expect(initialSchlagDenRaabState.games[1]?.title).toBe('Spiel 2')
-    expect(initialSchlagDenRaabState.games[14]?.title).toBe('Spiel 15')
-  })
-
-  it('migrates exact legacy titles while preserving the remaining game data', () => {
-    const state = withGameTitles({
-      'game-1': ' Dummy Game 1 ',
-      'game-2': 'Dummy Game 2',
-    })
+  // Each case also covers archived games and idempotence of the migration.
+  it.each([
+    [
+      'migrates exact legacy titles',
+      { 'game-1': ' Dummy Game 1 ', 'game-2': 'Dummy Game 2' },
+      ['Spiel 1', 'Spiel 2'],
+    ],
+    [
+      'preserves custom titles and legacy text in unrelated game slots',
+      { 'game-1': 'Quiz', 'game-2': 'Geschicklichkeit', 'game-3': 'Dummy Game 1' },
+      ['Quiz', 'Geschicklichkeit', 'Dummy Game 1'],
+    ],
+  ])('%s while preserving the remaining game data', (_case, titles, expectedTitles) => {
+    const state = withGameTitles(titles)
     state.games[0] = {
       ...state.games[0]!,
       winnerId: 'player-2',
     }
+    state.archivedDatasets = [archiveFromState(state)]
 
     const normalized = normalizeSchlagDenRaabState(state)
 
-    expect(normalized.games[0]).toMatchObject({
-      id: 'game-1',
-      points: 1,
-      title: 'Spiel 1',
-      winnerId: 'player-2',
-    })
-    expect(normalized.games[1]?.title).toBe('Spiel 2')
-  })
-
-  it('applies the legacy migration to archived games', () => {
-    const state = withGameTitles({
-      'game-1': 'Dummy Game 1',
-      'game-2': 'Dummy Game 2',
-    })
-    state.archivedDatasets = [archiveFromState(state)]
-
-    const archivedGames = normalizeSchlagDenRaabState(state)
-      .archivedDatasets?.[0]?.games
-
-    expect(archivedGames?.[0]?.title).toBe('Spiel 1')
-    expect(archivedGames?.[1]?.title).toBe('Spiel 2')
-  })
-
-  it('preserves custom titles and legacy text in unrelated game slots', () => {
-    const normalized = normalizeSchlagDenRaabState(
-      withGameTitles({
-        'game-1': 'Quiz',
-        'game-2': 'Geschicklichkeit',
-        'game-3': 'Dummy Game 1',
-      }),
-    )
-
-    expect(normalized.games[0]?.title).toBe('Quiz')
-    expect(normalized.games[1]?.title).toBe('Geschicklichkeit')
-    expect(normalized.games[2]?.title).toBe('Dummy Game 1')
+    for (const games of [normalized.games, normalized.archivedDatasets?.[0]?.games]) {
+      expect(games?.slice(0, expectedTitles.length).map(({ title }) => title)).toEqual(
+        expectedTitles,
+      )
+      expect(games?.[0]).toMatchObject({
+        id: 'game-1',
+        points: 1,
+        winnerId: 'player-2',
+      })
+    }
+    expect(normalizeSchlagDenRaabState(normalized)).toEqual(normalized)
   })
 
   it('uses canonical titles for blank or missing games', () => {
+    expect(initialSchlagDenRaabState.games).toHaveLength(15)
     const state = withGameTitles({})
     state.games = state.games
       .filter((game) => game.id !== 'game-2')
@@ -107,17 +87,6 @@ describe('Schlag den Raab scoreboard state', () => {
 
     expect(normalized.games[0]?.title).toBe('Spiel 1')
     expect(normalized.games[1]?.title).toBe('Spiel 2')
-  })
-
-  it('is idempotent', () => {
-    const once = normalizeSchlagDenRaabState(
-      withGameTitles({
-        'game-1': 'Dummy Game 1',
-        'game-2': 'Eigener Titel',
-      }),
-    )
-
-    expect(normalizeSchlagDenRaabState(once)).toEqual(once)
   })
 
   it('uses the tiebreak only to decide the winner', () => {

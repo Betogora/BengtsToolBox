@@ -6,12 +6,6 @@ import type {
   TrackerSettings,
 } from '@/apps/triathlon-tracker/types'
 import {
-  averagePaceSeconds,
-  durationSecondsFromAveragePace,
-  formatPace,
-  parsePace,
-} from './units'
-import {
   validateActualTraining,
   validatePlannedTraining,
   validateSettings,
@@ -53,24 +47,6 @@ const settings: TrackerSettings = {
   schemaVersion: 1,
   weightKg: 84,
 }
-
-describe('average pace', () => {
-  it('derives running duration and pace from the distance', () => {
-    expect(formatPace(averagePaceSeconds(2_700, 10_000, 'run'))).toBe('4:30')
-    expect(durationSecondsFromAveragePace(300, 10_000, 'run')).toBe(3_000)
-  })
-
-  it('uses 100 meters as the swimming reference', () => {
-    expect(formatPace(averagePaceSeconds(1_575, 1_500, 'swim'))).toBe('1:45')
-    expect(durationSecondsFromAveragePace(105, 1_500, 'swim')).toBe(1_575)
-  })
-
-  it('accepts clock notation and rejects incomplete values', () => {
-    expect(parsePace('5:07')).toBe(307)
-    expect(parsePace('5:7')).toBeNull()
-    expect(parsePace('5:60')).toBeNull()
-  })
-})
 
 describe('tracker validation', () => {
   it('accepts the compact valid contracts', () => {

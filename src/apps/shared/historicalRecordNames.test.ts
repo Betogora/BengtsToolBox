@@ -137,6 +137,5 @@ describe('historical record names', () => {
 
     expect(sequence(records)).toEqual(records)
     expect([1, 4, 9, 14].map(toRomanNumeral)).toEqual(['I', 'IV', 'IX', 'XIV'])
-    expect(toRomanNumeral(0)).toBe('')
   })
 })

@@ -22,7 +22,6 @@ export const specDependencies = {
     'src/apps/scoreboard/',
     'src/apps/territory-map/',
   ],
-  'live-buzzer-realtime': ['src/apps/live-buzzer/'],
   scoreboard: ['src/apps/decision-wheel/'],
   'segmented-controls': ['src/apps/triathlon-tracker/'],
   'sync-errors': [

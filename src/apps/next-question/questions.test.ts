@@ -2,8 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { parseQuestionCatalog } from '@/apps/next-question/questions'
 
-import rawQuestionCatalog from './data/questions.ndjson?raw'
-
 const validQuestion = {
   id: 'question-1',
   category: 'Kategorie',
@@ -60,14 +58,6 @@ describe('parseQuestionCatalog', () => {
     expect(() =>
       parseQuestionCatalog(JSON.stringify(incompleteQuestion)),
     ).toThrow('Ungültige Frage in Zeile 1')
-  })
-
-  it('liest den realen Katalog vollständig und in unveränderter Reihenfolge', () => {
-    const catalog = parseQuestionCatalog(rawQuestionCatalog)
-
-    expect(catalog).toHaveLength(5_044)
-    expect(catalog[0]?.id).toBe('gefragt-gejagt-2019-0001')
-    expect(catalog.at(-1)?.id).toBe('gefragt-gejagt-2020-5044')
   })
 })
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:12915eb7801e1a6f382062231bd7ca753cc3582ec50b894fcb1826e83e43eaa1">
+  <meta name="specs-source-sha256" content="sha256:21cbba0d01214b904e2fb8809cd585610169e9b2ba9079f2a764a16b43d96d5e">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -1054,7 +1054,7 @@
               <li>Persistenz ausschließlich zentral.</li>
               <li>Kein vorsorglich abstrahierter Shared Code.</li>
               <li>Lade-, Leer-, Fehler- und Destruktivzustände verständlich.</li>
-              <li>Bei Codeänderungen mindestens <code>npm run check</code> grün; es bündelt Lint, Dokumentationscheck, Kern-Tests und Build.</li>
+              <li>Bei Codeänderungen mindestens <code>npm run check</code> grün; es bündelt Lint, Dokumentationscheck, Kern-Tests und Build; ESLint nutzt dabei einen lokalen Cache unter <code>node_modules/.cache/eslint/</code>.</li>
               <li>Bei Firebase/Sync zusätzlich <code>npm run test:firebase</code>, lokalen Modus, zwei Fenster, Reload und Auth-/Rules-/Netzwerkfehler prüfen. Bei UI-Änderungen gezielt die betroffenen Browserabläufe mit <code>npm run test:browser -- &lt;spec&gt;</code> prüfen; die vollständige Suite läuft in CI.</li>
             </ul>
           </article>
@@ -1098,7 +1098,7 @@ npm run test:browser
 npm run test:firebase</code></pre>
         <div class="card note" style="margin-top:1rem">
           <h3>Browser-Smoke-Suite</h3>
-          <p><code>npm run test:browser</code> baut die App ohne Firebase nach <code>node_modules/.cache/browser-tests</code> und startet sie mit <code>vite preview</code> immer frisch auf dem eigenen Testport <code>5288</code>; ohne Dateiwatcher laden parallele Quelländerungen keine Testseite neu. Der Lauf verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard/Navigation, Scoreboard, Presenter/Fokus, Fortschrittsdiagramme, Sushi-Karte samt Touch-Panning/UK-Migration, Turnierablauf, Buzzer-Profil/Runden und Triathlon-Planung/Rekorde/Modelle/Tagebuch sind abgedeckt. Gemeinsame Controls sowie Storage-/Syncfehler ergänzen Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA. Der zusätzliche Buzzer-Mehrgerätefall benötigt Auth-, Firestore- und Realtime-Emulatoren und wird ohne <code>FIREBASE_DATABASE_EMULATOR_HOST</code> übersprungen; die normale lokale Suite belegt ihn nicht. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert. Specs sind nach Apps geschnitten (<code>&lt;app-id&gt;.spec.ts</code>); appübergreifende Specs nennen ihre Quellpfade in <code>scripts/selectBrowserSpecs.mjs</code>. <code>npm run test:browser:affected</code> führt nur die Specs aus, die Commits und Arbeitsbaum gegenüber <code>origin/main</code> betreffen können.</p>
+          <p><code>npm run test:browser</code> baut die App ohne Firebase nach <code>node_modules/.cache/browser-tests</code> und startet sie mit <code>vite preview</code> immer frisch auf dem eigenen Testport <code>5288</code>; ohne Dateiwatcher laden parallele Quelländerungen keine Testseite neu. Der Lauf verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard/Navigation, Scoreboard, Presenter/Fokus, Fortschrittsdiagramme, Sushi-Karte samt Touch-Panning/UK-Migration, Turnierablauf, Buzzer-Profil/Runden und Triathlon-Planung/Rekorde/Modelle/Tagebuch sind abgedeckt. Gemeinsame Controls sowie Storage-/Syncfehler ergänzen Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert. Specs sind nach Apps geschnitten (<code>&lt;app-id&gt;.spec.ts</code>); appübergreifende Specs nennen ihre Quellpfade in <code>scripts/selectBrowserSpecs.mjs</code>. <code>npm run test:browser:affected</code> führt nur die Specs aus, die Commits und Arbeitsbaum gegenüber <code>origin/main</code> betreffen können.</p>
           <ul>
             <li>Neue Browser-Specs nach der App-ID benennen; prüft eine Spec mehrere Apps, ihre Quellpfade in <code>specDependencies</code> ergänzen. Lange Abläufe in unabhängige Tests mit eigenem Startzustand schneiden, damit die CI-Shards ausgeglichen bleiben.</li>
             <li>Vor neuen Tests vorhandene Verhaltensprüfungen erweitern oder mit fachlich anderen Eingaben parametrisieren; unabhängige Fehlerursachen getrennt lassen.</li>
@@ -1136,7 +1136,7 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
           </article>
           <article class="card">
             <h3>Preview</h3>
-            <p>Pull Requests müssen <code>Lint</code>, <code>Core tests</code>, <code>Firebase rules tests</code>, <code>Browser tests</code> und <code>Build</code> bestehen. Der bestehende Check <code>Lint</code> umfasst auch den Dokumentationscheck. Die Browser-Suite läuft ohne Firebase-Secrets und lädt Diagnoseartefakte nur bei Fehlern hoch. Interne Pull Requests erhalten danach einen temporären Firebase Preview Channel; bei Forks wird nur der Deploy übersprungen.</p>
+            <p>Pull Requests müssen <code>Lint</code>, <code>Core tests</code>, <code>Firebase rules tests</code>, <code>Browser tests</code> und <code>Build</code> bestehen. Der bestehende Check <code>Lint</code> umfasst auch den Dokumentationscheck. Im Pull Request wählt <code>Select browser specs</code> die Specs gegenüber dem Basis-Commit, drei Shards führen sie aus, und <code>Browser tests</code> fasst deren Ergebnis zusammen; übersprungene Shards gelten als bestanden. Die Browser-Suite installiert nur die Chromium-Headless-Shell, läuft ohne Firebase-Secrets und lädt Diagnoseartefakte nur bei Fehlern hoch. Interne Pull Requests erhalten danach einen temporären Firebase Preview Channel; bei Forks wird nur der Deploy übersprungen.</p>
           </article>
         </div>
         <div class="card note" style="margin-top:1rem">

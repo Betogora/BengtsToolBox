@@ -63,10 +63,35 @@ jobs:
       - name: Test Firebase rules
         run: npm run test:firebase
 
-  browser-tests:
-    name: Browser tests
+  # Same selection as the live workflow, compared against the pull request base.
+  select-browser-specs:
+    name: Select browser specs
     needs: lint
     runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.select.outputs.run }}
+      specs: ${{ steps.select.outputs.specs }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Select affected specs
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          base="$BASE_SHA"
+          if ! git fetch --depth=1 origin "$base"; then base=""; fi
+          node scripts/selectBrowserSpecs.mjs --base "$base"
+
+  browser-test-shards:
+    name: Browser tests (${{ matrix.shard }}/3)
+    needs: select-browser-specs
+    if: ${{ needs.select-browser-specs.outputs.run == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -78,19 +103,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps --only-shell chromium
+      # SPECS is empty for the full suite, so it stays unquoted.
       - name: Test browser flows
-        run: npm run test:browser
+        env:
+          SPECS: ${{ needs.select-browser-specs.outputs.specs }}
+        run: npx playwright test $SPECS --shard=${{ matrix.shard }}/3 --pass-with-no-tests
       - name: Upload browser failure artifacts
         if: ${{ !success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: browser-test-results
+          name: browser-test-results-${{ matrix.shard }}
           path: |
             playwright-report
             test-results
           if-no-files-found: ignore
           retention-days: 7
+
+  # Keeps the required check name stable; skipped shards count as passed.
+  browser-tests:
+    name: Browser tests
+    needs: [select-browser-specs, browser-test-shards]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require passing shards
+        env:
+          SELECT_RESULT: ${{ needs.select-browser-specs.result }}
+          SHARDS_RESULT: ${{ needs.browser-test-shards.result }}
+        run: |
+          test "$SELECT_RESULT" = success
+          test "$SHARDS_RESULT" = success -o "$SHARDS_RESULT" = skipped
 
   build:
     name: Build
