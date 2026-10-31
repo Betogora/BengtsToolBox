@@ -213,6 +213,7 @@ export function getProgressChartLayout(
   const eventPoints = series.flatMap((entry) =>
     entry.eventValues.map((eventValue) => ({
       event: eventValue.event,
+      value: eventValue.value,
       x: xScale(eventValue.time),
       y: yScale(eventValue.value),
     })),

@@ -125,12 +125,14 @@ import { Input } from '@/components/ui/input'
 import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tooltip, TooltipPanel, TooltipProvider } from '@/components/ui/tooltip'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog'
 import { LanguageProvider } from '@/lib/i18n/LanguageProvider'
 import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import '@/styles/globals.css'
 
 const options = [
@@ -323,6 +325,42 @@ function ConfirmationDemo({ reset = false }: { reset?: boolean }) {
   </div>
 }
 
+const tooltipShapes = [
+  { label: 'Einzeilig', title: 'Kurzes Label' },
+  { label: 'Zweizeilig', title: 'Titel', description: 'Detail, das nicht schon sichtbar ist' },
+  { label: 'Mit Farbpunkt', title: 'Name', description: 'Wert · Uhrzeit · Stand', swatch: '#f0047f' },
+  {
+    label: 'Mehrere Punkte und Zeilen',
+    title: 'Gebiet',
+    description: <><span className="block">Person A · Datum</span><span className="block">Person B · Datum</span></>,
+    swatch: ['#7b0fff', '#14b8a6'],
+  },
+]
+
+// Ruhende Muster mit derselben Fläche wie der echte Tooltip, dazu echte Auslöser zum Überfahren.
+function TooltipDemo() {
+  return <div className="grid gap-4">
+    {(['light', 'dark'] as const).map((scheme) => <div
+      key={scheme}
+      className={cn('grid gap-3 rounded-[14px] border p-4 pt-3', scheme === 'dark' && 'dark')}
+      style={{ background: 'var(--background)', color: 'var(--foreground)' }}
+    >
+      <span className="type-caption text-muted-foreground">{scheme === 'light' ? 'Hell' : 'Dunkel'}</span>
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-5">
+        {tooltipShapes.map(({ label, ...body }) => <figure key={label} className="m-0 grid justify-items-center gap-4">
+          <TooltipPanel {...body} />
+          <figcaption className="type-caption text-subtle-foreground">{label}</figcaption>
+        </figure>)}
+      </div>
+    </div>)}
+    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+      <Tooltip title="Als erledigt eintragen"><Button variant="outline" size="icon" aria-label="Als erledigt eintragen"><ListChecks /></Button></Tooltip>
+      <Tooltip title="Runde 1 · Sieg" description="Weiß gegen Uwe, Ergebnis 1 - 0"><Badge variant="outline" className="cursor-default">6W1</Badge></Tooltip>
+      <Tooltip swatch="#f0047f" title="Bengt" description="+1 Wein · 21:51 · Stand 6"><span className="inline-flex size-6 rounded-full border-2 border-card bg-[#f0047f]" /></Tooltip>
+    </div>
+  </div>
+}
+
 function DashboardArtworkDemo() {
   const { t } = useI18n()
   return <div className="artwork-gallery">
@@ -338,6 +376,7 @@ function DashboardArtworkDemo() {
 }
 
 const demos: Record<string, ReactNode> = {
+  Tooltip: <TooltipDemo />,
   'Card-Familie': <Card className="w-full max-w-sm"><CardHeader><div className="flex items-center justify-between gap-3"><Badge>Runde 5</Badge><span className="type-caption text-subtle-foreground">vor 2 Min.</span></div><CardTitle className="mt-1.5">Aktuelle Runde</CardTitle><CardDescription>Drei Paarungen sind bereit.</CardDescription></CardHeader><CardFooter><Button variant="outline" size="sm">Runde ansehen</Button></CardFooter></Card>,
   Label: <LabelDemo />,
   Separator: <div className="grid gap-3.5">
@@ -490,4 +529,4 @@ for (const item of document.querySelectorAll<HTMLElement>('[data-icon-name]')) {
   if (Icon && slot) previews.push(createPortal(<Icon aria-hidden="true" className="size-5" />, slot, `icon-${item.dataset.iconName}`))
 }
 
-createRoot(document.getElementById('catalog-root')!).render(<LanguageProvider>{previews}</LanguageProvider>)
+createRoot(document.getElementById('catalog-root')!).render(<LanguageProvider><TooltipProvider>{previews}</TooltipProvider></LanguageProvider>)

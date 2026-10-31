@@ -4,7 +4,7 @@ import type {
   ActualTraining,
   PlannedTraining,
 } from '@/apps/triathlon-tracker/types'
-import { getCompletedPlannedTrainingIds } from './planStatus'
+import { getCompletedPlannedTrainings } from './planStatus'
 
 const plan = (
   id: string,
@@ -40,17 +40,18 @@ const actual = (id: string, isWalk = false): ActualTraining => ({
 
 describe('planned training status', () => {
   it('matches day, discipline and running variant and consumes sessions in order', () => {
-    const completed = getCompletedPlannedTrainingIds(
+    const completed = getCompletedPlannedTrainings(
       [plan('second-run', 2), plan('first-run', 1), plan('walk', 3, true)],
       [actual('logged-run')],
     )
 
-    expect([...completed]).toEqual(['first-run'])
+    expect([...completed.keys()]).toEqual(['first-run'])
+    expect(completed.get('first-run')?.id).toBe('logged-run')
   })
 
   it('marks a planned walk done only by a logged walk', () => {
     expect([
-      ...getCompletedPlannedTrainingIds([plan('walk', 1, true)], [actual('walk', true)]),
+      ...getCompletedPlannedTrainings([plan('walk', 1, true)], [actual('walk', true)]).keys(),
     ]).toEqual(['walk'])
   })
 })

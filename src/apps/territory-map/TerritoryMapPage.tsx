@@ -28,6 +28,7 @@ import { TerritoryMapPresenter } from '@/apps/territory-map/TerritoryMapPresente
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
+import { Tooltip } from '@/components/ui/tooltip'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { loadTerritories } from '@/apps/territory-map/data/territories'
 import { useTerritoryMap } from '@/apps/territory-map/hooks/useTerritoryMap'
@@ -44,12 +45,13 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useI18n } from '@/lib/i18n'
+import { dateTimeFormat } from '@/lib/i18n/formatters'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
 const emptyTerritories: Territory[] = []
 
 export function TerritoryMapPage() {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const {
     activeDataset,
     addPlayer,
@@ -231,6 +233,7 @@ export function TerritoryMapPage() {
       <section className="grid gap-4">
         <TerritoryMapCanvas
           claims={currentClaims}
+          events={activeDataset.events}
           isDisabled={!isDatasetReady}
           mapId={state.activeMap}
           onMapChange={handleMapChange}
@@ -269,6 +272,11 @@ export function TerritoryMapPage() {
                 const Icon = achievement.Icon
                 const winnerLabel = achievement.winnerNames.join(', ')
                 const isUnlocked = achievement.winnerNames.length > 0
+                const unlockLines = achievement.unlocks.map((event) => (
+                  <span key={event.id} className="block">
+                    {`${event.playerName}: ${event.territoryName} · ${dateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(event.createdAtClientIso))}`}
+                  </span>
+                ))
 
                 return (
                   <li key={achievement.id}>
@@ -280,18 +288,24 @@ export function TerritoryMapPage() {
                           : 'text-muted-foreground grayscale',
                       ].join(' ')}
                     >
-                      <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)_1rem] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-                        <span className="type-label min-w-0 truncate">
-                          {t(achievement.title)}
-                        </span>
-                        <span className="flex size-8 items-center justify-center text-primary">
-                          <Icon className="size-5" />
-                        </span>
-                        <span className="type-action min-w-0 truncate text-right">
-                          {winnerLabel || '-'}
-                        </span>
-                        <DisclosureIndicator />
-                      </summary>
+                      <Tooltip
+                        disabled={!isUnlocked}
+                        title={t(achievement.title)}
+                        description={unlockLines}
+                      >
+                        <summary className="type-ui grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_2rem_minmax(4.5rem,auto)_1rem] items-center gap-3 p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                          <span className="type-label min-w-0 truncate">
+                            {t(achievement.title)}
+                          </span>
+                          <span className="flex size-8 items-center justify-center text-primary">
+                            <Icon className="size-5" />
+                          </span>
+                          <span className="type-action min-w-0 truncate text-right">
+                            {winnerLabel || '-'}
+                          </span>
+                          <DisclosureIndicator />
+                        </summary>
+                      </Tooltip>
                       <p className="type-caption border-t bg-secondary/70 px-3 py-2 text-secondary-foreground">
                         {t(achievement.rule)}
                       </p>

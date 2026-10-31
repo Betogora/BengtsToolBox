@@ -6,7 +6,7 @@ import {
   Trophy,
   UsersRound,
 } from 'lucide-react'
-import { useDeferredValue, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { ArchiveDatasetCard } from '@/apps/progress-dashboard/ArchiveDatasetCard'
@@ -15,9 +15,10 @@ import { EventTable } from '@/apps/progress-dashboard/EventTable'
 import { PlayerSetupList } from '@/apps/progress-dashboard/PlayerSetupList'
 import { ProgressEntryDialog } from '@/apps/progress-dashboard/ProgressEntryDialog'
 import { formatNumber } from '@/apps/progress-dashboard/format'
-import { rankPlayerScores } from '@/apps/progress-dashboard/logic'
+import { getPlayerStandings, rankPlayerScores } from '@/apps/progress-dashboard/logic'
 import { getPodiumRankClass } from '@/apps/progress-dashboard/podium'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
+import { useProgressTooltipText } from '@/apps/progress-dashboard/progressTooltipText'
 import type {
   PlayerScore,
   ProgressDataset,
@@ -40,6 +41,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
@@ -208,8 +210,15 @@ export function ProgressDashboardPage() {
   const [entry, setEntry] = useState({ key: 0, open: false })
   const appTitle = t('app.progressDashboard.title')
   const rankedPlayerScores = rankPlayerScores(playerScores)
+  // Sortiert alle Ereignisse; nur bei neuen Daten, nicht bei jedem Aufklappen neu berechnen.
+  const standings = useMemo(
+    () => getPlayerStandings(playerScores, activeDataset.events),
+    [activeDataset.events, playerScores],
+  )
+  const tooltipText = useProgressTooltipText()
   // Ohne Punkte führt niemand.
   const shownLeader = leader && leader.score > 0 ? leader : undefined
+  const leaderStanding = shownLeader && standings.get(shownLeader.player.id)
 
   const addDrink = async (
     player: ProgressPlayer,
@@ -245,27 +254,34 @@ export function ProgressDashboardPage() {
       <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <AppPageTitle Icon={ChartNoAxesCombined} title={appTitle} />
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <div
-            data-progress-leader
-            className="type-action inline-flex h-9 min-w-0 items-center gap-2 rounded-md border bg-card px-3 shadow-xs"
+          <Tooltip
+            disabled={!leaderStanding}
+            side="bottom"
+            title={leaderStanding ? tooltipText.standing(leaderStanding) : ''}
+            description={leaderStanding && tooltipText.lastEvent(leaderStanding)}
           >
-            <Trophy aria-hidden="true" className="size-4 shrink-0 text-primary" />
-            {shownLeader ? (
-              <>
-                <span className="sr-only">{t('progress.leader')}:</span>
-                <span
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: shownLeader.player.color }}
-                />
-                <span className="min-w-0 max-w-40 truncate">{shownLeader.player.name}</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {formatNumber(shownLeader.score)}
-                </span>
-              </>
-            ) : (
-              <span className="text-muted-foreground">{t('progress.leader')}: –</span>
-            )}
-          </div>
+            <div
+              data-progress-leader
+              className="type-action inline-flex h-9 min-w-0 items-center gap-2 rounded-md border bg-card px-3 shadow-xs"
+            >
+              <Trophy aria-hidden="true" className="size-4 shrink-0 text-primary" />
+              {shownLeader ? (
+                <>
+                  <span className="sr-only">{t('progress.leader')}:</span>
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: shownLeader.player.color }}
+                  />
+                  <span className="min-w-0 max-w-40 truncate">{shownLeader.player.name}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {formatNumber(shownLeader.score)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">{t('progress.leader')}: –</span>
+              )}
+            </div>
+          </Tooltip>
           <PresenterLauncher
             appTitle={appTitle}
             views={[
@@ -324,26 +340,43 @@ export function ProgressDashboardPage() {
               <EmptyState className="m-3">{t('progress.emptyPlayers')}</EmptyState>
             ) : (
               <ol aria-labelledby="progress-top-list-title" className="divide-y">
-                {rankedPlayerScores.map(({ player, score }, index) => (
-                  <li
-                    key={player.id}
-                    className="grid min-h-14 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 px-3"
-                  >
-                    <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'type-action size-8')}>
-                      {index + 1}
-                    </span>
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: player.color }}
-                      />
-                      <span className="type-action truncate">{player.name}</span>
-                    </span>
-                    <span className="type-metric-sm tabular-nums">
-                      {formatNumber(score)}
-                    </span>
-                  </li>
-                ))}
+                {rankedPlayerScores.map(({ player, score }, index) => {
+                  const standing = standings.get(player.id)
+
+                  return (
+                    <Tooltip
+                      key={player.id}
+                      disabled={!standing}
+                      side="left"
+                      title={player.name}
+                      description={
+                        standing && (
+                          <>
+                            {tooltipText.standing(standing)}
+                            <br />
+                            {tooltipText.lastEvent(standing)}
+                          </>
+                        )
+                      }
+                    >
+                      <li className="grid min-h-14 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 px-3">
+                        <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'type-action size-8')}>
+                          {index + 1}
+                        </span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="size-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: player.color }}
+                          />
+                          <span className="type-action truncate">{player.name}</span>
+                        </span>
+                        <span className="type-metric-sm tabular-nums">
+                          {formatNumber(score)}
+                        </span>
+                      </li>
+                    </Tooltip>
+                  )
+                })}
               </ol>
             )}
           </Card>

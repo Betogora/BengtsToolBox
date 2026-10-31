@@ -112,6 +112,11 @@ test('Katalog-Controls lassen sich ausprobieren @desktop', async ({ page }) => {
   await expect(page.getByRole('textbox', { name: 'Kurznotiz' })).toBeVisible()
   await page.keyboard.press('Escape')
 
+  await demo('Tooltip').getByRole('button', { name: 'Als erledigt eintragen' }).hover()
+  await expect(page.getByRole('tooltip')).toHaveText('Als erledigt eintragen')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('tooltip')).toBeHidden()
+
   await demo('DatePicker').getByRole('button').click()
   await expect(page.getByRole('grid')).toBeVisible()
   await page.keyboard.press('Escape')

@@ -89,6 +89,38 @@ export function rankPlayerScores<T extends PlayerScore>(scores: readonly T[]) {
   )
 }
 
+export type PlayerStanding = {
+  rank: number
+  // Bei Platz 1 die Person dahinter, sonst die direkt davor.
+  rival: { name: string; gap: number } | null
+  lastEvent: ProgressEvent | null
+}
+
+// Platz, Abstand zum direkten Gegenüber und letzter Eintrag je Person für die Tooltips.
+export function getPlayerStandings(
+  scores: readonly PlayerScore[],
+  events: ProgressEvent[],
+) {
+  const ranked = rankPlayerScores(scores)
+  const lastEvents = new Map<string, ProgressEvent>()
+  getSortedEvents(events).forEach((event) => lastEvents.set(event.playerId, event))
+
+  return new Map<string, PlayerStanding>(
+    ranked.map(({ player, score }, index) => {
+      const rival = ranked[index === 0 ? 1 : index - 1]
+
+      return [
+        player.id,
+        {
+          rank: index + 1,
+          rival: rival ? { name: rival.player.name, gap: Math.abs(score - rival.score) } : null,
+          lastEvent: lastEvents.get(player.id) ?? null,
+        },
+      ]
+    }),
+  )
+}
+
 export const defaultUnit = 'Getränke'
 const legacyDefaultChartTitle = 'Fortschritt über Zeit'
 const emptyUnitDefaultChartTitle = 'Dashboard'

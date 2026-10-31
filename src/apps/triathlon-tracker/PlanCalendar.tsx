@@ -23,8 +23,9 @@ import {
   formatTrainingDuration,
   trainingLabelKey,
 } from './presentation'
-import type { PlannedTraining } from './types'
+import type { ActualTraining, PlannedTraining } from './types'
 import { Button } from '@/components/ui/button'
+import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { DatePicker } from '@/components/ui/DatePicker'
@@ -87,7 +88,8 @@ type PlanCalendarProps = {
   activeLocalDate: string
   today: string
   plannedTrainings: PlannedTraining[]
-  completedIds: ReadonlySet<string>
+  /** Done plans with the session that completed them. */
+  completedTrainings: ReadonlyMap<string, ActualTraining>
   onDateChange: (date: string) => void
   onAdd: (date: string) => void
   onEdit: (training: PlannedTraining) => void
@@ -103,7 +105,7 @@ export function PlanCalendar({
   activeLocalDate,
   today,
   plannedTrainings,
-  completedIds,
+  completedTrainings,
   onDateChange,
   onAdd,
   onEdit,
@@ -118,6 +120,17 @@ export function PlanCalendar({
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dropDate, setDropDate] = useState<string | null>(null)
   const [moving, setMoving] = useState(false)
+  const kilometers = (meters: number) =>
+    `${formatNumber(meters / 1000, { maximumFractionDigits: 1 })} km`
+  // Was tatsächlich gelaufen ist, zum Vergleich mit den Planwerten auf der Karte.
+  const actualSummary = (training: ActualTraining) =>
+    [
+      training.durationSeconds === null ? null : formatTrainingDuration(training.durationSeconds),
+      training.distanceMeters === null ? null : kilometers(training.distanceMeters),
+      training.averageHeartRateBpm === null ? null : `Ø ${training.averageHeartRateBpm} bpm`,
+    ]
+      .filter((part) => part !== null)
+      .join(' · ')
   const dateLabel = (date: string, options: Intl.DateTimeFormatOptions) =>
     formatDateTime(new Date(`${date}T12:00:00`), options)
   const firstDay =
@@ -476,7 +489,9 @@ export function PlanCalendar({
                         const label =
                           training.label || t(trainingLabelKey(training))
                         const Icon = trainingIcons[training.discipline]
-                        const done = completedIds.has(training.id)
+                        const completedBy = completedTrainings.get(training.id)
+                        const done = completedBy !== undefined
+                        const completedSummary = completedBy && actualSummary(completedBy)
                         const meta = [
                           training.startMinutes === null
                             ? null
@@ -547,44 +562,53 @@ export function PlanCalendar({
                               </span>
                             </button>
                             <div className="flex items-center justify-end gap-0.5 px-1 pb-1 @3xs:absolute @3xs:right-1 @3xs:top-1/2 @3xs:-translate-y-1/2 @3xs:p-0">
-                              {done ? (
-                                <span
-                                  className="tri-plan-action inline-flex size-7 items-center justify-center"
+                              {completedBy ? (
+                                <Tooltip
                                   title={t('triathlon.plan.done')}
+                                  description={
+                                    completedSummary &&
+                                    t('triathlon.plan.actualSummary', {
+                                      summary: completedSummary,
+                                    })
+                                  }
                                 >
-                                  <CircleCheck
-                                    aria-hidden="true"
-                                    className="size-4"
-                                  />
-                                  <span className="sr-only">
-                                    {t('triathlon.plan.done')}
+                                  <span className="tri-plan-action inline-flex size-7 items-center justify-center">
+                                    <CircleCheck
+                                      aria-hidden="true"
+                                      className="size-4"
+                                    />
+                                    <span className="sr-only">
+                                      {t('triathlon.plan.done')}
+                                    </span>
                                   </span>
-                                </span>
+                                </Tooltip>
                               ) : (
+                                <Tooltip title={t('triathlon.plan.log')} side="bottom">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="tri-plan-action size-7"
+                                    aria-label={`${t('triathlon.plan.log')}: ${label}`}
+                                    onClick={() => onLog(training)}
+                                  >
+                                    <ClipboardCheck
+                                      aria-hidden="true"
+                                      className="size-3.5"
+                                    />
+                                  </Button>
+                                </Tooltip>
+                              )}
+                              <Tooltip title={t('triathlon.calendar.duplicate')} side="bottom">
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   className="tri-plan-action size-7"
-                                  aria-label={`${t('triathlon.plan.log')}: ${label}`}
-                                  title={t('triathlon.plan.log')}
-                                  onClick={() => onLog(training)}
+                                  aria-label={`${t('triathlon.calendar.duplicate')}: ${label}`}
+                                  onClick={() => onCopy(training)}
                                 >
-                                  <ClipboardCheck
-                                    aria-hidden="true"
-                                    className="size-3.5"
-                                  />
+                                  <Copy aria-hidden="true" className="size-3.5" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="tri-plan-action size-7"
-                                aria-label={`${t('triathlon.calendar.duplicate')}: ${label}`}
-                                title={t('triathlon.calendar.duplicate')}
-                                onClick={() => onCopy(training)}
-                              >
-                                <Copy aria-hidden="true" className="size-3.5" />
-                              </Button>
+                              </Tooltip>
                             </div>
                           </article>
                         )
@@ -649,27 +673,43 @@ export function PlanCalendar({
                     const matching = entries.filter(
                       (entry) => entry.discipline === discipline,
                     )
+                    const meters = matching.reduce(
+                      (sum, entry) => sum + (entry.distanceMeters ?? 0),
+                      0,
+                    )
                     return (
-                      <div
-                        className="type-caption flex items-center gap-2 tabular-nums"
+                      <Tooltip
                         key={discipline}
+                        swatch={trainingColors[discipline]}
                         title={t(`triathlon.discipline.${discipline}`)}
+                        description={[
+                          matching.length === 1
+                            ? t('triathlon.summary.oneTraining')
+                            : t('triathlon.summary.trainingCount', {
+                                count: matching.length,
+                              }),
+                          meters > 0 ? kilometers(meters) : null,
+                        ]
+                          .filter((part) => part !== null)
+                          .join(' · ')}
                       >
-                        <Icon
-                          aria-hidden="true"
-                          className="size-3.5 shrink-0"
-                          style={{ color: trainingColors[discipline] }}
-                        />
-                        <span className="sr-only">
-                          {t(`triathlon.discipline.${discipline}`)}:{' '}
-                        </span>
-                        {formatTrainingDuration(
-                          matching.reduce(
-                            (sum, entry) => sum + (entry.durationSeconds ?? 0),
-                            0,
-                          ),
-                        )}
-                      </div>
+                        <div className="type-caption flex items-center gap-2 tabular-nums">
+                          <Icon
+                            aria-hidden="true"
+                            className="size-3.5 shrink-0"
+                            style={{ color: trainingColors[discipline] }}
+                          />
+                          <span className="sr-only">
+                            {t(`triathlon.discipline.${discipline}`)}:{' '}
+                          </span>
+                          {formatTrainingDuration(
+                            matching.reduce(
+                              (sum, entry) => sum + (entry.durationSeconds ?? 0),
+                              0,
+                            ),
+                          )}
+                        </div>
+                      </Tooltip>
                     )
                   })}
                   {view === 'week' && (

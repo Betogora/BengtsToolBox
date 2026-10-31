@@ -8,6 +8,7 @@ import type {
   SchlagDenRaabGame,
   SchlagDenRaabPlayer,
 } from '@/apps/schlag-den-raab/types'
+import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -217,13 +218,19 @@ export function ScoreProgressPie({
               {wonGames.length > 0 ? (
                 <ol className="mt-1.5 flex flex-wrap gap-1.5">
                   {wonGames.map((game) => (
-                    <li
+                    <Tooltip
                       key={game.id}
-                      className="raab-progress-game-chip"
                       title={game.title}
+                      description={t('raab.progress.chipDetail', {
+                        points: game.points,
+                        position: game.position,
+                      })}
                     >
-                      {game.position}
-                    </li>
+                      <li className="raab-progress-game-chip cursor-default">
+                        {game.position}
+                        <span className="sr-only">: {game.title}</span>
+                      </li>
+                    </Tooltip>
                   ))}
                 </ol>
               ) : (

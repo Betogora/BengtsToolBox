@@ -266,9 +266,7 @@ export const TerritoryShape = memo(function TerritoryShape({
             onSelect(territory.id)
           }
         }}
-      >
-        <title>{`${territory.name}: ${ownerLabel}`}</title>
-      </path>
+      />
     </>
   )
 })

@@ -1,5 +1,5 @@
 import { Trophy } from 'lucide-react';
-import { Fragment, useState, type CSSProperties } from 'react';
+import { Fragment, useState, type ComponentProps, type CSSProperties } from 'react';
 import { RankPlacement } from '@/apps/swiss-tournaments/components/RankPlacement'
 import { formatPoints, statusLabelKeys, statusVariant, tournamentWebsiteQrUrl } from '@/apps/swiss-tournaments/components/tournamentUiPresentation'
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments';
@@ -8,11 +8,38 @@ import { Badge } from '@/components/ui/badge';
 import { DisclosureIndicator } from '@/components/ui/disclosure';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { TournamentInspection } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 
 const tournamentWebsiteUrl = 'https://bengtstoolbox.web.app/apps/swiss-tournaments'
+
+const tiebreakHintClassName =
+  'cursor-help underline decoration-muted-foreground/60 decoration-dotted underline-offset-4 print:no-underline'
+
+// Rundenkürzel wie „6W1“ ausgeschrieben: Runde und Ausgang oben, Gegner und Ergebnis darunter.
+function RoundHistoryChip({
+  children,
+  outcome,
+  title,
+  ...props
+}: ComponentProps<'span'> & { outcome?: string; title: string }) {
+  const separator = title.indexOf(': ')
+  const heading = separator < 0 ? title : title.slice(0, separator)
+
+  return (
+    <Tooltip
+      title={outcome ? `${heading} · ${outcome}` : heading}
+      description={separator < 0 ? undefined : title.slice(separator + 2)}
+    >
+      <span {...props}>
+        {children}
+        <span className="sr-only">{title}</span>
+      </span>
+    </Tooltip>
+  )
+}
 
 export function StandingsTable({
   inspection,
@@ -98,6 +125,19 @@ export function StandingsTable({
     : t('swiss.standings.points')
   const mobilePrimaryPointsLabel = isMarioKart ? 'TP' : primaryPointsLabel
   const winsLabel = isMarioKart ? t('swiss.marioKartWins') : t('swiss.table.wins')
+  // Mario Kart kennt kein Remis; dort steht der Ausgang schon im Kürzel.
+  const outcomeLabel = (cell: StandingHistoryCell) =>
+    isMarioKart || cell.outcome === 'open' || cell.outcome === 'bye'
+      ? undefined
+      : t(`swiss.outcome.${cell.outcome}`)
+  const tiebreakHeader = (label: string, position: number, name: string, description: string) => (
+    <Tooltip
+      title={`${name} · ${t('swiss.table.tiebreak', { position })}`}
+      description={description}
+    >
+      <span className={tiebreakHintClassName}>{label}</span>
+    </Tooltip>
+  )
   const winsCount = (row: StandingTableRow) =>
     isMarioKart ? row.marioKartWins : row.wins
   const eventStandings = isMarioKart
@@ -260,13 +300,14 @@ export function StandingsTable({
                           <div className="grid gap-2 py-2">
                             <div className="swiss-round-grid">
                               {visibleRoundHistory(row).map((cell) => (
-                                <span
+                                <RoundHistoryChip
                                   key={`${row.playerId}-${cell.roundNumber}`}
                                   className={roundCellClass(cell)}
                                   title={cell.title}
+                                  outcome={outcomeLabel(cell)}
                                 >
                                   {cell.label}
-                                </span>
+                                </RoundHistoryChip>
                               ))}
                             </div>
                             <div className="type-field-label flex flex-wrap items-center gap-2 text-muted-foreground">
@@ -350,9 +391,25 @@ export function StandingsTable({
                   </>
                 ) : (
                   <>
-                    <TableHead>{t('swiss.table.buchholz')}</TableHead>
-                    <TableHead>{t('swiss.table.sb')}</TableHead>
-                    <TableHead>{winsLabel}</TableHead>
+                    <TableHead>
+                      {tiebreakHeader(
+                        t('swiss.table.buchholz'),
+                        1,
+                        t('swiss.table.buchholz'),
+                        t('swiss.table.buchholzInfo'),
+                      )}
+                    </TableHead>
+                    <TableHead>
+                      {tiebreakHeader(
+                        t('swiss.table.sb'),
+                        2,
+                        t('swiss.table.sbName'),
+                        t('swiss.table.sbInfo'),
+                      )}
+                    </TableHead>
+                    <TableHead>
+                      {tiebreakHeader(winsLabel, 3, winsLabel, t('swiss.table.winsInfo'))}
+                    </TableHead>
                   </>
                 )}
                 <TableHead className="swiss-rounds-heading">
@@ -408,13 +465,14 @@ export function StandingsTable({
                   <TableCell className="swiss-round-table-cell">
                     <div className="swiss-round-grid">
                       {visibleRoundHistory(row).map((cell) => (
-                        <span
+                        <RoundHistoryChip
                           key={`${row.playerId}-${cell.roundNumber}`}
                           className={roundCellClass(cell)}
                           title={cell.title}
+                          outcome={outcomeLabel(cell)}
                         >
                           {cell.label}
-                        </span>
+                        </RoundHistoryChip>
                       ))}
                     </div>
                   </TableCell>
@@ -481,14 +539,14 @@ export function StandingsTable({
                       <TableCell className="px-2 pb-2 pt-0" colSpan={3}>
                         <div className="swiss-event-history-grid swiss-round-grid py-2">
                           {visibleEventHistory(row).map((cell) => (
-                            <span
+                            <RoundHistoryChip
                               key={`${row.playerId}-event-${cell.roundNumber}`}
                               className={eventCellClass(cell)}
                               title={cell.title}
                               aria-label={`${eventCellLabel(cell)}: ${eventCellStatusLabel(cell)}`}
                             >
                               {eventCellLabel(cell)}
-                            </span>
+                            </RoundHistoryChip>
                           ))}
                         </div>
                       </TableCell>
@@ -538,14 +596,14 @@ export function StandingsTable({
                     <TableCell className="swiss-round-table-cell">
                       <div className="swiss-round-grid">
                         {visibleEventHistory(row).map((cell) => (
-                          <span
+                          <RoundHistoryChip
                             key={`${row.playerId}-event-${cell.roundNumber}`}
                             className={eventCellClass(cell)}
                             title={cell.title}
                             aria-label={`${eventCellLabel(cell)}: ${eventCellStatusLabel(cell)}`}
                           >
                             {eventCellLabel(cell)}
-                          </span>
+                          </RoundHistoryChip>
                         ))}
                       </div>
                     </TableCell>

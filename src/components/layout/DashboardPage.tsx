@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { dashboardApps, type HubApp } from '@/apps/registry'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tooltip } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
 import { useI18n } from '@/lib/i18n'
+import { dateTimeFormat } from '@/lib/i18n/formatters'
 import { cn } from '@/lib/utils'
 import { defaultLobby, type Lobby } from '@/lobbies/types'
 
@@ -207,8 +209,18 @@ function QrCodeButton() {
 }
 
 export function DashboardPage({ lobby }: { lobby?: Lobby }) {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const activeLobby = lobby ?? defaultLobby
+  // Der Tooltip nennt, was die Karte nicht zeigt: bei eigenen Lobbys Beitrittscode und Alter.
+  const isDefaultLobby = activeLobby.kind === 'default'
+  const lobbyDetail = isDefaultLobby
+    ? undefined
+    : t('lobby.tooltipDetail', {
+        code: activeLobby.code,
+        date: dateTimeFormat(locale, { dateStyle: 'medium' }).format(
+          new Date(activeLobby.createdAtClientIso),
+        ),
+      })
   const hrefOf = (app: HubApp) =>
     lobby ? `/lobbies/${lobby.id}${app.href}` : app.href
 
@@ -225,9 +237,15 @@ export function DashboardPage({ lobby }: { lobby?: Lobby }) {
               <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
                 <UsersRound className="size-5" />
               </div>
-              <CardTitle className="truncate whitespace-nowrap" title={activeLobby.name}>
-                {activeLobby.name}
-              </CardTitle>
+              <Tooltip
+                side="bottom"
+                title={isDefaultLobby ? t('lobby.defaultDescription') : activeLobby.name}
+                description={lobbyDetail}
+              >
+                <CardTitle className="truncate whitespace-nowrap">
+                  {activeLobby.name}
+                </CardTitle>
+              </Tooltip>
             </CardHeader>
           </Card>
 

@@ -1,21 +1,34 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { PointerEvent } from 'react'
 
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { eventIconComponents } from '@/apps/progress-dashboard/eventIcons'
 import { useHighlightedPlayer } from '@/apps/progress-dashboard/hooks/useHighlightedPlayer'
+import { getPlayerScores, getPlayerStandings } from '@/apps/progress-dashboard/logic'
 import {
   getFittedChartPadding,
   getProgressChartLayout,
   getProgressChartModel,
 } from '@/apps/progress-dashboard/progressChartModel'
+import { useProgressTooltipText } from '@/apps/progress-dashboard/progressTooltipText'
 import type {
   ProgressDataset,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
+import { Tooltip } from '@/components/ui/tooltip'
 import { getReadableTextColor } from '@/lib/theme'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+
+type ChartTip = {
+  playerId: string
+  x: number
+  y: number
+  size: number
+  // Gesetzt bei einem Ereignispunkt, leer bei der Linie.
+  point?: { event: ProgressDataset['events'][number]; value: number }
+}
 
 // Zeichnet in echten Pixeln der Containergröße, damit Schrift, Linien und Marker überall gleich groß bleiben.
 // Die Höhe kommt aus der Klasse des Containers.
@@ -87,6 +100,20 @@ export function DashboardProgressChart({
     showHoveredPlayer,
     togglePinnedPlayer,
   } = useHighlightedPlayer(players, chartData)
+  const tooltipText = useProgressTooltipText()
+  const standings = useMemo(
+    () => getPlayerStandings(getPlayerScores(players, dataset.events), dataset.events),
+    [dataset.events, players],
+  )
+  // Der Tooltip erscheint zusammen mit der Hervorhebung, aber nur mit Maus oder Stift.
+  const [tip, setTip] = useState<ChartTip | null>(null)
+  const showTip = (event: PointerEvent, next: ChartTip) => {
+    if (event.pointerType !== 'touch') setTip(next)
+  }
+  const hideTip = (playerId: string) =>
+    setTip((current) => (current?.playerId === playerId ? null : current))
+  const tipPlayer = tip && players.find((player) => player.id === tip.playerId)
+  const tipStanding = tip && standings.get(tip.playerId)
   const markerRadius = isNarrow ? 7 : 10
   const iconSize = isNarrow ? 9 : 12
   const lineWidth = isNarrow ? 2.5 : 3
@@ -109,7 +136,10 @@ export function DashboardProgressChart({
           viewBox={`0 0 ${width} ${height}`}
           className="absolute inset-0 block overflow-visible"
           onClick={clearHighlightedPlayer}
-          onPointerLeave={clearHoveredPlayer}
+          onPointerLeave={() => {
+            clearHoveredPlayer()
+            setTip(null)
+          }}
         >
           {chartData.yTicks.map((tick) => (
             <g key={`y-${tick}`}>
@@ -198,20 +228,41 @@ export function DashboardProgressChart({
               stroke="transparent"
               strokeWidth="18"
               tabIndex={0}
-              onBlur={() => hideHoveredPlayer(player.id)}
+              onBlur={() => {
+                hideHoveredPlayer(player.id)
+                hideTip(player.id)
+              }}
               onClick={(event) => {
                 event.stopPropagation()
                 togglePinnedPlayer(player.id)
               }}
-              onFocus={() => showHoveredPlayer(player.id)}
+              onFocus={() => {
+                showHoveredPlayer(player.id)
+                const last = chartData.eventPoints.findLast((point) => point.event.playerId === player.id)
+                if (last) setTip({ playerId: player.id, x: last.x, y: last.y, size: markerRadius * 2 })
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
                   togglePinnedPlayer(player.id)
                 }
               }}
-              onPointerEnter={() => showHoveredPlayer(player.id)}
-              onPointerLeave={() => hideHoveredPlayer(player.id)}
+              onPointerEnter={(event) => {
+                showHoveredPlayer(player.id)
+                const bounds = containerRef.current?.getBoundingClientRect()
+                if (bounds) {
+                  showTip(event, {
+                    playerId: player.id,
+                    x: event.clientX - bounds.left,
+                    y: event.clientY - bounds.top,
+                    size: 12,
+                  })
+                }
+              }}
+              onPointerLeave={() => {
+                hideHoveredPlayer(player.id)
+                hideTip(player.id)
+              }}
             />
           ))}
           {orderedEventPoints.map((point) => {
@@ -229,8 +280,20 @@ export function DashboardProgressChart({
                   event.stopPropagation()
                   togglePinnedPlayer(point.event.playerId)
                 }}
-                onPointerEnter={() => showHoveredPlayer(point.event.playerId)}
-                onPointerLeave={() => hideHoveredPlayer(point.event.playerId)}
+                onPointerEnter={(event) => {
+                  showHoveredPlayer(point.event.playerId)
+                  showTip(event, {
+                    playerId: point.event.playerId,
+                    x: point.x,
+                    y: point.y,
+                    size: (markerRadius + 2) * 2,
+                    point,
+                  })
+                }}
+                onPointerLeave={() => {
+                  hideHoveredPlayer(point.event.playerId)
+                  hideTip(point.event.playerId)
+                }}
               >
                 <circle
                   cx={point.x}
@@ -252,6 +315,32 @@ export function DashboardProgressChart({
             )
           })}
         </svg>
+      )}
+      {tip && tipPlayer && tipStanding && (
+        <Tooltip
+          open
+          onOpenChange={(open) => !open && setTip(null)}
+          swatch={tipPlayer.color}
+          title={tipPlayer.name}
+          description={
+            tip.point
+              ? `${tooltipText.event(tip.point.event)} · ${tooltipText.total(tip.point.value)}`
+              : `${t('progress.rank', { rank: tipStanding.rank })} · ${tooltipText.standing(tipStanding)}`
+          }
+        >
+          {/* Unsichtbarer Anker am Punkt; der Schlüssel setzt ihn bei jedem Ziel neu. */}
+          <span
+            key={`${tip.playerId}-${tip.x}-${tip.y}`}
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{
+              height: tip.size,
+              left: tip.x - tip.size / 2,
+              top: tip.y - tip.size / 2,
+              width: tip.size,
+            }}
+          />
+        </Tooltip>
       )}
     </div>
   )

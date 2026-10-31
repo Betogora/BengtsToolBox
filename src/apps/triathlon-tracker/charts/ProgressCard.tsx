@@ -21,6 +21,7 @@ import {
   tickStyle,
   tooltipContentStyle,
   tooltipItemStyle,
+  tooltipLabelStyle,
 } from './chartUtils'
 
 const progressSeries = ['swim', 'bike', 'run', 'overall'] as const
@@ -107,6 +108,7 @@ export const ProgressCard = memo(function ProgressCard({
                 payload[0]?.payload.localDate ?? ''
               }
               itemStyle={tooltipItemStyle}
+              labelStyle={tooltipLabelStyle}
             />
             {progressSeries
               .filter((series) => focus === null || focus === series)

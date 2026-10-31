@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { playerName } from '@/apps/swiss-tournaments/components/tournamentUiPresentation'
 import type { GameResult, MarioKartRacer, Pairing, PairingWarning, Tournament } from '@/apps/swiss-tournaments/types';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { IftaSelectTrigger } from '@/components/ui/ifta-field';
@@ -609,14 +610,14 @@ export function PairingsTable({
             const badgeMeta = pairingWarningBadgeMeta(entry, t)
 
             return (
-              <Badge
-                key={entry.id}
-                className={cn(pairingHintBadgeClassName, badgeMeta.className)}
-                title={badgeMeta.title}
-                variant="outline"
-              >
-                {badgeMeta.label}
-              </Badge>
+              <Tooltip key={entry.id} title={badgeMeta.title}>
+                <Badge
+                  className={cn(pairingHintBadgeClassName, badgeMeta.className)}
+                  variant="outline"
+                >
+                  {badgeMeta.label}
+                </Badge>
+              </Tooltip>
             )
           })
         )}
@@ -731,41 +732,43 @@ export function PairingsTable({
             </Badge>
           )}
           {isFillIn(pairing, racer) && (
-            <Badge
-              className={cn(
-                pairingHintBadgeClassName,
-                'border-teal-300 bg-teal-100 text-teal-950',
-              )}
-              title={t('swiss.warning.marioKartFillIn.title')}
-              variant="outline"
-            >
-              {t('swiss.warning.marioKartFillIn.label')}
-            </Badge>
+            <Tooltip title={t('swiss.warning.marioKartFillIn.title')}>
+              <Badge
+                className={cn(
+                  pairingHintBadgeClassName,
+                  'border-teal-300 bg-teal-100 text-teal-950',
+                )}
+                variant="outline"
+              >
+                {t('swiss.warning.marioKartFillIn.label')}
+              </Badge>
+            </Tooltip>
           )}
           {racer.scoringCycleNumber === null && (
-            <Badge
-              className={cn(
-                pairingHintBadgeClassName,
-                'border-sky-300 bg-sky-100 text-sky-950',
-              )}
-              title={t('swiss.warning.marioKartExtra.title')}
-              variant="outline"
-            >
-              {t('swiss.marioKartExtra')}
-            </Badge>
+            <Tooltip title={t('swiss.warning.marioKartExtra.title')}>
+              <Badge
+                className={cn(
+                  pairingHintBadgeClassName,
+                  'border-sky-300 bg-sky-100 text-sky-950',
+                )}
+                variant="outline"
+              >
+                {t('swiss.marioKartExtra')}
+              </Badge>
+            </Tooltip>
           )}
           {warnings.map((entry) => {
               const badgeMeta = pairingWarningBadgeMeta(entry, t)
 
               return (
-                <Badge
-                  key={entry.id}
-                  className={cn(pairingHintBadgeClassName, badgeMeta.className)}
-                  title={badgeMeta.title}
-                  variant="outline"
-                >
-                  {badgeMeta.label}
-                </Badge>
+                <Tooltip key={entry.id} title={badgeMeta.title}>
+                  <Badge
+                    className={cn(pairingHintBadgeClassName, badgeMeta.className)}
+                    variant="outline"
+                  >
+                    {badgeMeta.label}
+                  </Badge>
+                </Tooltip>
               )
             })}
           {!hasRacerHint && warnings.length === 0 && (
@@ -1032,14 +1035,14 @@ export function PairingsTable({
                         const badgeMeta = pairingWarningBadgeMeta(entry, t)
 
                         return (
-                          <Badge
-                            key={entry.id}
-                            className={cn(pairingHintBadgeClassName, badgeMeta.className)}
-                            title={badgeMeta.title}
-                            variant="outline"
-                          >
-                            {badgeMeta.label}
-                          </Badge>
+                          <Tooltip key={entry.id} title={badgeMeta.title}>
+                            <Badge
+                              className={cn(pairingHintBadgeClassName, badgeMeta.className)}
+                              variant="outline"
+                            >
+                              {badgeMeta.label}
+                            </Badge>
+                          </Tooltip>
                         )
                       })
                     )}

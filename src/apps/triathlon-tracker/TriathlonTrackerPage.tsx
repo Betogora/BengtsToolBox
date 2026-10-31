@@ -17,7 +17,7 @@ import {
   intervalSegmentsFromScheme,
   plannedIntervalScheme,
 } from './domain/intervals'
-import { getCompletedPlannedTrainingIds } from './domain/planStatus'
+import { getCompletedPlannedTrainings } from './domain/planStatus'
 import { useTriathlonTracker } from './hooks/useTriathlonTracker'
 import type {
   ActualTrainingInput,
@@ -128,9 +128,9 @@ export function TriathlonTrackerPage() {
     tracker.actualTrainings,
     getWeekStartLocalDate(today),
   )
-  const completedPlanIds = useMemo(
+  const completedPlans = useMemo(
     () =>
-      getCompletedPlannedTrainingIds(
+      getCompletedPlannedTrainings(
         tracker.plannedTrainings,
         tracker.actualTrainings,
       ),
@@ -236,7 +236,7 @@ export function TriathlonTrackerPage() {
                   activeLocalDate={activeLocalDate}
                   onDateChange={setActiveLocalDate}
                   plannedTrainings={tracker.plannedTrainings}
-                  completedIds={completedPlanIds}
+                  completedTrainings={completedPlans}
                   today={today}
                   onAdd={openPlan}
                   onLog={logPlanned}

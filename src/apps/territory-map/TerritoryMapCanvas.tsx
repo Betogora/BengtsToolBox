@@ -1,19 +1,27 @@
 import { Minus, Plus } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { FocusEvent, PointerEvent } from 'react'
 
 import { TerritoryShape } from '@/apps/territory-map/components'
 import { mapViewBoxes } from '@/apps/territory-map/data/territories'
 import { mapZoomLevels, tapMoveThreshold } from '@/apps/territory-map/mapConfig'
+import {
+  getTerritoryClaimColor,
+  getTerritoryClaimOwners,
+} from '@/apps/territory-map/ownershipPattern'
 import type {
   Territory,
   TerritoryClaim,
   TerritoryMapId,
   TerritoryPlayer,
+  TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
+import { dateTimeFormat } from '@/lib/i18n/formatters'
 
 type MapView = {
   offset: {
@@ -58,6 +66,7 @@ function getTerritoryIdFromTarget(target: EventTarget | null) {
 
 export function TerritoryMapCanvas({
   claims,
+  events,
   isDisabled,
   mapId,
   onMapChange,
@@ -67,6 +76,7 @@ export function TerritoryMapCanvas({
   territories,
 }: {
   claims: Record<string, TerritoryClaim>
+  events: TerritoryVisitEvent[]
   isDisabled: boolean
   mapId: TerritoryMapId
   onMapChange: (mapId: TerritoryMapId) => void
@@ -75,8 +85,27 @@ export function TerritoryMapCanvas({
   selectedTerritoryId: string | null
   territories: Territory[]
 }) {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const isMapLoading = territories.length === 0
+  // Gebietsname und erster Besuch je Person für den Tooltip der Karte.
+  const territoryNames = useMemo(
+    () => new Map(territories.map((territory) => [territory.id, territory.name])),
+    [territories],
+  )
+  const firstVisits = useMemo(() => {
+    const visits = new Map<string, Map<string, string>>()
+    events.forEach((event) => {
+      if (event.mapId !== mapId) return
+      const byPlayer = visits.get(event.territoryId) ?? new Map<string, string>()
+      const known = byPlayer.get(event.playerId)
+      if (!known || event.createdAtClientIso < known) {
+        byPlayer.set(event.playerId, event.createdAtClientIso)
+      }
+      visits.set(event.territoryId, byPlayer)
+    })
+    return visits
+  }, [events, mapId])
+  const [tip, setTip] = useState<{ territoryId: string; x: number; y: number } | null>(null)
   const [view, setView] = useState<MapView>(defaultMapView)
   const [zoomLevelIndex, setZoomLevelIndex] = useState(defaultZoomLevelIndex)
   const activePointersRef = useRef(new Set<number>())
@@ -308,9 +337,40 @@ export function TerritoryMapCanvas({
   )
 
   const handleMapChange = (nextMap: TerritoryMapId) => {
+    setTip(null)
     resetView()
     onMapChange(nextMap)
   }
+
+  // Ein gemeinsamer Tooltip für alle Gebiete: an der Maus beim Betreten, nie während des Ziehens.
+  const showTerritoryTip = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch' || activePointersRef.current.size > 0) return
+    const territoryId = getTerritoryIdFromTarget(event.target)
+    if (!territoryId) {
+      setTip(null)
+      return
+    }
+    if (territoryId === tip?.territoryId) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    setTip({ territoryId, x: event.clientX - bounds.left, y: event.clientY - bounds.top })
+  }
+
+  const showFocusedTerritoryTip = (event: FocusEvent<HTMLDivElement>) => {
+    const territoryId = getTerritoryIdFromTarget(event.target)
+    if (!territoryId || !(event.target instanceof Element)) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const shape = event.target.getBoundingClientRect()
+    setTip({
+      territoryId,
+      x: shape.left + shape.width / 2 - bounds.left,
+      y: shape.top + shape.height / 2 - bounds.top,
+    })
+  }
+
+  const tipOwners = tip ? getTerritoryClaimOwners(claims[tip.territoryId]) : []
+  const tipVisits = tip ? firstVisits.get(tip.territoryId) : undefined
+  const formatVisitDate = (value: string | undefined) =>
+    value ? dateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value)) : ''
 
   return (
     <Card className="overflow-hidden bg-secondary">
@@ -357,12 +417,17 @@ export function TerritoryMapCanvas({
           ref={mapViewportRef}
           data-map-dragging="false"
           className={[
-            'touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing',
+            'relative touch-none cursor-grab overflow-hidden bg-secondary active:cursor-grabbing',
             mapId === 'germany'
               ? 'h-[44svh] min-h-[300px] sm:h-[50svh] sm:min-h-[360px]'
               : 'h-[56svh] min-h-[320px] sm:h-[62svh] sm:min-h-[420px]',
           ].join(' ')}
+          onBlur={() => setTip(null)}
+          onFocus={showFocusedTerritoryTip}
+          onPointerLeave={() => setTip(null)}
+          onPointerOver={showTerritoryTip}
           onPointerDown={(event) => {
+            setTip(null)
             if (event.pointerType === 'mouse' && event.button !== 0) {
               return
             }
@@ -519,6 +584,34 @@ export function TerritoryMapCanvas({
               })}
             </g>
           </svg>
+          {tip && (
+            <Tooltip
+              open
+              onOpenChange={(open) => !open && setTip(null)}
+              swatch={tipOwners.map((owner) =>
+                getTerritoryClaimColor(owner.playerId, owner.playerColor, players),
+              )}
+              title={territoryNames.get(tip.territoryId) ?? tip.territoryId}
+              description={
+                tipOwners.length === 0
+                  ? t('territory.unvisited')
+                  : tipOwners.map((owner) => (
+                      <span key={owner.playerId} className="block">
+                        {`${owner.playerName} · ${formatVisitDate(
+                          tipVisits?.get(owner.playerId) ?? claims[tip.territoryId]?.claimedAtClientIso,
+                        )}`}
+                      </span>
+                    ))
+              }
+            >
+              <span
+                key={`${tip.territoryId}-${tip.x}-${tip.y}`}
+                aria-hidden="true"
+                className="pointer-events-none absolute size-3 -translate-x-1/2 -translate-y-1/2"
+                style={{ left: tip.x, top: tip.y }}
+              />
+            </Tooltip>
+          )}
         </div>
       </CardContent>
     </Card>

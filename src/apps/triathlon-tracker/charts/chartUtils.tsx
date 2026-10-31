@@ -22,19 +22,29 @@ export function disciplineKey(value: unknown) {
   return 'triathlon.discipline.run' as const
 }
 
+// Gleiche Fläche und Schrift wie der Toolbox-Tooltip (.btb-tooltip in globals.css).
 export const tooltipContentStyle = {
   background: 'var(--popover)',
   border: '1px solid var(--border)',
-  borderRadius: 10,
+  borderRadius: 'var(--radius-md)',
   color: 'var(--popover-foreground)',
   maxWidth: 'min(320px, calc(100vw - 32px))',
+  padding: '8px 11px 9px',
   fontSize: 12,
+  lineHeight: '16px',
   whiteSpace: 'normal' as const,
-  boxShadow: 'var(--shadow-overlay)',
+  boxShadow: 'var(--btb-shadow-overlay)',
+}
+
+export const tooltipLabelStyle = {
+  fontWeight: 650,
+  marginBottom: 2,
 }
 
 export const tooltipItemStyle = {
   color: 'var(--popover-foreground)',
+  fontWeight: 500,
+  padding: 0,
   whiteSpace: 'normal' as const,
 }
 

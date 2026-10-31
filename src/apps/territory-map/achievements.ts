@@ -26,6 +26,8 @@ type AchievementDefinition = {
 
 type AchievementResult = AchievementDefinition & {
   winnerNames: string[]
+  // Der erste passende Besuch je Person, also womit sie den Erfolg freigeschaltet hat.
+  unlocks: TerritoryVisitEvent[]
 }
 
 const africanTerritoryIds = new Set([
@@ -267,17 +269,19 @@ export function getAchievements(events: TerritoryVisitEvent[]): AchievementResul
     .map(({ event }) => event)
 
   return achievementDefinitions.map((achievement) => {
-    const winners = new Map<string, string>()
+    const winners = new Map<string, TerritoryVisitEvent>()
 
     sortedEvents.forEach((event) => {
       if (achievement.matches(event) && !winners.has(event.playerId)) {
-        winners.set(event.playerId, event.playerName)
+        winners.set(event.playerId, event)
       }
     })
+    const unlocks = [...winners.values()]
 
     return {
       ...achievement,
-      winnerNames: [...winners.values()],
+      winnerNames: unlocks.map((event) => event.playerName),
+      unlocks,
     }
   })
 }
