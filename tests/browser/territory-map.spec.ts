@@ -1,6 +1,6 @@
 import { expect, test } from './browserApp'
 
-test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', async ({
+test('Sushi Map unterstützt Karten-, Dialog- und Tabellenfluss responsiv', { tag: '@layout' }, async ({
   app,
   page,
 }) => {

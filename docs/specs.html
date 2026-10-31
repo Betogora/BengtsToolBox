@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:93d0e037e9b7f42d5da70c2fa8e72d190f62def163d7580a3dd6e3f82e9d76b6">
+  <meta name="specs-source-sha256" content="sha256:d44b94ff45e764f5056bf3e020d9c7c309e61fbda3f080d2df02319c2032206a">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -1066,7 +1066,7 @@
               <li>Randomizer, Glücksrad und Münzwurf akzeptieren testbare Zufallsquellen.</li>
               <li>Produktion verwendet weiterhin Math.random beziehungsweise Web Crypto.</li>
               <li>Coverage erscheint unter <code>coverage/</code> als Text- und HTML-Bericht ohne Prozent-Gate. Die auf ausgewählte Module beschränkte Konfiguration belegt keine appweite Abdeckung.</li>
-              <li>Browserfälle laufen mit Chromium und Axe auf 320, 390, 768 und 1440 Pixel Breite.</li>
+              <li>Browserfälle laufen mit Chromium und Axe auf 320 und 1440 Pixel Breite, mit <code>@layout</code> markierte zusätzlich auf 390 und 768.</li>
             </ul>
           </article>
         </div>
@@ -1077,12 +1077,12 @@ npm run test:browser
 npm run test:firebase</code></pre>
         <div class="card note" style="margin-top:1rem">
           <h3>Browser-Smoke-Suite</h3>
-          <p><code>npm run test:browser</code> startet Vite ohne Firebase immer frisch auf dem eigenen Testport <code>5288</code> und verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard/Navigation, Scoreboard, Presenter/Fokus, Fortschrittsdiagramme, Sushi-Karte samt Touch-Panning/UK-Migration, Turnierablauf, Buzzer-Profil/Runden und Triathlon-Planung/Rekorde/Modelle/Tagebuch sind abgedeckt. Gemeinsame Controls sowie Storage-/Syncfehler ergänzen Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA. Der zusätzliche Buzzer-Mehrgerätefall benötigt Auth-, Firestore- und Realtime-Emulatoren und wird ohne <code>FIREBASE_DATABASE_EMULATOR_HOST</code> übersprungen; die normale lokale Suite belegt ihn nicht. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert. Specs sind nach Apps geschnitten (<code>&lt;app-id&gt;.spec.ts</code>); appübergreifende Specs nennen ihre Quellpfade in <code>scripts/selectBrowserSpecs.mjs</code>. <code>npm run test:browser:affected</code> führt nur die Specs aus, die Commits und Arbeitsbaum gegenüber <code>origin/main</code> betreffen können.</p>
+          <p><code>npm run test:browser</code> baut die App ohne Firebase nach <code>node_modules/.cache/browser-tests</code> und startet sie mit <code>vite preview</code> immer frisch auf dem eigenen Testport <code>5288</code>; ohne Dateiwatcher laden parallele Quelländerungen keine Testseite neu. Der Lauf verwendet nie einen laufenden Server wieder; ist der Port belegt, bricht der Lauf ab; die gemeinsame Fixture sperrt zusätzlich produktive Firebase-Hosts. Dashboard/Navigation, Scoreboard, Presenter/Fokus, Fortschrittsdiagramme, Sushi-Karte samt Touch-Panning/UK-Migration, Turnierablauf, Buzzer-Profil/Runden und Triathlon-Planung/Rekorde/Modelle/Tagebuch sind abgedeckt. Gemeinsame Controls sowie Storage-/Syncfehler ergänzen Tastatur-, Fokus-, Overflow- und Axe-Prüfungen gegen WCAG 2.0 bis 2.2 A/AA. Der zusätzliche Buzzer-Mehrgerätefall benötigt Auth-, Firestore- und Realtime-Emulatoren und wird ohne <code>FIREBASE_DATABASE_EMULATOR_HOST</code> übersprungen; die normale lokale Suite belegt ihn nicht. Berichte, Screenshots und Traces bleiben unter <code>playwright-report/</code> und <code>test-results/</code> unversioniert. Specs sind nach Apps geschnitten (<code>&lt;app-id&gt;.spec.ts</code>); appübergreifende Specs nennen ihre Quellpfade in <code>scripts/selectBrowserSpecs.mjs</code>. <code>npm run test:browser:affected</code> führt nur die Specs aus, die Commits und Arbeitsbaum gegenüber <code>origin/main</code> betreffen können.</p>
           <ul>
             <li>Neue Browser-Specs nach der App-ID benennen; prüft eine Spec mehrere Apps, ihre Quellpfade in <code>specDependencies</code> ergänzen. Lange Abläufe in unabhängige Tests mit eigenem Startzustand schneiden, damit die CI-Shards ausgeglichen bleiben.</li>
             <li>Vor neuen Tests vorhandene Verhaltensprüfungen erweitern oder mit fachlich anderen Eingaben parametrisieren; unabhängige Fehlerursachen getrennt lassen.</li>
             <li>Fachlogik in Vitest, Store-Aufrufe in gemockten Hooks, Rules und konkurrierende Clients im Emulator, Bedienung und Barrierefreiheit im Browser prüfen. Unterschiedliche Systemgrenzen sind keine Redundanz.</li>
-            <li>Responsive Browserabläufe laufen unmarkiert auf allen vier Viewports. <code>@desktop</code> führt größenunabhängige Fälle einmal auf Desktop aus; <code>@touch</code> läuft auf den drei Touch-Projekten. Keine Screenshot-Vorschauen ohne zusätzlichen Prüfzweck.</li>
+            <li>Unmarkierte Browserabläufe laufen auf 320 und 1440 Pixel; <code>@layout</code> erhalten nur Fälle mit eigenen Layoutzweigen dazwischen, sie laufen zusätzlich auf 390 und 768. <code>@desktop</code> führt größenunabhängige Fälle einmal auf Desktop aus; <code>@touch</code> läuft auf den Touch-Projekten. Keine Screenshot-Vorschauen ohne zusätzlichen Prüfzweck.</li>
             <li>Keine dauerhaften Abwesenheitsprüfungen für erledigte Datei-/Codeentfernungen oder Selbsttests einmaliger Reparatur-Fixtures. Laufende Löschaktionen, Datenverlustschutz und Migrationen noch möglicher Speicherstände bleiben abgesichert.</li>
             <li>Testisolation erhalten. Gleiche Node-Version, Reporterwahl und Workerzahl verwenden; Vitest nach einem Warmup mindestens dreimal messen. Bei Browsermessungen keine Quelldateien ändern oder für beide Stände denselben Server ohne Dateiwatcher nutzen. Timeouts, Wiederholungen und abgebrochene Läufe separat ausweisen.</li>
             <li>Für angeforderte UI-/Screenshot-Reviews gilt die CSS-Pixel-Matrix 320, 360, 375, 390, 393, 412, 430, 440; Tablet 768, 820, 1024; Desktop 1280, 1440, 1920. Betroffene Breakpoints unmittelbar darunter/darüber, Zustände und getrennte Rollenansichten prüfen. Das erweitert nicht automatisch die reguläre Suite.</li>

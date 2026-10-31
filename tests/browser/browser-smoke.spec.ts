@@ -1,6 +1,6 @@
 import { expect, test } from './browserApp'
 
-test('Dashboard startet mit responsiver Navigation', async ({ app, page }) => {
+test('Dashboard startet mit responsiver Navigation', { tag: '@layout' }, async ({ app, page }) => {
   await app.open('/')
 
   await expect(page.getByRole('heading', { level: 1, name: 'App-Hub' })).toBeVisible()
@@ -29,7 +29,7 @@ test('Navigationsmenü öffnet auch nach einem Klick vor dem Nachladen @desktop'
   const menuReleased = new Promise<void>((resolve) => {
     releaseMenu = resolve
   })
-  await page.route(/\/src\/components\/layout\/NavigationMenu\.tsx/, async (route) => {
+  await page.route(/\/assets\/NavigationMenu-[\w-]+\.js$/, async (route) => {
     await menuReleased
     await route.continue()
   })

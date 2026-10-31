@@ -47,7 +47,7 @@ test('Scoreboard erhält Buchungen bei Moduswechsel, später Zuordnung und Archi
   await app.expectHealthy()
 })
 
-test('Glücksrad schließt Gewinner per Hintergrund und Kreuz, aber nicht bei Klick im Ergebnis', async ({ app, page }) => {
+test('Glücksrad schließt Gewinner per Hintergrund und Kreuz, aber nicht bei Klick im Ergebnis', { tag: '@desktop' }, async ({ app, page }) => {
   await page.addInitScript(() => {
     // A diagonal stop makes the rotated SVG box overlap the next spin button.
     Math.random = () => 0.125

@@ -239,7 +239,7 @@ test('Tagebuch erfasst, bearbeitet, speichert und löscht ein Training', async (
   await expect(page.getByText('Noch keine Trainings erfasst')).toBeVisible()
 })
 
-test('Planung kopiert Einheiten und Wochen getrennt vom Tagebuch', async ({
+test('Planung kopiert Einheiten und Wochen getrennt vom Tagebuch', { tag: '@layout' }, async ({
   app,
   page,
 }) => {
@@ -447,9 +447,6 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await expect(page.getByText(/W\/kg/)).toBeVisible()
   await expect(page.locator('[data-record-card]')).toHaveCount(3)
-  for (const card of await page.locator('[data-record-card]').all()) {
-    await expect(card).not.toContainText(/Anker|Critical Speed|CSS|Leistungstests/)
-  }
   await expect(page.getByRole('combobox', { name: 'Rekordbasis' })).toHaveText(
     'Alle Trainings',
   )

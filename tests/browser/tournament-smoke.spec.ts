@@ -1,6 +1,6 @@
 import { expect, test } from './browserApp'
 
-test('Turnierfluss bleibt auf allen Viewports bedienbar', async ({ app, page }) => {
+test('Turnierfluss bleibt mobil und am Desktop bedienbar', async ({ app, page }) => {
   await app.open('/apps/swiss-tournaments')
 
   await expect(

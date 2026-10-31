@@ -4,7 +4,7 @@ const progressPlayersStorageKey =
   'app-hub:collection:apps/progress-dashboard/sessions/default/players'
 const progressDatasetsStorageKey =
   'app-hub:collection:apps/progress-dashboard/sessions/default/datasets'
-test('Fortschritts-Dashboard zeigt Diagramm, Rangliste und zentrale Eintragung responsiv', async ({
+test('Fortschritts-Dashboard zeigt Diagramm, Rangliste und zentrale Eintragung responsiv', { tag: '@layout' }, async ({
   app,
   page,
 }) => {

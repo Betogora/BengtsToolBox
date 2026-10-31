@@ -1,6 +1,6 @@
 import { expect, test } from './browserApp'
 
-test('Icon-Tabs beschriften responsiv und bleiben per Tastatur erreichbar', async ({ app, page }) => {
+test('Icon-Tabs beschriften responsiv und bleiben per Tastatur erreichbar', { tag: '@layout' }, async ({ app, page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await app.open('/apps/triathlon-tracker')
   const navigation = page.getByRole('tablist', { name: 'Triathlon-Tracker' })
