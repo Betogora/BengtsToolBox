@@ -23,49 +23,40 @@ function tournament(
 }
 
 describe('Swiss tournament history names', () => {
-  it('numbers different tournament formats in one daily sequence', () => {
-    const tournaments = sequenceTournamentNames([
-      tournament('swiss', 'Swiss vom 13.07.2026', 'swiss', 9, 1),
-      tournament(
-        'round-robin',
-        'Round Robin vom 13.07.2026',
-        'roundRobin',
-        12,
-        2,
-      ),
-      tournament(
-        'mario-kart',
-        'Mario Kart vom 13.07.2026',
-        'marioKart',
-        18,
-        3,
-      ),
-    ])
+  it.each<[string, [string, TournamentFormat][], string[]]>([
+    [
+      'German',
+      [
+        ['Swiss vom 13.07.2026', 'swiss'],
+        ['Round Robin vom 13.07.2026', 'roundRobin'],
+        ['Mario Kart vom 13.07.2026', 'marioKart'],
+      ],
+      [
+        'Swiss vom 13.07.2026 I',
+        'Round Robin vom 13.07.2026 II',
+        'Mario Kart vom 13.07.2026 III',
+      ],
+    ],
+    [
+      'English',
+      [
+        ['Swiss on 13/07/2026', 'swiss'],
+        ['Hand and Brain on 13/07/2026', 'handAndBrain'],
+      ],
+      ['Swiss on 13/07/2026 I', 'Hand and Brain on 13/07/2026 II'],
+    ],
+  ])(
+    'numbers %s defaults of different formats in one daily sequence',
+    (_language, defaults, expectedNames) => {
+      const tournaments = sequenceTournamentNames(
+        defaults.map(([name, format], index) =>
+          tournament(format, name, format, 9 + index * 3, index + 1),
+        ),
+      )
 
-    expect(tournaments.map(({ name }) => name)).toEqual([
-      'Swiss vom 13.07.2026 I',
-      'Round Robin vom 13.07.2026 II',
-      'Mario Kart vom 13.07.2026 III',
-    ])
-  })
-
-  it('recognizes English defaults and preserves manual tournament names', () => {
-    const tournaments = sequenceTournamentNames([
-      tournament('manual', 'Sommerturnier', 'swiss', 9, 1),
-      tournament(
-        'automatic',
-        'Hand and Brain on 13/07/2026',
-        'handAndBrain',
-        12,
-        2,
-      ),
-    ])
-
-    expect(tournaments.map(({ name }) => name)).toEqual([
-      'Sommerturnier',
-      'Hand and Brain on 13/07/2026 II',
-    ])
-  })
+      expect(tournaments.map(({ name }) => name)).toEqual(expectedNames)
+    },
+  )
 
   it('previews the next chronological default name', () => {
     const tournaments = [

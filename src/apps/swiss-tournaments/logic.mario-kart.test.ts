@@ -195,22 +195,24 @@ describe('Mario-Kart-Lobbyplanung', () => {
     },
   )
 
-  it('bewahrt am Kombinationslimit die deterministische Auswahlreihenfolge', () => {
-    const result = planNextMarioKartLobby(makeTournament('marioKart', 30))
+  it.each([
+    ['eindeutigen Setzungen', undefined],
+    ['30 Gleichständen', 1],
+  ])(
+    'wählt am Kombinationslimit bei %s stabil p1 bis p4',
+    (_label, sharedSeed) => {
+      const tournament = makeTournament('marioKart', 30)
+      if (sharedSeed !== undefined) {
+        tournament.players = tournament.players.map((player) => ({
+          ...player,
+          initialSeed: sharedSeed,
+        }))
+      }
+      const result = planNextMarioKartLobby(tournament)
 
-    expect(racerIds(result.tournament, 1)).toEqual(['p1', 'p2', 'p3', 'p4'])
-  })
-
-  it('behält bei 30 Gleichständen eine stabile Auswahl bei', () => {
-    const tournament = makeTournament('marioKart', 30)
-    tournament.players = tournament.players.map((player) => ({
-      ...player,
-      initialSeed: 1,
-    }))
-    const result = planNextMarioKartLobby(tournament)
-
-    expect(racerIds(result.tournament, 1)).toEqual(['p1', 'p2', 'p3', 'p4'])
-  })
+      expect(racerIds(result.tournament, 1)).toEqual(['p1', 'p2', 'p3', 'p4'])
+    },
+  )
 
   it('reserviert Fahrer über alle aktiven Lobbys hinweg', () => {
     const first = createLobby(makeTournament('marioKart', 8))

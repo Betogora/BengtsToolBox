@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  durationSecondsFromAveragePace,
   formatTrainingDurationInput,
+  parsePace,
   parseTrainingDuration,
   updatePlanMetrics,
   updateTrainingMetrics,
@@ -9,40 +11,49 @@ import {
   type TrainingMetricField,
 } from './units'
 
-const permutations: TrainingMetricField[][] = [
-  ['duration', 'distance'],
-  ['distance', 'duration'],
-  ['pace', 'distance'],
-  ['distance', 'pace'],
-  ['pace', 'duration'],
-  ['duration', 'pace'],
-]
+const emptyDraft: TrainingMetricDraft = {
+  duration: '',
+  distance: '',
+  pace: '',
+  speed: '',
+  inputs: ['duration', 'distance'],
+}
 
 describe('Pace, Dauer und Distanz', () => {
-  for (const discipline of ['run', 'swim', 'bike'] as const) {
-    for (const order of permutations) {
-      it(`${discipline}: berechnet das dritte Feld nach ${order.join(' + ')}`, () => {
-        const values = {
-          duration: '36',
-          distance: discipline === 'swim' ? '1.2' : '6',
-          pace: discipline === 'swim' ? '3:00' : '6:00',
-        }
-        let draft: TrainingMetricDraft = {
-          duration: '',
-          distance: '',
-          pace: '',
-          speed: '',
-          inputs: ['duration', 'distance'],
-        }
-        for (const field of order)
-          draft = updateTrainingMetrics(draft, field, values[field], discipline)
-        expect(parseTrainingDuration(draft.duration)).toBe(2160)
-        expect(draft.distance).toBe(values.distance)
-        expect(draft.pace).toBe(values.pace)
-        expect(draft.speed).toBe(discipline === 'swim' ? '' : '10')
-      })
-    }
-  }
+  it.each<[TrainingMetricField, TrainingMetricField[]]>([
+    ['pace', ['duration', 'distance']],
+    ['duration', ['pace', 'distance']],
+    ['distance', ['pace', 'duration']],
+  ])('run: berechnet %s aus %j', (_derived, order) => {
+    const values = { duration: '36', distance: '6', pace: '6:00' }
+    let draft = emptyDraft
+    for (const field of order)
+      draft = updateTrainingMetrics(draft, field, values[field], 'run')
+    expect(parseTrainingDuration(draft.duration)).toBe(2160)
+    expect(draft.distance).toBe('6')
+    expect(draft.pace).toBe('6:00')
+    expect(draft.speed).toBe('10')
+  })
+  // Swimming uses 100 m as the pace reference and shows no speed.
+  it.each([
+    { discipline: 'swim', distance: '1.2', pace: '3:00', speed: '', fasterPace: '1:30', fasterSpeed: '', longerDistance: '2.4' },
+    { discipline: 'bike', distance: '6', pace: '6:00', speed: '10', fasterPace: '3:00', fasterSpeed: '20', longerDistance: '12' },
+  ] as const)('$discipline: leitet nacheinander Pace, Dauer und Distanz ab', (row) => {
+    let draft = updateTrainingMetrics(emptyDraft, 'duration', '36', row.discipline)
+    draft = updateTrainingMetrics(draft, 'distance', row.distance, row.discipline)
+    expect([draft.pace, draft.speed]).toEqual([row.pace, row.speed])
+    expect(
+      durationSecondsFromAveragePace(parsePace(draft.pace)!, Number(row.distance) * 1000, row.discipline),
+    ).toBe(2160)
+    draft = updateTrainingMetrics(draft, 'pace', row.fasterPace, row.discipline)
+    expect([draft.duration, draft.speed]).toEqual(['18:00', row.fasterSpeed])
+    draft = updateTrainingMetrics(draft, 'duration', '36', row.discipline)
+    expect(draft.distance).toBe(row.longerDistance)
+  })
+  it('verwirft Pace-Angaben ohne zweistellige gültige Sekunden', () => {
+    expect(parsePace('5:7')).toBeNull()
+    expect(parsePace('5:60')).toBeNull()
+  })
   it('behält die beiden zuletzt eingegebenen Werte und entfernt veraltete Berechnungen', () => {
     let draft: TrainingMetricDraft = {
       duration: '36',

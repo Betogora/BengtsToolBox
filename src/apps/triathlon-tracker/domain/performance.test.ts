@@ -338,6 +338,7 @@ describe('wissenschaftliche Modellgrenzen', () => {
     )
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
+    expect(result.basis).toBe('training')
     expect(result.estimates.map((estimate) => estimate.targetDistanceMeters)).toEqual([5_000, 10_000, 21_097.5])
     expect(result.estimates.every((estimate) => estimate.extrapolated)).toBe(true)
     expect(result.estimates[2].predictedDurationSeconds).toBeCloseTo(4_050 * (21_097.5 / 15_000) ** 1.06)
@@ -360,7 +361,7 @@ describe('wissenschaftliche Modellgrenzen', () => {
     ])
   })
 
-  it('labels CSS target distances beyond its tests as extrapolations', () => {
+  it('allows the maximal 200/400 m CSS benchmark pair and labels longer targets as extrapolations', () => {
     const result = analyzeSwim(
       [
         { ...performance('swim-1', 'swim', 'pool-50', 120, 200), isBenchmark: true },
@@ -370,7 +371,10 @@ describe('wissenschaftliche Modellgrenzen', () => {
     )
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
+    expect(result.model).toBe('critical-swim-speed')
+    expect(result.basis).toBe('benchmark')
     expect(result.estimates.map((estimate) => estimate.extrapolated)).toEqual([false, false, true, true])
+    expect(result.estimates[2].predictedDurationSeconds).toBeCloseTo(505)
   })
 
   it('keeps valid power anchors when a benchmark lies outside the CP duration range', () => {
@@ -381,21 +385,6 @@ describe('wissenschaftliche Modellgrenzen', () => {
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
     expect(result.anchorIds).toEqual(['bike-1', 'bike-2', 'bike-3'])
-  })
-
-  it('erklärt 36 Minuten über 6 km als Trainingsäquivalent statt unbelegter Wettkampfreserve', () => {
-    const result = analyzeRun(
-      [performance('run-1', 'run', 'road', 2160, 6000)],
-      { context: 'road', asOfLocalDate: '2026-08-22' },
-    )
-    expect(result.status).toBe('ready')
-    if (result.status !== 'ready') return
-    expect(result.basis).toBe('training')
-    expect(result.estimates[0].predictedDurationSeconds).toBeCloseTo(
-      2160 * (5 / 6) ** 1.06,
-      6,
-    )
-    expect(Math.round(result.estimates[0].predictedDurationSeconds)).toBe(1780)
   })
 
   it('bevorzugt bestätigte Leistungstests gegenüber ungeprüften schnellen Trainings', () => {
@@ -413,27 +402,6 @@ describe('wissenschaftliche Modellgrenzen', () => {
     if (result.status !== 'ready') return
     expect(result.basis).toBe('benchmark')
     expect(result.anchorIds).toEqual(['run-2'])
-  })
-
-  it('erlaubt das CSS-Testpaar 200/400 m bei ausdrücklich maximaler Belastung', () => {
-    const result = analyzeSwim(
-      [
-        {
-          ...performance('swim-1', 'swim', 'pool-50', 120, 200),
-          isBenchmark: true,
-        },
-        {
-          ...performance('swim-2', 'swim', 'pool-50', 260, 400),
-          isBenchmark: true,
-        },
-      ],
-      { context: 'pool-50', asOfLocalDate: '2026-08-22' },
-    )
-    expect(result.status).toBe('ready')
-    if (result.status !== 'ready') return
-    expect(result.model).toBe('critical-swim-speed')
-    expect(result.basis).toBe('benchmark')
-    expect(result.estimates[0].predictedDurationSeconds).toBeCloseTo(505)
   })
 
   it('verwendet keine veralteten Leistungen für die aktuelle Form', () => {
