@@ -8,7 +8,7 @@ import { lazy, Suspense, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
-import { ColorSchemeSelector } from '@/components/layout/ColorSchemeSelector'
+import { ColorSchemeToggle } from '@/components/layout/ColorSchemeToggle'
 import { LanguageSelector } from '@/components/layout/LanguageSelector'
 import type { NavigationItem } from '@/components/layout/NavigationMenu'
 import { useI18n } from '@/lib/i18n'
@@ -61,36 +61,36 @@ export function AppShell() {
         <LazyLobbyDeviceTracker lobbyId={usesDefaultLobby ? 'default' : undefined} />
       </Suspense>
       <header className="app-shell-header sticky top-0 z-40 px-2 py-2 sm:px-4">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-1.5 rounded-lg border bg-card/95 px-2.5 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:gap-3 sm:px-6">
+        {/* Equal outer columns keep the navigation centred regardless of brand and control widths. */}
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 rounded-lg border bg-card/95 px-2.5 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:gap-3 sm:px-6 lg:grid-cols-[1fr_auto_1fr]">
           <Link
             to="/"
-            className="type-brand min-w-0 whitespace-nowrap rounded-md text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="type-brand min-w-0 justify-self-start whitespace-nowrap rounded-md text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             Bengts<span className="text-primary">Tool</span>Box
           </Link>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            {/* Below 360px the header cannot fit both sliders next to the brand; the menu takes over. */}
-            <ColorSchemeSelector className="max-[359px]:hidden" />
-            <LanguageSelector />
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navigationItems.map(({ href, labelKey, Icon }) => (
+              <NavLink
+                key={href}
+                to={href}
+                className={({ isActive }) =>
+                  cn(
+                    'type-action inline-flex h-11 items-center gap-2 rounded-md px-4 text-foreground transition-colors hover:bg-secondary hover:text-primary',
+                    isActive && 'bg-secondary text-primary',
+                  )
+                }
+              >
+                <Icon className="size-4" />
+                {t(labelKey)}
+              </NavLink>
+            ))}
+          </nav>
 
-            <nav className="hidden items-center gap-1 lg:flex">
-              {navigationItems.map(({ href, labelKey, Icon }) => (
-                <NavLink
-                  key={href}
-                  to={href}
-                  className={({ isActive }) =>
-                    cn(
-                      'type-action inline-flex h-11 items-center gap-2 rounded-md px-4 text-foreground transition-colors hover:bg-secondary hover:text-primary',
-                      isActive && 'bg-secondary text-primary',
-                    )
-                  }
-                >
-                  <Icon className="size-4" />
-                  {t(labelKey)}
-                </NavLink>
-              ))}
-            </nav>
+          <div className="flex items-center gap-1.5 justify-self-end sm:gap-2">
+            <LanguageSelector />
+            <ColorSchemeToggle />
 
             <div className="lg:hidden">
               <Suspense
