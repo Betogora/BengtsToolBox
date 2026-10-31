@@ -17,8 +17,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Deploys without waiting for the browser suite, which runs alongside and
-  # marks the commit red if a flow broke.
+  # Deploys without waiting for the browser suite, which runs alongside in
+  # three shards and marks the commit red if a flow broke.
   build-and-deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
@@ -75,9 +75,42 @@ jobs:
           channelId: live
           firebaseToolsVersion: 15.22.1
 
-  browser-tests:
-    name: Browser tests
+  # Compares against the last fully green run, so changes from cancelled or
+  # failed runs are tested again. Without a usable base the full suite runs.
+  select-browser-specs:
+    name: Select browser specs
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      run: ${{ steps.select.outputs.run }}
+      specs: ${{ steps.select.outputs.specs }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select affected specs
+        id: select
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          base=""
+          if [ "${{ github.event_name }}" = "push" ]; then
+            base="$(gh run list --workflow firebase-hosting.yml --branch main --status success --limit 1 --json headSha --jq '.[0].headSha // ""' || true)"
+            if [ -n "$base" ] && ! git fetch --depth=1 origin "$base"; then base=""; fi
+          fi
+          node scripts/selectBrowserSpecs.mjs --base "$base"
+
+  browser-tests:
+    name: Browser tests (${{ matrix.shard }}/3)
+    needs: select-browser-specs
+    if: ${{ needs.select-browser-specs.outputs.run == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -94,14 +127,17 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # SPECS is empty for the full suite, so it stays unquoted.
       - name: Test browser flows
-        run: npm run test:browser
+        env:
+          SPECS: ${{ needs.select-browser-specs.outputs.specs }}
+        run: npx playwright test $SPECS --shard=${{ matrix.shard }}/3 --pass-with-no-tests
 
       - name: Upload browser failure artifacts
         if: ${{ !success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: browser-test-results
+          name: browser-test-results-${{ matrix.shard }}
           path: |
             playwright-report
             test-results

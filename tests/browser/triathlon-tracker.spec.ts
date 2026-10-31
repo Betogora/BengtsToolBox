@@ -1,10 +1,34 @@
 import { expect, test } from './browserApp'
+import type { Page } from '@playwright/test'
 
-test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitbar', async ({
+const plannedKey =
+  'app-hub:collection:apps/triathlon-tracker/sessions/default/planned-trainings'
+const actualKey =
+  'app-hub:collection:apps/triathlon-tracker/sessions/default/actual-trainings'
+
+function berlinToday() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+  }).formatToParts(new Date())
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+// A fading toast would fail the contrast check in expectHealthy.
+async function waitForToastsToFade(page: Page) {
+  await page.mouse.move(1, 1)
+  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
+    timeout: 6000,
+  })
+}
+
+test('Planung prüft Datum und Uhrzeit und speichert einen Plan', async ({
   app,
   page,
 }) => {
-  test.setTimeout(150_000)
   await app.open('/apps/triathlon-tracker')
   await expect(
     page.getByRole('heading', { level: 1, name: 'Triathlon-Tracker' }),
@@ -18,10 +42,7 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(
     page.getByRole('heading', { name: 'Leistungsentwicklung' }),
   ).toHaveCount(0)
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await app.expectHealthy()
 
   await page.getByRole('button', { name: 'Planen', exact: true }).click()
@@ -103,27 +124,20 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(plan.getByLabel('Distanz (km)')).toHaveValue('3')
   await plan.getByRole('radio', { name: 'Laufen' }).click()
   await plan.getByLabel('Distanz (km)').fill('5')
-  const plannedDate = toLocalDate(
-    await plan.getByLabel('Datum', { exact: true }).inputValue(),
-  )
   await plan.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.locator('[data-planned-training]:visible')).toHaveCount(1)
   await expect(page.locator('[data-planned-training]:visible')).toContainText(
     '30 min',
   )
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await app.expectHealthy()
+})
 
-  await page
-    .getByRole('button', { name: 'Einheit kopieren: Lockerer Lauf' })
-    .click()
-  await expect(plan.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('30:00')
-  await plan.getByLabel('Kurzes Label').fill('Zweiter Lauf')
-  await plan.getByRole('button', { name: 'Speichern' }).click()
-  await expect(page.locator('[data-planned-training]:visible')).toHaveCount(2)
+test('Tagebuch erfasst, bearbeitet, speichert und löscht ein Training', async ({
+  app,
+  page,
+}) => {
+  await app.open('/apps/triathlon-tracker')
   await page
     .getByRole('button', { name: 'Training eintragen', exact: true })
     .click()
@@ -163,10 +177,7 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(actual.getByLabel('Ø Tempo (km/h)')).toHaveValue('12')
   await actual.getByRole('combobox', { name: 'RPE (1–10)' }).click()
   await page.getByRole('option', { name: '6 · deutlich anstrengend' }).click()
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   // The sticky footer covers fields mid-scroll; at the end nothing is hidden.
   await actual.evaluate((dialog) => dialog.scrollTo(0, dialog.scrollHeight))
   await app.expectHealthy()
@@ -186,12 +197,101 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
   await expect(edit.getByLabel('Ø Pace (min/km)')).toHaveValue('4:30')
   await edit.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.locator('[data-journal-training]')).toContainText('45 min')
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await app.expectHealthy()
 
+  const persisted = await page.context().newPage()
+  await persisted.goto('/apps/triathlon-tracker')
+  await persisted.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+  await expect(persisted.locator('[data-journal-training]')).toContainText(
+    '45 min',
+  )
+  await persisted.reload()
+  await persisted.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+  await expect(persisted.locator('[data-journal-training]')).toHaveCount(1)
+  await persisted.close()
+
+  await page.getByRole('tab', { name: 'Statistik', exact: true }).click()
+  await expect(page.locator('[data-week-summary-item]').first()).toContainText(
+    '45 min',
+  )
+  await waitForToastsToFade(page)
+  await app.expectHealthy()
+  await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
+  await page.getByRole('button', { name: 'Bearbeiten: Laufen' }).click()
+  const editBeforeDelete = page.getByRole('dialog', { name: 'Training bearbeiten' })
+  const inlineDelete = editBeforeDelete.getByRole('button', { name: 'Löschen', exact: true })
+  await inlineDelete.click()
+  await expect(
+    editBeforeDelete
+      .getByRole('group', { name: 'Training löschen?' })
+      .getByRole('button', { name: 'Bestätigen' }),
+  ).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(inlineDelete).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(editBeforeDelete).toBeHidden()
+  await page.getByRole('button', { name: 'Löschen: Laufen' }).click()
+  const deletePopover = page.getByRole('dialog', { name: 'Training löschen?' })
+  await expect(deletePopover).toHaveAccessibleDescription(/./)
+  await expect(deletePopover.getByRole('button', { name: 'Bestätigen' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('Noch keine Trainings erfasst')).toBeVisible()
+})
+
+test('Planung kopiert Einheiten und Wochen getrennt vom Tagebuch', async ({
+  app,
+  page,
+}) => {
+  const today = berlinToday()
+  await page.addInitScript(
+    ({ actualKey, plannedKey, today }) => {
+      localStorage.setItem(
+        plannedKey,
+        JSON.stringify([
+          {
+            id: 'easy-run',
+            position: 1,
+            localDate: today,
+            startMinutes: null,
+            discipline: 'run',
+            durationSeconds: 1_800,
+            distanceMeters: 5_000,
+            label: 'Lockerer Lauf',
+          },
+        ]),
+      )
+      localStorage.setItem(
+        actualKey,
+        JSON.stringify([
+          {
+            id: 'done-run',
+            position: 1,
+            localDate: today,
+            startMinutes: null,
+            discipline: 'run',
+            context: 'treadmill',
+            durationSeconds: 2_700,
+            distanceMeters: 10_000,
+            averageHeartRateBpm: 155,
+            averagePowerWatts: null,
+            rpe: null,
+            intervals: [],
+          },
+        ]),
+      )
+    },
+    { actualKey, plannedKey, today },
+  )
+  await app.open('/apps/triathlon-tracker')
+  const plan = page.getByRole('dialog', { name: 'Plan hinzufügen' })
+  await page
+    .getByRole('button', { name: 'Einheit kopieren: Lockerer Lauf' })
+    .click()
+  await expect(plan.getByLabel('Dauer (m:ss / h:mm:ss)')).toHaveValue('30:00')
+  await plan.getByLabel('Kurzes Label').fill('Zweiter Lauf')
+  await plan.getByRole('button', { name: 'Speichern' }).click()
+  await expect(page.locator('[data-planned-training]:visible')).toHaveCount(2)
   await page.getByRole('tab', { name: 'Planung', exact: true }).click()
   await expect(page.locator('[data-planned-training]:visible')).toHaveCount(2)
   await expect(
@@ -225,21 +325,10 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
     expect(days[6].x).toBeGreaterThan(days[0].x)
   }
 
-  const persisted = await page.context().newPage()
-  await persisted.goto('/apps/triathlon-tracker')
-  await persisted.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
-  await expect(persisted.locator('[data-journal-training]')).toContainText(
-    '45 min',
-  )
-  await persisted.reload()
-  await persisted.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
-  await expect(persisted.locator('[data-journal-training]')).toHaveCount(1)
-  await persisted.close()
-
   await page.getByRole('button', { name: 'Heute', exact: true }).click()
   const viewport = page.viewportSize()
   if (viewport && viewport.width >= 1024) {
-    const targetDate = new Date(plannedDate + 'T12:00:00Z')
+    const targetDate = new Date(today + 'T12:00:00Z')
     targetDate.setUTCDate(
       targetDate.getUTCDate() + (targetDate.getUTCDay() === 0 ? -1 : 1),
     )
@@ -252,35 +341,8 @@ test('Plan, Tagebuch und Statistik bleiben getrennt und Trainings sind bearbeitb
       page.locator('[data-calendar-date="' + target + '"]'),
     ).toContainText('Zweiter Lauf')
   }
-  await page.getByRole('tab', { name: 'Statistik', exact: true }).click()
-  await expect(page.locator('[data-week-summary-item]').first()).toContainText(
-    '45 min',
-  )
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await app.expectHealthy()
-  await page.getByRole('tab', { name: 'Tagebuch', exact: true }).click()
-  await page.getByRole('button', { name: 'Bearbeiten: Laufen' }).click()
-  const editBeforeDelete = page.getByRole('dialog', { name: 'Training bearbeiten' })
-  const inlineDelete = editBeforeDelete.getByRole('button', { name: 'Löschen', exact: true })
-  await inlineDelete.click()
-  await expect(
-    editBeforeDelete
-      .getByRole('group', { name: 'Training löschen?' })
-      .getByRole('button', { name: 'Bestätigen' }),
-  ).toBeFocused()
-  await page.keyboard.press('Escape')
-  await expect(inlineDelete).toBeFocused()
-  await page.keyboard.press('Escape')
-  await expect(editBeforeDelete).toBeHidden()
-  await page.getByRole('button', { name: 'Löschen: Laufen' }).click()
-  const deletePopover = page.getByRole('dialog', { name: 'Training löschen?' })
-  await expect(deletePopover).toHaveAccessibleDescription(/./)
-  await expect(deletePopover.getByRole('button', { name: 'Bestätigen' })).toBeFocused()
-  await page.keyboard.press('Enter')
-  await expect(page.getByText('Noch keine Trainings erfasst')).toBeVisible()
 })
 
 test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', async ({
@@ -373,10 +435,7 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   await page.getByLabel('Aktuelles Gewicht (kg)').fill('79.5')
   await page.getByLabel('Aktuelles Gewicht (kg)').blur()
   await expect(page.getByText('Gewicht gespeichert.')).toBeVisible()
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await page.getByLabel('Plantempo Laufen (km/h)').fill('7.6')
   await expect(page.getByLabel('Plantempo Laufen (min/km)')).toHaveValue('7:54')
   await page.getByLabel('Plantempo Laufen (km/h)').blur()
@@ -384,10 +443,7 @@ test('Triathlon-Tracker zeigt Modelle und Aktivitätspunkte zugänglich an', asy
   // The typed speed is stored exactly, not via whole seconds per kilometre.
   await expect(page.getByLabel('Plantempo Laufen (km/h)')).toHaveValue('7.6')
   // A fading toast would fail the contrast check in expectHealthy later on.
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await page.getByRole('tab', { name: 'Rekorde', exact: true }).click()
   await expect(page.getByText(/W\/kg/)).toBeVisible()
   await expect(page.locator('[data-record-card]')).toHaveCount(3)
@@ -641,10 +697,7 @@ test('Rekorde lassen sich sekundengenau anlegen und bleiben nach Kontextwechsel 
     persisted.locator('[data-record-card="run"] [data-record-distance="5000"]'),
   ).toContainText('20:35')
   await persisted.close()
-  await page.mouse.move(1, 1)
-  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0, {
-    timeout: 6000,
-  })
+  await waitForToastsToFade(page)
   await app.expectHealthy()
 })
 

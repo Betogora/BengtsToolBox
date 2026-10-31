@@ -25,6 +25,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:browser:affected": "node scripts/selectBrowserSpecs.mjs --base origin/main --run",
     "test:firebase": "npx firebase-tools@15.22.1 emulators:exec --only firestore,database \"npm run test:firebase:rules\"",
     "test:firebase:rules": "vitest --config firebase/vitest.config.ts",
     "test:watch": "vitest",
