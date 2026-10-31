@@ -40,19 +40,23 @@ export function getPlayerScores(
   players: ProgressPlayer[],
   events: ProgressEvent[],
 ): PlayerScore[] {
-  const scores = new Map(players.map((player) => [player.id, 0]))
-  getSortedEvents(events).forEach((event) => {
-    if (!scores.has(event.playerId)) {
+  const scores = new Map(players.map((player) => [player.id, { score: 0, reachedAt: -1 }]))
+  getSortedEvents(events).forEach((event, index) => {
+    const current = scores.get(event.playerId)
+    if (!current) {
       return
     }
 
-    const currentScore = scores.get(event.playerId) ?? 0
-    scores.set(event.playerId, Math.max(0, currentScore + event.valueDelta))
+    const score = Math.max(0, current.score + event.valueDelta)
+    // Ein Eintrag, der den Stand nicht ändert (Minus bei 0), verschiebt den Zeitpunkt nicht.
+    if (score !== current.score) {
+      scores.set(event.playerId, { score, reachedAt: index })
+    }
   })
 
   return players.map((player) => ({
     player,
-    score: scores.get(player.id) ?? 0,
+    ...(scores.get(player.id) ?? { score: 0, reachedAt: -1 }),
   }))
 }
 
@@ -81,12 +85,19 @@ export function getEventTable(events: ProgressEvent[]) {
     .map(({ event }) => event)
 }
 
+// Gleichstand teilt sich den Platz (1, 1, 3); innerhalb steht zuerst, wer den Stand früher erreicht hat.
 export function rankPlayerScores<T extends PlayerScore>(scores: readonly T[]) {
-  return [...scores].sort(
+  const sorted = [...scores].sort(
     (left, right) =>
       right.score - left.score ||
+      left.reachedAt - right.reachedAt ||
       left.player.position - right.player.position,
   )
+
+  return sorted.map((entry) => ({
+    ...entry,
+    rank: sorted.findIndex(({ score }) => score === entry.score) + 1,
+  }))
 }
 
 export type PlayerStanding = {
@@ -106,13 +117,13 @@ export function getPlayerStandings(
   getSortedEvents(events).forEach((event) => lastEvents.set(event.playerId, event))
 
   return new Map<string, PlayerStanding>(
-    ranked.map(({ player, score }, index) => {
+    ranked.map(({ player, rank, score }, index) => {
       const rival = ranked[index === 0 ? 1 : index - 1]
 
       return [
         player.id,
         {
-          rank: index + 1,
+          rank,
           rival: rival ? { name: rival.player.name, gap: Math.abs(score - rival.score) } : null,
           lastEvent: lastEvents.get(player.id) ?? null,
         },

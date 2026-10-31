@@ -7,7 +7,7 @@ import {
   getSortedEvents,
   rankPlayerScores,
 } from '@/apps/progress-dashboard/logic'
-import { getPodiumRankClass } from '@/apps/progress-dashboard/podium'
+import { getPodiumRankClass } from '@/apps/shared/podium'
 import { getArchivePlayers } from '@/apps/progress-dashboard/progressChartModel'
 import { DashboardProgressChart } from '@/apps/progress-dashboard/DashboardProgressChart'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
@@ -141,13 +141,13 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
         players={archivePlayers}
       />
       <ol className="divide-y overflow-hidden rounded-md border bg-background">
-        {rankedScores.map(({ player, score }, index) => (
+        {rankedScores.map(({ player, rank, score }) => (
           <li
             key={player.id}
             className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2"
           >
-            <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'type-caption size-5')}>
-              {index + 1}
+            <span className={cn(getPodiumRankClass(score > 0 ? rank : 0), 'type-caption size-5')}>
+              {rank}
             </span>
             <span className="flex min-w-0 items-center gap-2">
               <span

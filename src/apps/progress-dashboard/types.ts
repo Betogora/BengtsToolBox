@@ -49,4 +49,6 @@ export type ProgressDashboardState = {
 export type PlayerScore = {
   player: ProgressPlayer
   score: number
+  // Reihenfolge des Eintrags, mit dem der aktuelle Stand erreicht wurde; -1 für den Startwert.
+  reachedAt: number
 }

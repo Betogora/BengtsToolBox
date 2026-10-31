@@ -16,7 +16,7 @@ import { PlayerSetupList } from '@/apps/progress-dashboard/PlayerSetupList'
 import { ProgressEntryDialog } from '@/apps/progress-dashboard/ProgressEntryDialog'
 import { formatNumber } from '@/apps/progress-dashboard/format'
 import { getPlayerStandings, rankPlayerScores } from '@/apps/progress-dashboard/logic'
-import { getPodiumRankClass } from '@/apps/progress-dashboard/podium'
+import { getPodiumRankClass } from '@/apps/shared/podium'
 import { useProgressDashboard } from '@/apps/progress-dashboard/hooks/useProgressDashboard'
 import { useProgressTooltipText } from '@/apps/progress-dashboard/progressTooltipText'
 import type {
@@ -129,9 +129,9 @@ function ProgressDashboardPresenter({
             {playerScores.length === 0 ? (
               <EmptyState>{t('progress.emptyPlayers')}</EmptyState>
             ) : (
-              rankedPlayerScores.map((playerScore, index) => {
-                const rank = index + 1
-                const podiumLabel = podiumLabels[index]
+              rankedPlayerScores.map((playerScore) => {
+                const { rank } = playerScore
+                const podiumLabel = podiumLabels[rank - 1]
 
                 return (
                   <div
@@ -340,7 +340,7 @@ export function ProgressDashboardPage() {
               <EmptyState className="m-3">{t('progress.emptyPlayers')}</EmptyState>
             ) : (
               <ol aria-labelledby="progress-top-list-title" className="divide-y">
-                {rankedPlayerScores.map(({ player, score }, index) => {
+                {rankedPlayerScores.map(({ player, rank, score }) => {
                   const standing = standings.get(player.id)
 
                   return (
@@ -360,8 +360,8 @@ export function ProgressDashboardPage() {
                       }
                     >
                       <li className="grid min-h-14 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 px-3">
-                        <span className={cn(getPodiumRankClass(score > 0 ? index + 1 : 0), 'type-action size-8')}>
-                          {index + 1}
+                        <span className={cn(getPodiumRankClass(score > 0 ? rank : 0), 'type-action size-8')}>
+                          {rank}
                         </span>
                         <span className="flex min-w-0 items-center gap-2">
                           <span

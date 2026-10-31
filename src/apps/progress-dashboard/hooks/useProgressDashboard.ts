@@ -11,6 +11,7 @@ import {
   normalizeDataset,
   normalizeDrinkIcon,
   normalizePlayer,
+  rankPlayerScores,
   sanitizeColor,
   sanitizeName,
 } from '@/apps/progress-dashboard/logic'
@@ -176,7 +177,7 @@ export function useProgressDashboard(lobbyId?: string) {
     () => getPlayerScores(players, activeDataset.events),
     [activeDataset.events, players],
   )
-  const leader = [...playerScores].sort((left, right) => right.score - left.score)[0]
+  const leader = rankPlayerScores(playerScores)[0]
 
   useEffect(() => {
     if (
