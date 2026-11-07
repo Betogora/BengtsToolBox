@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "createdAt": "2026-11-06T22:24:17.446Z",
+  "words": [
+    "Löwe",
+    "Uhr",
+    "Batterie",
+    "Kompass",
+    "Gold",
+    "Licht",
+    "Eis",
+    "Rose",
+    "Wald",
+    "Zeitung",
+    "Blatt",
+    "Planet",
+    "Brunnen",
+    "Raupe",
+    "Sekt",
+    "Brief",
+    "Wüste",
+    "Schuh",
+    "Mond",
+    "Strauß",
+    "Glocke",
+    "Schuss",
+    "Bulle",
+    "Wein",
+    "Satellit"
+  ],
+  "colors": [
+    "blau",
+    "rot",
+    "blau",
+    "neutral",
+    "blau",
+    "blau",
+    "rot",
+    "neutral",
+    "rot",
+    "blau",
+    "rot",
+    "rot",
+    "neutral",
+    "blau",
+    "rot",
+    "blau",
+    "neutral",
+    "neutral",
+    "blau",
+    "rot",
+    "neutral",
+    "neutral",
+    "rot",
+    "attentaeter",
+    "rot"
+  ],
+  "revealed": [
+    true,
+    false,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    false,
+    true
+  ],
+  "start": "rot",
+  "clues": [
+    {
+      "team": "rot",
+      "word": "LAUB",
+      "label": "3",
+      "targets": [
+        "Blatt",
+        "Wald",
+        "Strauß"
+      ],
+      "confidence": {
+        "Blatt": "sicher",
+        "Wald": "sicher",
+        "Strauß": "wackelig"
+      },
+      "blind": [
+        [
+          "Blatt",
+          "Wald",
+          "Strauß",
+          "Rose",
+          "Raupe"
+        ],
+        [
+          "Blatt",
+          "Wald",
+          "Strauß",
+          "Rose",
+          "Raupe"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Wald",
+          "color": "rot"
+        },
+        {
+          "word": "Blatt",
+          "color": "rot"
+        },
+        {
+          "word": "Raupe",
+          "color": "blau"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "SCHEIN",
+      "label": "3",
+      "targets": [
+        "Mond",
+        "Licht",
+        "Gold"
+      ],
+      "confidence": {
+        "Mond": "sicher",
+        "Licht": "sicher",
+        "Gold": "wahrscheinlich"
+      },
+      "blind": [
+        [
+          "Mond",
+          "Licht",
+          "Gold",
+          "Zeitung",
+          "Brief"
+        ],
+        [
+          "Mond",
+          "Licht",
+          "Gold",
+          "Brief",
+          "Zeitung"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Mond",
+          "color": "blau"
+        },
+        {
+          "word": "Licht",
+          "color": "blau"
+        },
+        {
+          "word": "Gold",
+          "color": "blau"
+        }
+      ]
+    },
+    {
+      "team": "rot",
+      "word": "UMLAUFBAHN",
+      "label": "3",
+      "targets": [
+        "Planet",
+        "Satellit",
+        "Uhr"
+      ],
+      "confidence": {
+        "Planet": "sicher",
+        "Satellit": "sicher",
+        "Uhr": "wackelig"
+      },
+      "blind": [
+        [
+          "Satellit",
+          "Planet",
+          "Glocke",
+          "Uhr",
+          "Kompass"
+        ],
+        [
+          "Satellit",
+          "Planet",
+          "Kompass",
+          "Uhr",
+          "Batterie"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Satellit",
+          "color": "rot"
+        },
+        {
+          "word": "Planet",
+          "color": "rot"
+        },
+        {
+          "word": "Schuh",
+          "color": "neutral"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "POST",
+      "label": "2",
+      "targets": [
+        "Brief",
+        "Zeitung"
+      ],
+      "confidence": {
+        "Brief": "sicher",
+        "Zeitung": "sicher"
+      },
+      "results": [
+        {
+          "word": "Brief",
+          "color": "blau"
+        },
+        {
+          "word": "Zeitung",
+          "color": "blau"
+        }
+      ]
+    },
+    {
+      "team": "rot",
+      "word": "BRAUT",
+      "label": "2",
+      "targets": [
+        "Strauß",
+        "Sekt"
+      ],
+      "confidence": {
+        "Strauß": "sicher",
+        "Sekt": "wahrscheinlich"
+      },
+      "results": [
+        {
+          "word": "Strauß",
+          "color": "rot"
+        },
+        {
+          "word": "Glocke",
+          "color": "neutral"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "MÄHNE",
+      "label": "1",
+      "targets": [
+        "Löwe"
+      ],
+      "confidence": {
+        "Löwe": "sicher"
+      },
+      "results": [
+        {
+          "word": "Löwe",
+          "color": "blau"
+        }
+      ]
+    },
+    {
+      "team": "rot",
+      "word": "MATADOR",
+      "label": "1",
+      "targets": [
+        "Bulle"
+      ],
+      "confidence": {
+        "Bulle": "sicher"
+      },
+      "results": [
+        {
+          "word": "Bulle",
+          "color": "rot"
+        },
+        {
+          "word": "Rose",
+          "color": "neutral"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "AKKU",
+      "label": "1",
+      "targets": [
+        "Batterie"
+      ],
+      "confidence": {
+        "Batterie": "sicher"
+      },
+      "results": [
+        {
+          "word": "Batterie",
+          "color": "blau"
+        }
+      ]
+    }
+  ],
+  "winner": "blau",
+  "dangerField": [
+    "Rotwein",
+    "Rebe",
+    "Traube",
+    "Prost",
+    "Alkohol",
+    "Glas",
+    "Flasche",
+    "Korken",
+    "Winzer",
+    "Weinberg",
+    "Kelch",
+    "Sommelier",
+    "Trinken",
+    "Bier"
+  ],
+  "notes": {
+    "Strauß": "Vogel/Blumenstrauß",
+    "Bulle": "Rind/Polizist/Börse",
+    "Schuss": "Waffe/kleine Menge",
+    "Mond": "Himmelskörper",
+    "Glocke": "Kirche/Käseglocke"
+  },
+  "endedAt": "2026-11-06T22:42:25.326Z"
+}

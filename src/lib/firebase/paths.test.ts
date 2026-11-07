@@ -163,6 +163,13 @@ const appPathContracts: Record<string, readonly PathContract[]> = {
       scopedSuffix: 'state/default',
     },
   ],
+  codenames: [
+    {
+      build: firebasePaths.codenamesState,
+      legacy: 'apps/codenames/state/default',
+      scopedSuffix: 'state/default',
+    },
+  ],
 }
 
 function sorted(values: string[]) {

@@ -1,0 +1,31 @@
+/* Codenames: Spielfarben. Kontrast Begriff auf Kartenfarbe jeweils mindestens 4,5 : 1. */
+.codenames-page {
+  --cn-red: #b42318;
+  --cn-red-soft: #fdecea;
+  --cn-red-text: #b42318;
+  --cn-blue: #1f5f8b;
+  --cn-blue-soft: #e6f0f7;
+  --cn-blue-text: #1f5f8b;
+  --cn-neutral: var(--brand-surface);
+  --cn-neutral-foreground: #111827;
+  --cn-assassin: var(--brand-ink);
+  --cn-assassin-foreground: #ffffff;
+}
+
+.dark .codenames-page {
+  --cn-red: #b8392f;
+  --cn-red-soft: #3d1f1d;
+  --cn-red-text: #f0a39b;
+  --cn-blue: #2c6a99;
+  --cn-blue-soft: #172c3d;
+  --cn-blue-text: #8cc1e8;
+  --cn-neutral-foreground: #e6eaee;
+  --cn-assassin-foreground: #0e141b;
+}
+
+/* Begriffe brechen auf schmalen Karten an weichen Trennstellen (components/hyphenate.ts). */
+.codename-word {
+  hyphens: manual;
+  -webkit-hyphens: manual;
+  overflow-wrap: anywhere;
+}
