@@ -7,6 +7,10 @@
     "rolldown": "1.1.5"
   },
   "metrics": {
+    "app:codenames": {
+      "rawBytes": 19376,
+      "gzipBytes": 6473
+    },
     "app:coinflip": {
       "rawBytes": 8789,
       "gzipBytes": 3195

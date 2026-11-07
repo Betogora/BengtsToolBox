@@ -11,6 +11,7 @@ import {
   ListOrdered,
   StepForward,
   UtensilsCrossed,
+  VenetianMask,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -174,6 +175,18 @@ const appDefinitions: readonly HubApp[] = [
     loadPage: () =>
       import('@/apps/triathlon-tracker').then(({ TriathlonTrackerPage }) => ({
         default: TriathlonTrackerPage,
+      })),
+  },  {
+    id: 'codenames',
+    titleKey: 'app.codenames.title',
+    descriptionKey: 'app.codenames.description',
+    href: '/apps/codenames',
+    routePath: 'apps/codenames',
+    status: 'Live',
+    Icon: VenetianMask,
+    loadPage: () =>
+      import('@/apps/codenames').then(({ CodenamesPage }) => ({
+        default: CodenamesPage,
       })),
   },
 ]

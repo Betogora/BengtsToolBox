@@ -1,0 +1,381 @@
+{
+  "version": 1,
+  "createdAt": "2026-11-06T21:54:48.291Z",
+  "words": [
+    "Schwamm",
+    "Krake",
+    "Traum",
+    "Astronaut",
+    "Batterie",
+    "Brille",
+    "Musik",
+    "Pferd",
+    "Mauer",
+    "Elefant",
+    "Affe",
+    "Virus",
+    "Radio",
+    "Bär",
+    "Engel",
+    "Kirche",
+    "Spiegel",
+    "Becken",
+    "Raupe",
+    "Berg",
+    "Krebs",
+    "Tank",
+    "Pinsel",
+    "Kiefer",
+    "Lehrer"
+  ],
+  "colors": [
+    "rot",
+    "rot",
+    "neutral",
+    "attentaeter",
+    "blau",
+    "neutral",
+    "blau",
+    "rot",
+    "blau",
+    "rot",
+    "neutral",
+    "blau",
+    "blau",
+    "neutral",
+    "neutral",
+    "neutral",
+    "rot",
+    "rot",
+    "rot",
+    "rot",
+    "blau",
+    "blau",
+    "neutral",
+    "blau",
+    "blau"
+  ],
+  "revealed": [
+    true,
+    false,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true
+  ],
+  "start": "blau",
+  "clues": [
+    {
+      "team": "blau",
+      "word": "WALKMAN",
+      "label": "3",
+      "targets": [
+        "Musik",
+        "Radio",
+        "Batterie"
+      ],
+      "confidence": {
+        "Musik": "sicher",
+        "Radio": "wahrscheinlich",
+        "Batterie": "wahrscheinlich"
+      },
+      "blind": [
+        [
+          "Musik",
+          "Radio",
+          "Batterie",
+          "Traum",
+          "Brille"
+        ],
+        [
+          "Musik",
+          "Radio",
+          "Batterie",
+          "Becken",
+          "Schwamm"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Batterie",
+          "color": "blau"
+        },
+        {
+          "word": "Musik",
+          "color": "blau"
+        },
+        {
+          "word": "Radio",
+          "color": "blau"
+        }
+      ]
+    },
+    {
+      "team": "rot",
+      "word": "BAD",
+      "label": "3",
+      "targets": [
+        "Schwamm",
+        "Becken",
+        "Spiegel"
+      ],
+      "confidence": {
+        "Schwamm": "sicher",
+        "Becken": "sicher",
+        "Spiegel": "wahrscheinlich"
+      },
+      "blind": [
+        [
+          "Becken",
+          "Schwamm",
+          "Spiegel",
+          "Krake",
+          "Engel"
+        ],
+        [
+          "Schwamm",
+          "Becken",
+          "Elefant",
+          "Brille",
+          "Kirche"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Spiegel",
+          "color": "rot"
+        },
+        {
+          "word": "Becken",
+          "color": "rot"
+        },
+        {
+          "word": "Schwamm",
+          "color": "rot"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "KRANKHEIT",
+      "label": "2",
+      "targets": [
+        "Virus",
+        "Krebs"
+      ],
+      "confidence": {
+        "Virus": "sicher",
+        "Krebs": "sicher"
+      },
+      "blind": [
+        [
+          "Virus",
+          "Krebs",
+          "Affe",
+          "Traum",
+          "Lehrer"
+        ],
+        [
+          "Krebs",
+          "Virus",
+          "Krake",
+          "Raupe",
+          "Affe"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Krebs",
+          "color": "blau"
+        },
+        {
+          "word": "Virus",
+          "color": "blau"
+        }
+      ]
+    },
+    {
+      "team": "rot",
+      "word": "HANNIBAL",
+      "label": "3",
+      "targets": [
+        "Elefant",
+        "Berg",
+        "Pferd"
+      ],
+      "confidence": {
+        "Elefant": "sicher",
+        "Berg": "wahrscheinlich",
+        "Pferd": "wahrscheinlich"
+      },
+      "results": [
+        {
+          "word": "Elefant",
+          "color": "rot"
+        },
+        {
+          "word": "Berg",
+          "color": "rot"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "PANZER",
+      "label": "2",
+      "targets": [
+        "Tank",
+        "Mauer"
+      ],
+      "confidence": {
+        "Tank": "sicher",
+        "Mauer": "wahrscheinlich"
+      },
+      "blind": [
+        [
+          "Tank",
+          "Mauer",
+          "Bär",
+          "Krake"
+        ],
+        [
+          "Tank",
+          "Mauer",
+          "Kiefer",
+          "Bär"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Tank",
+          "color": "blau"
+        },
+        {
+          "word": "Raupe",
+          "color": "rot"
+        }
+      ]
+    },
+    {
+      "team": "rot",
+      "word": "SCHACH",
+      "label": "1",
+      "targets": [
+        "Pferd"
+      ],
+      "confidence": {
+        "Pferd": "sicher"
+      },
+      "blind": [
+        [
+          "Pferd",
+          "Lehrer",
+          "Mauer",
+          "Kirche"
+        ],
+        [
+          "Pferd",
+          "Kirche",
+          "Mauer",
+          "Lehrer"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Pferd",
+          "color": "rot"
+        }
+      ]
+    },
+    {
+      "team": "blau",
+      "word": "BAUMSCHULE",
+      "label": "2",
+      "targets": [
+        "Kiefer",
+        "Lehrer"
+      ],
+      "confidence": {
+        "Kiefer": "sicher",
+        "Lehrer": "sicher"
+      },
+      "blind": [
+        [
+          "Kiefer",
+          "Lehrer",
+          "Affe",
+          "Bär"
+        ],
+        [
+          "Kiefer",
+          "Lehrer",
+          "Pinsel",
+          "Affe"
+        ]
+      ],
+      "results": [
+        {
+          "word": "Lehrer",
+          "color": "blau"
+        },
+        {
+          "word": "Kiefer",
+          "color": "blau"
+        },
+        {
+          "word": "Mauer",
+          "color": "blau"
+        }
+      ]
+    }
+  ],
+  "winner": "blau",
+  "dangerField": [
+    "Weltraum",
+    "Rakete",
+    "Mond",
+    "Raumfahrt",
+    "Sterne",
+    "NASA",
+    "Schwerelos",
+    "Raumanzug",
+    "Helm",
+    "Mars",
+    "All",
+    "Kosmonaut",
+    "Orbit",
+    "Raumstation",
+    "Gagarin"
+  ],
+  "notes": {
+    "Krebs": "Tier/Krankheit/Sternzeichen",
+    "Kiefer": "Baum/Knochen",
+    "Becken": "Körper/Waschbecken/Schlagzeug",
+    "Tank": "Behälter/Panzer",
+    "Mauer": "Wand/Berliner Mauer",
+    "Virus": "Krankheit/Computer",
+    "Schwamm": "Küche/Meerestier",
+    "Raupe": "Insekt/Kettenfahrzeug",
+    "Batterie": "Strom/Geschütz"
+  },
+  "endedAt": "2026-11-06T22:17:47.576Z"
+}

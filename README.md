@@ -28,6 +28,7 @@
 | Nächste Frage | Quizfragen-Karussell mit verdeckter Antwort und gemerkter Position | Firestore + lokaler Cache |
 | Sushi Map | Besuchte Länder und Bundesländer | Firestore + lokaler Cache |
 | SK Anderten Turnier-App | Swiss-, Rundenturnier- und Hand-and-Brain-Verwaltung | Firestore + lokaler Cache |
+| Codenames | Wortratespiel mit KI-Hinweisgeber über OpenRouter | Firestore + lokaler Cache, KI-Proxy auf Vercel |
 
 Zusätzlich existiert mit **Schlag den Raab** ein geschützter Bereich außerhalb der Dashboard-Registry.
 

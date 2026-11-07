@@ -32,6 +32,8 @@ export const firebasePaths = {
     scopedOrLegacy(lobbyId, 'coinflip', 'apps/coinflip/state/default'),
   nextQuestionState: (lobbyId = 'default') =>
     scopedOrLegacy(lobbyId, 'next-question', 'apps/next-question/state/default'),
+  codenamesState: (lobbyId = 'default') =>
+    scopedOrLegacy(lobbyId, 'codenames', 'apps/codenames/state/default'),
   schlagDenRaabState: (lobbyId = 'default') =>
     scopedOrLegacy(
       lobbyId,

@@ -23,7 +23,7 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 
 ### 1.2 Bewusste Grenzen
 
-- Es gibt keinen Application Server und keine Cloud Functions; Hosting, Anonymous Auth, Firestore und die Realtime Database des Live-Buzzers bleiben im Spark-Tarif nutzbar. Ein Abrechnungskonto darf nicht verknüpft werden.
+- Es gibt keinen Application Server und keine Cloud Functions; Hosting, Anonymous Auth, Firestore und die Realtime Database des Live-Buzzers bleiben im Spark-Tarif nutzbar. Ein Abrechnungskonto darf nicht verknüpft werden. Einzige Ausnahme ist der zustandslose KI-Proxy für Codenames als eigenes Vercel-Projekt (Abschnitt 9.6); er speichert nichts und kennt keine Firebase-Zugangsdaten.
 - Es gibt keine persönlichen Konten, appübergreifenden Besitzerrollen oder Mandanten. Live-Buzzer bindet ausschließlich seine Rundensteuerung an eine Host-UID.
 - Anonymous Auth identifiziert eine Browsersitzung. Abgesehen von der Host-UID des Live-Buzzers entstehen daraus keine fachlichen Rollen.
 - LocalStorage ist Fallback und Cache, keine vollständige Offline-Synchronisation oder Konfliktauflösung.
@@ -33,7 +33,7 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 
 ## 2. Produktlandkarte und Routen
 
-Das Dashboard unter `/` zeigt alle elf regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
+Das Dashboard unter `/` zeigt alle zwölf regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
 
 | Bereich | Route | Registrierung | Kernzweck |
 | --- | --- | --- | --- |
@@ -49,6 +49,7 @@ Das Dashboard unter `/` zeigt alle elf regulär registrierten Apps. Die Registry
 | SK Anderten Turnier-App | `/apps/swiss-tournaments` | Registry | Swiss-, Rundenturnier-, Hand-and-Brain- und Mario-Kart-Turniere |
 | Nächste Frage | `/apps/next-question` | Registry | Quizkarten mit verdeckter Antwort |
 | Triathlon-Tracker | `/apps/triathlon-tracker` | Registry | Bestleistungen, Trainingsplanung und Leistungsentwicklung |
+| Codenames | `/apps/codenames` | Registry | Wortratespiel mit KI-Hinweisgeber über OpenRouter |
 | Schlag den Raab | `/schlag-den-raab` | explizite Sonderroute | Zwei-Personen-Abendwertung |
 | Lobbys | `/lobbies` | explizite Sonderroute | Öffentliche Räume erstellen und betreten |
 | Lobby-Dashboard | `/lobbies/:lobbyId` | explizite Sonderroute | Alle regulären Apps innerhalb eines isolierten Raums |
@@ -171,6 +172,7 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 | Sushi Map | `apps/territory-map/sessions/default/state/default` | `.../players`, `.../datasets` |
 | Turnier-App | `apps/swiss-tournaments/sessions/default/state/default` | `.../tournaments` |
 | Triathlon-Tracker | `apps/triathlon-tracker/sessions/default/state/default` | `.../planned-trainings`, `.../actual-trainings` |
+| Codenames | `apps/codenames/state/default` | – |
 
 Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In einer Lobby kapseln sie ihre Daten unter `lobbies/{lobbyId}/apps/{appId}/...`; Metadaten liegen in `lobbies/{lobbyId}`, Gerätezugriffe in `lobbies/{lobbyId}/devices/{uid}`. Beim Anlegen einer Lobby werden keine App-Daten aus der globalen oder einer anderen Lobby kopiert; beim ersten Öffnen entsteht ausschließlich der spezifizierte Erstzustand der jeweiligen App. Die globale Lobby behält bewusst alle bestehenden `apps/...`-Pfade und benötigt keine Datenmigration.
 
@@ -510,6 +512,16 @@ Die Modelle beruhen auf diesen fachlichen Grundlagen; die Oberfläche verlinkt s
 - „Neue Abstimmung“ archiviert die Runde mit festem Ergebnis-Snapshot und Wählern, löscht deren Stimmen und startet mit demselben Titel und denselben Personen neu; ein Stechen ist einfach eine neue Runde. „Alle löschen“ entfernt Personen und laufende Stimmen, nicht das Archiv. Archive sind aufklappbar, für die Spielleitung umbenenn- und löschbar.
 - Der Presenter zeigt während der Runde QR-Code, Titel, Stimmenzahl und Wähler, danach Gewinner und Rangliste.
 
+### 5.13 Codenames
+
+**Zweck:** Codenames ab zwei Personen auf einem gemeinsamen Bildschirm; ein Sprachmodell gibt beiden Teams die Hinweise.
+
+- Ein Spiel zieht 25 Begriffe aus der Wortliste des Proxys (ohne Wortformen desselben Begriffs); das ausgeloste Startteam bekommt 9 Karten, das andere 8, dazu 7 neutrale und ein Attentäter.
+- Die Farbverteilung erreicht den Browser nie im Klartext. Der KI-Proxy versiegelt den vollständigen Spielstand mit AES-GCM; Firestore hält unter `apps/codenames/state/default` nur dieses Paket, die öffentliche Sicht und die Trefferquote beendeter Spiele. Aufdecken, Passen und Rückgängig laufen über den Proxy; Ziele erscheinen erst in der Auflösung.
+- Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Der Proxy prüft die Modellantwort deterministisch (ein Wort, kein offener Begriff oder Wortteil, nicht im Gefahrenfeld, Ziele = ZAHL, bei LETZTE CHANCE alle eigenen Karten erreichbar) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.
+- Der OpenRouter-Schlüssel liegt ausschließlich als Vercel-Umgebungsvariable `OPENROUTER_API_KEY` beim Proxy und erreicht den Browser nie. Der Dialog „KI“ zeigt nur, ob ein Schlüssel hinterlegt ist, und speichert Modell (Standard `openai/gpt-6-luna`) und Denkaufwand im LocalStorage des Geräts. Ohne Schlüssel liefert der Proxy regelkonforme Platzhalter-Hinweise.
+- Ein Toast nennt jedes Rateergebnis und bietet fünf Sekunden „Rückgängig“; Passen ist erst nach dem ersten Versuch erlaubt. Spielende zeigt Siegerdialog, aufgedecktes Brett und die Tabelle aller Hinweise mit gemeinten und geratenen Begriffen.
+
 ## 6. Architektur
 
 ### 6.1 Systemkontext
@@ -520,6 +532,8 @@ flowchart TB
   SPA --> AUTH["Firebase Anonymous Auth"]
   SPA --> DB[("Cloud Firestore")]
   SPA -->|"nur Live-Buzzer"| RTDB[("Realtime Database")]
+  SPA -->|"nur Codenames"| KI["KI-Proxy auf Vercel"]
+  KI --> OR["OpenRouter"]
   SPA --> LS[("LocalStorage")]
   GH["GitHub Actions"] -->|"Build und Hosting-Deploy"| SPA
 ```
@@ -804,11 +818,17 @@ Erwartete Werte: Repository `Betogora/BengtsToolBox`, Build `npm ci && npm run b
 | Lobby-Verwaltung lädt nicht | Firebase fehlt, Anonymous Auth ist aus oder Rules sind veraltet | Web-Konfiguration, Auth-Anbieter und Rules-Deploy |
 | Rules-Emulator startet nicht | Java-Laufzeit älter als 21 | `java -version` und JDK aktualisieren |
 
+### 9.6 KI-Proxy für Codenames
+
+Codenames nutzt als einzige App einen Dienst außerhalb von Firebase: das eigene Vercel-Projekt `bengtstoolbox-ki` (Hobby-Plan, Konto `bengt2`) mit der Function `https://bengtstoolbox-ki.vercel.app/api/codenames`. Andere Vercel-Projekte desselben Kontos bleiben unberührt. Der Quellcode liegt in `src/apps/codenames/server/`; `node scripts/deployCodenamesProxy.mjs` bündelt `vercelEntry.ts` mit rolldown zu `api/codenames.js` unter `node_modules/.cache/codenames-proxy` und deployt ihn mit der Vercel-CLI in Produktion. Der Proxy ist zustandslos und liest zwei Umgebungsvariablen vom Typ Secret: `CODENAMES_SECRET` (zufällig, mindestens 32 Zeichen) versiegelt den Spielstand mit der Farbverteilung, damit der Browser ihn tragen kann, ohne ihn lesen zu können; ein neues Geheimnis macht laufende Spiele ungültig. `OPENROUTER_API_KEY` ist der Schlüssel für die Modellaufrufe; fehlt er, gibt es Platzhalter-Hinweise. Änderungen an Umgebungsvariablen wirken erst nach einem neuen Deploy. Lokal oder in Tests lässt sich die Adresse mit `VITE_CODENAMES_PROXY_URL` überschreiben.
+
 ## 10. Sicherheitsgrenze
 
 Der Live-Buzzer-Bereich in Realtime Database ist gemeinsam für authentifizierte Clients lesbar. Rundensteuerung und globaler Uhrabgleich sind an eine unveränderliche Host-UID gebunden; neue Buzzes prüfen die eigene Spieler-UID. Die Datenpfade trennen die Lobbys logisch, ohne vertrauliche Mitgliederräume. Uhrmessungen sind dagegen auf die eigene Auth-UID beschränkt. Archivierte Lobbys werden durch das bestehende Firestore-Lobby-Verzeichnis aus der App entfernt; Realtime-Regeln können den Firestore-Löschmarker nicht direkt prüfen.
 
 Die globalen Legacy-Pfade unter `apps/{appId}/...` bleiben für jeden authentifizierten Client offen. Lobby-Pfade sind enger: Metadaten sind lesbar, App-Zustände einer aktiven Lobby gemeinsam bearbeitbar, und Geräte dürfen nur den eigenen UID-Datensatz schreiben. Gerätehistorien und der Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich.
+
+Der KI-Proxy nimmt nur Anfragen von `bengtstoolbox.web.app`, `bengtstoolbox.firebaseapp.com`, deren Preview Channels und `localhost` an und begrenzt Anfragen je Adresse und Function-Instanz. Der Spielstand reist als AES-GCM-Paket, das nur der Proxy öffnen kann. Der OpenRouter-Schlüssel bleibt in der Vercel-Umgebung und erscheint weder in Antworten noch in Logs. Weil die ToolBox keine Konten kennt, kann jede Besucherin und jeder Besucher der erlaubten Domains Modellhinweise auslösen; Ratenlimits je Adresse und das Ausgabenlimit des OpenRouter-Schlüssels begrenzen die Kosten. Ein älteres Spielpaket lässt sich erneut einreichen, was einem Rückgängig entspricht.
 
 Der vierstellige Lobby-Admin-PIN `5340` schützt vor normaler und versehentlicher Nutzung, kann im ausgelieferten JavaScript aber ausgelesen und umgangen werden. Er ist kein Hochsicherheits- oder Mehrbenutzermodell. Der PIN-Gate von `Schlag den Raab` hat dieselbe bewusste Grenze.
 

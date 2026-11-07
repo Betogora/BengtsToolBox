@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:21cbba0d01214b904e2fb8809cd585610169e9b2ba9079f2a764a16b43d96d5e">
+  <meta name="specs-source-sha256" content="sha256:16b7b00048b9597aac95cdedc1711066cd9eec3e421d9889a31f2d818ecbefcb">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -464,7 +464,7 @@
           <article class="card note">
             <h3>Bewusste Grenzen</h3>
             <ul>
-              <li>Kein Application Server und keine Cloud Functions; die Online-Funktionen bleiben Spark-kompatibel.</li>
+              <li>Kein Application Server und keine Cloud Functions; die Online-Funktionen bleiben Spark-kompatibel. Einzige Ausnahme ist der zustandslose KI-Proxy für Codenames als eigenes Vercel-Projekt.</li>
               <li>Keine persönlichen Konten, appübergreifenden Besitzerrollen oder Mandanten; ausschließlich Live-Buzzer bindet seine Rundensteuerung an eine Host-UID.</li>
               <li>Keine Offline-Konfliktauflösung.</li>
               <li>Anonymous Auth identifiziert eine Browsersitzung; abgesehen vom Buzzer-Host entstehen keine fachlichen Rollen. Der Hub ist für private, vertrauensbasierte Nutzung vorgesehen.</li>
@@ -495,6 +495,7 @@
               <tr><td>Turnier-App</td><td><code>/apps/swiss-tournaments</code></td><td>Registry</td><td>Vier Turnierformate</td></tr>
               <tr><td>Nächste Frage</td><td><code>/apps/next-question</code></td><td>Registry</td><td>Quizkarten mit verdeckter Antwort</td></tr>
               <tr><td>Triathlon-Tracker</td><td><code>/apps/triathlon-tracker</code></td><td>Registry</td><td>Bestleistungen, Trainingsplanung und Leistungsentwicklung</td></tr>
+              <tr><td>Codenames</td><td><code>/apps/codenames</code></td><td>Registry</td><td>Wortratespiel mit KI-Hinweisgeber über OpenRouter</td></tr>
               <tr><td>Schlag den Raab</td><td><code>/schlag-den-raab</code></td><td>Sonderroute</td><td>Zwei-Personen-Abendwertung</td></tr>
               <tr><td>Lobbys</td><td><code>/lobbies</code></td><td>Sonderroute</td><td>Öffentliche Räume erstellen und betreten</td></tr>
               <tr><td>Lobby-Dashboard</td><td><code>/lobbies/:lobbyId</code></td><td>Lobby-Kontext</td><td>Alle Apps in einem isolierten Raum</td></tr>
@@ -621,7 +622,7 @@
           <table>
             <thead><tr><th>App</th><th>State-Dokument</th><th>Collections</th></tr></thead>
             <tbody>
-              <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage</td><td><code>apps/{appId}/state/default</code></td><td>–</td></tr>
+              <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage, Codenames</td><td><code>apps/{appId}/state/default</code></td><td>–</td></tr>
               <tr><td>Schlag den Raab</td><td><code>apps/schlag-den-raab/sessions/default/state/default</code></td><td>–</td></tr>
               <tr><td>Live-Buzzer, nur Übernahmequelle</td><td><code>apps/live-buzzer/sessions/default/state/default</code></td><td><code>players</code></td></tr>
               <tr><td>Scoreboard</td><td><code>apps/scoreboard/sessions/default/state/default</code></td><td><code>players</code>, <code>teams</code>, <code>scorings</code>, <code>events</code></td></tr>
@@ -990,6 +991,19 @@
             </ul>
           </div>
         </details>
+        <details class="app">
+          <summary><span class="app-number">13</span><span><span class="app-summary-title">Codenames</span><span class="app-summary-route">/apps/codenames</span></span></summary>
+          <div class="app-body">
+            <p><strong>Zweck:</strong> Codenames ab zwei Personen auf einem gemeinsamen Bildschirm; ein Sprachmodell gibt beiden Teams die Hinweise.</p>
+            <ul>
+            <li>Ein Spiel zieht 25 Begriffe aus der Wortliste des Proxys (ohne Wortformen desselben Begriffs); das ausgeloste Startteam bekommt 9 Karten, das andere 8, dazu 7 neutrale und ein Attentäter.</li>
+            <li>Die Farbverteilung erreicht den Browser nie im Klartext. Der KI-Proxy versiegelt den vollständigen Spielstand mit AES-GCM; Firestore hält unter <code>apps/codenames/state/default</code> nur dieses Paket, die öffentliche Sicht und die Trefferquote beendeter Spiele. Aufdecken, Passen und Rückgängig laufen über den Proxy; Ziele erscheinen erst in der Auflösung.</li>
+            <li>Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Der Proxy prüft die Modellantwort deterministisch (ein Wort, kein offener Begriff oder Wortteil, nicht im Gefahrenfeld, Ziele = ZAHL, bei LETZTE CHANCE alle eigenen Karten erreichbar) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.</li>
+            <li>Der OpenRouter-Schlüssel liegt ausschließlich als Vercel-Umgebungsvariable <code>OPENROUTER_API_KEY</code> beim Proxy und erreicht den Browser nie. Der Dialog „KI“ zeigt nur, ob ein Schlüssel hinterlegt ist, und speichert Modell (Standard <code>openai/gpt-6-luna</code>) und Denkaufwand im LocalStorage des Geräts. Ohne Schlüssel liefert der Proxy regelkonforme Platzhalter-Hinweise.</li>
+            <li>Ein Toast nennt jedes Rateergebnis und bietet fünf Sekunden „Rückgängig“; Passen ist erst nach dem ersten Versuch erlaubt. Spielende zeigt Siegerdialog, aufgedecktes Brett und die Tabelle aller Hinweise mit gemeinten und geratenen Begriffen.</li>
+            </ul>
+          </div>
+        </details>
       </section>
 
       <section class="section" id="architektur">
@@ -1000,7 +1014,7 @@
           <div>Feature-Page</div>
           <div>Feature-Hook & pure Logik</div>
           <div>gemeinsame Sync-Hooks</div>
-          <div>Firestore oder LocalStorage; nur Live-Buzzer: Realtime Database</div>
+          <div>Firestore oder LocalStorage; nur Live-Buzzer: Realtime Database; nur Codenames: KI-Proxy auf Vercel</div>
         </div>
         <h3 style="margin:2rem 0 0.8rem">Verantwortungen</h3>
         <div class="table-wrap">
@@ -1168,6 +1182,11 @@ npm run dev -- --host 127.0.0.1 --port 5180 --strictPort</code></pre>
           <pre><code>node scripts/checkFirebaseSpark.mjs
 npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --project bengtstoolbox</code></pre>
         </div>
+        <div class="card note" style="margin-top:1rem">
+          <h3>KI-Proxy für Codenames</h3>
+          <p>Eigenes Vercel-Projekt <code>bengtstoolbox-ki</code> (Hobby-Plan, Konto <code>bengt2</code>) mit der Function <code>https://bengtstoolbox-ki.vercel.app/api/codenames</code>; andere Projekte des Kontos bleiben unberührt. Quellcode in <code>src/apps/codenames/server/</code>. Der Proxy ist zustandslos und liest zwei Secrets: <code>CODENAMES_SECRET</code> (zufällig, mindestens 32 Zeichen) versiegelt den Spielstand mit der Farbverteilung; ein neues Geheimnis macht laufende Spiele ungültig. <code>OPENROUTER_API_KEY</code> ist der Schlüssel für die Modellaufrufe; fehlt er, gibt es Platzhalter-Hinweise. Änderungen wirken erst nach einem neuen Deploy. <code>VITE_CODENAMES_PROXY_URL</code> überschreibt die Adresse lokal oder in Tests.</p>
+          <pre><code>node scripts/deployCodenamesProxy.mjs</code></pre>
+        </div>
         <h3 style="margin:2rem 0 0.8rem">Manuelles Hosting und Erstverknüpfung</h3>
         <pre><code>node scripts/checkFirebaseSpark.mjs
 npx firebase-tools deploy --only hosting</code></pre>
@@ -1210,6 +1229,7 @@ npx firebase-tools init hosting:github</code></pre>
           <h3>Vertrauensbasierter privater Hub</h3>
           <p>Die globalen Legacy-Pfade unter <code>apps/{appId}/...</code> bleiben für alle authentifizierten Clients offen. Lobby-Metadaten sind lesbar, aktive Lobby-App-Zustände gemeinsam bearbeitbar und Geräte-Dokumente beim Schreiben auf die eigene UID begrenzt.</p>
           <p>Gerätehistorie und Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich. Der PIN <code>5340</code> verhindert versehentliche Nutzung, ist im Web-Bundle aber auslesbar und keine Sicherheitsgrenze. Entfernte Lobbys werden im App-Verzeichnis deaktiviert. Live-Buzzer-Daten sind gemeinsam lesbar; Rundensteuerung und globaler Uhrabgleich sind an eine unveränderliche Host-UID gebunden. Neue Buzzes prüfen die eigene Spieler-UID. Lobby-Pfade trennen die Daten logisch, ohne vertrauliche Mitgliederräume. Uhrmessungen sind auf die eigene Auth-UID beschränkt. Realtime-Regeln können den Firestore-Löschmarker nicht direkt prüfen.</p>
+          <p>Der KI-Proxy nimmt nur Anfragen der ToolBox-Domains, ihrer Preview Channels und von <code>localhost</code> an und begrenzt Anfragen je Adresse. Der Spielstand reist als AES-GCM-Paket, das nur der Proxy öffnen kann; der OpenRouter-Schlüssel bleibt in der Vercel-Umgebung. Jede Person auf den erlaubten Domains kann Modellhinweise auslösen; Ratenlimits und das Ausgabenlimit des Schlüssels begrenzen die Kosten.</p>
           <p>Vor öffentlicher Nutzung mit sensiblen Daten, echten Besitzerrollen oder Mandantentrennung müssen Datenräume, Identitäten und Besitzer-/Teilnehmer-Claims modelliert, globale Legacy-Pfade migriert und Rules verengt werden. Client-PINs müssen durch serverseitig prüfbare Autorisierung ersetzt und erlaubte, abgewiesene sowie migrationsbezogene Zugriffe mit Emulator-/Rules-Tests abgesichert werden.</p>
         </div>
       </section>
