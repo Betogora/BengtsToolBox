@@ -30,15 +30,11 @@ const bentoLayout: Record<string, TileSize> = {
   'next-question': 'small',
 }
 
-const tileSizeOf = (app: HubApp): TileSize => bentoLayout[app.id] ?? 'small'
-
 const bentoOrder = Object.keys(bentoLayout)
 const bentoRank = (app: HubApp) => {
   const index = bentoOrder.indexOf(app.id)
   return index === -1 ? bentoOrder.length : index
 }
-
-const bentoApps = [...dashboardApps].sort((a, b) => bentoRank(a) - bentoRank(b))
 
 type AppTileProps = {
   app: HubApp
@@ -102,9 +98,8 @@ const bentoIllustrationClass: Record<TileSize, string> = {
   small: 'bottom-[4%] right-[3%] h-[80%] w-[74%]',
 }
 
-function BentoTile({ app, href }: AppTileProps) {
+function BentoTile({ app, href, size }: AppTileProps & { size: TileSize }) {
   const { t } = useI18n()
-  const size = tileSizeOf(app)
 
   return (
     <AppLink
@@ -224,18 +219,37 @@ export function DashboardPage({ lobby }: { lobby?: Lobby }) {
         </div>
       </section>
 
+      <AppTileGrid apps={dashboardApps} hrefOf={hrefOf} />
+    </div>
+  )
+}
+
+/** Kachelraster eines Hubs; ohne `sizeOf` gilt das Bento-Layout des Haupt-Hubs. */
+export function AppTileGrid({
+  apps,
+  hrefOf = (app) => app.href,
+  sizeOf = (app) => bentoLayout[app.id] ?? 'small',
+}: {
+  apps: readonly HubApp[]
+  hrefOf?: (app: HubApp) => string
+  sizeOf?: (app: HubApp) => TileSize
+}) {
+  const bentoApps = [...apps].sort((a, b) => bentoRank(a) - bentoRank(b))
+
+  return (
+    <>
       {/* Phones get uniform picture tiles; wider screens weight tiles by app complexity. */}
       <section className="grid grid-cols-2 gap-3 sm:hidden">
-        {dashboardApps.map((app) => (
+        {apps.map((app) => (
           <CompactTile key={app.id} app={app} href={hrefOf(app)} />
         ))}
       </section>
 
       <section className="hidden grid-flow-dense auto-rows-[10rem] grid-cols-2 gap-4 sm:grid lg:auto-rows-[11rem] lg:grid-cols-4">
         {bentoApps.map((app) => (
-          <BentoTile key={app.id} app={app} href={hrefOf(app)} />
+          <BentoTile key={app.id} app={app} href={hrefOf(app)} size={sizeOf(app)} />
         ))}
       </section>
-    </div>
+    </>
   )
 }
