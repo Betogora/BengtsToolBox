@@ -5,10 +5,8 @@ import * as engine from '../logic/engine'
 import { GameError } from '../logic/engine'
 import {
   DEFAULT_MODEL,
-  emptyCalibration,
   isModelId,
   REASONING_LEVELS,
-  type Calibration,
   type GameResponse,
   type HintResponse,
   type ProxyErrorBody,
@@ -18,10 +16,10 @@ import {
   type StatusResponse,
 } from '../logic/protocol'
 import type { RandomInt } from '../logic/random'
-import { CONFIDENCE_LEVELS, type GameState } from '../logic/types'
+import type { GameState } from '../logic/types'
 import { publicView } from '../logic/view'
 import { drawWords, parseWordlist } from '../logic/wordlist'
-import { calibrationFrom, generateClue, HintError } from './hint'
+import { generateClue, HintError } from './hint'
 import { SealError, seal, unseal } from './sealing'
 import { WORDLIST_TEXT } from './wordlistText'
 
@@ -105,24 +103,6 @@ async function readBody(request: Request): Promise<Record<string, unknown>> {
   throw new ProxyError(400, 'bad-request', 'Ungültige Anfrage.')
 }
 
-function readCalibration(raw: unknown): Calibration {
-  const result = emptyCalibration()
-  if (!raw || typeof raw !== 'object') return result
-  for (const level of CONFIDENCE_LEVELS) {
-    const pair = (raw as Record<string, unknown>)[level]
-    if (!Array.isArray(pair) || pair.length !== 2) continue
-    const [hit, all] = pair.map((n) => (Number.isInteger(n) && (n as number) >= 0 ? Math.min(n as number, 100_000) : 0))
-    result[level] = [Math.min(hit!, all!), all!]
-  }
-  return result
-}
-
-function addCalibration(a: Calibration, b: Calibration): Calibration {
-  const sum = emptyCalibration()
-  for (const level of CONFIDENCE_LEVELS) sum[level] = [a[level][0] + b[level][0], a[level][1] + b[level][1]]
-  return sum
-}
-
 function isGameState(value: unknown): value is GameState {
   const s = value as GameState
   return !!s && s.version === 1 && Array.isArray(s.words) && s.words.length === 25 && Array.isArray(s.colors)
@@ -138,9 +118,7 @@ async function openGame(box: unknown, secret: string): Promise<GameState> {
 }
 
 async function respondGame(state: GameState, secret: string): Promise<GameResponse> {
-  const response: GameResponse = { game: await seal(state, secret, 'codenames-state-v1'), view: publicView(state) }
-  if (state.phase === 'ende') response.calibration = calibrationFrom([state])
-  return response
+  return { game: await seal(state, secret, 'codenames-state-v1'), view: publicView(state) }
 }
 
 const serverKey = (env: ProxyEnv) => env.openRouterKey?.trim() || undefined
@@ -151,13 +129,14 @@ async function giveHint(body: Record<string, unknown>, env: ProxyEnv): Promise<H
   const apiKey = body.placeholder === true ? undefined : serverKey(env)
   const model = isModelId(body.model) ? body.model : DEFAULT_MODEL
   const reasoning = REASONING_LEVELS.includes(body.reasoning as Reasoning) ? (body.reasoning as Reasoning) : undefined
-  const calibration = addCalibration(readCalibration(body.calibration), calibrationFrom([state]))
   try {
-    const clue = await generateClue(
-      state,
-      { apiKey, model: apiKey ? model : undefined, reasoning, fetchImpl: env.fetchImpl, timeoutMs: 110_000 },
-      calibration,
-    )
+    const clue = await generateClue(state, {
+      apiKey,
+      model: apiKey ? model : undefined,
+      reasoning,
+      fetchImpl: env.fetchImpl,
+      timeoutMs: 110_000,
+    })
     const next = engine.giveClue(state, clue)
     return { ...(await respondGame(next, env.secret)), source: clue.source, attempts: clue.attempts, durationMs: clue.durationMs }
   } catch (error) {

@@ -14,7 +14,7 @@ export type TurnPlan = {
   turns: number
   /** Begriffe, die über Zweier hinaus mit Dreiern kommen müssen. */
   extra: number
-  /** Kleinste zulässige ZAHL bei LETZTE_CHANCE, sonst 0. */
+  /** Kleinste zulässige ZAHL bei LETZTE_CHANCE (eigene minus 1, mindestens 1), sonst 0. */
   minNumber: number
   ownTurnsNeeded: number
   profile: Profile
@@ -39,7 +39,7 @@ export function turnPlan(state: GameState, team: Team = state.turn): TurnPlan {
   const oppRest = leftovers(state, OTHER[team])
   const turns = turnsNeeded(opp, oppRest.length)
   const extra = own - (2 * turns + Math.min(ownRest.length, turns))
-  const minNumber = turns === 1 ? own - (ownRest.length > 0 ? 1 : 0) : 0
+  const minNumber = turns === 1 ? Math.max(1, own - 1) : 0
   let profile: Profile
   if (turns === 1) profile = 'LETZTE_CHANCE'
   else if (own <= 2) profile = 'ABSCHLUSS'
@@ -72,9 +72,9 @@ export function situationText(state: GameState, plan: TurnPlan = turnPlan(state)
   switch (plan.profile) {
     case 'LETZTE_CHANCE': {
       const fresh = freshTargets(state, plan.team)
-      let text = `Gegner ist voraussichtlich im nächsten Zug fertig: alle ${plan.own} eigenen Karten in diesem Zug erreichbar machen.`
+      let text = `Gegner ist voraussichtlich im nächsten Zug fertig: alle ${plan.own} eigenen Karten in diesem Zug erreichbar machen, also ZAHL mindestens ${plan.minNumber}.`
       if (plan.ownRest.length && fresh.length) {
-        text += ` Ziele müssen alle frischen Begriffe umfassen (${up(fresh)}); Reste früherer Hinweise (${up(plan.ownRest)}) holen die Ratenden über den Zusatzversuch (höchstens einen) oder über „unbegrenzt“.`
+        text += ` Ziele müssen alle frischen Begriffe umfassen (${up(fresh)}); höchstens ein Rest früherer Hinweise (${up(plan.ownRest)}) bleibt ungenannt für den Zusatzversuch.`
       }
       return text
     }
@@ -90,20 +90,20 @@ export function situationText(state: GameState, plan: TurnPlan = turnPlan(state)
 }
 
 /**
- * Sind nach diesem Hinweis alle eigenen Karten in diesem Zug erreichbar?
- * Nicht gemeinte eigene Karten müssen Reste früherer Hinweise sein; bei einer festen ZAHL
- * darf höchstens eine davon offen bleiben (Zusatzversuch).
+ * Sind nach diesem Hinweis alle eigenen Karten in diesem Zug erreichbar? Höchstens eine eigene
+ * Karte darf ungenannt bleiben (Zusatzversuch). Gibt es Reste früherer Hinweise, muss sie einer
+ * davon sein, denn nur diese finden die Ratenden gezielt; ohne Reste bleibt es ein Glückstreffer.
  */
-export function reachesAll(state: GameState, team: Team, number: number | null, targets: string[]): string | null {
+export function reachesAll(state: GameState, team: Team, targets: string[]): string | null {
   const meant = new Set(targets.map((t) => indexOfWord(state, t)))
-  const rest = new Set(leftovers(state, team))
+  const rest = leftovers(state, team)
   const uncovered = state.words.filter((_, i) => state.colors[i] === team && !state.revealed[i] && !meant.has(i))
-  const unreachable = uncovered.filter((w) => !rest.has(w))
-  if (unreachable.length) {
-    return `Letzte Chance: ${unreachable.join(', ')} ist kein Ziel und kein Rest eines früheren Hinweises und bleibt so in diesem Zug unerreichbar.`
+  if (uncovered.length > 1) {
+    return `Letzte Chance: ${uncovered.length} eigene Karten bleiben ungenannt (${uncovered.join(', ')}); der Zusatzversuch holt nur eine. Mehr Ziele wählen.`
   }
-  if (number !== null && number !== 0 && uncovered.length > 1) {
-    return `Letzte Chance: Mit ZAHL ${number} bleiben ${uncovered.length} Reste offen (${uncovered.join(', ')}); der Zusatzversuch holt nur einen. Mehr Ziele oder „unbegrenzt“ wählen.`
+  const [single] = uncovered
+  if (single && rest.length && !rest.includes(single)) {
+    return `Letzte Chance: ${single} ist kein Ziel und kein Rest eines früheren Hinweises und bleibt so in diesem Zug unerreichbar. Ungenannt bleiben darf nur ein Rest (${rest.join(', ')}).`
   }
   return null
 }

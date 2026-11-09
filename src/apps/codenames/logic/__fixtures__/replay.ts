@@ -12,7 +12,6 @@ export function stateBefore(archive: Archive, clueIndex: number): GameState {
     label: c.label,
     number: c.label === '∞' ? null : Number(c.label),
     targets: c.targets,
-    confidence: c.confidence as unknown as ClueRecord['confidence'],
     results: c.results as ClueRecord['results'],
   }))
   const revealed = archive.words.map((w) => clues.some((c) => c.results.some((r) => r.word === w)))

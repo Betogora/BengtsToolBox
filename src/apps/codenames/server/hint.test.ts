@@ -5,17 +5,13 @@ import { createGame, giveClue, reveal } from '../logic/engine'
 import { seededRandomInt } from '../logic/random'
 import {
   buildPromptState,
-  calibrationFrom,
   generateClue,
   HintError,
   placeholderClue,
   validateResponse,
 } from './hint'
 
-const answer = (wort: string, zahl: number | string, ziele: string[], gefahrenfeld: string[] = []) => ({
-  gefahrenfeld,
-  hinweis: { wort, zahl, ziele: ziele.map((w) => ({ wort: w, zuversicht: 'sicher' })) },
-})
+const answer = (hinweis: string, zahl: number | string, ziele: string[]) => ({ hinweis, zahl, ziele })
 
 function mockFetch(...bodies: unknown[]) {
   const calls: { body: Record<string, unknown> }[] = []
@@ -31,48 +27,34 @@ function mockFetch(...bodies: unknown[]) {
 const config = (fetchImpl: typeof fetch) => ({ apiKey: 'test-schluessel', model: 'test/modell', fetchImpl })
 
 describe('Prompt-Spielstand', () => {
-  it('entspricht für MATADOR dem Beispiel aus dem Vorschlag', () => {
-    const p = buildPromptState(MATADOR(), { sicher: [12, 14], wahrscheinlich: [7, 12], wackelig: [2, 8] })
+  it('nennt alle offenen Begriffe nach Farbe und den Verlauf beider Teams ohne gegnerische Ziele', () => {
+    const p = buildPromptState(MATADOR())
     expect(p.team).toBe('rot')
-    expect(p.lage).toMatchObject({
-      eigeneOffen: 4,
-      gegnerOffen: 1,
-      resteEigen: ['Uhr', 'Sekt'],
-      resteGegner: [],
-      gegnerFertigIn: 1,
-      profil: 'LETZTE_CHANCE',
-      mindestZahl: 3,
-    })
     expect(p.brett).toEqual({
       eigene: ['Uhr', 'Eis', 'Sekt', 'Bulle'],
       gegner: ['Batterie'],
-      // ROSE fehlt im Beispiel des Vorschlags, wurde aber erst im MATADOR-Zug aufgedeckt.
       neutral: ['Kompass', 'Rose', 'Brunnen', 'Wüste', 'Schuss'],
       attentaeter: 'Wein',
     })
-    expect(p.verlauf.map((v) => v.hinweis)).toEqual(['Laub', 'Umlaufbahn', 'Braut'])
-    expect(p.verlauf[2]).toEqual({ team: 'rot', hinweis: 'Braut', zahl: 2, ziele: ['Strauß', 'Sekt'], geraten: ['Strauß', 'Glocke'] })
+    expect(p.lage).toMatchObject({ eigeneOffen: 4, gegnerOffen: 1, resteEigen: ['Uhr', 'Sekt'], profil: 'LETZTE_CHANCE', mindestZahl: 3 })
+    expect(p.verlauf.map((v) => v.hinweis)).toEqual(['Laub', 'Schein', 'Umlaufbahn', 'Post', 'Braut', 'Mähne'])
+    expect(p.verlauf[4]).toEqual({ team: 'rot', hinweis: 'Braut', zahl: 2, ziele: ['Strauß', 'Sekt'], geraten: ['Strauß', 'Glocke'] })
+    expect(p.verlauf[1]).not.toHaveProperty('ziele')
     expect(p.verwendeteHinweise).toEqual(['Laub', 'Schein', 'Umlaufbahn', 'Post', 'Braut', 'Mähne'])
-    expect(p.trefferquote).toEqual({ sicher: '12/14', wahrscheinlich: '7/12', wackelig: '2/8' })
   })
 
-  it('Trefferquote zählt Ziele, die im Zug ihres Hinweises geraten wurden', () => {
-    const cal = calibrationFrom([MATADOR()])
-    // LAUB: Blatt, Wald sicher getroffen, Strauß wackelig verfehlt; SCHEIN 3 sicher/wahrsch. getroffen …
-    expect(cal.wackelig[1]).toBeGreaterThan(0)
-    expect(cal.sicher[0]).toBeLessThanOrEqual(cal.sicher[1])
-  })
 })
 
 describe('Serverprüfung', () => {
-  it('lehnt MATADOR 1 bei LETZTE CHANCE ab und nimmt einen Hinweis mit ZAHL 3 an', () => {
+  it('lehnt MATADOR 1 bei LETZTE CHANCE ab, nimmt ZAHL 3 an und kennt kein „unbegrenzt“', () => {
     const state = MATADOR()
     const bad = validateResponse(answer('MATADOR', 1, ['BULLE']), state)
     expect(bad).toMatchObject({ ok: false })
     expect(!bad.ok && bad.error).toMatch(/mindestens 3/)
     const good = validateResponse(answer('ARKTIS', 3, ['EIS', 'BULLE', 'UHR']), state)
     expect(good).toMatchObject({ ok: true, clue: { word: 'Arktis', number: 3, targets: ['Eis', 'Bulle', 'Uhr'] } })
-    expect(validateResponse(answer('ARKTIS', 'unbegrenzt', ['EIS', 'BULLE']), state).ok).toBe(true)
+    const unlimited = validateResponse(answer('ARKTIS', 'unbegrenzt', ['EIS', 'BULLE']), state)
+    expect(!unlimited.ok && unlimited.error).toMatch(/ganze Zahl von 1 bis 9/)
   })
 
   it('lehnt SCHACH 1 → PFERD ab (KRAKE unerreichbar)', () => {
@@ -92,25 +74,23 @@ describe('Serverprüfung', () => {
     expect(err(answer('wüste', 3, ['EIS', 'BULLE', 'UHR']))).toMatch(/offener Begriff/)
     expect(err(answer('EISBÄR', 3, ['EIS', 'BULLE', 'UHR']))).toMatch(/überschneidet sich .*Eis/)
     expect(err(answer('Braut', 3, ['EIS', 'BULLE', 'UHR']))).toMatch(/schon als Hinweis/)
-    expect(err(answer('PROSTE', 3, ['EIS', 'BULLE', 'UHR'], ['PROST']))).toMatch(/Gefahrenfeld/)
     expect(err(answer('ARKTIS', 3, ['EIS', 'BATTERIE', 'UHR']))).toMatch(/Batterie.*kein offener eigener/)
     expect(err(answer('ARKTIS', 3, ['EIS', 'BULLE']))).toMatch(/ZAHL 3, aber 2 Ziele/)
-    expect(err(answer('ARKTIS', 'viele', ['EIS']))).toMatch(/ZAHL muss/)
+    expect(err(answer('ARKTIS', 0, []))).toMatch(/ZAHL muss/)
     expect(err({ foo: 1 })).toMatch(/"hinweis" fehlt/)
   })
 
   it('Platzhalter-Hinweis ist regelkonform, auch bei LETZTE CHANCE', () => {
     for (const state of [MATADOR(), SCHACH(), createGame(MATADOR().words, { randomInt: seededRandomInt(3) })]) {
       const clue = placeholderClue(state)
-      const r = validateResponse(answer(clue.word, clue.number!, clue.targets), state)
-      expect(r.ok).toBe(true)
+      expect(validateResponse(answer(clue.word, clue.number!, clue.targets), state).ok).toBe(true)
     }
   })
 })
 
 describe('OpenRouter-Aufruf (gemockt)', () => {
   it('gültige Antwort: ein Aufruf mit Systemprompt, Spielstand und Schema', async () => {
-    const { fetchImpl, calls } = mockFetch(answer('ARKTIS', 3, ['EIS', 'BULLE', 'UHR'], ['PROST']))
+    const { fetchImpl, calls } = mockFetch(answer('ARKTIS', 3, ['EIS', 'BULLE', 'UHR']))
     const clue = await generateClue(MATADOR(), config(fetchImpl))
     expect(calls).toHaveLength(1)
     const body = calls[0]!.body as { model: string; messages: { role: string; content: string }[]; response_format: { type: string } }
@@ -118,20 +98,17 @@ describe('OpenRouter-Aufruf (gemockt)', () => {
     expect(body.messages.map((m) => m.role)).toEqual(['system', 'user'])
     expect(JSON.parse(body.messages[1]!.content).lage.profil).toBe('LETZTE_CHANCE')
     expect(body.response_format.type).toBe('json_schema')
-    expect(clue).toMatchObject({ word: 'Arktis', number: 3, attempts: 1, source: 'test/modell', dangerField: ['PROST'] })
+    expect(clue).toMatchObject({ word: 'Arktis', number: 3, attempts: 1, source: 'test/modell' })
   })
 
   it('Regelverstoß → zweiter Aufruf mit der Fehlermeldung', async () => {
-    const { fetchImpl, calls } = mockFetch(
-      answer('MATADOR', 1, ['BULLE']),
-      answer('ARKTIS', 'unbegrenzt', ['EIS', 'BULLE']),
-    )
+    const { fetchImpl, calls } = mockFetch(answer('MATADOR', 1, ['BULLE']), answer('ARKTIS', 3, ['EIS', 'BULLE', 'UHR']))
     const clue = await generateClue(MATADOR(), config(fetchImpl))
     expect(calls).toHaveLength(2)
     const messages = (calls[1]!.body as { messages: { role: string; content: string }[] }).messages
     expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user'])
     expect(messages[3]!.content).toMatch(/^Ungültig: .*mindestens 3.* Wähle einen anderen Hinweis\.$/)
-    expect(clue).toMatchObject({ word: 'Arktis', number: null, attempts: 2 })
+    expect(clue).toMatchObject({ word: 'Arktis', number: 3, attempts: 2 })
   })
 
   it('zwei Verstöße → Fehler, kein dritter Aufruf', async () => {

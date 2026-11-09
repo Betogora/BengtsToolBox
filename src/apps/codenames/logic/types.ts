@@ -1,10 +1,8 @@
 export type Team = 'rot' | 'blau'
 export type CardColor = Team | 'neutral' | 'attentaeter'
 export type Phase = 'hinweis' | 'raten' | 'ende'
-export type Confidence = 'sicher' | 'wahrscheinlich' | 'wackelig'
 
 export const TEAMS: readonly Team[] = ['rot', 'blau']
-export const CONFIDENCE_LEVELS: readonly Confidence[] = ['sicher', 'wahrscheinlich', 'wackelig']
 export const OTHER: Record<Team, Team> = { rot: 'blau', blau: 'rot' }
 export const TEAM_NAME: Record<Team, string> = { rot: 'Team Rot', blau: 'Team Blau' }
 
@@ -18,8 +16,6 @@ export type ClueRecord = {
   label: string
   number: number | null
   targets: string[]
-  confidence: Record<string, Confidence>
-  dangerField?: string[]
   /** Woher der Hinweis kommt: Modellname oder "platzhalter". */
   source?: string
   durationMs?: number

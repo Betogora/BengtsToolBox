@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { MATADOR, SCHACH } from './__fixtures__/replay'
+import { createGame } from './engine'
 import { reachesAll, situationText, turnPlan, turnsNeeded } from './plan'
+import { seededRandomInt } from './random'
 
 describe('turnsNeeded', () => {
   it('2 pro Zug plus höchstens ein Rest je Zug', () => {
@@ -30,15 +32,14 @@ describe('Runde 3: MATADOR', () => {
       profile: 'LETZTE_CHANCE',
     })
     expect(situationText(state)).toMatch(
-      /^Gegner ist voraussichtlich im nächsten Zug fertig: alle 4 eigenen Karten in diesem Zug erreichbar machen\./,
+      /^Gegner ist voraussichtlich im nächsten Zug fertig: alle 4 eigenen Karten in diesem Zug erreichbar machen, also ZAHL mindestens 3\./,
     )
   })
 
   it('MATADOR 1 → BULLE erreicht nicht alle Karten, EIS/BULLE/UHR + SEKT schon', () => {
-    expect(reachesAll(state, 'rot', 1, ['Bulle'])).toMatch(/Eis/)
-    expect(reachesAll(state, 'rot', 3, ['Eis', 'Bulle', 'Uhr'])).toBeNull()
-    expect(reachesAll(state, 'rot', null, ['Eis', 'Bulle'])).toBeNull()
-    expect(reachesAll(state, 'rot', 2, ['Eis', 'Bulle'])).toMatch(/Zusatzversuch holt nur einen/)
+    expect(reachesAll(state, 'rot', ['Bulle'])).toMatch(/Eis/)
+    expect(reachesAll(state, 'rot', ['Eis', 'Bulle', 'Uhr'])).toBeNull()
+    expect(reachesAll(state, 'rot', ['Eis', 'Bulle'])).toMatch(/Zusatzversuch holt nur eine/)
   })
 })
 
@@ -59,8 +60,17 @@ describe('Runde 2: SCHACH', () => {
   })
 
   it('SCHACH 1 → PFERD lässt KRAKE unerreichbar; ein Hinweis auf KRAKE reicht', () => {
-    expect(reachesAll(state, 'rot', 1, ['Pferd'])).toMatch(/Krake/)
-    expect(reachesAll(state, 'rot', 1, ['Krake'])).toBeNull()
-    expect(reachesAll(state, 'rot', 2, ['Krake', 'Pferd'])).toBeNull()
+    expect(reachesAll(state, 'rot', ['Pferd'])).toMatch(/Krake/)
+    expect(reachesAll(state, 'rot', ['Krake'])).toBeNull()
+    expect(reachesAll(state, 'rot', ['Krake', 'Pferd'])).toBeNull()
+  })
+})
+
+describe('Letzte Chance ohne Reste', () => {
+  it('lässt genau eine beliebige eigene Karte für einen Glückstreffer ungenannt', () => {
+    const state = createGame(MATADOR().words, { start: 'rot', randomInt: seededRandomInt(5) })
+    const own = state.words.filter((_, i) => state.colors[i] === 'rot')
+    expect(reachesAll(state, 'rot', own.slice(1))).toBeNull()
+    expect(reachesAll(state, 'rot', own.slice(2))).toMatch(/2 eigene Karten bleiben ungenannt/)
   })
 })

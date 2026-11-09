@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCodenamesAiSettings } from '@/apps/codenames/hooks/useCodenamesAiSettings'
-import {
-  emptyCalibration,
-  type Calibration,
-  type GameResponse,
-  type RevealResponse,
-} from '@/apps/codenames/logic/protocol'
-import { CONFIDENCE_LEVELS } from '@/apps/codenames/logic/types'
+import type { GameResponse, RevealResponse } from '@/apps/codenames/logic/protocol'
 import { codenamesProxy, ProxyRequestError } from '@/apps/codenames/proxyClient'
 import type { CodenamesState, HintStatus } from '@/apps/codenames/types'
 import { firebasePaths } from '@/lib/firebase/paths'
@@ -15,25 +9,12 @@ import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
-const initialState: CodenamesState = { game: null, view: null, calibrations: [] }
-const CALIBRATION_GAMES = 30
+const initialState: CodenamesState = { game: null, view: null }
 
 /** Fehlertext des Proxys oder `null` für „Proxy nicht erreichbar“. */
 export function proxyErrorMessage(error: unknown): string | null {
   if (error instanceof ProxyRequestError && error.code !== 'network') return error.message || null
   return null
-}
-
-function sumCalibrations(entries: CodenamesState['calibrations'], exceptGameId?: string): Calibration {
-  const sum = emptyCalibration()
-  for (const { gameId, calibration } of entries) {
-    if (gameId === exceptGameId) continue
-    for (const level of CONFIDENCE_LEVELS) {
-      const [hit, all] = calibration?.[level] ?? [0, 0]
-      sum[level] = [sum[level][0] + hit, sum[level][1] + all]
-    }
-  }
-  return sum
 }
 
 export function useCodenames(lobbyId?: string) {
@@ -72,16 +53,7 @@ export function useCodenames(lobbyId?: string) {
 
   const commit = useCallback(
     async (response: GameResponse) => {
-      const current = latest.current
-      let calibrations = current.calibrations ?? []
-      if (response.calibration) {
-        const gameId = response.view.createdAt
-        calibrations = [
-          ...calibrations.filter((entry) => entry.gameId !== gameId),
-          { gameId, calibration: response.calibration },
-        ].slice(-CALIBRATION_GAMES)
-      }
-      const next: CodenamesState = { game: response.game, view: response.view, calibrations, updatedBy: userId ?? null }
+      const next: CodenamesState = { game: response.game, view: response.view, updatedBy: userId ?? null }
       latest.current = next
       await save(next)
     },
@@ -99,7 +71,6 @@ export function useCodenames(lobbyId?: string) {
           game,
           model,
           reasoning,
-          calibration: sumCalibrations(latest.current.calibrations ?? [], latest.current.view?.createdAt),
         })
         // Inzwischen rückgängig gemacht oder neu gestartet: Hinweis verwerfen.
         if (latest.current.game === game) await commit(response)

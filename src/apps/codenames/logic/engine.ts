@@ -6,7 +6,6 @@ import {
   TEAM_NAME,
   type CardColor,
   type ClueRecord,
-  type Confidence,
   type GameState,
   type Team,
 } from './types'
@@ -84,8 +83,6 @@ export type NewClue = {
   /** null = unbegrenzt */
   number: number | null
   targets: string[]
-  confidence?: Record<string, Confidence>
-  dangerField?: string[]
   source?: string
   durationMs?: number
   attempts?: number
@@ -103,21 +100,14 @@ export function giveClue(state: GameState, clue: NewClue): GameState {
     if (i < 0) throw new GameError(`Ziel „${t}“ steht nicht auf dem Brett.`)
     return s.words[i]!
   })
-  const confidence: Record<string, Confidence> = {}
-  for (const [word, level] of Object.entries(clue.confidence ?? {})) {
-    const i = indexOfWord(s, word)
-    if (i >= 0) confidence[s.words[i]!] = level
-  }
   const record: ClueRecord = {
     team: s.turn,
     word: displayWord(clue.word),
     label: clue.number === null ? '∞' : String(clue.number),
     number: clue.number,
     targets,
-    confidence,
     results: [],
   }
-  if (clue.dangerField) record.dangerField = clue.dangerField
   if (clue.source) record.source = clue.source
   if (clue.durationMs !== undefined) record.durationMs = clue.durationMs
   if (clue.attempts !== undefined) record.attempts = clue.attempts
