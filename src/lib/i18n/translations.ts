@@ -1130,7 +1130,6 @@ export const de = {
   'codenames.passed': '{team} passt – Zug beendet',
   'codenames.triesLeft': 'Noch {count} Versuche',
   'codenames.triesLeftOne': 'Noch 1 Versuch',
-  'codenames.triesUnlimited': 'Beliebig viele Versuche',
   'codenames.undo': 'Rückgängig',
   'codenames.undone': 'Rückgängig gemacht',
   'codenames.toast.correct': '{word}: richtig',

@@ -60,9 +60,7 @@ export function ClueBar({
 
   if (view.phase !== 'raten' || !view.clue) return null
   const clue = view.clue
-  const tries = clue.guessesLeft === null
-    ? t('codenames.triesUnlimited')
-    : t(clue.guessesLeft === 1 ? 'codenames.triesLeftOne' : 'codenames.triesLeft', { count: clue.guessesLeft })
+  const tries = t(clue.guessesLeft === 1 ? 'codenames.triesLeftOne' : 'codenames.triesLeft', { count: clue.guessesLeft })
 
   return (
     <Card className="flex min-h-[5.5rem] flex-wrap items-center gap-x-4 gap-y-3 p-4 sm:px-5" aria-live="polite">
@@ -73,7 +71,7 @@ export function ClueBar({
             {hyphenate(clue.word)}
           </span>
           <span className="type-metric-md shrink-0 tabular-nums text-muted-foreground max-sm:text-[1.5rem] max-sm:leading-[1.9rem]" data-testid="codenames-clue-number">
-            {clue.label}
+            {clue.number}
           </span>
         </div>
         <span className="type-ui basis-full text-muted-foreground sm:basis-auto">{tries}</span>

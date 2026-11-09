@@ -1128,7 +1128,6 @@ export const en: Record<TranslationKey, string> = {
   'codenames.passed': '{team} passes – turn over',
   'codenames.triesLeft': '{count} guesses left',
   'codenames.triesLeftOne': '1 guess left',
-  'codenames.triesUnlimited': 'Unlimited guesses',
   'codenames.undo': 'Undo',
   'codenames.undone': 'Undone',
   'codenames.toast.correct': '{word}: correct',

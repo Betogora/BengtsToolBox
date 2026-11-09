@@ -51,24 +51,16 @@ describe('Raten', () => {
     expect(third.outcome.turnEnded).toBe(true)
     expect(third.state.turn).toBe('blau')
     expect(third.state.phase).toBe('hinweis')
-    expect(third.outcome.message).toContain('Zug beendet')
   })
 
   it('Fehlgriff (neutral oder Gegner) beendet den Zug', () => {
     const s = giveClue(game(), { word: 'HINWEIS', number: 2, targets: ownTargets(game(), 2) })
     const neutral = reveal(s, idx(s, 'neutral'))
-    expect(neutral.outcome).toMatchObject({ kind: 'neutral', turnEnded: true, message: 'Neutral – Zug beendet' })
+    expect(neutral.outcome).toMatchObject({ kind: 'neutral', turnEnded: true })
     expect(neutral.state.turn).toBe('blau')
     const enemy = reveal(s, idx(s, 'blau'))
     expect(enemy.outcome).toMatchObject({ kind: 'gegner', turnEnded: true })
     expect(remaining(enemy.state, 'blau')).toBe(7)
-  })
-
-  it('„unbegrenzt“ erlaubt beliebig viele Versuche', () => {
-    let s = giveClue(game(), { word: 'HINWEIS', number: null, targets: ownTargets(game(), 1) })
-    for (let k = 0; k < 5; k++) s = reveal(s, idx(s, 'rot')).state
-    expect(s.phase).toBe('raten')
-    expect(s.clue!.guessesLeft).toBeNull()
   })
 
   it('Attentäter beendet das Spiel, der Gegner gewinnt', () => {
@@ -76,7 +68,7 @@ describe('Raten', () => {
     const r = reveal(s, idx(s, 'attentaeter'))
     expect(r.state.phase).toBe('ende')
     expect(r.state.winner).toBe('blau')
-    expect(r.outcome.message).toBe('Attentäter – Team Blau gewinnt')
+    expect(r.outcome).toMatchObject({ kind: 'attentaeter', turnEnded: true })
   })
 
   it('Aufdecken der letzten gegnerischen Karte lässt den Gegner gewinnen', () => {

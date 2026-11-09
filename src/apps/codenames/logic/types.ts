@@ -1,35 +1,25 @@
 export type Team = 'rot' | 'blau'
 export type CardColor = Team | 'neutral' | 'attentaeter'
 export type Phase = 'hinweis' | 'raten' | 'ende'
-export type Confidence = 'sicher' | 'wahrscheinlich' | 'wackelig'
 
 export const TEAMS: readonly Team[] = ['rot', 'blau']
-export const CONFIDENCE_LEVELS: readonly Confidence[] = ['sicher', 'wahrscheinlich', 'wackelig']
 export const OTHER: Record<Team, Team> = { rot: 'blau', blau: 'rot' }
-export const TEAM_NAME: Record<Team, string> = { rot: 'Team Rot', blau: 'Team Blau' }
 
 export type GuessResult = { word: string; color: CardColor }
 
-/** Ein gegebener Hinweis. `number` ist null bei „unbegrenzt“. */
+/** Ein gegebener Hinweis. */
 export type ClueRecord = {
   team: Team
   word: string
-  /** Anzeige der Zahl wie im Skill-Archiv: "3" oder "∞". */
-  label: string
-  number: number | null
+  number: number
   targets: string[]
-  confidence: Record<string, Confidence>
-  dangerField?: string[]
   /** Woher der Hinweis kommt: Modellname oder "platzhalter". */
-  source?: string
-  durationMs?: number
-  attempts?: number
   results: GuessResult[]
 }
 
 export type ActiveClue = {
-  /** Verbleibende Rateversuche; null = beliebig viele. */
-  guessesLeft: number | null
+  /** Verbleibende Rateversuche (ZAHL + 1 zu Beginn). */
+  guessesLeft: number
   guessesMade: number
 }
 

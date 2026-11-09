@@ -9,10 +9,8 @@ export function stateBefore(archive: Archive, clueIndex: number): GameState {
   const clues: ClueRecord[] = archive.clues.slice(0, clueIndex).map((c) => ({
     team: c.team as ClueRecord['team'],
     word: c.word,
-    label: c.label,
-    number: c.label === '∞' ? null : Number(c.label),
+    number: Number(c.label),
     targets: c.targets,
-    confidence: c.confidence as unknown as ClueRecord['confidence'],
     results: c.results as ClueRecord['results'],
   }))
   const revealed = archive.words.map((w) => clues.some((c) => c.results.some((r) => r.word === w)))

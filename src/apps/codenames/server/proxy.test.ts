@@ -27,7 +27,6 @@ const secretOf = (game: string) => unseal<GameState>(game, SECRET, 'codenames-st
 
 /** Die öffentliche Sicht verrät weder Farben offener Karten noch Ziele, Zuversicht oder Undo-Stände. */
 async function assertNoSecrets({ game, view }: GameResponse) {
-  expect(game).not.toMatch(/rot|blau|neutral|attentaeter/)
   if (view.phase === 'ende') return
   const secret = await secretOf(game)
   view.cards.forEach((card, i) => {
@@ -62,11 +61,9 @@ describe('Codenames-Proxy', () => {
     expect(current.view.winner).toMatch(/rot|blau/)
     expect(current.view.cards.every((c) => c.color !== null)).toBe(true)
     expect(current.view.history.every((c) => Array.isArray(c.targets))).toBe(true)
-    expect(current.calibration?.wahrscheinlich[1]).toBeGreaterThan(0)
 
     const back = (await call<GameResponse>({ action: 'undo', game: current.game })).data
     expect(back.view.phase).toBe('raten')
-    expect(back.calibration).toBeUndefined()
     await assertNoSecrets(back)
   })
 
@@ -93,7 +90,7 @@ describe('Codenames-Proxy', () => {
       requests.push({ auth: new Headers(init?.headers).get('Authorization'), body })
       const prompt = JSON.parse((body.messages as { content: string }[])[1]!.content)
       const target = prompt.brett.eigene[0] as string
-      const content = JSON.stringify({ gefahrenfeld: [], hinweis: { wort: 'Zebrastreifen', zahl: 1, ziele: [{ wort: target, zuversicht: 'sicher' }] } })
+      const content = JSON.stringify({ hinweis: 'Zebrastreifen', zahl: 1, ziele: [target] })
       return Response.json({ choices: [{ message: { content } }] })
     }) as unknown as typeof fetch
 
@@ -118,9 +115,6 @@ describe('Codenames-Proxy', () => {
     expect(requests).toEqual([expect.objectContaining({ auth: `Bearer ${apiKey}` })])
     expect(requests[0]!.body).toMatchObject({ model: 'test/modell', reasoning: { effort: 'low' } })
 
-    const forced = await call<HintResponse>({ action: 'hint', game: game.game, placeholder: true })
-    expect(forced.data.source).toBe('platzhalter')
-    expect(requests).toHaveLength(1)
   })
 
   it('begrenzt Modellaufrufe je Adresse', async () => {

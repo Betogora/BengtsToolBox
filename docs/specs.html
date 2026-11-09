@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:d3b3d59046084539932f8d48836a6e878fc020499f6d0301ca5f895a2d5d2940">
+  <meta name="specs-source-sha256" content="sha256:9d149c3f1a70868b5c211c120f9641b92ee3bd6dd919b5698d0c4f5435481f27">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -997,8 +997,8 @@
             <p><strong>Zweck:</strong> Codenames ab zwei Personen auf einem gemeinsamen Bildschirm; ein Sprachmodell gibt beiden Teams die Hinweise.</p>
             <ul>
             <li>Ein Spiel zieht 25 Begriffe aus der Wortliste des Proxys (ohne Wortformen desselben Begriffs); das ausgeloste Startteam bekommt 9 Karten, das andere 8, dazu 7 neutrale und ein Attentäter.</li>
-            <li>Die Farbverteilung erreicht den Browser nie im Klartext. Der KI-Proxy versiegelt den vollständigen Spielstand mit AES-GCM; Firestore hält unter <code>apps/codenames/state/default</code> nur dieses Paket, die öffentliche Sicht und die Trefferquote beendeter Spiele. Aufdecken, Passen und Rückgängig laufen über den Proxy; Ziele erscheinen erst in der Auflösung.</li>
-            <li>Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Der Proxy prüft die Modellantwort deterministisch (ein Wort, kein offener Begriff oder Wortteil, nicht im Gefahrenfeld, Ziele = ZAHL, bei LETZTE CHANCE alle eigenen Karten erreichbar) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.</li>
+            <li>Die Farbverteilung erreicht den Browser nie im Klartext. Der KI-Proxy versiegelt den vollständigen Spielstand mit AES-GCM; Firestore hält unter <code>apps/codenames/state/default</code> nur dieses Paket und die öffentliche Sicht. Aufdecken, Passen und Rückgängig laufen über den Proxy; Ziele erscheinen erst in der Auflösung.</li>
+            <li>Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Das Modell bekommt einen Systemprompt mit den Spielregeln und alle offenen Begriffe nach Farbe samt Kartenzahlen, eigenen Resten früherer Hinweise und Verlauf beider Teams; die Strategie entscheidet es selbst, eine vorgegebene Strategieschicht gibt es nicht. Es antwortet nur mit Wort, ZAHL (1–9, kein „unbegrenzt“) und Zielen. Der Proxy prüft nur die Regeln (ein Wort, nicht schon verwendet, kein offener Begriff und keine offensichtliche Überschneidung, Ziele = ZAHL eigene offene Begriffe) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.</li>
             <li>Der OpenRouter-Schlüssel liegt ausschließlich als Vercel-Umgebungsvariable <code>OPENROUTER_API_KEY</code> beim Proxy und erreicht den Browser nie. Der Dialog „KI“ zeigt nur, ob ein Schlüssel hinterlegt ist, und speichert Modell (Standard <code>openai/gpt-6-luna</code>) und Denkaufwand im LocalStorage des Geräts. Ohne Schlüssel liefert der Proxy regelkonforme Platzhalter-Hinweise.</li>
             <li>Ein Toast nennt jedes Rateergebnis und bietet fünf Sekunden „Rückgängig“; Passen ist erst nach dem ersten Versuch erlaubt. Spielende zeigt Siegerdialog, aufgedecktes Brett und die Tabelle aller Hinweise mit gemeinten und geratenen Begriffen.</li>
             </ul>
@@ -1184,7 +1184,7 @@ npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --pr
         </div>
         <div class="card note" style="margin-top:1rem">
           <h3>KI-Proxy für Codenames</h3>
-          <p>Eigenes Vercel-Projekt <code>bengtstoolbox-ki</code> (Hobby-Plan, Konto <code>bengt2</code>) mit der Function <code>https://bengtstoolbox-ki.vercel.app/api/codenames</code>; andere Projekte des Kontos bleiben unberührt. Quellcode in <code>src/apps/codenames/server/</code>; das Vercel-Projekt ist bewusst nicht mit GitHub verknüpft, sonst überschreibt jeder Push den Proxy. Der Proxy ist zustandslos und liest zwei Secrets: <code>CODENAMES_SECRET</code> (zufällig, mindestens 32 Zeichen) versiegelt den Spielstand mit der Farbverteilung; ein neues Geheimnis macht laufende Spiele ungültig. <code>OPENROUTER_API_KEY</code> ist der Schlüssel für die Modellaufrufe; fehlt er, gibt es Platzhalter-Hinweise. Änderungen wirken erst nach einem neuen Deploy. <code>VITE_CODENAMES_PROXY_URL</code> überschreibt die Adresse lokal oder in Tests.</p>
+          <p>Eigenes Vercel-Projekt <code>bengtstoolbox-ki</code> (Hobby-Plan, Konto <code>bengt2</code>) mit der Function <code>https://bengtstoolbox-ki.vercel.app/api/codenames</code> in der Region Frankfurt (<code>fra1</code>); andere Projekte des Kontos bleiben unberührt. Quellcode in <code>src/apps/codenames/server/</code>; das Vercel-Projekt ist bewusst nicht mit GitHub verknüpft, sonst überschreibt jeder Push den Proxy. Der Proxy ist zustandslos und liest zwei Secrets: <code>CODENAMES_SECRET</code> (zufällig, mindestens 32 Zeichen) versiegelt den Spielstand mit der Farbverteilung; ein neues Geheimnis macht laufende Spiele ungültig. <code>OPENROUTER_API_KEY</code> ist der Schlüssel für die Modellaufrufe; fehlt er, gibt es Platzhalter-Hinweise. Änderungen wirken erst nach einem neuen Deploy. <code>VITE_CODENAMES_PROXY_URL</code> überschreibt die Adresse lokal oder in Tests.</p>
           <pre><code>node scripts/deployCodenamesProxy.mjs</code></pre>
         </div>
         <h3 style="margin:2rem 0 0.8rem">Manuelles Hosting und Erstverknüpfung</h3>

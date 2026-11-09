@@ -8,8 +8,7 @@ export type PublicCard = { word: string; revealed: boolean; color: CardColor | n
 export type PublicClue = {
   team: Team
   word: string
-  label: string
-  number: number | null
+  number: number
   results: GuessResult[]
   /** Nur nach Spielende gesetzt. */
   targets?: string[]
@@ -23,7 +22,7 @@ export type PublicView = {
   winner: Team | null
   cards: PublicCard[]
   score: Record<Team, { remaining: number; total: number }>
-  clue: (PublicClue & { guessesLeft: number | null; guessesMade: number }) | null
+  clue: (PublicClue & { guessesLeft: number; guessesMade: number }) | null
   history: PublicClue[]
   canUndo: boolean
 }
@@ -33,7 +32,6 @@ export function publicView(state: GameState): PublicView {
   const history: PublicClue[] = state.clues.map((c) => ({
     team: c.team,
     word: c.word,
-    label: c.label,
     number: c.number,
     results: c.results.map((r) => ({ word: r.word, color: r.color })),
     ...(ended ? { targets: [...c.targets] } : {}),

@@ -27,7 +27,7 @@ export function ClueTable({ view }: { view: PublicView }) {
               </span>
             </TableCell>
             <TableCell className="font-[650]">{clue.word}</TableCell>
-            <TableCell className="text-right tabular-nums">{clue.label}</TableCell>
+            <TableCell className="text-right tabular-nums">{clue.number}</TableCell>
             <TableCell className="min-w-[8rem]">{clue.targets?.join(', ') || '–'}</TableCell>
             <TableCell className="min-w-[10rem]">
               {clue.results.length ? (

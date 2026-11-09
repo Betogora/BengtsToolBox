@@ -3,10 +3,8 @@
 import { cryptoRandomInt, shuffle, type RandomInt } from './random'
 import {
   OTHER,
-  TEAM_NAME,
   type CardColor,
   type ClueRecord,
-  type Confidence,
   type GameState,
   type Team,
 } from './types'
@@ -81,14 +79,8 @@ export function leftovers(s: GameState, team: Team): string[] {
 
 export type NewClue = {
   word: string
-  /** null = unbegrenzt */
-  number: number | null
+  number: number
   targets: string[]
-  confidence?: Record<string, Confidence>
-  dangerField?: string[]
-  source?: string
-  durationMs?: number
-  attempts?: number
 }
 
 /** Registriert einen (bereits geprüften) Hinweis und eröffnet die Ratephase. */
@@ -97,33 +89,21 @@ export function giveClue(state: GameState, clue: NewClue): GameState {
     throw new GameError(state.phase === 'ende' ? 'Das Spiel ist beendet.' : 'Es läuft bereits ein Hinweis.')
   }
   const s = clone(state)
-  const free = clue.number === null || clue.number === 0
   const targets = clue.targets.map((t) => {
     const i = indexOfWord(s, t)
     if (i < 0) throw new GameError(`Ziel „${t}“ steht nicht auf dem Brett.`)
     return s.words[i]!
   })
-  const confidence: Record<string, Confidence> = {}
-  for (const [word, level] of Object.entries(clue.confidence ?? {})) {
-    const i = indexOfWord(s, word)
-    if (i >= 0) confidence[s.words[i]!] = level
-  }
   const record: ClueRecord = {
     team: s.turn,
     word: displayWord(clue.word),
-    label: clue.number === null ? '∞' : String(clue.number),
     number: clue.number,
     targets,
-    confidence,
     results: [],
   }
-  if (clue.dangerField) record.dangerField = clue.dangerField
-  if (clue.source) record.source = clue.source
-  if (clue.durationMs !== undefined) record.durationMs = clue.durationMs
-  if (clue.attempts !== undefined) record.attempts = clue.attempts
   s.clues.push(record)
   s.phase = 'raten'
-  s.clue = { guessesLeft: free ? null : clue.number! + 1, guessesMade: 0 }
+  s.clue = { guessesLeft: clue.number + 1, guessesMade: 0 }
   return s
 }
 
@@ -147,15 +127,10 @@ function finish(s: GameState, winner: Team | null) {
 export type RevealKind = 'richtig' | 'neutral' | 'gegner' | 'attentaeter'
 
 export type RevealOutcome = {
-  index: number
   word: string
   color: CardColor
   kind: RevealKind
-  team: Team
   turnEnded: boolean
-  winner: Team | null
-  guessesLeft: number | null
-  message: string
 }
 
 /** Deckt eine Karte auf und wertet sie nach den Regeln. */
@@ -173,53 +148,25 @@ export function reveal(state: GameState, index: number): { state: GameState; out
   const clue = s.clue!
   s.revealed[index] = true
   clue.guessesMade++
-  if (clue.guessesLeft !== null) clue.guessesLeft--
+  clue.guessesLeft--
   s.clues[s.clues.length - 1]!.results.push({ word, color })
 
   let kind: RevealKind
-  let message: string
   if (color === 'attentaeter') {
     kind = 'attentaeter'
     finish(s, OTHER[team])
-    message = `Attentäter – ${TEAM_NAME[OTHER[team]]} gewinnt`
   } else if (color !== 'neutral' && remaining(s, color) === 0) {
     kind = color === team ? 'richtig' : 'gegner'
     finish(s, color)
-    message = `${TEAM_NAME[color]} – alle Agenten enttarnt, ${TEAM_NAME[color]} gewinnt`
   } else if (color === team) {
     kind = 'richtig'
-    if (clue.guessesLeft === 0) {
-      endTurn(s)
-      message = 'Richtig – letzter Versuch, Zug beendet'
-    } else {
-      message = clue.guessesLeft === null
-        ? 'Richtig – weiterraten oder passen'
-        : `Richtig – noch ${clue.guessesLeft} ${clue.guessesLeft === 1 ? 'Versuch' : 'Versuche'}`
-    }
-  } else if (color === 'neutral') {
-    kind = 'neutral'
-    endTurn(s)
-    message = 'Neutral – Zug beendet'
+    if (clue.guessesLeft === 0) endTurn(s)
   } else {
-    kind = 'gegner'
+    kind = color === 'neutral' ? 'neutral' : 'gegner'
     endTurn(s)
-    message = `${TEAM_NAME[color]} – Zug beendet`
   }
 
-  return {
-    state: s,
-    outcome: {
-      index,
-      word,
-      color,
-      kind,
-      team,
-      turnEnded: s.phase !== 'raten',
-      winner: s.winner,
-      guessesLeft: s.phase === 'raten' ? s.clue!.guessesLeft : null,
-      message,
-    },
-  }
+  return { state: s, outcome: { word, color, kind, turnEnded: s.phase !== 'raten' } }
 }
 
 /** Beendet den Zug freiwillig; erst nach mindestens einem Rateversuch erlaubt. */
@@ -229,15 +176,6 @@ export function pass(state: GameState): GameState {
   const s = clone(state)
   snapshot(s)
   endTurn(s)
-  return s
-}
-
-/** Bricht das Spiel ohne Sieger ab und zeigt die Auflösung. */
-export function abort(state: GameState): GameState {
-  if (state.phase === 'ende') return state
-  const s = clone(state)
-  snapshot(s)
-  finish(s, null)
   return s
 }
 
