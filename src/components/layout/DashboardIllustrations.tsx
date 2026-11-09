@@ -309,6 +309,57 @@ function NextQuestionIllustration() {
   )
 }
 
+function EveningScoreIllustration() {
+  // Zwei-Personen-Tortendiagramm des Abendstands: Person 1 ab 12 Uhr gegen, Person 2 im
+  // Uhrzeigersinn; dazu Mond und Sterne für den Abend.
+  const sparkle = 'M0-6L1.5-1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5-1.5Z'
+  return (
+    <SvgShell>
+      <circle cx="84" cy="84" r="64" fill={palette.paleMint} />
+      <circle cx="84" cy="84" r="55" fill="#fff" stroke={palette.fog} strokeWidth="1.5" />
+      <path d="M84 84L84 29A55 55 0 0 0 48.6 126.1Z" fill={palette.teal} stroke="#fff" strokeWidth="2" />
+      <path d="M84 84L84 29A55 55 0 0 1 138.2 93.6Z" fill={palette.coral} stroke="#fff" strokeWidth="2" />
+      <path d="M84 84V139" stroke="#78939b" strokeWidth="1.5" strokeDasharray="3 4" fill="none" />
+      <circle cx="84" cy="29" r="3.5" fill={palette.teal} stroke="#fff" strokeWidth="1.5" />
+      <circle cx="84" cy="84" r="7" fill="#fff" />
+      <path d="M160 14A20 20 0 1 0 160 54A26 26 0 0 1 160 14Z" fill={palette.apricot} stroke="#c3904f" strokeWidth="1.5" />
+      <path d={sparkle} transform="translate(132 22) scale(0.9)" fill={palette.coral} />
+      <path d={sparkle} transform="translate(176 70) scale(0.7)" fill={palette.teal} />
+      <path d={sparkle} transform="translate(146 70) scale(0.5)" fill="#c3904f" />
+    </SvgShell>
+  )
+}
+
+function CodenamesIllustration() {
+  // Ausschnitt eines Spielbretts: verdeckte Karten mit angedeutetem Begriff, aufgedeckte Karten
+  // in Teamfarben, neutral und Attentäter; dazu die Maske des Geheimdienstchefs.
+  const cards: { x: number; y: number; fill?: string }[] = [
+    { x: 22, y: 26 }, { x: 68, y: 26, fill: palette.teal }, { x: 114, y: 26 },
+    { x: 22, y: 62, fill: palette.coral }, { x: 68, y: 62 }, { x: 114, y: 62, fill: palette.apricot },
+    { x: 22, y: 98 }, { x: 68, y: 98, fill: 'var(--brand-ink)' }, { x: 114, y: 98, fill: palette.teal },
+  ]
+  return (
+    <SvgShell>
+      {cards.map(({ x, y, fill }) => (
+        <g key={`${x}-${y}`}>
+          <rect x={x} y={y} width="40" height="28" rx="5" fill={fill ?? '#fff'} stroke={fill ?? palette.fog} strokeWidth="1.5" />
+          {!fill && <path d={`M${x + 10} ${y + 14}H${x + 30}`} stroke={palette.mint} strokeWidth="3" fill="none" />}
+        </g>
+      ))}
+      <g transform="translate(150 132) rotate(-10)">
+        <path
+          d="M-24-5C-17-12-6-11 0-5C6-11 17-12 24-5C23 5 16 11 8 9C5 8 2 5 0 2C-2 5-5 8-8 9C-16 11-23 5-24-5Z"
+          fill={palette.coral}
+          stroke="#fff"
+          strokeWidth="2"
+        />
+        <ellipse cx="-11" cy="-2" rx="5.5" ry="3.2" fill="#fff" />
+        <ellipse cx="11" cy="-2" rx="5.5" ry="3.2" fill="#fff" />
+      </g>
+    </SvgShell>
+  )
+}
+
 function SwissTournamentIllustration() {
   return (
     <div className="flex h-full items-center justify-end">
@@ -361,6 +412,10 @@ function IllustrationForApp({ appId }: { appId: string }) {
       return <SwissTournamentIllustration />
     case 'next-question':
       return <NextQuestionIllustration />
+    case 'schlag-den-raab':
+      return <EveningScoreIllustration />
+    case 'codenames':
+      return <CodenamesIllustration />
     default:
       return <ProgressIllustration />
   }

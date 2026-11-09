@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 
 import {
   getScoreProgressChartData,
@@ -16,6 +16,12 @@ const chartCenter = 180
 const chartRadius = 138
 const labelRadius = 96
 const minimumDirectLabelPoints = 4
+
+// Farben der Tortenstücke, als Farbpunkt im Tooltip.
+const sliceColor = {
+  'player-1': 'var(--brand-primary)',
+  'player-2': 'var(--brand-accent)',
+} as const
 
 function pointOnCircle(angle: number, radius: number) {
   const radians = (angle * Math.PI) / 180
@@ -50,6 +56,7 @@ export function ScoreProgressPie({
   const titleId = useId()
   const descriptionId = useId()
   const headingId = useId()
+  const [activeGameId, setActiveGameId] = useState<string | null>(null)
   const chart = getScoreProgressChartData(games)
   const playerOne = players.find((player) => player.id === 'player-1')
   const playerTwo = players.find((player) => player.id === 'player-2')
@@ -96,34 +103,57 @@ export function ScoreProgressPie({
             const player = players.find(
               (entry) => entry.id === slice.playerId,
             )
+            const active = activeGameId === slice.game.id
+            // Der Tooltip zeigt auf die Mitte des Stücks, nicht auf den Rand seines Rahmens.
+            const anchor = pointOnCircle(slice.labelAngle, labelRadius)
 
             return (
-              <path
-                key={slice.game.id}
-                className={cn(
-                  'raab-progress-slice',
-                  `raab-progress-slice-${slice.playerId}`,
-                )}
-                d={getSlicePath(slice)}
-              >
-                <title>
-                  {t('raab.progress.sliceTitle', {
-                    game: slice.game.title,
+              <g key={slice.game.id}>
+                <path
+                  className={cn(
+                    'raab-progress-slice transition-opacity',
+                    `raab-progress-slice-${slice.playerId}`,
+                    active && 'opacity-85',
+                  )}
+                  d={getSlicePath(slice)}
+                  data-game={slice.game.position}
+                  onPointerEnter={() => setActiveGameId(slice.game.id)}
+                  onPointerLeave={() =>
+                    setActiveGameId((current) =>
+                      current === slice.game.id ? null : current,
+                    )
+                  }
+                />
+                <Tooltip
+                  open={active}
+                  swatch={sliceColor[slice.playerId]}
+                  title={slice.game.title}
+                  description={t('raab.progress.sliceDetail', {
                     player:
                       player?.name ??
                       t('raab.playerFallback', {
                         number: slice.playerId === 'player-1' ? 1 : 2,
                       }),
                     points: slice.game.points,
+                    position: slice.game.position,
                   })}
-                </title>
-              </path>
+                >
+                  <circle
+                    aria-hidden="true"
+                    className="pointer-events-none"
+                    cx={anchor.x}
+                    cy={anchor.y}
+                    fill="transparent"
+                    r="1"
+                  />
+                </Tooltip>
+              </g>
             )
           })}
 
           <line
             aria-hidden="true"
-            className="raab-progress-axis raab-progress-axis-start"
+            className="raab-progress-axis raab-progress-axis-start pointer-events-none"
             x1={chartCenter}
             x2={chartCenter}
             y1={chartCenter}
@@ -131,7 +161,7 @@ export function ScoreProgressPie({
           />
           <line
             aria-hidden="true"
-            className="raab-progress-axis raab-progress-axis-threshold"
+            className="raab-progress-axis raab-progress-axis-threshold pointer-events-none"
             x1={chartCenter}
             x2={chartCenter}
             y1={chartCenter}
@@ -151,7 +181,7 @@ export function ScoreProgressPie({
                   key={`${slice.game.id}-label`}
                   aria-hidden="true"
                   className={cn(
-                    'raab-progress-slice-label',
+                    'raab-progress-slice-label pointer-events-none',
                     `raab-progress-slice-label-${slice.playerId}`,
                   )}
                   x={labelPosition.x}
@@ -164,21 +194,21 @@ export function ScoreProgressPie({
 
           <circle
             aria-hidden="true"
-            className="raab-progress-start-marker"
+            className="raab-progress-start-marker pointer-events-none"
             cx={chartCenter}
             cy={chartCenter - chartRadius}
             r="4"
           />
           <circle
             aria-hidden="true"
-            className="raab-progress-threshold-marker"
+            className="raab-progress-threshold-marker pointer-events-none"
             cx={chartCenter}
             cy={chartCenter + chartRadius}
             r="5"
           />
           <circle
             aria-hidden="true"
-            className="raab-progress-outline"
+            className="raab-progress-outline pointer-events-none"
             cx={chartCenter}
             cy={chartCenter}
             r={chartRadius}

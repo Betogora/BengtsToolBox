@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:9d149c3f1a70868b5c211c120f9641b92ee3bd6dd919b5698d0c4f5435481f27">
+  <meta name="specs-source-sha256" content="sha256:acf40e940fc08efd06eac61a0057b065f7927d86e26e3fee0a77449c92a0ea3c">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -478,7 +478,7 @@
       <section class="section" id="produktlandkarte">
         <p class="eyebrow">02 · Oberfläche</p>
         <h2>Produktlandkarte</h2>
-        <p class="section-intro">Die Registry ist die einzige Quelle für Metadaten, Routen und Lazy Loader regulärer Apps. <code>Schlag den Raab</code> ist bewusst explizit geroutet.</p>
+        <p class="section-intro">Die Registry ist die einzige Quelle für Metadaten, Routen und Lazy Loader regulärer Apps. Apps mit <code>hub: 'evening'</code> liegen im PIN-geschützten Abend-Hub <code>Schlag den XYZ</code>, dessen Hub-Seite explizit geroutet ist.</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Bereich</th><th>Route</th><th>Integration</th><th>Kernzweck</th></tr></thead>
@@ -495,8 +495,9 @@
               <tr><td>Turnier-App</td><td><code>/apps/swiss-tournaments</code></td><td>Registry</td><td>Vier Turnierformate</td></tr>
               <tr><td>Nächste Frage</td><td><code>/apps/next-question</code></td><td>Registry</td><td>Quizkarten mit verdeckter Antwort</td></tr>
               <tr><td>Triathlon-Tracker</td><td><code>/apps/triathlon-tracker</code></td><td>Registry</td><td>Bestleistungen, Trainingsplanung und Leistungsentwicklung</td></tr>
-              <tr><td>Codenames</td><td><code>/apps/codenames</code></td><td>Registry</td><td>Wortratespiel mit KI-Hinweisgeber über OpenRouter</td></tr>
-              <tr><td>Schlag den Raab</td><td><code>/schlag-den-raab</code></td><td>Sonderroute</td><td>Zwei-Personen-Abendwertung</td></tr>
+              <tr><td>Abendstand</td><td><code>/schlag-den-raab/abendstand</code></td><td>Registry</td><td>Zwei-Personen-Abendwertung im Abend-Hub</td></tr>
+              <tr><td>Codenames</td><td><code>/schlag-den-raab/codenames</code></td><td>Registry</td><td>Wortratespiel mit KI-Hinweisgeber im Abend-Hub</td></tr>
+              <tr><td>Abend-Hub „Schlag den XYZ“</td><td><code>/schlag-den-raab</code></td><td>Sonderroute</td><td>PIN-geschützter zweiter App-Hub</td></tr>
               <tr><td>Lobbys</td><td><code>/lobbies</code></td><td>Sonderroute</td><td>Öffentliche Räume erstellen und betreten</td></tr>
               <tr><td>Lobby-Dashboard</td><td><code>/lobbies/:lobbyId</code></td><td>Lobby-Kontext</td><td>Alle Apps in einem isolierten Raum</td></tr>
               <tr><td>Lobby-App</td><td><code>/lobbies/:lobbyId/apps/:appId</code></td><td>Registry + Lobby-Kontext</td><td>Gemeinsamer App-Zustand einer Lobby</td></tr>
@@ -623,7 +624,7 @@
             <thead><tr><th>App</th><th>State-Dokument</th><th>Collections</th></tr></thead>
             <tbody>
               <tr><td>Glücksrad, Coinflip, Randomizer, Nächste Frage, Codenames</td><td><code>apps/{appId}/state/default</code></td><td>–</td></tr>
-              <tr><td>Schlag den Raab</td><td><code>apps/schlag-den-raab/sessions/default/state/default</code></td><td>–</td></tr>
+              <tr><td>Abendstand</td><td><code>apps/schlag-den-raab/sessions/default/state/default</code></td><td>–</td></tr>
               <tr><td>Live-Buzzer, nur Übernahmequelle</td><td><code>apps/live-buzzer/sessions/default/state/default</code></td><td><code>players</code></td></tr>
               <tr><td>Scoreboard</td><td><code>apps/scoreboard/sessions/default/state/default</code></td><td><code>players</code>, <code>teams</code>, <code>scorings</code>, <code>events</code></td></tr>
               <tr><td>Fortschritts-Dashboard</td><td><code>apps/progress-dashboard/sessions/default/state/default</code></td><td><code>players</code>, <code>datasets</code></td></tr>
@@ -954,17 +955,17 @@
         </details>
 
         <details class="app">
-          <summary><span class="app-number">11</span><span><span class="app-summary-title">Schlag den Raab</span><span class="app-summary-route">/schlag-den-raab</span></span></summary>
+          <summary><span class="app-number">11</span><span><span class="app-summary-title">Abendstand</span><span class="app-summary-route">/schlag-den-raab/abendstand</span></span></summary>
           <div class="app-body">
             <p><strong>Zweck:</strong> zwei Personen über 15 aufsteigend gewichtete Spiele und bei Bedarf ein Stechen bewerten.</p>
             <ul>
-            <li>Der Bereich liegt außerhalb der Dashboard-Registry und ist über <code>/schlag-den-raab</code> erreichbar.</li>
-            <li>Eine clientseitig fest codierte PIN schaltet die Route für die aktuelle <code>sessionStorage</code>-Sitzung frei. Dies verhindert keine technische Umgehung.</li>
+            <li>Der Tab „Schlag den XYZ“ öffnet unter <code>/schlag-den-raab</code> einen zweiten App-Hub mit Abendstand und Codenames (Registry-Apps mit <code>hub: 'evening'</code>). Sie erscheinen weder im Haupt-Hub noch in Lobbys; <code>/apps/codenames</code> leitet weiter.</li>
+            <li>Eine clientseitig fest codierte PIN schaltet Hub und Apps gemeinsam für die aktuelle <code>sessionStorage</code>-Sitzung frei. Dies verhindert keine technische Umgehung.</li>
             <li>Es existieren genau zwei Personen; Namen sind editierbar.</li>
             <li>Die 15 regulären Spiele tragen die Punkte <code>1</code> bis <code>15</code>; Titel sind editierbar.</li>
             <li>Ein Klick setzt oder entfernt den Gewinner eines Spiels und berechnet den kumulierten Score.</li>
             <li>Ein regulärer Sieger steht fest, sobald eine führende Person mehr als 60 Punkte besitzt.</li>
-            <li>Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht.</li>
+            <li>Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht. Beim Überfahren eines Stücks nennt der gemeinsame Tooltip mit Farbpunkt Spieltitel, Person, Spielnummer und Punkte und zeigt auf die Mitte des Stücks.</li>
             <li>Sind nach allen 15 Spielen beide Scores gleich, erscheint Spiel 16 als Stechen. Es entscheidet den Abend per Kreuz, vergibt aber keine Punkte und zählt nicht als gewonnenes Spiel.</li>
             <li>Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.</li>
             <li>Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.</li>
@@ -984,7 +985,7 @@
             <li>Die Personenliste wächst selbst: Anmeldungen, von der Spielleitung angelegte Personen und beim Abstimmen eingetippte Namen. Namen werden ohne Rücksicht auf Groß- und Kleinschreibung und Leerzeichen abgeglichen; wer sich unter einem schon genannten Namen anmeldet, übernimmt diesen Eintrag.</li>
             <li>Jede Stimme liegt als eigenes Dokument je wählender Person unter <code>ballots</code> und trägt den Schlüssel der aktiven Runde; Stimmen anderer Runden zählen nie. Gleichstand teilt den Platz.</li>
             <li>Während der Runde sehen Gäste nur die Zahl der Stimmen und wer bereits abgestimmt hat. Das Ergebnis erscheint nach dem Beenden auf allen Geräten. Wer wen gewählt hat, sieht nur die Spielleitung, bis sie die Wähler für alle freigibt.</li>
-            <li>Dieselbe clientseitige PIN wie bei Schlag den Raab (gemeinsam in <code>src/apps/shared/adminUnlock.ts</code>) schaltet für die <code>sessionStorage</code>-Sitzung den Bearbeitungsmodus frei: Titel, Beenden, Wiederöffnen, Zwischenstand, Wähler-Freigabe, neue Abstimmung sowie Personen anlegen, umbenennen, umfärben und löschen. Die PIN ist keine Sicherheitsgrenze.</li>
+            <li>Dieselbe clientseitige PIN wie beim Abend-Hub (gemeinsam in <code>src/apps/shared/adminUnlock.ts</code>) schaltet für die <code>sessionStorage</code>-Sitzung den Bearbeitungsmodus frei: Titel, Beenden, Wiederöffnen, Zwischenstand, Wähler-Freigabe, neue Abstimmung sowie Personen anlegen, umbenennen, umfärben und löschen. Die PIN ist keine Sicherheitsgrenze.</li>
             <li>Doppelte Schreibweisen werden zusammengeführt: Die Spielleitung wählt mehrere Einträge und den bleibenden Namen. Die übrigen Einträge bleiben als Alias erhalten, zählen für die Zielperson und lassen sich wieder trennen; bei zusammengeführten Wählern zählt die jüngste Stimme. Ähnliche Namen (gleicher Vorname mit Zusatz, ein abweichender Buchstabe) werden als Vorschlag angezeigt und können als verschieden markiert werden.</li>
             <li>„Neue Abstimmung“ archiviert die Runde mit festem Ergebnis-Snapshot und Wählern, löscht deren Stimmen und startet mit demselben Titel und denselben Personen neu; ein Stechen ist einfach eine neue Runde. „Alle löschen“ entfernt Personen und laufende Stimmen, nicht das Archiv. Archive sind aufklappbar, für die Spielleitung umbenenn- und löschbar.</li>
             <li>Der Presenter zeigt während der Runde QR-Code, Titel, Stimmenzahl und Wähler, danach Gewinner und Rangliste.</li>
@@ -992,7 +993,7 @@
           </div>
         </details>
         <details class="app">
-          <summary><span class="app-number">13</span><span><span class="app-summary-title">Codenames</span><span class="app-summary-route">/apps/codenames</span></span></summary>
+          <summary><span class="app-number">13</span><span><span class="app-summary-title">Codenames</span><span class="app-summary-route">/schlag-den-raab/codenames</span></span></summary>
           <div class="app-body">
             <p><strong>Zweck:</strong> Codenames ab zwei Personen auf einem gemeinsamen Bildschirm; ein Sprachmodell gibt beiden Teams die Hinweise.</p>
             <ul>

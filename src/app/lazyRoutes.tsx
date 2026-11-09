@@ -18,9 +18,9 @@ const LazySchlagDenRaabGate = lazy(() =>
   })),
 )
 
-const LazySchlagDenRaabPage = lazy(() =>
-  import('@/apps/schlag-den-raab').then(({ SchlagDenRaabPage }) => ({
-    default: SchlagDenRaabPage,
+const LazyEveningHubPage = lazy(() =>
+  import('@/components/layout/EveningHubPage').then(({ EveningHubPage }) => ({
+    default: EveningHubPage,
   })),
 )
 
@@ -75,13 +75,14 @@ export function LazyAppRoute({ appId }: { appId: string }) {
   )
 }
 
-export function LazySchlagDenRaabRoute() {
+/** Abend-Hub unter `/schlag-den-raab` (ohne `appId`) oder eine seiner Apps; dieselbe PIN schützt alle. */
+export function LazyEveningRoute({ appId }: { appId?: string }) {
   const { t } = useI18n()
 
   return (
-    <Suspense fallback={<RouteFallback label={t('app.schlagDenRaab.title')} />}>
+    <Suspense fallback={<RouteFallback label={t('nav.schlagDenRaab')} />}>
       <LazySchlagDenRaabGate>
-        <LazySchlagDenRaabPage />
+        {appId ? <LazyAppRoute appId={appId} /> : <LazyEveningHubPage />}
       </LazySchlagDenRaabGate>
     </Suspense>
   )

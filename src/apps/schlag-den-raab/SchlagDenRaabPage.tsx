@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   Archive,
+  MoonStar,
   RotateCcw,
   Trophy,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ import type {
   SchlagDenRaabPlayerId,
 } from '@/apps/schlag-den-raab/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
@@ -171,7 +173,7 @@ function ScoreOverview() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <Trophy className="size-5 text-primary" />
-              {t('raab.eveningScore')}
+              {t('raab.currentEvening')}
             </CardTitle>
             <ConfirmButton
               mode="dialog"
@@ -514,13 +516,11 @@ function ReadOnlyArchiveTable({
 }
 
 export function SchlagDenRaabPage() {
+  const { t } = useI18n()
+
   return (
     <AppPage className="gap-7 lg:py-12" width="wide">
-      <section className="max-w-3xl">
-        <h1 className="type-dashboard-title text-foreground">
-          Schlag den Raab
-        </h1>
-      </section>
+      <AppPageTitle Icon={MoonStar} title={t('app.abendstand.title')} />
 
       <section className="grid gap-4">
         <ScoreOverview />

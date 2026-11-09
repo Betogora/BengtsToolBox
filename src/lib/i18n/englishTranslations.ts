@@ -47,7 +47,6 @@ export const en: Record<TranslationKey, string> = {
   'app.randomizer.description':
     'Online dice and random number generator with remembered latest state.',
   'app.randomizer.title': 'Random Number Generator',
-  'app.schlagDenRaab.title': 'Schlag den Raab',
   'app.scoreboard.description':
     'Live scoreboard for game nights, quizzes, challenges, and small tournaments.',
   'app.scoreboard.title': 'Scoreboard',
@@ -228,7 +227,7 @@ export const en: Record<TranslationKey, string> = {
   'nav.lobbies': 'Lobbies',
   'nav.lobbyAdmin': 'Lobby admin',
   'nav.menu': 'Navigation',
-  'nav.schlagDenRaab': 'Schlag den Raab',
+  'nav.schlagDenRaab': 'Schlag den XYZ',
   'territory.achievements': 'Achievements',
   'territory.achievement.sushi-in-afrika.title': 'Sushi in Africa',
   'territory.achievement.sushi-in-afrika.rule': 'Visit at least one African territory on the world map.',
@@ -380,7 +379,7 @@ export const en: Record<TranslationKey, string> = {
   'raab.archive.restartTitle': 'Archive evening and restart?',
   'raab.archive.deleteDescription':
     'The archived evening will be permanently removed.',
-  'raab.eveningScore': 'Evening score',
+  'raab.currentEvening': 'Current evening',
   'raab.game': 'Game',
   'raab.gameFallback': 'Game {number}',
   'raab.gameCount': '{count} games',
@@ -395,7 +394,7 @@ export const en: Record<TranslationKey, string> = {
     '{playerOne} has {playerOneScore} points from games {playerOneGames}. {playerTwo} has {playerTwoScore} points from games {playerTwoGames}.',
   'raab.progress.chipDetail': 'Game {position} · {points} points',
   'raab.progress.noGames': 'None yet',
-  'raab.progress.sliceTitle': '{game}: {points} points for {player}',
+  'raab.progress.sliceDetail': '{player} · game {position} · {points} points',
   'raab.progress.title': 'Score progress',
   'raab.progress.wonGames': 'Games won',
   'raab.registerWinnerAria': 'Set {player} as winner of {game}',
@@ -1105,6 +1104,8 @@ export const en: Record<TranslationKey, string> = {
   'voting.yourVote': 'Your vote',
   'territory.touristNameAria': 'Name for {name}',
   'territory.touristColorAria': 'Choose color for {name}',
+  'app.abendstand.title': 'Evening Score',
+  'app.abendstand.description': 'Two-player evening scoring over 15 games with score progress and archive.',
   'app.codenames.title': 'Codenames',
   'app.codenames.description': 'Guess words in two teams – the AI gives the clues.',
   'codenames.team.rot': 'Team Red',

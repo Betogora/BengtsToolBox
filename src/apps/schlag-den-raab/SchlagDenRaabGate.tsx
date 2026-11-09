@@ -45,7 +45,7 @@ export function SchlagDenRaabGate({ children }: { children: ReactNode }) {
           <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Target className="size-6" />
           </div>
-          <CardTitle className="type-section-title">Schlag den Raab</CardTitle>
+          <CardTitle className="type-section-title">{t('nav.schlagDenRaab')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4" onSubmit={handleSubmit}>

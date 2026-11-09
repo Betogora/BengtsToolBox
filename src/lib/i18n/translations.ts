@@ -45,7 +45,6 @@ export const de = {
   'app.randomizer.description':
     'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
   'app.randomizer.title': 'Random Number Generator',
-  'app.schlagDenRaab.title': 'Schlag den Raab',
   'app.scoreboard.description':
     'Live-Scoreboard für Spieleabende, Quiz, Challenges und kleine Turniere.',
   'app.scoreboard.title': 'Scoreboard',
@@ -227,7 +226,7 @@ export const de = {
   'nav.lobbies': 'Lobbys',
   'nav.lobbyAdmin': 'Lobby-Verwaltung',
   'nav.menu': 'Navigation',
-  'nav.schlagDenRaab': 'Schlag den Raab',
+  'nav.schlagDenRaab': 'Schlag den XYZ',
   'territory.achievements': 'Erfolge',
   'territory.achievement.sushi-in-afrika.title': 'Sushi in Afrika',
   'territory.achievement.sushi-in-afrika.rule': 'Bereise auf der Weltkarte mindestens ein afrikanisches Territorium.',
@@ -381,7 +380,7 @@ export const de = {
   'raab.archive.restartTitle': 'Abend archivieren und neu starten?',
   'raab.archive.deleteDescription':
     'Der archivierte Abend wird dauerhaft entfernt.',
-  'raab.eveningScore': 'Abendstand',
+  'raab.currentEvening': 'Aktueller Abend',
   'raab.game': 'Spiel',
   'raab.gameFallback': 'Spiel {number}',
   'raab.gameCount': '{count} Spiele',
@@ -396,7 +395,7 @@ export const de = {
     '{playerOne} hat {playerOneScore} Punkte aus den Spielen {playerOneGames}. {playerTwo} hat {playerTwoScore} Punkte aus den Spielen {playerTwoGames}.',
   'raab.progress.chipDetail': 'Spiel {position} · {points} Punkte',
   'raab.progress.noGames': 'Noch keine',
-  'raab.progress.sliceTitle': '{game}: {points} Punkte für {player}',
+  'raab.progress.sliceDetail': '{player} · Spiel {position} · {points} Punkte',
   'raab.progress.title': 'Punkteverlauf',
   'raab.progress.wonGames': 'Gewonnene Spiele',
   'raab.registerWinnerAria': '{player} gewinnt {game} eintragen',
@@ -1107,6 +1106,8 @@ export const de = {
   'voting.yourVote': 'Deine Stimme',
   'territory.touristNameAria': 'Name für {name}',
   'territory.touristColorAria': '{name} Farbe wählen',
+  'app.abendstand.title': 'Abendstand',
+  'app.abendstand.description': 'Zwei-Personen-Abendwertung über 15 Spiele mit Punkteverlauf und Archiv.',
   'app.codenames.title': 'Codenames',
   'app.codenames.description': 'Begriffe raten in zwei Teams – die KI gibt die Hinweise.',
   'codenames.team.rot': 'Team Rot',

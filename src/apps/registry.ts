@@ -9,6 +9,7 @@ import {
   Dice5,
   Drama,
   ListOrdered,
+  MoonStar,
   StepForward,
   UtensilsCrossed,
   VenetianMask,
@@ -26,6 +27,8 @@ export type HubApp = {
   status: 'Live' | 'Preview'
   Icon: LucideIcon
   loadPage: () => Promise<{ default: ComponentType }>
+  /** `evening`: Abend-Hub hinter der PIN unter `/schlag-den-raab`, ohne Lobbys. Standard ist der Haupt-Hub. */
+  hub?: 'evening'
 }
 
 export type HubAppRoute = {
@@ -176,14 +179,30 @@ const appDefinitions: readonly HubApp[] = [
       import('@/apps/triathlon-tracker').then(({ TriathlonTrackerPage }) => ({
         default: TriathlonTrackerPage,
       })),
-  },  {
+  },
+  {
+    id: 'schlag-den-raab',
+    titleKey: 'app.abendstand.title',
+    descriptionKey: 'app.abendstand.description',
+    href: '/schlag-den-raab/abendstand',
+    routePath: 'schlag-den-raab/abendstand',
+    status: 'Live',
+    Icon: MoonStar,
+    hub: 'evening',
+    loadPage: () =>
+      import('@/apps/schlag-den-raab').then(({ SchlagDenRaabPage }) => ({
+        default: SchlagDenRaabPage,
+      })),
+  },
+  {
     id: 'codenames',
     titleKey: 'app.codenames.title',
     descriptionKey: 'app.codenames.description',
-    href: '/apps/codenames',
-    routePath: 'apps/codenames',
+    href: '/schlag-den-raab/codenames',
+    routePath: 'schlag-den-raab/codenames',
     status: 'Live',
     Icon: VenetianMask,
+    hub: 'evening',
     loadPage: () =>
       import('@/apps/codenames').then(({ CodenamesPage }) => ({
         default: CodenamesPage,
@@ -193,7 +212,13 @@ const appDefinitions: readonly HubApp[] = [
 
 export const registeredApps: readonly HubApp[] = appDefinitions
 
-export const dashboardApps: readonly HubApp[] = appDefinitions
+/** Haupt-Hub unter `/` und in jeder Lobby. */
+export const dashboardApps: readonly HubApp[] = appDefinitions.filter((app) => !app.hub)
+
+/** Abend-Hub hinter der PIN unter `/schlag-den-raab`. */
+export const eveningApps: readonly HubApp[] = appDefinitions.filter((app) => app.hub === 'evening')
+
+export const isEveningApp = (appId: string) => eveningApps.some((app) => app.id === appId)
 
 export const appRoutes: readonly HubAppRoute[] = appDefinitions.map((app) => ({
   appId: app.id,

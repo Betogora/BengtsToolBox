@@ -53,7 +53,7 @@ export function AppShell() {
   const [menuRequest, setMenuRequest] = useState({ open: false, focus: false })
   const location = useLocation()
   const usesDefaultLobby =
-    location.pathname.startsWith('/apps/') || location.pathname === '/schlag-den-raab'
+    location.pathname.startsWith('/apps/') || location.pathname.startsWith('/schlag-den-raab')
 
   return (
     <div className="min-h-svh">

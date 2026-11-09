@@ -28,12 +28,12 @@ BengtsToolBox ist ein deutsch- und englischsprachiger App-Hub für private Spiel
 - Anonymous Auth identifiziert eine Browsersitzung. Abgesehen von der Host-UID des Live-Buzzers entstehen daraus keine fachlichen Rollen.
 - LocalStorage ist Fallback und Cache, keine vollständige Offline-Synchronisation oder Konfliktauflösung.
 - Die Anwendung ist in der aktuellen Sicherheitskonfiguration für einen privaten Hub gedacht, nicht für sensible oder mandantengetrennte Daten.
-- `Schlag den Raab` besitzt nur eine clientseitige Zugangsschranke; sie ist keine Sicherheitsgrenze.
+- Der Abend-Hub `Schlag den XYZ` besitzt nur eine clientseitige Zugangsschranke; sie ist keine Sicherheitsgrenze.
 - Öffentliche Lobbys besitzen keine Rollen: alle anonym authentifizierten Geräte dürfen ihren gemeinsamen App-Zustand bearbeiten.
 
 ## 2. Produktlandkarte und Routen
 
-Das Dashboard unter `/` zeigt alle zwölf regulär registrierten Apps. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für deren Metadaten, Routen und Lazy Loader. Der Sonderbereich `Schlag den Raab` ist bewusst nicht in der Registry enthalten.
+Das Dashboard unter `/` zeigt die elf Apps des Haupt-Hubs. Die Registry in `src/apps/registry.ts` ist die einzige Quelle für Metadaten, Routen und Lazy Loader aller regulären Apps; Apps mit `hub: 'evening'` erscheinen stattdessen im PIN-geschützten Abend-Hub `Schlag den XYZ` unter `/schlag-den-raab`, dessen Hub-Seite explizit geroutet ist.
 
 | Bereich | Route | Registrierung | Kernzweck |
 | --- | --- | --- | --- |
@@ -49,8 +49,9 @@ Das Dashboard unter `/` zeigt alle zwölf regulär registrierten Apps. Die Regis
 | SK Anderten Turnier-App | `/apps/swiss-tournaments` | Registry | Swiss-, Rundenturnier-, Hand-and-Brain- und Mario-Kart-Turniere |
 | Nächste Frage | `/apps/next-question` | Registry | Quizkarten mit verdeckter Antwort |
 | Triathlon-Tracker | `/apps/triathlon-tracker` | Registry | Bestleistungen, Trainingsplanung und Leistungsentwicklung |
-| Codenames | `/apps/codenames` | Registry | Wortratespiel mit KI-Hinweisgeber über OpenRouter |
-| Schlag den Raab | `/schlag-den-raab` | explizite Sonderroute | Zwei-Personen-Abendwertung |
+| Abendstand | `/schlag-den-raab/abendstand` | Registry | Zwei-Personen-Abendwertung im Abend-Hub |
+| Codenames | `/schlag-den-raab/codenames` | Registry | Wortratespiel mit KI-Hinweisgeber im Abend-Hub |
+| Abend-Hub „Schlag den XYZ“ | `/schlag-den-raab` | explizite Sonderroute | PIN-geschützter zweiter App-Hub |
 | Lobbys | `/lobbies` | explizite Sonderroute | Öffentliche Räume erstellen und betreten |
 | Lobby-Dashboard | `/lobbies/:lobbyId` | explizite Sonderroute | Alle regulären Apps innerhalb eines isolierten Raums |
 | Lobby-App | `/lobbies/:lobbyId/apps/:appId` | Registry plus Lobby-Kontext | App-Zustand einer Lobby |
@@ -62,7 +63,7 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 
 ### 3.1 Shell und Navigation
 
-- Die Shell zeigt Branding, Dashboard, `Schlag den Raab`, Lobbys, Sprachauswahl und Farbschema-Button (ganz rechts). Die Lobby-Verwaltung ist als sekundäre Aktion im Kopf der Lobby-Seite erreichbar.
+- Die Shell zeigt Branding, Dashboard, `Schlag den XYZ`, Lobbys, Sprachauswahl und Farbschema-Button (ganz rechts). Die Lobby-Verwaltung ist als sekundäre Aktion im Kopf der Lobby-Seite erreichbar.
 - Ab 1024 px steht die Navigation mittig in der Kopfzeile; darunter liegt sie in einem Menü.
 - Das Farbschema (hell/dunkel) gilt global für Shell, Dashboard und alle Apps. Ohne gespeicherte Wahl startet es hell; eine Auswahl wird unter `bengtstoolbox.colorScheme` gespeichert und als Klasse `dark` auf `document.documentElement` gesetzt. Ein Inline-Skript in `index.html` setzt sie vor dem ersten Rendern. Ein einzelner Button wechselt das Schema; nur sein Symbol (Sonne/Mond) animiert den Wechsel. Farben laufen über die Tokens in `src/styles/globals.css`; Druckausgaben bleiben hell.
 - Jede reguläre App erhält Titel, Beschreibung, Status, Icon, URL und Lazy Loader ausschließlich über die Registry.
@@ -164,7 +165,7 @@ Firestore-Pfade dürfen nur in `src/lib/firebase/paths.ts` definiert werden.
 | Glücksrad | `apps/decision-wheel/state/default` | – |
 | Coinflip | `apps/coinflip/state/default` | – |
 | Nächste Frage | `apps/next-question/state/default` | – |
-| Schlag den Raab | `apps/schlag-den-raab/sessions/default/state/default` | – |
+| Abendstand | `apps/schlag-den-raab/sessions/default/state/default` | – |
 | Live-Buzzer, nur Quelle der einmaligen Übernahme | `apps/live-buzzer/sessions/default/state/default` | `.../players` |
 | Scoreboard | `apps/scoreboard/sessions/default/state/default` | `.../players`, `.../teams`, `.../scorings`, `.../events` |
 | Fortschritts-Dashboard | `apps/progress-dashboard/sessions/default/state/default` | `.../players`, `.../datasets` |
@@ -481,17 +482,17 @@ Die Modelle beruhen auf diesen fachlichen Grundlagen; die Oberfläche verlinkt s
 - ACSM's Guidelines for Exercise Testing and Prescription: metabolische Gleichungen für Gehen und Laufen auf dem Laufband (MET, Lauf-Äquivalent); gültig für Gehen bis etwa 6 km/h und Laufen ab etwa 8 km/h, dazwischen genähert.
 - [Karsten et al. (2021)](https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.613151/full): Critical Power und W′ aus Leistungs-Dauer-Daten; Distanzschätzungen beim Rad benötigen unabhängig davon vergleichbare Fahrbedingungen.
 
-### 5.11 Schlag den Raab
+### 5.11 Abendstand im Abend-Hub „Schlag den XYZ“
 
 **Zweck:** zwei Personen über 15 aufsteigend gewichtete Spiele und bei Bedarf ein Stechen bewerten.
 
-- Der Bereich liegt außerhalb der Dashboard-Registry und ist über `/schlag-den-raab` erreichbar.
-- Eine clientseitig fest codierte PIN schaltet die Route für die aktuelle `sessionStorage`-Sitzung frei. Dies verhindert keine technische Umgehung.
+- Der Tab „Schlag den XYZ“ öffnet unter `/schlag-den-raab` einen zweiten App-Hub mit eigenen Kacheln. Er enthält die Registry-Apps mit `hub: 'evening'`: Abendstand (`/schlag-den-raab/abendstand`) und Codenames (`/schlag-den-raab/codenames`). Diese Apps erscheinen weder im Haupt-Hub noch in Lobbys; `/apps/codenames` leitet auf die neue Adresse weiter.
+- Eine clientseitig fest codierte PIN schaltet Hub und Apps gemeinsam für die aktuelle `sessionStorage`-Sitzung frei. Dies verhindert keine technische Umgehung.
 - Es existieren genau zwei Personen; Namen sind editierbar.
 - Die 15 regulären Spiele tragen die Punkte `1` bis `15`; Titel sind editierbar.
 - Ein Klick setzt oder entfernt den Gewinner eines Spiels und berechnet den kumulierten Score.
 - Ein regulärer Sieger steht fest, sobald eine führende Person mehr als 60 Punkte besitzt.
-- Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht.
+- Der aktuelle Abend zeigt die gewonnenen regulären Spiele als 120-Punkte-Tortendiagramm: Person 1 wächst ab 12 Uhr gegen den Uhrzeigersinn, Person 2 im Uhrzeigersinn, jeweils nach Spielnummer sortiert. Die 6-Uhr-Achse markiert 60 Punkte; das Stechen verändert das Diagramm nicht. Beim Überfahren eines Stücks nennt der gemeinsame Tooltip mit Farbpunkt Spieltitel, Person, Spielnummer und Punkte und zeigt auf die Mitte des Stücks.
 - Sind nach allen 15 Spielen beide Scores gleich, erscheint Spiel 16 als Stechen. Es entscheidet den Abend per Kreuz, vergibt aber keine Punkte und zählt nicht als gewonnenes Spiel.
 - Reset archiviert den gesamten Abend, behält die aktuellen Spielernamen und startet mit leeren Ergebnissen.
 - Automatische Archivnamen verwenden den lokalen Archivtag ohne Uhrzeit. Mehrere Archive desselben Tages erhalten chronologische römische Suffixe; manuelle Namen bleiben unverändert.
@@ -507,7 +508,7 @@ Die Modelle beruhen auf diesen fachlichen Grundlagen; die Oberfläche verlinkt s
 - Die Personenliste wächst selbst: Anmeldungen, von der Spielleitung angelegte Personen und beim Abstimmen eingetippte Namen. Namen werden ohne Rücksicht auf Groß- und Kleinschreibung und Leerzeichen abgeglichen; wer sich unter einem schon genannten Namen anmeldet, übernimmt diesen Eintrag.
 - Jede Stimme liegt als eigenes Dokument je wählender Person unter `ballots` und trägt den Schlüssel der aktiven Runde; Stimmen anderer Runden zählen nie. Gleichstand teilt den Platz.
 - Während der Runde sehen Gäste nur die Zahl der Stimmen und wer bereits abgestimmt hat. Das Ergebnis erscheint nach dem Beenden auf allen Geräten. Wer wen gewählt hat, sieht nur die Spielleitung, bis sie die Wähler für alle freigibt.
-- Dieselbe clientseitige PIN wie bei Schlag den Raab (gemeinsam in `src/apps/shared/adminUnlock.ts`) schaltet für die `sessionStorage`-Sitzung den Bearbeitungsmodus frei: Titel, Beenden, Wiederöffnen, Zwischenstand, Wähler-Freigabe, neue Abstimmung sowie Personen anlegen, umbenennen, umfärben und löschen. Die PIN ist keine Sicherheitsgrenze.
+- Dieselbe clientseitige PIN wie beim Abend-Hub (gemeinsam in `src/apps/shared/adminUnlock.ts`) schaltet für die `sessionStorage`-Sitzung den Bearbeitungsmodus frei: Titel, Beenden, Wiederöffnen, Zwischenstand, Wähler-Freigabe, neue Abstimmung sowie Personen anlegen, umbenennen, umfärben und löschen. Die PIN ist keine Sicherheitsgrenze.
 - Doppelte Schreibweisen werden zusammengeführt: Die Spielleitung wählt mehrere Einträge und den bleibenden Namen. Die übrigen Einträge bleiben als Alias erhalten, zählen für die Zielperson und lassen sich wieder trennen; bei zusammengeführten Wählern zählt die jüngste Stimme. Ähnliche Namen (gleicher Vorname mit Zusatz, ein abweichender Buchstabe) werden als Vorschlag angezeigt und können als verschieden markiert werden.
 - „Neue Abstimmung“ archiviert die Runde mit festem Ergebnis-Snapshot und Wählern, löscht deren Stimmen und startet mit demselben Titel und denselben Personen neu; ein Stechen ist einfach eine neue Runde. „Alle löschen“ entfernt Personen und laufende Stimmen, nicht das Archiv. Archive sind aufklappbar, für die Spielleitung umbenenn- und löschbar.
 - Der Presenter zeigt während der Runde QR-Code, Titel, Stimmenzahl und Wähler, danach Gewinner und Rangliste.
@@ -830,6 +831,6 @@ Die globalen Legacy-Pfade unter `apps/{appId}/...` bleiben für jeden authentifi
 
 Der KI-Proxy nimmt nur Anfragen von `bengtstoolbox.web.app`, `bengtstoolbox.firebaseapp.com`, deren Preview Channels und `localhost` an und begrenzt Anfragen je Adresse und Function-Instanz. Der Spielstand reist als AES-GCM-Paket, das nur der Proxy öffnen kann. Der OpenRouter-Schlüssel bleibt in der Vercel-Umgebung und erscheint weder in Antworten noch in Logs. Weil die ToolBox keine Konten kennt, kann jede Besucherin und jeder Besucher der erlaubten Domains Modellhinweise auslösen; Ratenlimits je Adresse und das Ausgabenlimit des OpenRouter-Schlüssels begrenzen die Kosten. Ein älteres Spielpaket lässt sich erneut einreichen, was einem Rückgängig entspricht.
 
-Der vierstellige Lobby-Admin-PIN `5340` schützt vor normaler und versehentlicher Nutzung, kann im ausgelieferten JavaScript aber ausgelesen und umgangen werden. Er ist kein Hochsicherheits- oder Mehrbenutzermodell. Der PIN-Gate von `Schlag den Raab` hat dieselbe bewusste Grenze.
+Der vierstellige Lobby-Admin-PIN `5340` schützt vor normaler und versehentlicher Nutzung, kann im ausgelieferten JavaScript aber ausgelesen und umgangen werden. Er ist kein Hochsicherheits- oder Mehrbenutzermodell. Der PIN-Gate des Abend-Hubs `Schlag den XYZ` hat dieselbe bewusste Grenze.
 
 Vor öffentlicher Nutzung mit sensiblen Daten, echten Besitzerrollen oder Mandantentrennung müssen Datenräume, Identitäten und Besitzer-/Teilnehmer-Claims modelliert, globale Legacy-Pfade migriert und Rules verengt werden. Client-PINs müssen durch serverseitig prüfbare Autorisierung ersetzt und erlaubte, abgewiesene sowie migrationsbezogene Zugriffe mit Emulator-/Rules-Tests abgesichert werden.

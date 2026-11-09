@@ -163,6 +163,13 @@ const appPathContracts: Record<string, readonly PathContract[]> = {
       scopedSuffix: 'state/default',
     },
   ],
+  'schlag-den-raab': [
+    {
+      build: firebasePaths.schlagDenRaabState,
+      legacy: 'apps/schlag-den-raab/sessions/default/state/default',
+      scopedSuffix: 'state/default',
+    },
+  ],
   codenames: [
     {
       build: firebasePaths.codenamesState,

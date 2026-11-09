@@ -7,7 +7,12 @@ import { expect, test } from './browserApp'
 const proxyUrl = 'https://bengtstoolbox-ki.vercel.app/api/codenames'
 
 // Der KI-Proxy läuft im Testprozess ohne OpenRouter-Schlüssel; weder Vercel noch OpenRouter werden erreicht.
+async function unlockEveningHub(page: Page) {
+  await page.addInitScript(() => window.sessionStorage.setItem('bengts-toolbox:schlag-den-raab:unlocked', 'true'))
+}
+
 async function routeProxy(page: Page) {
+  await unlockEveningHub(page)
   const env = {
     secret: 'browsertest-geheimnis-mit-mindestens-32-zeichen',
     randomInt: seededRandomInt(7),
@@ -29,7 +34,7 @@ async function routeProxy(page: Page) {
 
 test('Codenames: Spiel mit Platzhalter-Hinweis, Raten und Rückgängig', async ({ app, page }) => {
   await routeProxy(page)
-  await app.open('/apps/codenames')
+  await app.open('/schlag-den-raab/codenames')
   await page.getByRole('button', { name: 'Spiel starten' }).click()
 
   await expect(page.getByTestId('codenames-clue-word')).toHaveText(/^Platz/)
@@ -50,7 +55,7 @@ test('Codenames: Spiel mit Platzhalter-Hinweis, Raten und Rückgängig', async (
 
 test('Codenames: KI-Fenster zeigt den Schlüsselstatus und speichert die Modellwahl @desktop', async ({ app, page }) => {
   await routeProxy(page)
-  await app.open('/apps/codenames')
+  await app.open('/schlag-den-raab/codenames')
   const button = page.getByRole('button', { name: /^KI/ })
   await expect(button).toContainText('Platzhalter')
   await button.click()

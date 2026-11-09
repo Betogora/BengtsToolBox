@@ -28,9 +28,9 @@
 | Nächste Frage | Quizfragen-Karussell mit verdeckter Antwort und gemerkter Position | Firestore + lokaler Cache |
 | Sushi Map | Besuchte Länder und Bundesländer | Firestore + lokaler Cache |
 | SK Anderten Turnier-App | Swiss-, Rundenturnier- und Hand-and-Brain-Verwaltung | Firestore + lokaler Cache |
-| Codenames | Wortratespiel mit KI-Hinweisgeber über OpenRouter | Firestore + lokaler Cache, KI-Proxy auf Vercel |
+| Codenames (Abend-Hub) | Wortratespiel mit KI-Hinweisgeber über OpenRouter | Firestore + lokaler Cache, KI-Proxy auf Vercel |
 
-Zusätzlich existiert mit **Schlag den Raab** ein geschützter Bereich außerhalb der Dashboard-Registry.
+Zusätzlich gibt es mit **Schlag den XYZ** einen PIN-geschützten zweiten App-Hub mit **Abendstand** und **Codenames**.
 
 ## Architektur auf einen Blick
 
