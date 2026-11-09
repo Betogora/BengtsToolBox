@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:2857e51c9c0e02065388b2bd10237fb48aa4507da78ee81b9b6bc09a4056cdf7">
+  <meta name="specs-source-sha256" content="sha256:9d149c3f1a70868b5c211c120f9641b92ee3bd6dd919b5698d0c4f5435481f27">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -998,7 +998,7 @@
             <ul>
             <li>Ein Spiel zieht 25 Begriffe aus der Wortliste des Proxys (ohne Wortformen desselben Begriffs); das ausgeloste Startteam bekommt 9 Karten, das andere 8, dazu 7 neutrale und ein Attentäter.</li>
             <li>Die Farbverteilung erreicht den Browser nie im Klartext. Der KI-Proxy versiegelt den vollständigen Spielstand mit AES-GCM; Firestore hält unter <code>apps/codenames/state/default</code> nur dieses Paket und die öffentliche Sicht. Aufdecken, Passen und Rückgängig laufen über den Proxy; Ziele erscheinen erst in der Auflösung.</li>
-            <li>Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Das Modell bekommt einen Systemprompt mit den Spielregeln und alle offenen Begriffe nach Farbe samt Lage und Verlauf beider Teams; es antwortet nur mit Wort, ZAHL (1–9, kein „unbegrenzt“) und Zielen. Bei LETZTE CHANCE gilt ZAHL ≥ eigene offene Karten − 1; ungenannt bleibt höchstens eine Karte, bei vorhandenen Resten früherer Hinweise ein Rest. Der Proxy prüft die Antwort deterministisch (ein Wort, kein offener Begriff oder Wortteil, nicht schon verwendet, Ziele = ZAHL, Erreichbarkeit bei LETZTE CHANCE) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.</li>
+            <li>Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Das Modell bekommt einen Systemprompt mit den Spielregeln und alle offenen Begriffe nach Farbe samt Kartenzahlen, eigenen Resten früherer Hinweise und Verlauf beider Teams; die Strategie entscheidet es selbst, eine vorgegebene Strategieschicht gibt es nicht. Es antwortet nur mit Wort, ZAHL (1–9, kein „unbegrenzt“) und Zielen. Der Proxy prüft nur die Regeln (ein Wort, nicht schon verwendet, kein offener Begriff und keine offensichtliche Überschneidung, Ziele = ZAHL eigene offene Begriffe) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.</li>
             <li>Der OpenRouter-Schlüssel liegt ausschließlich als Vercel-Umgebungsvariable <code>OPENROUTER_API_KEY</code> beim Proxy und erreicht den Browser nie. Der Dialog „KI“ zeigt nur, ob ein Schlüssel hinterlegt ist, und speichert Modell (Standard <code>openai/gpt-6-luna</code>) und Denkaufwand im LocalStorage des Geräts. Ohne Schlüssel liefert der Proxy regelkonforme Platzhalter-Hinweise.</li>
             <li>Ein Toast nennt jedes Rateergebnis und bietet fünf Sekunden „Rückgängig“; Passen ist erst nach dem ersten Versuch erlaubt. Spielende zeigt Siegerdialog, aufgedecktes Brett und die Tabelle aller Hinweise mit gemeinten und geratenen Begriffen.</li>
             </ul>

@@ -1,8 +1,7 @@
 // Läuft nur im KI-Proxy. Ein Prompt pro Zugwechsel: Spielstand als JSON an OpenRouter, Antwort
 // deterministisch prüfen, bei Regelverstoß genau ein zweiter Versuch. Der Schlüssel taucht nie in
 // Meldungen oder Logs auf.
-import { indexOfWord, type NewClue } from '../logic/engine'
-import { reachesAll, situationText, turnPlan } from '../logic/plan'
+import { indexOfWord, leftovers, remaining, type NewClue } from '../logic/engine'
 import { OTHER, type GameState } from '../logic/types'
 import { displayWord, norm } from '../logic/wordlist'
 
@@ -40,23 +39,6 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
 - "ziele" nennt genau ZAHL offene eigene Begriffe, geschrieben wie auf dem Brett. Reste früherer
   Hinweise ("lage.resteEigen") dürfen mitgemeint sein und zählen dann zur ZAHL.
 
-## Lage
-"lage.profil" sagt, wie viel dieser Zug leisten muss:
-- LETZTE_CHANCE: Der Gegner gewinnt voraussichtlich im nächsten Zug. ZAHL mindestens
-  "lage.mindestZahl" (eigene offene Karten minus 1), damit mit dem Zusatzversuch alle eigenen
-  Karten in diesem Zug erreichbar sind. Der eine ungenannte Begriff muss ein Rest aus
-  "lage.resteEigen" sein, falls es Reste gibt; sonst darf es ein beliebiger eigener Begriff sein,
-  den die Ratenden mit etwas Glück trotzdem finden. Wähle einen möglichst umfassenden Begriff und
-  nimm Nähe zu neutralen und gegnerischen Karten in Kauf. Ein vorsichtiger kleiner Hinweis
-  verliert hier fast sicher.
-- ABSCHLUSS: höchstens 2 eigene Karten offen; beide in einem Hinweis, sonst den sichersten
-  einzelnen.
-- OFFENSIV: Mit Zweier-Hinweisen seid ihr zu langsam; mindestens 3 Ziele, kleiner nur, wenn kein
-  Dreier den Attentäter sicher fernhält.
-- AUSGEGLICHEN: bester erwarteter Ertrag bei klarer Abgrenzung; ein sauberer Dreier schafft Luft.
-- DEFENSIV: Ihr liegt vorn; Sicherheit vor Menge. Begriffe, die mit gegnerischen Karten oder dem
-  Attentäter kollidieren, dürfen warten.
-
 ## Vorgehen
 1. Lies alle offenen Begriffe: eigene, gegnerische, neutrale und den Attentäter. Jeder Begriff,
    der nicht dem eigenen Team gehört, ist eine Falle.
@@ -77,7 +59,7 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
    einen einzelnen Begriff ist erlaubt, bringt aber wenig.
 6. Wäge Menge und Sicherheit gegeneinander ab: Ein zusätzliches Ziel lohnt sich, wenn es die
    übrigen nicht unsicherer macht und keine Falle nach vorn rückt.
-7. Der Attentäter bleibt fern, in jedem Profil. Verwirf jeden Hinweis, bei dem eine naheliegende
+7. Der Attentäter bleibt immer fern. Verwirf jeden Hinweis, bei dem eine naheliegende
    Brücke zum Attentäter führt, auch über Redewendungen, zusammengesetzte Wörter, Filme oder
    Lieder.
 
@@ -96,10 +78,9 @@ export const RESPONSE_SCHEMA = {
 
 const up = (w: string) => displayWord(w)
 
-/** Spielstand für den Prompt: alle offenen Begriffe nach Farbe, Lage und Verlauf beider Teams. */
+/** Spielstand für den Prompt: alle offenen Begriffe nach Farbe, Kartenzahlen und Verlauf beider Teams. */
 export function buildPromptState(state: GameState) {
   const team = state.turn
-  const plan = turnPlan(state)
   const open = (pred: (c: string) => boolean) =>
     state.words.filter((_, i) => !state.revealed[i] && pred(state.colors[i]!)).map(up)
   return {
@@ -111,12 +92,9 @@ export function buildPromptState(state: GameState) {
       attentaeter: open((c) => c === 'attentaeter')[0] ?? '',
     },
     lage: {
-      eigeneOffen: plan.own,
-      gegnerOffen: plan.opp,
-      resteEigen: plan.ownRest.map(up),
-      profil: plan.profile,
-      ...(plan.profile === 'LETZTE_CHANCE' ? { mindestZahl: plan.minNumber } : {}),
-      hinweis: situationText(state, plan),
+      eigeneOffen: remaining(state, team),
+      gegnerOffen: remaining(state, OTHER[team]),
+      resteEigen: leftovers(state, team).map(up),
     },
     // Gegnerische Hinweise hört der Geheimdienstchef mit, ihre gemeinten Ziele kennt er nicht.
     verlauf: state.clues.map((c) => ({
@@ -132,7 +110,7 @@ export function buildPromptState(state: GameState) {
 
 export type ValidationResult = { ok: true; clue: NewClue } | { ok: false; error: string }
 
-/** Deterministische Prüfung einer Modellantwort gegen Regeln und Lage. */
+/** Deterministische Prüfung einer Modellantwort gegen die Hinweisregeln; die Strategie entscheidet das Modell. */
 export function validateResponse(raw: unknown, state: GameState): ValidationResult {
   const errors: string[] = []
   const fail = (error: string): ValidationResult => ({ ok: false, error })
@@ -149,7 +127,7 @@ export function validateResponse(raw: unknown, state: GameState): ValidationResu
     if (state.revealed[i]) return
     const nb = norm(w)
     if (nw === nb) errors.push(`„${up(word)}“ ist ein offener Begriff.`)
-    else if ((nb.length >= 3 && nw.includes(nb)) || (nw.length >= 3 && nb.includes(nw))) {
+    else if ((nb.length >= 3 && nw.includes(nb)) || (nw.length >= 4 && nb.includes(nw))) {
       errors.push(`„${up(word)}“ überschneidet sich mit dem offenen Begriff „${up(w)}“.`)
     }
   })
@@ -182,15 +160,6 @@ export function validateResponse(raw: unknown, state: GameState): ValidationResu
     errors.push(`ZAHL ${number}, aber ${targets.length} Ziele genannt; die Anzahl der Ziele muss ZAHL entsprechen.`)
   }
 
-  const plan = turnPlan(state)
-  if (plan.profile === 'LETZTE_CHANCE' && errors.length === 0) {
-    if (number < plan.minNumber) {
-      errors.push(`Letzte Chance: Mit ZAHL ${number} sind nicht alle ${plan.own} eigenen Karten in diesem Zug erreichbar. ZAHL mindestens ${plan.minNumber} wählen.`)
-    } else {
-      const unreachable = reachesAll(state, team, targets)
-      if (unreachable) errors.push(unreachable)
-    }
-  }
 
   if (errors.length) return fail(errors.join(' '))
   return { ok: true, clue: { word: up(word), number, targets } }
@@ -314,15 +283,8 @@ const PLACEHOLDER_WORDS = ['Platzhalter', 'Probelauf', 'Testhinweis', 'Übungswo
 
 /** Ohne Modell: regelkonformer Platzhalter-Hinweis, damit die App durchspielbar bleibt. */
 export function placeholderClue(state: GameState): NewClue {
-  const plan = turnPlan(state)
   const own = state.words.filter((_, i) => state.colors[i] === state.turn && !state.revealed[i])
-  let targets: string[]
-  if (plan.profile === 'LETZTE_CHANCE') {
-    // Ungenannt bleibt höchstens ein Rest; ohne Reste werden alle eigenen Karten gemeint.
-    const skip = plan.ownRest.find((r) => own.includes(r))
-    targets = own.filter((w) => w !== skip)
-    if (!targets.length) targets = own.slice(0, 1)
-  } else targets = own.slice(0, Math.min(2, own.length))
+  const targets = own.slice(0, Math.min(2, own.length))
   for (let n = 0; n < 50; n++) {
     for (const base of PLACEHOLDER_WORDS) {
       const word = n === 0 ? base : `${base}${n + 1}`
