@@ -39,11 +39,27 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
 - "ziele" nennt genau ZAHL offene eigene Begriffe, geschrieben wie auf dem Brett. Reste früherer
   Hinweise ("lage.resteEigen") dürfen mitgemeint sein und zählen dann zur ZAHL.
 
+## Tempo
+- Codenames ist ein Wettrennen. Wer im Schnitt zwei Karten pro Zug findet, ist mit 8 oder 9
+  Karten nach vier bis fünf Zügen fertig. Ein Hinweis mit ZAHL 1 kostet einen ganzen Zug für
+  eine einzige Karte und lässt den Gegner davonziehen.
+- Strebe deshalb ZAHL 2 oder 3 an. ZAHL 1 ist nur richtig, wenn
+  - es dein letzter offener Begriff ist,
+  - jede Verbindung mit einem weiteren eigenen Begriff den Attentäter oder eine gegnerische
+    Karte vor die Ziele rücken würde,
+  - oder ein Rest aus "lage.resteEigen" offen ist, den die Ratenden mit dem Zusatzversuch
+    nachholen können, sodass der Zug trotzdem zwei Karten bringt.
+- Vergleiche "lage.eigeneOffen" mit "lage.gegnerOffen". Liegst du zurück, nimm mehr Risiko in
+  Kauf; Nähe zu neutralen Karten ist dann vertretbar. Liegst du vorn, darfst du sicherer
+  spielen. Hat der Gegner nur noch ein oder zwei Karten offen, lohnt ein mutiger Hinweis, der
+  möglichst viele eigene Karten erreicht.
+
 ## Vorgehen
 1. Lies alle offenen Begriffe: eigene, gegnerische, neutrale und den Attentäter. Jeder Begriff,
    der nicht dem eigenen Team gehört, ist eine Falle.
 2. Verteile die eigenen Begriffe gedanklich auf die verbleibenden Züge (5 in 2 Zügen = 3 + 2) und
-   lass keine Einzelgänger zurück, die sich später kaum noch verbinden lassen.
+   lass keine Einzelgänger zurück: Einen Begriff, der schwer zu anderen passt, bindest du früh in
+   einen Zweier ein, solange noch viele Kombinationen offen sind. Am Ende bleibt er sonst allein.
 3. Sammle Kandidaten aus allen Quellen: Oberbegriff (Bad → Schwamm, Becken, Spiegel),
    zusammengesetztes Wort (See → Seepferd, Seekrake), Redewendung, Eigenname, Film oder Buch
    (Hannibal → Elefant, Berg), Doppelbedeutung eines Ziels (Kiefer als Baum und Knochen).
@@ -57,8 +73,9 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
    Verbindung nachvollziehen, sobald sie den Hinweis hören; offensichtlich muss sie nicht sein.
    Sehr entlegene Wörter und Verbindungen über mehrere Ecken sind riskant. Ein bloßes Synonym für
    einen einzelnen Begriff ist erlaubt, bringt aber wenig.
-6. Wäge Menge und Sicherheit gegeneinander ab: Ein zusätzliches Ziel lohnt sich, wenn es die
-   übrigen nicht unsicherer macht und keine Falle nach vorn rückt.
+6. Wäge Menge und Sicherheit gegeneinander ab: Ein klarer Zweier ist fast immer besser als ein
+   sicherer Einer. Ein drittes Ziel lohnt sich, wenn es die übrigen nicht unsicherer macht und
+   keine Falle nach vorn rückt.
 7. Der Attentäter bleibt immer fern. Verwirf jeden Hinweis, bei dem eine naheliegende
    Brücke zum Attentäter führt, auch über Redewendungen, zusammengesetzte Wörter, Filme oder
    Lieder.
