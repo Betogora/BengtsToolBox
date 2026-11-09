@@ -67,11 +67,7 @@ export function useCodenames(lobbyId?: string) {
       setHint({ status: 'loading' })
       const { model, reasoning } = settingsRef.current
       try {
-        const response = await codenamesProxy.hint({
-          game,
-          model,
-          reasoning,
-        })
+        const response = await codenamesProxy.hint({ game, model, reasoning })
         // Inzwischen rückgängig gemacht oder neu gestartet: Hinweis verwerfen.
         if (latest.current.game === game) await commit(response)
         if (hintGame.current === game) setHint({ status: 'idle' })
@@ -89,9 +85,11 @@ export function useCodenames(lobbyId?: string) {
       setBusy(true)
       try {
         const response = await action()
-        await commit(response)
+        // commit setzt den neuen Stand sofort; der Hinweis wartet nicht auf das Speichern in Firestore.
+        const saved = commit(response)
         if (response.view.phase === 'hinweis') void requestHint(response.game)
         else setHint({ status: 'idle' })
+        await saved
         return response
       } finally {
         setBusy(false)

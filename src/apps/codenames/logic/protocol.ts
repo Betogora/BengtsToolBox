@@ -17,8 +17,6 @@ export type ProxyRequest =
   | {
       action: 'hint'
       game: string
-      /** true erzwingt den Platzhalter-Hinweisgeber, auch wenn ein Schlüssel hinterlegt ist. */
-      placeholder?: boolean
       model?: string
       reasoning?: Reasoning
     }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:689c48129a30c3aed8c1217117907ba78318cf2c726d2d71ecd2746f6716519b">
+  <meta name="specs-source-sha256" content="sha256:2857e51c9c0e02065388b2bd10237fb48aa4507da78ee81b9b6bc09a4056cdf7">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -1184,7 +1184,7 @@ npx firebase-tools deploy --only firestore:rules,firestore:indexes,database --pr
         </div>
         <div class="card note" style="margin-top:1rem">
           <h3>KI-Proxy für Codenames</h3>
-          <p>Eigenes Vercel-Projekt <code>bengtstoolbox-ki</code> (Hobby-Plan, Konto <code>bengt2</code>) mit der Function <code>https://bengtstoolbox-ki.vercel.app/api/codenames</code>; andere Projekte des Kontos bleiben unberührt. Quellcode in <code>src/apps/codenames/server/</code>; das Vercel-Projekt ist bewusst nicht mit GitHub verknüpft, sonst überschreibt jeder Push den Proxy. Der Proxy ist zustandslos und liest zwei Secrets: <code>CODENAMES_SECRET</code> (zufällig, mindestens 32 Zeichen) versiegelt den Spielstand mit der Farbverteilung; ein neues Geheimnis macht laufende Spiele ungültig. <code>OPENROUTER_API_KEY</code> ist der Schlüssel für die Modellaufrufe; fehlt er, gibt es Platzhalter-Hinweise. Änderungen wirken erst nach einem neuen Deploy. <code>VITE_CODENAMES_PROXY_URL</code> überschreibt die Adresse lokal oder in Tests.</p>
+          <p>Eigenes Vercel-Projekt <code>bengtstoolbox-ki</code> (Hobby-Plan, Konto <code>bengt2</code>) mit der Function <code>https://bengtstoolbox-ki.vercel.app/api/codenames</code> in der Region Frankfurt (<code>fra1</code>); andere Projekte des Kontos bleiben unberührt. Quellcode in <code>src/apps/codenames/server/</code>; das Vercel-Projekt ist bewusst nicht mit GitHub verknüpft, sonst überschreibt jeder Push den Proxy. Der Proxy ist zustandslos und liest zwei Secrets: <code>CODENAMES_SECRET</code> (zufällig, mindestens 32 Zeichen) versiegelt den Spielstand mit der Farbverteilung; ein neues Geheimnis macht laufende Spiele ungültig. <code>OPENROUTER_API_KEY</code> ist der Schlüssel für die Modellaufrufe; fehlt er, gibt es Platzhalter-Hinweise. Änderungen wirken erst nach einem neuen Deploy. <code>VITE_CODENAMES_PROXY_URL</code> überschreibt die Adresse lokal oder in Tests.</p>
           <pre><code>node scripts/deployCodenamesProxy.mjs</code></pre>
         </div>
         <h3 style="margin:2rem 0 0.8rem">Manuelles Hosting und Erstverknüpfung</h3>

@@ -29,8 +29,12 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
 - Genau ein deutsches Wort; Eigennamen sind erlaubt. Keine Wortgruppe.
 - Der Hinweis zielt nur auf die Bedeutung. Keine Anspielung auf Buchstaben, Wortlänge, Reim,
   Schreibweise oder Position auf dem Brett.
-- Der Hinweis ist kein offener Begriff, enthält keinen und steckt in keinem, auch nicht als
-  Wortform (Plural, Verkleinerung, Zusammensetzung).
+- Der Hinweis teilt mit keinem offenen Begriff einen Wortbestandteil: nicht der Begriff selbst
+  oder eine Wortform davon (Plural, Verkleinerung, Ableitung), kein Wort, das einen offenen
+  Begriff oder einen seiner Bestandteile enthält, und kein Wort, das in einem offenen Begriff
+  steckt. Liegt „Zahnarzt“ aus, sind „Arzt“, „Arztpraxis“, „Zahn“ und „Zahnbürste“ tabu.
+- Keine Übersetzung eines offenen Begriffs in eine andere Sprache (bei „Nacht“ nicht „Night“)
+  und keine Umschreibung seiner Schreibweise oder Aussprache. Aufgedeckte Begriffe sind frei.
 - Kein Wort aus "verwendeteHinweise".
 - ZAHL ist eine ganze Zahl von 1 bis 9. Es gibt weder "unbegrenzt" noch 0.
 - "ziele" nennt genau ZAHL offene eigene Begriffe, geschrieben wie auf dem Brett. Reste früherer
@@ -118,7 +122,7 @@ export function buildPromptState(state: GameState) {
     verlauf: state.clues.map((c) => ({
       team: c.team,
       hinweis: up(c.word),
-      zahl: c.number ?? c.label,
+      zahl: c.number,
       ...(c.team === team ? { ziele: c.targets.map(up) } : {}),
       geraten: c.results.map((r) => up(r.word)),
     })),
@@ -276,7 +280,7 @@ async function callOpenRouter(config: HintConfig, messages: ChatMessage[]): Prom
 export function promptMessages(state: GameState): ChatMessage[] {
   return [
     { role: 'system', content: SYSTEM_PROMPT },
-    { role: 'user', content: JSON.stringify(buildPromptState(state), null, 2) },
+    { role: 'user', content: JSON.stringify(buildPromptState(state)) },
   ]
 }
 

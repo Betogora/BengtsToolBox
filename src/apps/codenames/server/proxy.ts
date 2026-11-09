@@ -126,7 +126,7 @@ const serverKey = (env: ProxyEnv) => env.openRouterKey?.trim() || undefined
 async function giveHint(body: Record<string, unknown>, env: ProxyEnv): Promise<HintResponse> {
   const state = await openGame(body.game, env.secret)
   if (state.phase !== 'hinweis') throw new GameError(state.phase === 'ende' ? 'Das Spiel ist beendet.' : 'Es läuft bereits ein Hinweis.')
-  const apiKey = body.placeholder === true ? undefined : serverKey(env)
+  const apiKey = serverKey(env)
   const model = isModelId(body.model) ? body.model : DEFAULT_MODEL
   const reasoning = REASONING_LEVELS.includes(body.reasoning as Reasoning) ? (body.reasoning as Reasoning) : undefined
   try {
@@ -206,7 +206,7 @@ export async function handleCodenamesRequest(request: Request, env: ProxyEnv): P
     const body = await readBody(request)
     const action = typeof body.action === 'string' ? body.action : ''
     const checks: [string, [number, number]][] = [['all', LIMITS.all!]]
-    if (action === 'hint' && body.placeholder !== true && serverKey(env)) {
+    if (action === 'hint' && serverKey(env)) {
       checks.push(['hint', LIMITS.hint!], ['hintDay', LIMITS.hintDay!])
     }
     for (const [name, [limit, windowMs]] of checks) {

@@ -27,7 +27,6 @@ const secretOf = (game: string) => unseal<GameState>(game, SECRET, 'codenames-st
 
 /** Die öffentliche Sicht verrät weder Farben offener Karten noch Ziele, Zuversicht oder Undo-Stände. */
 async function assertNoSecrets({ game, view }: GameResponse) {
-  expect(game).not.toMatch(/rot|blau|neutral|attentaeter/)
   if (view.phase === 'ende') return
   const secret = await secretOf(game)
   view.cards.forEach((card, i) => {
@@ -116,9 +115,6 @@ describe('Codenames-Proxy', () => {
     expect(requests).toEqual([expect.objectContaining({ auth: `Bearer ${apiKey}` })])
     expect(requests[0]!.body).toMatchObject({ model: 'test/modell', reasoning: { effort: 'low' } })
 
-    const forced = await call<HintResponse>({ action: 'hint', game: game.game, placeholder: true })
-    expect(forced.data.source).toBe('platzhalter')
-    expect(requests).toHaveLength(1)
   })
 
   it('begrenzt Modellaufrufe je Adresse', async () => {

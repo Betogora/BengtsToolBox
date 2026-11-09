@@ -29,7 +29,7 @@ await build({
 await writeFile(path.join(outDir, 'package.json'), `${JSON.stringify({ name: PROJECT, private: true, type: 'module' }, null, 2)}\n`)
 await writeFile(
   path.join(outDir, 'vercel.json'),
-  `${JSON.stringify({ $schema: 'https://openapi.vercel.sh/vercel.json', framework: null, functions: { 'api/codenames.js': { maxDuration: 300 } } }, null, 2)}\n`,
+  `${JSON.stringify({ $schema: 'https://openapi.vercel.sh/vercel.json', framework: null, regions: ['fra1'], functions: { 'api/codenames.js': { maxDuration: 300 } } }, null, 2)}\n`,
 )
 console.log(`Proxy gebündelt: ${outDir}`)
 
