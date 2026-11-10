@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Das eingebettete Demo-Bundle des UI-Katalogs ist Build-Ausgabe, keine Klassenquelle. */
+@source not "../../docs/ui-elements.html";
 
 @font-face {
   font-family: "Manrope Variable";

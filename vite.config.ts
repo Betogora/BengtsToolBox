@@ -7,10 +7,11 @@ import { defineConfig } from 'vite'
 
 import { bundleMetricsPlugin } from './scripts/bundleMetrics.mjs'
 import { questionCatalogPlugin } from './scripts/questionCatalogPlugin.mjs'
+import { uiCatalogPlugin } from './scripts/uiCatalogPlugin.mjs'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), questionCatalogPlugin(), bundleMetricsPlugin()],
+  plugins: [react(), tailwindcss(), questionCatalogPlugin(), uiCatalogPlugin(), bundleMetricsPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

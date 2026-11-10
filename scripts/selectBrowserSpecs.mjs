@@ -30,7 +30,12 @@ export const specDependencies = {
     'src/apps/schlag-den-raab/',
   ],
   'tournament-smoke': ['src/apps/swiss-tournaments/'],
-  'ui-elements': ['docs/ui-elements.html', 'src/uiElements.tsx'],
+  'ui-elements': [
+    'docs/ui-elements.html',
+    'scripts/buildUiCatalog.mjs',
+    'scripts/uiCatalogPlugin.mjs',
+    'src/uiElements.tsx',
+  ],
 }
 
 // Dateien ohne Einfluss auf die im lokalen Modus ausgelieferte App.

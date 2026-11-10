@@ -1,3 +1,6 @@
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+
 import type { Page } from '@playwright/test'
 
 import { expect, test } from './browserApp'
@@ -5,10 +8,15 @@ import { expect, test } from './browserApp'
 // Vier unabhängige Abschnitte statt eines langen Ablaufs, damit sie parallel laufen.
 let errors: string[]
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
   errors = []
   page.on('pageerror', error => errors.push(error.message))
-  await page.goto('/docs/ui-elements.html')
+  page.on('console', message => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
+  await page.goto(testInfo.tags.includes('@file')
+    ? pathToFileURL(path.resolve('docs/ui-elements.html')).href
+    : '/docs/ui-elements.html')
 })
 
 test.afterEach(() => {
@@ -16,6 +24,16 @@ test.afterEach(() => {
 })
 
 const demo = (page: Page, name: string) => page.locator(`[data-demo="${name}"]`)
+
+test('Katalog läuft direkt als Datei mit eingebetteten Demos @desktop', { tag: '@file' }, async ({ page }) => {
+  await demo(page, 'AppResetButton').getByRole('button').click()
+  await expect(demo(page, 'AppResetButton').getByRole('button')).toHaveText('Halten zum Zurücksetzen')
+  await expect(page.locator('[data-demo]:empty')).toHaveCount(0)
+  await expect(page.locator('[data-icon-name] svg')).toHaveCount(93)
+  for (const image of await page.locator('img').all()) {
+    expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0)
+  }
+})
 
 test('Katalog zeigt Grundbausteine und Rückmeldungen @desktop', async ({ page }) => {
   await expect(demo(page, 'Card-Familie').locator('[data-slot="card"]')).toBeVisible()

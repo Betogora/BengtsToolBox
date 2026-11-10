@@ -94,7 +94,7 @@ npm run check
 
 Bei Firebase- oder Sync-Änderungen zusätzlich lokalen Modus ohne `.env.local`, Realtime-Sync in zwei Fenstern, Persistenz nach Reload sowie Auth-, Rules- und Netzwerkfehler prüfen.
 
-`npm run docs:check` prüft lokale Markdown-Links und den bestätigten Gleichstand von `docs/specs.md` und `docs/specs.html`; `npm test` sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der HTML-Lesefassung den neuen Stand mit `npm run docs:acknowledge` bestätigen. `dist/`, `node_modules/`, Logs und `.env.local` weder bearbeiten noch committen.
+`npm run docs:check` prüft lokale Markdown-Links und den bestätigten Gleichstand von `docs/specs.md` und `docs/specs.html`; `npm test` sichert zusätzlich die Registry-Routen gegen beide Fassungen ab. Nach der manuellen Aktualisierung der HTML-Lesefassung den neuen Stand mit `npm run docs:acknowledge` bestätigen. `docs/ui-elements.html` bettet die Live-Demos als gebautes Bundle ein; nach Änderungen an gezeigten Komponenten, Styles oder Übersetzungen `npm run docs:ui-catalog` ausführen, sonst schlägt `docs:check` fehl. `dist/`, `node_modules/`, Logs und `.env.local` weder bearbeiten noch committen.
 
 ## Maßgebliche Dokumente
 
