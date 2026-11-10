@@ -65,8 +65,18 @@ async function buildBundle() {
       .map((file) => String(file.source))
       .join('\n')
       // Die Seite bettet Manrope selbst ein; der absolute Pfad der App existiert hier nicht.
-      .replace(/@font-face\{[^}]*\/fonts\/manrope\/[^}]*\}/g, ''),
+      .replace(/@font-face\{[^}]*\/fonts\/manrope\/[^}]*\}/g, '')
+      .replace(/\b(?:ok)?(?:lab|lch)\([^)]*\)/g, roundColorDigits),
   }
+}
+
+// Der CSS-Minifier rechnet Farben je Plattform in der letzten Stelle verschieden um
+// (Windows -.00332358, Linux -.00332373). Gerundet ist das Bundle überall gleich.
+function roundColorDigits(color) {
+  return color.replace(/(-?)(\d*)\.(\d{5,})/g, (_, sign, whole, fraction) => {
+    const rounded = Number(`${whole || 0}.${fraction}`).toFixed(4).replace(/\.?0+$/, '').replace(/^0(?=\.)/, '')
+    return rounded === '0' || rounded === '' ? '0' : `${sign}${rounded}`
+  })
 }
 
 // Absolute App-Pfade wie /sk-anderten-watermark.png gibt es ohne Server nicht.
