@@ -1,27 +1,26 @@
 import { describe, expect, it } from 'vitest'
 
 import { cryptoRandomInt, seededRandomInt } from './random'
-import { WORDLIST_TEXT as text } from '../server/wordlistText'
+import { WORDLIST_TEXTS } from '../server/wordlists'
 import { displayWord, drawWords, norm, parseWordlist, sameForm } from './wordlist'
 
-const pool = parseWordlist(text)
+const original = parseWordlist(WORDLIST_TEXTS.original)
+const duett = parseWordlist(WORDLIST_TEXTS.duett)
+const pool = original
 
 describe('Wortliste', () => {
-  it('hat 1215 Begriffe ohne Dubletten und Plural-/Schreibvarianten', () => {
-    expect(text.split(/\r?\n/).filter((l) => l.trim())).toHaveLength(1215)
-    expect(pool).toHaveLength(1215)
-    expect(new Set(pool.map(norm)).size).toBe(pool.length)
-    for (const gone of ['Hosen', 'Alptraum', 'Machine', 'Flugzeuge', 'Schlafen', 'Soldatin']) {
-      expect(pool).not.toContain(gone)
-    }
-    expect(pool).toEqual(expect.arrayContaining(['Hose', 'Albtraum', 'Straße', 'Fuß', 'Strauß', 'Loch Ness', 'Café']))
+  it.each([
+    ['Original', WORDLIST_TEXTS.original, original, 400, ['Strauß', 'Loch Ness']],
+    ['Duett', WORDLIST_TEXTS.duett, duett, 399, ['Großvater']],
+  ])('%s hat die erwartete Zahl Begriffe ohne Dubletten', (_, text, list, count, samples) => {
+    expect(text.split(/\r?\n/).filter((l) => l.trim())).toHaveLength(count)
+    expect(list).toHaveLength(count)
+    expect(new Set(list.map(norm)).size).toBe(count)
+    expect(list).toEqual(expect.arrayContaining(samples))
   })
 
   it('schreibt jeden Begriff mit großem Anfangsbuchstaben, nicht durchgehend groß', () => {
-    for (const w of pool) {
-      if (w === 'CD') continue
-      expect(w, w).toMatch(/^\p{Lu}[\p{Ll}]+( \p{Lu}\p{Ll}+)?$/u)
-    }
+    for (const w of [...original, ...duett]) expect(w, w).toMatch(/^\p{Lu}[\p{Ll}]+( \p{Lu}\p{Ll}+)?$/u)
   })
 
   it('Anzeigeform: großer Anfangsbuchstabe', () => {
@@ -46,7 +45,7 @@ describe('Wortliste', () => {
       expect(words.includes('Hose') && words.includes('Hosen')).toBe(false)
     }
     for (let k = 0; k < 200; k++) {
-      const words = drawWords(pool, cryptoRandomInt)
+      const words = drawWords(k % 2 ? duett : original, cryptoRandomInt)
       expect(new Set(words).size).toBe(25)
       for (const a of words) for (const b of words) if (a !== b) expect(sameForm(a, b)).toBe(false)
     }

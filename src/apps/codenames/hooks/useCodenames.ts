@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCodenamesAiSettings } from '@/apps/codenames/hooks/useCodenamesAiSettings'
-import type { GameResponse, RevealResponse } from '@/apps/codenames/logic/protocol'
+import { DEFAULT_WORDLIST, type GameResponse, type RevealResponse, type WordlistId } from '@/apps/codenames/logic/protocol'
 import { codenamesProxy, ProxyRequestError } from '@/apps/codenames/proxyClient'
 import type { CodenamesState, HintStatus } from '@/apps/codenames/types'
 import { firebasePaths } from '@/lib/firebase/paths'
@@ -52,8 +52,13 @@ export function useCodenames(lobbyId?: string) {
   const userId = session.userId
 
   const commit = useCallback(
-    async (response: GameResponse) => {
-      const next: CodenamesState = { game: response.game, view: response.view, updatedBy: userId ?? null }
+    async (response: GameResponse, wordlist = latest.current.wordlist) => {
+      const next: CodenamesState = {
+        game: response.game,
+        view: response.view,
+        updatedBy: userId ?? null,
+        ...(wordlist ? { wordlist } : {}),
+      }
       latest.current = next
       await save(next)
     },
@@ -81,12 +86,12 @@ export function useCodenames(lobbyId?: string) {
   )
 
   const run = useCallback(
-    async <T extends GameResponse>(action: () => Promise<T>): Promise<T> => {
+    async <T extends GameResponse>(action: () => Promise<T>, wordlist?: WordlistId): Promise<T> => {
       setBusy(true)
       try {
         const response = await action()
         // commit setzt den neuen Stand sofort; der Hinweis wartet nicht auf das Speichern in Firestore.
-        const saved = commit(response)
+        const saved = commit(response, wordlist)
         if (response.view.phase === 'hinweis') void requestHint(response.game)
         else setHint({ status: 'idle' })
         await saved
@@ -104,13 +109,14 @@ export function useCodenames(lobbyId?: string) {
     return game
   }
 
-  const startGame = () => run(() => codenamesProxy.newGame())
+  const startGame = (wordlist: WordlistId) => run(() => codenamesProxy.newGame(wordlist), wordlist)
   const reveal = (index: number): Promise<RevealResponse> => run(() => codenamesProxy.reveal(requireGame(), index))
   const pass = () => run(() => codenamesProxy.pass(requireGame()))
   const undo = () => run(() => codenamesProxy.undo(requireGame()))
 
   return {
     view: store.data.view,
+    wordlist: store.data.wordlist ?? DEFAULT_WORDLIST,
     isLoading: store.isLoading,
     error: store.error ?? session.error,
     busy,

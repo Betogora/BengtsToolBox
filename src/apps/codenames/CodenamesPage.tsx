@@ -1,7 +1,7 @@
 import './codenames.css'
 
 import { Play, Sparkles, Trophy, VenetianMask } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { toast } from 'sonner'
 
 import { AiSettingsDialog } from '@/apps/codenames/components/AiSettingsDialog'
@@ -11,13 +11,13 @@ import { ClueTable } from '@/apps/codenames/components/ClueTable'
 import { TeamCards } from '@/apps/codenames/components/TeamCards'
 import { TEAM_LABEL_KEY } from '@/apps/codenames/components/teamStyle'
 import { proxyErrorMessage, useCodenames } from '@/apps/codenames/hooks/useCodenames'
-import type { RevealResponse } from '@/apps/codenames/logic/protocol'
+import { isWordlistId, WORDLIST_IDS, type RevealResponse, type WordlistId } from '@/apps/codenames/logic/protocol'
 import type { Team } from '@/apps/codenames/logic/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -26,10 +26,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
-import { useI18n } from '@/lib/i18n'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 
 const UNDO_MS = 5000
+
+const WORDLIST_LABEL: Record<WordlistId, TranslationKey> = {
+  original: 'codenames.wordlist.original',
+  duett: 'codenames.wordlist.duett',
+  alle: 'codenames.wordlist.all',
+}
 
 export function CodenamesPage() {
   const { t } = useI18n()
@@ -37,7 +44,10 @@ export function CodenamesPage() {
   const { view, busy, ai } = game
   const [keyOpen, setKeyOpen] = useState(false)
   const [endOpen, setEndOpen] = useState(false)
-  const [confirmNew, setConfirmNew] = useState(false)
+  const [newOpen, setNewOpen] = useState(false)
+  const [wordlist, setWordlist] = useState<WordlistId | null>(null)
+  const selectedWordlist = wordlist ?? game.wordlist
+  const wordlistLabelId = useId()
   const teamLabel = (team: Team) => t(TEAM_LABEL_KEY[team])
 
   const act = async <T,>(action: () => Promise<T>): Promise<T | undefined> => {
@@ -91,13 +101,30 @@ export function CodenamesPage() {
 
   const startGame = () =>
     act(async () => {
-      await game.startGame()
+      await game.startGame(selectedWordlist)
       setEndOpen(false)
-      setConfirmNew(false)
+      setNewOpen(false)
     })
+
+  const openNewGame = () => {
+    setEndOpen(false)
+    setNewOpen(true)
+  }
 
   const running = !!view && view.phase !== 'ende'
   const winner = view?.winner ?? null
+
+  const wordlistControl = (
+    <div className="grid gap-2">
+      <div className="type-field-label text-muted-foreground" id={wordlistLabelId}>{t('codenames.wordlist')}</div>
+      <SegmentedControl
+        aria-labelledby={wordlistLabelId}
+        value={selectedWordlist}
+        options={WORDLIST_IDS.map((value) => ({ value, label: t(WORDLIST_LABEL[value]) }))}
+        onValueChange={(value) => isWordlistId(value) && setWordlist(value)}
+      />
+    </div>
+  )
 
   return (
     <AppPage className="codenames-page">
@@ -110,7 +137,7 @@ export function CodenamesPage() {
             {game.aiConfigured === false && <Badge variant="secondary">{t('codenames.placeholderBadge')}</Badge>}
           </Button>
           {view && (
-            <Button variant="ghost" onClick={() => (running ? setConfirmNew(true) : void startGame())} disabled={busy}>
+            <Button variant="ghost" onClick={openNewGame} disabled={busy}>
               {t('codenames.newGame')}
             </Button>
           )}
@@ -127,6 +154,7 @@ export function CodenamesPage() {
             <CardTitle>{t('codenames.setupTitle')}</CardTitle>
             <p className="type-ui text-muted-foreground">{t('codenames.setupInfo')}</p>
           </CardHeader>
+          <CardContent>{wordlistControl}</CardContent>
           <CardFooter>
             <Button onClick={() => void startGame()} disabled={busy || game.isLoading}>
               <Play />
@@ -146,7 +174,7 @@ export function CodenamesPage() {
                   {view.canUndo && (
                     <Button variant="outline" onClick={() => void undo()} disabled={busy}>{t('codenames.undo')}</Button>
                   )}
-                  <Button onClick={() => void startGame()} disabled={busy}>{t('codenames.newGame')}</Button>
+                  <Button onClick={openNewGame} disabled={busy}>{t('codenames.newGame')}</Button>
                 </div>
               </Card>
             ) : (
@@ -202,20 +230,24 @@ export function CodenamesPage() {
               <Button variant="outline" onClick={() => void undo()} disabled={busy}>{t('codenames.undo')}</Button>
             )}
             <Button variant="outline" onClick={() => setEndOpen(false)}>{t('codenames.showBoard')}</Button>
-            <Button onClick={() => void startGame()} disabled={busy}>{t('codenames.newGame')}</Button>
+            <Button onClick={openNewGame} disabled={busy}>{t('codenames.newGame')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={confirmNew} onOpenChange={setConfirmNew}>
-        <DialogContent>
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent {...(running ? {} : { 'aria-describedby': undefined })}>
           <DialogHeader>
-            <DialogTitle>{t('codenames.confirmNewTitle')}</DialogTitle>
-            <DialogDescription>{t('codenames.confirmNewText')}</DialogDescription>
+            <DialogTitle>{running ? t('codenames.confirmNewTitle') : t('codenames.newGame')}</DialogTitle>
+            {running && <DialogDescription>{t('codenames.confirmNewText')}</DialogDescription>}
           </DialogHeader>
+          {wordlistControl}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmNew(false)}>{t('common.cancel')}</Button>
-            <Button onClick={() => void startGame()} disabled={busy}>{t('codenames.newGame')}</Button>
+            <Button variant="outline" onClick={() => setNewOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => void startGame()} disabled={busy}>
+              <Play />
+              {t('codenames.start')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:acf40e940fc08efd06eac61a0057b065f7927d86e26e3fee0a77449c92a0ea3c">
+  <meta name="specs-source-sha256" content="sha256:2a1f0d4683a7b0fafc8e82f175e49ed963bd0d4a67b4d40ccfe9116f65bbda1b">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -997,7 +997,7 @@
           <div class="app-body">
             <p><strong>Zweck:</strong> Codenames ab zwei Personen auf einem gemeinsamen Bildschirm; ein Sprachmodell gibt beiden Teams die Hinweise.</p>
             <ul>
-            <li>Ein Spiel zieht 25 Begriffe aus der Wortliste des Proxys (ohne Wortformen desselben Begriffs); das ausgeloste Startteam bekommt 9 Karten, das andere 8, dazu 7 neutrale und ein Attentäter.</li>
+            <li>Ein Spiel zieht 25 Begriffe aus der beim Start gewählten Wortliste des Proxys (ohne Wortformen desselben Begriffs): „Original“ (400 Begriffe der deutschen Grundausgabe), „Duett“ (399 Begriffe der deutschen Duett-Ausgabe, keine Überschneidung mit Original) oder „Alle Karten“ (beide zusammen). Vorausgewählt ist die Liste des letzten Spiels; das ausgeloste Startteam bekommt 9 Karten, das andere 8, dazu 7 neutrale und ein Attentäter.</li>
             <li>Die Farbverteilung erreicht den Browser nie im Klartext. Der KI-Proxy versiegelt den vollständigen Spielstand mit AES-GCM; Firestore hält unter <code>apps/codenames/state/default</code> nur dieses Paket und die öffentliche Sicht. Aufdecken, Passen und Rückgängig laufen über den Proxy; Ziele erscheinen erst in der Auflösung.</li>
             <li>Bei jedem Zugwechsel fragt das Gerät, das den Zug ausgelöst hat, einen Hinweis an; andere Geräte bieten „Hinweis holen“ an. Das Modell bekommt einen Systemprompt mit den Spielregeln und alle offenen Begriffe nach Farbe samt Kartenzahlen, eigenen Resten früherer Hinweise und Verlauf beider Teams; die Strategie entscheidet es selbst, eine vorgegebene Strategieschicht gibt es nicht. Es antwortet nur mit Wort, ZAHL (1–9, kein „unbegrenzt“) und Zielen. Der Proxy prüft nur die Regeln (ein Wort, nicht schon verwendet, kein offener Begriff und keine offensichtliche Überschneidung, Ziele = ZAHL eigene offene Begriffe) und fragt bei einem Verstoß genau einmal nach. Ein durch Rückgängig überholter Hinweis wird verworfen.</li>
             <li>Der OpenRouter-Schlüssel liegt ausschließlich als Vercel-Umgebungsvariable <code>OPENROUTER_API_KEY</code> beim Proxy und erreicht den Browser nie. Der Dialog „KI“ zeigt nur, ob ein Schlüssel hinterlegt ist, und speichert Modell (Standard <code>openai/gpt-6-luna</code>) und Denkaufwand im LocalStorage des Geräts. Ohne Schlüssel liefert der Proxy regelkonforme Platzhalter-Hinweise.</li>
@@ -1077,7 +1077,7 @@
         <p>Aktionen heißen fachlich und geben keine Speicheroperationen an die Page weiter. Initialwerte der Sync-Hooks bleiben referenziell stabil. Firestore-Serverzeit wird zentral geschrieben; ergänzende Client-ISO-Zeiten dienen Anzeige/Fallback. Globale Tokens, Lucide und gemeinsame Controls werden bevorzugt; Feature-Layouts bleiben lokal. Presenter sind read-only, komplexe Regeln werden über öffentliche Interfaces geprüft. Dokumentation ändert sich bei dauerhaftem Kontext oder spezifiziertem Verhalten.</p>
         <ul>
           <li>UI-Katalog: Name und kompakte Vorschau; Quellenpfade im HTML ohne Dateilinks. Keine Untertitel, Metadatenblöcke oder Prioritätswertung.</li>
-          <li>Gemeinsame Controls im Katalog verwenden interaktive Originalkomponenten; das Icon-Inventar zeigt echte SVGs. Zustandsbeispiele zeigen ungültige Eingaben, Speichern, erhaltene Entwürfe nach Fehlern, erneuten Versuch, lange Texte und Erfolg ausschließlich mit lokalen Beispieldaten. Große Fachvorschauen bleiben statisch; Suche bleibt beim Scrollen sichtbar und die Navigation markiert den aktuellen Abschnitt.</li>
+          <li>Gemeinsame Controls im Katalog verwenden interaktive Originalkomponenten; das Icon-Inventar zeigt echte SVGs. Zustandsbeispiele zeigen ungültige Eingaben, Speichern, erhaltene Entwürfe nach Fehlern, erneuten Versuch, lange Texte und Erfolg ausschließlich mit lokalen Beispieldaten. Große Fachvorschauen bleiben statisch; Suche bleibt beim Scrollen sichtbar und die Navigation markiert den aktuellen Abschnitt. <code>docs/ui-elements.html</code> bettet die Live-Demos samt Styles und kleinen Bildern als gebautes Bundle ein und funktioniert so auch direkt als Datei; Dev-Server und Build laden stattdessen <code>src/uiElements.tsx</code>. Nach Änderungen an gezeigten Komponenten, Styles oder Übersetzungen aktualisiert <code>npm run docs:ui-catalog</code> das Bundle.</li>
           <li>Icon-Auswahlleisten behalten beim Labelwechsel ihre Gesamtbreite; Kennzahlen stehen über breiten Fortschrittsgrafiken.</li>
         </ul>
         <h3 style="margin:2rem 0 0.8rem">Testsystem</h3>
@@ -1132,7 +1132,7 @@ npm run test:firebase</code></pre>
 npm run perf:tournament
 npm run perf:baseline:update</code></pre>
         </div>
-        <p><code>npm run docs:check</code> prüft lokale Markdown-Dateien und Überschriftenziele offline sowie genau einen SHA-256-Fingerprint der normalisierten Markdown-Spezifikation. <code>npm test</code> sichert die Registry-Routen gegen beide Fassungen ab. Nach dem manuellen Inhaltsabgleich bestätigt <code>npm run docs:acknowledge</code> den Markdown-Stand; der Fingerprint belegt diese Bestätigung, keine automatisch geprüfte semantische Gleichheit. <code>npm run test:firebase</code> benötigt Java 21 und prüft Firestore-/Realtime-Regeln, konkurrierende Clients, Offline/Reconnect, atomare Ablehnungen, Datenübernahme und vier Buzzer-Lobbys mit je 20 Kandidaten.</p>
+        <p><code>npm run docs:check</code> prüft lokale Markdown-Dateien und Überschriftenziele offline sowie genau einen SHA-256-Fingerprint der normalisierten Markdown-Spezifikation. <code>npm test</code> sichert die Registry-Routen gegen beide Fassungen ab. Nach dem manuellen Inhaltsabgleich bestätigt <code>npm run docs:acknowledge</code> den Markdown-Stand; der Fingerprint belegt diese Bestätigung, keine automatisch geprüfte semantische Gleichheit. Außerdem baut <code>docs:check</code> das Demo-Bundle des UI-Katalogs neu und schlägt fehl, wenn <code>docs/ui-elements.html</code> davon abweicht. <code>npm run test:firebase</code> benötigt Java 21 und prüft Firestore-/Realtime-Regeln, konkurrierende Clients, Offline/Reconnect, atomare Ablehnungen, Datenübernahme und vier Buzzer-Lobbys mit je 20 Kandidaten.</p>
         <h3 style="margin:2rem 0 0.8rem">Lokaler Start</h3>
         <pre><code>npm ci
 Copy-Item .env.example .env.local

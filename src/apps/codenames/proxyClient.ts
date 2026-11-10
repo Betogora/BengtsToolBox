@@ -6,6 +6,7 @@ import type {
   ProxyRequest,
   RevealResponse,
   StatusResponse,
+  WordlistId,
 } from '@/apps/codenames/logic/protocol'
 
 export const CODENAMES_PROXY_URL =
@@ -40,7 +41,7 @@ async function post<T>(body: ProxyRequest): Promise<T> {
 
 export const codenamesProxy = {
   status: () => post<StatusResponse>({ action: 'status' }),
-  newGame: () => post<GameResponse>({ action: 'new' }),
+  newGame: (wordlist: WordlistId) => post<GameResponse>({ action: 'new', wordlist }),
   reveal: (game: string, index: number) => post<RevealResponse>({ action: 'reveal', game, index }),
   pass: (game: string) => post<GameResponse>({ action: 'pass', game }),
   undo: (game: string) => post<GameResponse>({ action: 'undo', game }),

@@ -5,7 +5,9 @@ import * as engine from '../logic/engine'
 import { GameError } from '../logic/engine'
 import {
   DEFAULT_MODEL,
+  DEFAULT_WORDLIST,
   isModelId,
+  isWordlistId,
   REASONING_LEVELS,
   type GameResponse,
   type HintResponse,
@@ -14,6 +16,7 @@ import {
   type Reasoning,
   type RevealResponse,
   type StatusResponse,
+  type WordlistId,
 } from '../logic/protocol'
 import type { RandomInt } from '../logic/random'
 import type { GameState } from '../logic/types'
@@ -21,7 +24,7 @@ import { publicView } from '../logic/view'
 import { drawWords, parseWordlist } from '../logic/wordlist'
 import { generateClue, HintError } from './hint'
 import { SealError, seal, unseal } from './sealing'
-import { WORDLIST_TEXT } from './wordlistText'
+import { WORDLIST_TEXTS } from './wordlists'
 
 export type ProxyEnv = {
   /** Server-Geheimnis aus der Vercel-Umgebung (CODENAMES_SECRET). */
@@ -36,7 +39,11 @@ export type ProxyEnv = {
 }
 
 const MAX_BODY_BYTES = 256 * 1024
-const WORDS = parseWordlist(WORDLIST_TEXT)
+const WORDS: Record<WordlistId, string[]> = {
+  original: parseWordlist(WORDLIST_TEXTS.original),
+  duett: parseWordlist(WORDLIST_TEXTS.duett),
+  alle: parseWordlist(`${WORDLIST_TEXTS.original}\n${WORDLIST_TEXTS.duett}`),
+}
 
 const ORIGIN_PATTERNS = [
   /^https:\/\/bengtstoolbox(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)$/,
@@ -149,7 +156,7 @@ async function dispatch(body: Record<string, unknown>, env: ProxyEnv): Promise<u
   switch (body.action) {
     case 'new': {
       const start = body.start === 'rot' || body.start === 'blau' ? body.start : undefined
-      const words = drawWords(WORDS, env.randomInt)
+      const words = drawWords(WORDS[isWordlistId(body.wordlist) ? body.wordlist : DEFAULT_WORDLIST], env.randomInt)
       return respondGame(engine.createGame(words, { start, randomInt: env.randomInt }), env.secret)
     }
     case 'reveal': {

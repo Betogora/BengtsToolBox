@@ -5,6 +5,7 @@ import { seededRandomInt } from '../logic/random'
 import type { GameState } from '../logic/types'
 import { handleCodenamesRequest, RateLimiter, type ProxyEnv } from './proxy'
 import { unseal } from './sealing'
+import { WORDLIST_TEXTS } from './wordlists'
 
 const SECRET = 'test-geheimnis-mit-mindestens-32-zeichen'
 const ORIGIN = 'https://bengtstoolbox.web.app'
@@ -65,6 +66,24 @@ describe('Codenames-Proxy', () => {
     const back = (await call<GameResponse>({ action: 'undo', game: current.game })).data
     expect(back.view.phase).toBe('raten')
     await assertNoSecrets(back)
+  })
+
+  it('zieht die Begriffe aus der gewählten Wortliste, sonst aus Original', async () => {
+    const { call } = setup()
+    const lists = { original: new Set(WORDLIST_TEXTS.original.split('\n')), duett: new Set(WORDLIST_TEXTS.duett.split('\n')) }
+    for (const [body, list] of [
+      [{ action: 'new', wordlist: 'duett' }, lists.duett],
+      [{ action: 'new', wordlist: 'original' }, lists.original],
+      [{ action: 'new' }, lists.original],
+      [{ action: 'new', wordlist: 'unbekannt' }, lists.original],
+    ] as const) {
+      const { view } = (await call<GameResponse>(body)).data
+      for (const card of view.cards) expect(list.has(card.word), card.word).toBe(true)
+    }
+    const mixed = []
+    for (let k = 0; k < 4; k++) mixed.push(...(await call<GameResponse>({ action: 'new', wordlist: 'alle' })).data.view.cards.map((c) => c.word))
+    for (const word of mixed) expect(lists.original.has(word) || lists.duett.has(word), word).toBe(true)
+    expect(mixed.some((w) => lists.original.has(w)) && mixed.some((w) => lists.duett.has(w))).toBe(true)
   })
 
   it('lehnt fremde Herkunft, manipulierte Spielstände und Regelverstöße ab', async () => {

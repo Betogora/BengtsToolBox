@@ -10,8 +10,16 @@ export type Reasoning = (typeof REASONING_LEVELS)[number]
 export const DEFAULT_MODEL = 'openai/gpt-6-luna'
 export const DEFAULT_REASONING: Reasoning = 'medium'
 
+export const WORDLIST_IDS = ['original', 'duett', 'alle'] as const
+export type WordlistId = (typeof WORDLIST_IDS)[number]
+export const DEFAULT_WORDLIST: WordlistId = 'original'
+
+export function isWordlistId(value: unknown): value is WordlistId {
+  return WORDLIST_IDS.includes(value as WordlistId)
+}
+
 export type ProxyRequest =
-  | { action: 'new'; start?: Team }
+  | { action: 'new'; start?: Team; wordlist?: WordlistId }
   | { action: 'reveal'; game: string; index: number }
   | { action: 'pass' | 'undo'; game: string }
   | {
