@@ -43,7 +43,9 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
 - Codenames ist ein Wettrennen. Wer im Schnitt zwei Karten pro Zug findet, ist mit 8 oder 9
   Karten nach vier bis fünf Zügen fertig. Ein Hinweis mit ZAHL 1 kostet einen ganzen Zug für
   eine einzige Karte und lässt den Gegner davonziehen.
-- Strebe deshalb ZAHL 2 oder 3 an. ZAHL 1 ist nur richtig, wenn
+- Strebe so viele eigene Karten an, wie sich mit vertretbarem Risiko verbinden lassen: 2 ist
+  das Minimum, 3 oder mehr lohnt sich, sobald ein Hinweis sie trägt, denn jedes weitere Ziel
+  ist eine Karte mehr in diesem Zug. ZAHL 1 ist nur richtig, wenn
   - es dein letzter offener Begriff ist,
   - jede Verbindung mit einem weiteren eigenen Begriff den Attentäter oder eine gegnerische
     Karte vor die Ziele rücken würde,
@@ -54,31 +56,27 @@ Hinweis. Du willst das Spiel gewinnen, nicht einen originellen Hinweis geben.
   spielen. Hat der Gegner nur noch ein oder zwei Karten offen, lohnt ein mutiger Hinweis, der
   möglichst viele eigene Karten erreicht.
 
-## Vorgehen
-1. Lies alle offenen Begriffe: eigene, gegnerische, neutrale und den Attentäter. Jeder Begriff,
-   der nicht dem eigenen Team gehört, ist eine Falle.
-2. Verteile die eigenen Begriffe gedanklich auf die verbleibenden Züge (5 in 2 Zügen = 3 + 2) und
-   lass keine Einzelgänger zurück: Einen Begriff, der schwer zu anderen passt, bindest du früh in
-   einen Zweier ein, solange noch viele Kombinationen offen sind. Am Ende bleibt er sonst allein.
-3. Sammle Kandidaten aus allen Quellen: Oberbegriff (Bad → Schwamm, Becken, Spiegel),
-   zusammengesetztes Wort (See → Seepferd, Seekrake), Redewendung, Eigenname, Film oder Buch
-   (Hannibal → Elefant, Berg), Doppelbedeutung eines Ziels (Kiefer als Baum und Knochen).
-4. Prüfe jeden Kandidaten aus Sicht der Ratenden, als kenntest du die Farben nicht: Ordne alle
-   offenen Begriffe danach, wie wahrscheinlich ein durchschnittlicher deutschsprachiger
-   Mitspieler sie zu diesem Hinweis wählt. Ein Kandidat taugt nur, wenn die gemeinten Begriffe
-   die ersten ZAHL Plätze belegen. Steht auf Platz ZAHL + 1 eine gegnerische Karte, ist er
-   riskant; landet der Attentäter weit vorn, ist er verboten.
-5. Nutze die ganze Breite des Wortschatzes: Alltagswörter, Eigennamen, Fachbegriffe,
-   Redewendungen, Popkultur. Entscheidend ist, dass aufmerksame erwachsene Mitspieler die
-   Verbindung nachvollziehen, sobald sie den Hinweis hören; offensichtlich muss sie nicht sein.
-   Sehr entlegene Wörter und Verbindungen über mehrere Ecken sind riskant. Ein bloßes Synonym für
-   einen einzelnen Begriff ist erlaubt, bringt aber wenig.
-6. Wäge Menge und Sicherheit gegeneinander ab: Ein klarer Zweier ist fast immer besser als ein
-   sicherer Einer. Ein drittes Ziel lohnt sich, wenn es die übrigen nicht unsicherer macht und
-   keine Falle nach vorn rückt.
-7. Der Attentäter bleibt immer fern. Verwirf jeden Hinweis, bei dem eine naheliegende
-   Brücke zum Attentäter führt, auch über Redewendungen, zusammengesetzte Wörter, Filme oder
-   Lieder.
+## Gute Hinweise
+Jeder offene Begriff, der nicht dem eigenen Team gehört, ist eine Falle. Einen eigenen Begriff,
+der schwer zu anderen passt, bindest du früh in einen Zweier ein, solange noch viele
+Kombinationen offen sind; am Ende bliebe er allein.
+
+Prüfe jeden Hinweis aus Sicht eines durchschnittlichen deutschsprachigen Mitspielers, der die
+Farben nicht kennt: Je klarer er die gemeinten Begriffe vor allen anderen offenen Begriffen
+wählt, desto sicherer ist der Hinweis. Eine neutrale Karte zwischen den Zielen kostet wenig,
+eine gegnerische viel; landet der Attentäter weit vorn, ist der Hinweis verboten.
+
+Der ganze Wortschatz ist erlaubt: Alltagswörter, Eigennamen, Fachbegriffe, Redewendungen,
+Popkultur. Aufmerksame erwachsene Mitspieler sollen die Verbindung nachvollziehen, sobald sie den
+Hinweis hören; offensichtlich muss sie nicht sein. Sehr entlegene Wörter und Verbindungen über
+mehrere Ecken sind riskant.
+
+Jedes weitere Ziel bringt eine Karte mehr in diesem Zug. Ein drittes, viertes oder fünftes Ziel
+lohnt sich deshalb auch bei moderat höherem Risiko; zu teuer wird es erst, wenn es eine
+gegnerische Karte oder den Attentäter vor die Ziele rückt.
+
+Der Attentäter bleibt immer fern: Verwirf jeden Hinweis, bei dem eine naheliegende Brücke zu ihm
+führt, auch über Redewendungen, zusammengesetzte Wörter, Filme oder Lieder.
 
 Antworte ausschließlich mit JSON nach dem Schema: {"hinweis": Wort, "zahl": ZAHL, "ziele": [Begriffe]}.`
 
