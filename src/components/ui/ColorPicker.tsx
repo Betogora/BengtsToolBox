@@ -156,19 +156,20 @@ export function ColorPicker({
           type="button"
           aria-label={ariaLabel}
           className={cn(
-            'group relative shrink-0 rounded-md border bg-background shadow-xs outline-none transition-colors hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/45 disabled:pointer-events-none disabled:opacity-50',
+            'group relative shrink-0 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/45 disabled:pointer-events-none disabled:opacity-50',
             variant === 'field'
-              ? 'flex h-10 w-full items-center gap-2.5 bg-card px-3 text-left'
-              : 'size-9 p-0.5',
+              ? 'flex h-10 w-full items-center gap-2.5 rounded-md border bg-card px-3 text-left shadow-xs hover:border-primary'
+              : 'grid size-9 place-items-center rounded-full',
             className,
           )}
           disabled={disabled}
         >
+          {/* Runder Farbpunkt mit Ring; die Fläche bleibt der Farbe vorbehalten. */}
           <span
             aria-hidden="true"
             className={cn(
-              'block shrink-0 border border-black/10',
-              variant === 'field' ? 'size-[1.125rem] rounded-[5px]' : 'size-full rounded-sm shadow-inner',
+              'block shrink-0 rounded-full border-2 border-card shadow-[0_0_0_1px_var(--border-strong)] transition-shadow',
+              variant === 'field' ? 'size-[1.125rem]' : 'size-[56%] min-h-4 min-w-4 group-hover:shadow-[0_0_0_1px_var(--primary)]',
             )}
             style={{
               backgroundColor: isOpen ? previewColor : normalizedValue,

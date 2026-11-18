@@ -209,7 +209,7 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeDefinition> = {
   },
 }
 
-const pairingHintBadgeClassName = 'type-action align-middle uppercase'
+const pairingHintBadgeClassName = 'type-action align-middle'
 
 const fixedPairingHintClassName = cn(
   pairingHintBadgeClassName,
@@ -784,14 +784,14 @@ export function PairingsTable({
 
     return (
       <>
-        <div className="grid gap-2 md:hidden">
+        <div className="grid divide-y md:hidden">
           {pairings.flatMap((pairing) =>
             racersFor(pairing).map((racer, index) => (
                   <div
                     key={`${pairing.id}-${racer.playerId}-${racer.scoringCycleNumber ?? 'extra'}`}
                     className={cn(
-                      'grid gap-2 rounded-md border bg-background p-3 text-sm transition-colors',
-                      racer.event && 'border-primary/25 bg-secondary/60',
+                      'grid gap-2 py-3 text-sm transition-colors first:pt-0 last:pb-0',
+                      racer.event && 'bg-secondary/60',
                     )}
                   >
                     <div className="flex min-w-0 items-start justify-between gap-2">
@@ -879,7 +879,7 @@ export function PairingsTable({
 
   return (
     <>
-      <div className="grid gap-2 md:hidden">
+      <div className="grid divide-y md:hidden">
         {pairings.map((pairing) => {
           const whiteName = renderWhite(pairing)
           const blackName = renderBlack(pairing)
@@ -888,7 +888,7 @@ export function PairingsTable({
             <div
               key={pairing.id}
               className={cn(
-                'rounded-md border bg-card p-2.5 text-sm',
+                'py-3 text-sm first:pt-0 last:pb-0',
                 pairing.isManual && 'bg-primary/5',
               )}
             >

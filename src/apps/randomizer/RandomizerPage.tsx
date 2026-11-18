@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 import { useRandomizer } from '@/apps/randomizer/hooks/useRandomizer'
 import type { RollResult } from '@/apps/randomizer/types'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
@@ -13,10 +13,10 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
@@ -110,35 +110,35 @@ export function RandomizerPage() {
 
   return (
     <AppPage>
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={Dice5} title={appTitle} />
-        <PresenterLauncher
-          appTitle={appTitle}
-          views={[
-            {
-              id: 'last-roll',
-              label: t('randomizer.lastRoll'),
-              Icon: Dice5,
-              render: () => (
-                <RandomizerPresenter
-                  history={visibleHistory}
-                  lastRoll={data.lastRoll}
-                  max={data.max}
-                  min={data.min}
-                />
-              ),
-            },
-          ]}
-        />
-      </section>
+      <AppPageHeader
+        Icon={Dice5}
+        title={appTitle}
+        actions={
+          <PresenterLauncher
+            appTitle={appTitle}
+            views={[
+              {
+                id: 'last-roll',
+                label: t('randomizer.lastRoll'),
+                Icon: Dice5,
+                render: () => (
+                  <RandomizerPresenter
+                    history={visibleHistory}
+                    lastRoll={data.lastRoll}
+                    max={data.max}
+                    min={data.min}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -222,7 +222,7 @@ export function RandomizerPage() {
           </CardHeader>
           <CardContent>
             {visibleHistory.length === 0 ? (
-              <EmptyState className="p-8">
+              <EmptyState>
                 {t('randomizer.empty')}
               </EmptyState>
             ) : (

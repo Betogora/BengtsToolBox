@@ -567,11 +567,12 @@ function ActualTrainingDialogContent({
                   />
                 </div>
               )}
-              <p className="type-caption col-span-2 text-muted-foreground sm:col-span-12">
-                {phaseTotals
-                  ? t('triathlon.form.metricsFromIntervals')
-                  : t('triathlon.form.metricsDerived')}
-              </p>
+              {/* Status nur, wenn die Werte aus den Intervallen stammen; die Rechenregel erklären die grauen Felder. */}
+              {phaseTotals && (
+                <p className="type-caption col-span-2 text-muted-foreground sm:col-span-12">
+                  {t('triathlon.form.metricsFromIntervals')}
+                </p>
+              )}
               <div className={detailSpan}>
                 <IftaInput
                   label={t('triathlon.form.averageHeartRate')}

@@ -1,12 +1,14 @@
 import { Beer, ChessKing, LayoutDashboard, Swords, Trophy, UsersRound } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useSwissTournaments } from '@/apps/swiss-tournaments/hooks/useSwissTournaments';
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle';
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader';
 import { AppPage } from '@/apps/shared/components/AppPage';
 import { PresenterLauncher } from '@/apps/shared/components/Presenter';
 import type { Tournament } from '@/apps/swiss-tournaments/types';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/apps/shared/components/EmptyState';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Notice } from '@/components/ui/notice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/i18n';
 import { syncErrorMessageKey } from '@/lib/firebase/syncError';
@@ -35,11 +37,12 @@ function printablePdfTitle(tournamentName: string) {
   return `${safeName || 'Turnier'}.pdf`
 }
 
-function AppTitleHeader({ isMarioKart = false }: { isMarioKart?: boolean }) {
+function AppTitleHeader({ actions, isMarioKart = false }: { actions?: ReactNode; isMarioKart?: boolean }) {
   return (
-    <AppPageTitle
+    <AppPageHeader
       Icon={isMarioKart ? Beer : ChessKing}
       title={isMarioKart ? marioKartAppTitle : appTitle}
+      actions={actions}
     />
   )
 }
@@ -118,12 +121,7 @@ export function SwissTournamentsPage() {
     return (
       <AppPage>
         <AppTitleHeader />
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('swiss.loadingTitle')}</CardTitle>
-            <CardDescription>{t('swiss.loadingDescription')}</CardDescription>
-          </CardHeader>
-        </Card>
+        <EmptyState aria-busy="true" role="status">{t('swiss.loadingTitle')}</EmptyState>
       </AppPage>
     )
   }
@@ -133,21 +131,13 @@ export function SwissTournamentsPage() {
       <AppPage className="swiss-tournaments-page">
         <AppTitleHeader />
         {app.error && (
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle>{t('common.syncError')}</CardTitle>
-              <CardDescription>{t(syncErrorMessageKey(app.error))}</CardDescription>
-            </CardHeader>
-          </Card>
+          <Notice tone="danger" title={t('common.syncError')}>
+            {t(syncErrorMessageKey(app.error))}
+          </Notice>
         )}
         <Card>
           <CardHeader className="gap-4">
-            <div className="grid gap-1">
-              <CardTitle>{t('swiss.noActiveTitle')}</CardTitle>
-              <CardDescription>
-                {t('swiss.noActiveDescription')}
-              </CardDescription>
-            </div>
+            <CardTitle>{t('swiss.noActiveTitle')}</CardTitle>
             <div>
               <NewTournamentDialog
                 initialTournament={app.tournaments[0] ?? null}
@@ -188,40 +178,39 @@ export function SwissTournamentsPage() {
       )}
       width="wide"
     >
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppTitleHeader isMarioKart={isMarioKartTournament} />
-        <PresenterLauncher
-          appTitle={isMarioKartTournament ? marioKartAppTitle : appTitle}
-          views={[
-            {
-              id: 'standings',
-              label: t('swiss.ranking'),
-              Icon: Trophy,
-              render: () => (
-                <SwissStandingsPresenter
-                  round={currentRound}
-                  roundLabel={
-                    currentRound
-                      ? inspection?.rounds.get(currentRound.roundNumber)
-                          ?.displayLabel ?? null
-                      : null
-                  }
-                  standings={app.standings}
-                  tournament={tournament}
-                />
-              ),
-            },
-          ]}
-        />
-      </section>
+      <AppTitleHeader
+        isMarioKart={isMarioKartTournament}
+        actions={
+          <PresenterLauncher
+            appTitle={isMarioKartTournament ? marioKartAppTitle : appTitle}
+            views={[
+              {
+                id: 'standings',
+                label: t('swiss.ranking'),
+                Icon: Trophy,
+                render: () => (
+                  <SwissStandingsPresenter
+                    round={currentRound}
+                    roundLabel={
+                      currentRound
+                        ? inspection?.rounds.get(currentRound.roundNumber)
+                            ?.displayLabel ?? null
+                        : null
+                    }
+                    standings={app.standings}
+                    tournament={tournament}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
 
       {app.error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.syncError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(app.error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.syncError')}>
+          {t(syncErrorMessageKey(app.error))}
+        </Notice>
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">

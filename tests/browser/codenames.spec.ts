@@ -67,8 +67,8 @@ test('Codenames: Spiel mit Platzhalter-Hinweis, Raten und Rückgängig', async (
 test('Codenames: KI-Fenster zeigt den Schlüsselstatus und speichert die Modellwahl @desktop', async ({ app, page }) => {
   await routeProxy(page)
   await app.open('/schlag-den-raab/codenames')
+  await expect(page.locator('[data-slot="app-page-header"]')).toContainText('Platzhalter')
   const button = page.getByRole('button', { name: /^KI/ })
-  await expect(button).toContainText('Platzhalter')
   await button.click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Kein Schlüssel bei Vercel')

@@ -121,23 +121,24 @@ export function PresenterLauncher({
 
   return (
     <>
+      {/* Mobil als Icon-Button im Seitenkopf, ab sm mit Beschriftung. */}
       <Button
         ref={launcherRef}
-        className={className}
+        className={cn('max-sm:size-9 max-sm:px-0', className)}
         disabled={isDisabled}
         type="button"
         variant="outline"
         onClick={handleLaunch}
       >
         <Monitor className="size-4" />
-        {buttonLabel ?? t('common.presenter')}
+        <span className="max-sm:sr-only">{buttonLabel ?? t('common.presenter')}</span>
       </Button>
 
       <Dialog open={isChooserOpen} onOpenChange={setIsChooserOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('presenter.chooseTitle')}</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="sr-only">
               {t('presenter.chooseDescription')}
             </DialogDescription>
           </DialogHeader>

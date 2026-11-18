@@ -1,6 +1,7 @@
 import { ArrowRight, Plus, Search } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PersonOption } from '@/apps/shared/components/PersonOption'
 import type { VotingCandidateChoice } from '@/apps/voting/hooks/useVoting'
 import {
@@ -127,7 +128,7 @@ export function VotingEntryDialog({
                 <ColorPicker
                   align="start"
                   ariaLabel={t('voting.entry.color')}
-                  className="size-12 rounded-md p-1"
+                  className="size-12"
                   value={color}
                   onValueCommit={setColor}
                 />
@@ -210,9 +211,7 @@ export function VotingEntryDialog({
                 </button>
               )}
               {filteredPeople.length === 0 && !writeInName && (
-                <p className="type-ui col-span-2 rounded-md border border-dashed p-5 text-center text-muted-foreground">
-                  {t('voting.entry.noPeople')}
-                </p>
+                <EmptyState className="col-span-2">{t('voting.entry.noPeople')}</EmptyState>
               )}
             </div>
 

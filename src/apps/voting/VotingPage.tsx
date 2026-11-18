@@ -7,6 +7,7 @@ import {
   Flag,
   LockKeyhole,
   LockKeyholeOpen,
+  Radio,
   RotateCcw,
   Undo2,
   UserRoundPen,
@@ -18,7 +19,7 @@ import { toast } from 'sonner'
 
 import { isAdminPassword, isAdminUnlocked, setAdminUnlocked } from '@/apps/shared/adminUnlock'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader, AppPageStatus } from '@/apps/shared/components/AppPageHeader'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
@@ -33,7 +34,8 @@ import { VotingPeopleCard } from '@/apps/voting/VotingPeopleCard'
 import { VotingResultList, VotingWinnerBanner } from '@/apps/voting/VotingResults'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -290,46 +292,49 @@ export function VotingPage() {
 
   return (
     <AppPage width="wide">
-      <section className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3">
-        <AppPageTitle Icon={Drama}>
-          <h1 className="type-page-title min-w-0 break-words max-[359px]:text-[1.75rem]">{appTitle}</h1>
-        </AppPageTitle>
-        <div className="flex items-center gap-2 justify-self-end">
-          <div className="hidden items-center gap-2 sm:flex">
-            {!isRealtime && <Badge variant="outline">{t('liveBuzzer.localOnly')}</Badge>}
-            <PresenterLauncher
-              appTitle={appTitle}
-              views={[
-                {
-                  id: 'live',
-                  label: t('voting.presenter.live'),
-                  Icon: Vote,
-                  render: () => (
-                    <VotingPresenter people={people} qrValue={qrValue} round={activeRound} tally={tally} />
-                  ),
-                },
-              ]}
+      <AppPageHeader
+        Icon={Drama}
+        titleContent={
+          <h1 className="type-page-title min-w-0 break-words max-[359px]:text-[1.375rem]">{appTitle}</h1>
+        }
+        status={
+          !isRealtime ? (
+            <AppPageStatus Icon={Radio} className="max-sm:hidden">{t('liveBuzzer.localOnly')}</AppPageStatus>
+          ) : undefined
+        }
+        actions={
+          <>
+            {/* Presenter und Schloss nur ab sm; mobil sitzt das Schloss in der Rundenkarte. */}
+            <div className="hidden items-center gap-2 sm:flex">
+              <PresenterLauncher
+                appTitle={appTitle}
+                views={[
+                  {
+                    id: 'live',
+                    label: t('voting.presenter.live'),
+                    Icon: Vote,
+                    render: () => (
+                      <VotingPresenter people={people} qrValue={qrValue} round={activeRound} tally={tally} />
+                    ),
+                  },
+                ]}
+              />
+              <AdminLockButton isAdmin={isAdmin} onChange={changeAdmin} />
+            </div>
+            <QrCodeButton
+              label={t('voting.qrAlt')}
+              openLabel={t('dashboard.qrOpen')}
+              value={qrValue}
+              variant="icon"
             />
-          </div>
-          <div className="hidden sm:block">
-            <AdminLockButton isAdmin={isAdmin} onChange={changeAdmin} />
-          </div>
-          <QrCodeButton
-            className="size-14 p-1.5 sm:size-[72px] sm:p-2"
-            label={t('voting.qrAlt')}
-            openLabel={t('dashboard.qrOpen')}
-            value={qrValue}
-          />
-        </div>
-      </section>
+          </>
+        }
+      />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-6">
@@ -375,7 +380,9 @@ export function VotingPage() {
               )}
             </div>
 
-            <div className="grid gap-4 rounded-lg border bg-background/70 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            {/* Beendet und nicht beigetreten: Das Badge „Beendet“ sagt bereits alles. */}
+            {(me || isOpen) && (
+            <div className="grid gap-4 rounded-md bg-muted p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
               <div className="grid min-w-0 gap-1.5">
                 {me ? (
                   <>
@@ -401,6 +408,7 @@ export function VotingPage() {
               </div>
               {primaryAction}
             </div>
+            )}
 
             {me && (
               <button
@@ -474,14 +482,11 @@ export function VotingPage() {
               tally.results.length === 0 ? (
                 <EmptyState>{t('voting.result.empty')}</EmptyState>
               ) : (
-                <>
-                  {!isOpen && <VotingWinnerBanner ballotCount={tally.ballotCount} results={tally.results} />}
-                  <VotingResultList
-                    ballotCount={tally.ballotCount}
-                    results={tally.results}
-                    showVoters={isAdmin || activeRound.votersVisible}
-                  />
-                </>
+                <VotingResultList
+                  ballotCount={tally.ballotCount}
+                  results={tally.results}
+                  showVoters={isAdmin || activeRound.votersVisible}
+                />
               )
             ) : (
               <>
@@ -521,7 +526,7 @@ export function VotingPage() {
             <span className="type-action">{t('voting.archive.title')}</span>
           </h2>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="grid divide-y">
           {archivedRounds.length === 0 ? (
             <EmptyState>{t('voting.archive.none')}</EmptyState>
           ) : (

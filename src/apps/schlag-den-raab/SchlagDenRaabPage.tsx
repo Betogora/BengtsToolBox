@@ -16,8 +16,9 @@ import type {
   SchlagDenRaabPlayerId,
 } from '@/apps/schlag-den-raab/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DeleteButton } from '@/components/ui/DeleteButton'
+import { Notice } from '@/components/ui/notice'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { cn } from '@/lib/utils'
@@ -85,8 +87,8 @@ function PlayerScoreSummary({
   return (
     <div
       className={cn(
-        'rounded-md border p-3',
-        isWinner && 'border-primary/45',
+        'rounded-md p-3',
+        isWinner && 'ring-1 ring-inset ring-primary/45',
       )}
       style={{
         backgroundColor: `color-mix(in srgb, var(${player.id === 'player-1' ? '--brand-primary' : '--brand-accent'}) 12%, var(--card))`,
@@ -192,9 +194,9 @@ function ScoreOverview() {
         </CardHeader>
         <CardContent className="grid gap-4">
           {error && (
-            <div className="rounded-md border border-destructive/60 bg-destructive/10 p-3 text-sm text-destructive">
-              {t('common.firebaseError')}: {t(syncErrorMessageKey(error))}
-            </div>
+            <Notice tone="danger" title={t('common.firebaseError')}>
+              {t(syncErrorMessageKey(error))}
+            </Notice>
           )}
 
           <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1.1fr]">
@@ -207,7 +209,7 @@ function ScoreOverview() {
                 score={totalScores[player.id]}
               />
             ))}
-            <div className="rounded-md border bg-background/75 p-3">
+            <div className="rounded-md bg-muted p-3">
               <div className="type-caption text-muted-foreground">
                 {t('raab.outcome')}
               </div>
@@ -341,11 +343,9 @@ function ArchiveSection({
         </button>
       </CardHeader>
       {isOpen && (
-        <CardContent className="grid gap-3">
+        <CardContent className="grid divide-y">
           {archivedDatasets.length === 0 ? (
-            <div className="type-ui rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-              {t('raab.archive.empty')}
-            </div>
+            <EmptyState>{t('raab.archive.empty')}</EmptyState>
           ) : (
             archivedDatasets.map((dataset) => (
               <ArchiveDatasetCard
@@ -379,8 +379,8 @@ function ArchiveDatasetCard({
     (dataset.tiebreak?.winnerId ? 1 : 0)
 
   return (
-    <div className="rounded-lg border bg-card">
-      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="py-3 first:pt-0 last:pb-0">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
           aria-expanded={isOpen}
@@ -410,7 +410,7 @@ function ArchiveDatasetCard({
         />
       </div>
       {isOpen && (
-        <div className="grid gap-3 border-t p-4">
+        <div className="grid gap-3 pt-3">
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_1.1fr]">
             {dataset.players.map((player) => (
               <PlayerScoreSummary
@@ -519,8 +519,8 @@ export function SchlagDenRaabPage() {
   const { t } = useI18n()
 
   return (
-    <AppPage className="gap-7 lg:py-12" width="wide">
-      <AppPageTitle Icon={MoonStar} title={t('app.abendstand.title')} />
+    <AppPage width="wide">
+      <AppPageHeader Icon={MoonStar} title={t('app.abendstand.title')} />
 
       <section className="grid gap-4">
         <ScoreOverview />

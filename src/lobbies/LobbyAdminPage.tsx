@@ -9,13 +9,13 @@ import { useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -123,7 +123,6 @@ export function LobbyAdminPage() {
               <ShieldCheck className="size-6" />
             </div>
             <CardTitle>{t('lobbyAdmin.title')}</CardTitle>
-            <CardDescription>{t('lobbyAdmin.unlockDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="grid gap-4" onSubmit={handleUnlock}>
@@ -150,10 +149,7 @@ export function LobbyAdminPage() {
 
   return (
     <AppPage width="wide">
-      <section className="flex items-center gap-3">
-        <ShieldCheck className="size-9 text-primary" />
-        <h1 className="type-page-title">{t('lobbyAdmin.title')}</h1>
-      </section>
+      <AppPageHeader Icon={ShieldCheck} title={t('lobbyAdmin.title')} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
         <Card>
@@ -161,10 +157,11 @@ export function LobbyAdminPage() {
             <CardTitle>{t('lobbyAdmin.allLobbies')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
+            <div className="grid divide-y">
             {lobbies.map((lobby) => (
               <div
                 key={lobby.id}
-                className="flex flex-col gap-3 rounded-lg border bg-background/65 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
               >
                 <button
                   className="min-w-0 flex-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45"
@@ -173,14 +170,14 @@ export function LobbyAdminPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="type-action truncate">{lobby.name}</span>
                     <Badge variant={lobby.kind === 'default' ? 'default' : 'secondary'}>
-                      {lobby.code}
+                      {lobby.kind === 'default' ? t('lobby.defaultBadge') : lobby.code}
                     </Badge>
                   </div>
-                  <div className="type-caption mt-1 text-muted-foreground">
-                    {lobby.kind === 'default'
-                      ? t('lobby.defaultDescription')
-                      : formatAdminDate(lobby.createdAtClientIso, locale)}
-                  </div>
+                  {lobby.kind !== 'default' && (
+                    <div className="type-caption mt-1 text-muted-foreground">
+                      {formatAdminDate(lobby.createdAtClientIso, locale)}
+                    </div>
+                  )}
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -205,6 +202,7 @@ export function LobbyAdminPage() {
                 </div>
               </div>
             ))}
+            </div>
 
             {nextLobbyCursor && (
               <Button
@@ -230,8 +228,10 @@ export function LobbyAdminPage() {
             {selectedLobby && devices.length === 0 && !isLoading && (
               <p className="type-ui text-muted-foreground">{t('lobbyAdmin.noDevices')}</p>
             )}
+            {devices.length > 0 && (
+            <div className="grid divide-y">
             {devices.map((device) => (
-              <div key={device.deviceId} className="grid gap-1 rounded-lg border p-3">
+              <div key={device.deviceId} className="grid gap-1 py-3 first:pt-0 last:pb-0">
                 <div className="type-action">{device.deviceName}</div>
                 <code className="type-caption break-all text-muted-foreground">
                   {device.deviceId}
@@ -244,6 +244,8 @@ export function LobbyAdminPage() {
                 </div>
               </div>
             ))}
+            </div>
+            )}
             {nextDeviceCursor && selectedLobbyId && (
               <Button
                 disabled={isLoading}

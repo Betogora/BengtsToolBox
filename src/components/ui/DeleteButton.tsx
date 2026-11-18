@@ -4,21 +4,18 @@ import type * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-// Die zwei Mülleimer-Varianten der Toolbox: rot gefüllt für Zeilen,
-// dezent (grau, beim Hovern rot) für Kopfzeilen und Verwaltungslisten.
+// Löschen ist im Ruhezustand ein ruhiger Icon-Button; Rot erscheint erst im Bestätigen.
 export function DeleteButton({
   className,
-  tone = 'solid',
   ...props
 }: Omit<React.ComponentProps<'button'>, 'children'> & {
   'aria-label': string
-  tone?: 'solid' | 'quiet'
 }) {
   return (
     <Button
       size="icon"
-      variant={tone === 'solid' ? 'destructive' : 'ghost'}
-      className={cn(tone === 'quiet' && 'hover:text-destructive', className)}
+      variant="ghost"
+      className={cn('text-subtle-foreground hover:bg-destructive-soft hover:text-destructive', className)}
       {...props}
     >
       <Trash2 aria-hidden="true" />

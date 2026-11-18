@@ -25,7 +25,8 @@ import type {
   ProgressDrinkIcon,
   ProgressPlayer,
 } from '@/apps/progress-dashboard/types'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
+import { BottomActionBar } from '@/apps/shared/components/BottomActionBar'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
@@ -36,10 +37,9 @@ import { DisclosureIndicator } from '@/components/ui/disclosure'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
@@ -251,37 +251,38 @@ export function ProgressDashboardPage() {
 
   return (
     <AppPage width="wide" className="pb-28 lg:pb-10">
-      <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <AppPageTitle Icon={ChartNoAxesCombined} title={appTitle} />
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <AppPageHeader
+        Icon={ChartNoAxesCombined}
+        title={appTitle}
+        status={
           <Tooltip
             disabled={!leaderStanding}
             side="bottom"
             title={leaderStanding ? tooltipText.standing(leaderStanding) : ''}
             description={leaderStanding && tooltipText.lastEvent(leaderStanding)}
           >
-            <div
-              data-progress-leader
-              className="type-action inline-flex h-9 min-w-0 items-center gap-2 rounded-md border bg-card px-3 shadow-xs"
-            >
-              <Trophy aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            {/* Führung als Status-Text im Kopf, nicht als Button-Attrappe. */}
+            <span data-progress-leader className="inline-flex min-w-0 items-center gap-1.5">
+              <Trophy aria-hidden="true" className="size-3.5 shrink-0" />
               {shownLeader ? (
                 <>
                   <span className="sr-only">{t('progress.leader')}:</span>
                   <span
-                    className="size-2.5 shrink-0 rounded-full"
+                    className="size-2 shrink-0 rounded-full"
                     style={{ backgroundColor: shownLeader.player.color }}
                   />
-                  <span className="min-w-0 max-w-40 truncate">{shownLeader.player.name}</span>
-                  <span className="tabular-nums text-muted-foreground">
+                  <span className="min-w-0 max-w-40 truncate text-foreground">{shownLeader.player.name}</span>
+                  <span className="font-[650] tabular-nums text-foreground">
                     {formatNumber(shownLeader.score)}
                   </span>
                 </>
               ) : (
-                <span className="text-muted-foreground">{t('progress.leader')}: –</span>
+                <span>{t('progress.leader')}: –</span>
               )}
-            </div>
+            </span>
           </Tooltip>
+        }
+        actions={
           <PresenterLauncher
             appTitle={appTitle}
             views={[
@@ -303,16 +304,13 @@ export function ProgressDashboardPage() {
               },
             ]}
           />
-        </div>
-      </section>
+        }
+      />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
@@ -337,7 +335,7 @@ export function ProgressDashboardPage() {
           </div>
           <Card className="gap-0 py-0">
             {rankedPlayerScores.length === 0 ? (
-              <EmptyState className="m-3">{t('progress.emptyPlayers')}</EmptyState>
+              <EmptyState className="px-4 py-3">{t('progress.emptyPlayers')}</EmptyState>
             ) : (
               <ol aria-labelledby="progress-top-list-title" className="divide-y">
                 {rankedPlayerScores.map(({ player, rank, score }) => {
@@ -360,7 +358,7 @@ export function ProgressDashboardPage() {
                       }
                     >
                       <li className="grid min-h-14 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 px-3">
-                        <span className={cn(getPodiumRankClass(score > 0 ? rank : 0), 'type-action size-8')}>
+                        <span className={cn(getPodiumRankClass(score > 0 ? rank : 0), 'type-label size-7 font-[650]')}>
                           {rank}
                         </span>
                         <span className="flex min-w-0 items-center gap-2">
@@ -479,7 +477,7 @@ export function ProgressDashboardPage() {
             <span className="type-action">{t('common.oldDatasets')}</span>
           </h2>
         </CardHeader>
-        <CardContent className="grid gap-3">
+        <CardContent className="grid divide-y">
           {archivedDatasets.length === 0 ? (
             <EmptyState>
               {t('progress.oldDatasetsEmpty')}
@@ -503,9 +501,7 @@ export function ProgressDashboardPage() {
       </Card>
 
       {/* Mobil und auf dem Tablet sitzt der zentrale Eintragen-Knopf am unteren Rand. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
-        <div className="mx-auto max-w-xl">{entryButton()}</div>
-      </div>
+      <BottomActionBar className="lg:hidden">{entryButton()}</BottomActionBar>
 
       <ProgressEntryDialog
         key={entry.key}

@@ -64,9 +64,10 @@ test('Kostümwettbewerb: Spielleitung führt Schreibweisen zusammen, wertet aus 
   await page.getByRole('button', { name: 'Zwischenstand zeigen' }).click()
   await expect(heinz).toContainText('wählt Franz')
   await page.getByRole('button', { name: 'Abstimmung beenden' }).click()
-  const winner = page.locator('[data-voting-winner]')
-  await expect(winner).toContainText('Gleichstand')
-  await expect(winner).toContainText('Franz & Heinz')
+  // Gleichstand an der Spitze: Beide Zeilen tragen Platz 1, ein eigenes Gewinner-Banner gibt es nicht.
+  await expect(page.locator('[data-voting-winner]')).toHaveCount(0)
+  await expect(page.locator('[data-voting-result="Franz"]').getByLabel('Platz 1')).toBeVisible()
+  await expect(page.locator('[data-voting-result="Heinz"]').getByLabel('Platz 1')).toBeVisible()
   await expect(page.locator('[data-voting-result="Heinz"]')).toContainText('Franz')
 
   await page.getByRole('button', { name: 'Neue Abstimmung', exact: true }).click()

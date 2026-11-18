@@ -104,6 +104,8 @@ Alle App-Seiten werden lazy geladen. Das Dashboard stößt das Vorladen einer Ap
 - Tastaturfokus verwendet eine klare Kontur. Dialog-Schließen besitzt 44 px Bedienfläche mobil und 36 px ab 640 px.
 - Globale Typografie verwendet Manrope Variable und semantische `type-*`-Rollen aus `src/styles/globals.css`; Feldlabels und kleine Hinweise teilen 12/16 px, Abschnitts- und Dialogtitel 20/24 px.
 - Oberflächen bleiben standardmäßig kompakt und verzichten auf erklärende Untertitel. Untertitel werden nur auf ausdrücklichen Produktwunsch oder für notwendige Status- und Fehlermeldungen ergänzt.
+- Gemeinsame App-Bausteine: Jede App beginnt mit `AppPageHeader` (Icon und Titel links, Aktionen rechts, mobil als Icon-Buttons; Status als Text, nie als Button-Attrappe). Hinweise, lokaler Modus und Sync-Fehler verwenden `Notice` (Icon und ein Satz auf weicher Tönung, ohne Rand), Ranglisten `RankRow`, Leerzustände `EmptyState` ohne Kasten. Die eine Primäraktion einer mobilen Ansicht kann `BottomActionBar` unten anheften.
+- Ein Rahmen pro Ebene: Innerhalb einer Karte gliedern Haarlinien, Abstand oder eine randlose Mulde; Tabellen und Listen tragen keinen eigenen Kasten. Löschen ist im Ruhezustand ein ruhiger Icon-Button, Rot erscheint erst in der Bestätigung. Kompakte Farbwähler sind runde Farbpunkte.
 
 ## 4. Persistenz- und Synchronisationsvertrag
 

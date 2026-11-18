@@ -99,6 +99,8 @@ export const en: Record<TranslationKey, string> = {
   'common.latestResults': 'Latest results',
   'common.loadingApp': 'Loading {app}...',
   'common.loading': 'Loading...',
+  'common.localModeTitle': 'Local mode:',
+  'common.rank': 'Rank {rank}',
   'common.next': 'Next',
   'common.noTeam': 'No team',
   'common.oldDatasets': 'Old datasets',
@@ -158,6 +160,8 @@ export const en: Record<TranslationKey, string> = {
   'decisionWheel.history.resetTitle': 'Reset history?',
   'decisionWheel.option.colorAria': 'Choose color for {option}',
   'decisionWheel.option.deleteAria': 'Delete {option}',
+  'decisionWheel.option.deleteDescription': '{option} will be removed from the wheel.',
+  'decisionWheel.option.deleteTitle': 'Delete option?',
   'decisionWheel.option.textAria': 'Text for option {number}',
   'decisionWheel.options': 'Options',
   'decisionWheel.options.resetDescription':
@@ -200,8 +204,7 @@ export const en: Record<TranslationKey, string> = {
     'Previous results will be deleted. The current round is kept.',
   'liveBuzzer.history.resetTitle': 'Reset round history?',
   'liveBuzzer.overview': 'Player overview',
-  'liveBuzzer.localMode':
-    'Local mode: multiple devices sync only once Firebase is available.',
+  'liveBuzzer.localMode': 'Other devices cannot buzz in yet.',
   'liveBuzzer.memberCount': '{count} members',
   'liveBuzzer.playerRemoved': 'Player was removed.',
   'liveBuzzer.presenter.liveView': 'Live view',
@@ -255,8 +258,8 @@ export const en: Record<TranslationKey, string> = {
   'lobby.notFoundDescription': 'The lobby was deleted or the link is invalid.',
   'lobby.back': 'Back to lobbies',
   'lobby.firebaseRequiredTitle': 'Firebase required',
-  'lobby.firebaseRequired':
-    'Central lobbies are unavailable without Firebase configuration. The global apps continue to work locally.',
+  'lobby.defaultBadge': 'Default',
+  'lobby.firebaseRequired': 'Lobbies are unavailable; your apps keep running on this device.',
   'lobby.createTitle': 'Create a new lobby',
   'lobby.name': 'Lobby name',
   'lobby.deviceName': 'Device name',
@@ -271,8 +274,6 @@ export const en: Record<TranslationKey, string> = {
   'lobby.tooltipDetail': 'Code {code} · since {date}',
   'lobby.sharedState': 'Shared lobby state',
   'lobbyAdmin.title': 'Lobby admin',
-  'lobbyAdmin.unlockDescription':
-    'The simple PIN prevents accidental access and lasts only while this page stays open.',
   'lobbyAdmin.pin': 'Admin PIN',
   'lobbyAdmin.unlock': 'Unlock',
   'lobbyAdmin.pinError': 'The PIN is incorrect.',
@@ -300,7 +301,6 @@ export const en: Record<TranslationKey, string> = {
   'nextQuestion.loadErrorDescription':
     'Check the connection and try again.',
   'nextQuestion.loadErrorTitle': 'Questions could not be loaded',
-  'nextQuestion.loadingDescription': 'The question catalog is being prepared.',
   'nextQuestion.loadingTitle': 'Loading questions',
   'nextQuestion.next': 'Next question',
   'nextQuestion.previous': 'Back',
@@ -511,7 +511,7 @@ export const en: Record<TranslationKey, string> = {
   'swiss.firstRoundHint':
     'Create the first round once players have been added.',
   'swiss.fix': 'Fix',
-  'swiss.fixed': 'FIXED',
+  'swiss.fixed': 'Fixed',
   'swiss.fixedPairingRemoveAria': 'Remove fixed pairing {white} against {black}',
   'swiss.format.handAndBrain': 'Hand and Brain',
   'swiss.format.label': 'Tournament mode',
@@ -525,72 +525,71 @@ export const en: Record<TranslationKey, string> = {
   'swiss.hardship.handAndBrain': 'Hardship',
   'swiss.hardship.marioKart': 'Races',
   'swiss.hints': 'Hints',
-  'swiss.warning.byeCycleRestarted.label': 'BYE',
+  'swiss.warning.byeCycleRestarted.label': 'Bye',
   'swiss.warning.byeCycleRestarted.title':
     'All active players had already received the same number of byes.',
-  'swiss.warning.colorImbalance.label': 'COLOR',
+  'swiss.warning.colorImbalance.label': 'Color',
   'swiss.warning.colorImbalance.title':
     'A player would receive too large a color imbalance.',
-  'swiss.warning.duplicateRoundPlayer.label': 'DUPLICATE',
+  'swiss.warning.duplicateRoundPlayer.label': 'Duplicate',
   'swiss.warning.duplicateRoundPlayer.title':
     'A player or driver is assigned more than once.',
-  'swiss.warning.fallbackHard.label': 'STOP',
+  'swiss.warning.fallbackHard.label': 'Stop',
   'swiss.warning.fallbackHard.title':
     'Unknown hard conflict in this pairing.',
-  'swiss.warning.fallbackSoft.label': 'HINT',
+  'swiss.warning.fallbackSoft.label': 'Hint',
   'swiss.warning.fallbackSoft.title':
     'Unknown soft hint for this pairing.',
-  'swiss.warning.forcedFloater.label': 'FLOATER',
+  'swiss.warning.forcedFloater.label': 'Floater',
   'swiss.warning.forcedFloater.title':
     'This pairing connects different score groups.',
-  'swiss.warning.inactivePlayer.label': 'INACTIVE',
+  'swiss.warning.inactivePlayer.label': 'Inactive',
   'swiss.warning.inactivePlayer.title':
     'An assigned player is not active in this round.',
-  'swiss.warning.largePointGap.label': 'GAP',
+  'swiss.warning.largePointGap.label': 'Gap',
   'swiss.warning.largePointGap.title':
     'The point difference is unusually high.',
-  'swiss.warning.marioKartByeExtra.label': 'EXTRA',
+  'swiss.warning.marioKartByeExtra.label': 'Extra',
   'swiss.warning.marioKartByeExtra.title':
     'This bye contains an optional extra ride without scoring.',
-  'swiss.warning.marioKartFillIn.label': 'FILLER',
+  'swiss.warning.marioKartFillIn.label': 'Filler',
   'swiss.warning.marioKartFillIn.title':
     'This driver fills the lobby; as a filler, the entered result counts for the standings.',
   'swiss.warning.marioKartExtra.title':
     'The result can be entered, but it does not count while this driver is marked EXTRA.',
-  'swiss.warning.marioKartScoreGap.label': 'GAP',
+  'swiss.warning.marioKartScoreGap.label': 'Gap',
   'swiss.warning.marioKartScoreGap.title':
     'The tournament-score gap in this lobby is unusually high.',
   'swiss.warning.marioKartThreePlayerLobby.label': '3P',
   'swiss.warning.marioKartThreePlayerLobby.title':
     'This lobby has only three scoring drivers.',
-  'swiss.warning.missingPlayer.label': 'MISSING',
+  'swiss.warning.missingPlayer.label': 'Missing',
   'swiss.warning.missingPlayer.title':
     'This pairing or lobby is incomplete.',
-  'swiss.warning.multipleByes.label': 'BYE',
+  'swiss.warning.multipleByes.label': 'Bye',
   'swiss.warning.multipleByes.title':
     'A player has already received a bye.',
-  'swiss.warning.nonFideFallback.label': 'FALLBACK',
+  'swiss.warning.nonFideFallback.label': 'Fallback',
   'swiss.warning.nonFideFallback.title':
     'This pairing is only possible as a club fallback.',
-  'swiss.warning.repeatHandBrainPartner.label': 'DUO',
+  'swiss.warning.repeatHandBrainPartner.label': 'Duo',
   'swiss.warning.repeatHandBrainPartner.title':
     'These players were already on the same side.',
-  'swiss.warning.repeatHandBrainRoles.label': 'ROLE',
+  'swiss.warning.repeatHandBrainRoles.label': 'Role',
   'swiss.warning.repeatHandBrainRoles.title':
     'This duo already had the same hand/brain split.',
-  'swiss.warning.repeatHandBrainTeam.label': 'TEAM',
+  'swiss.warning.repeatHandBrainTeam.label': 'Team',
   'swiss.warning.repeatHandBrainTeam.title':
     'This team-versus-team constellation already happened.',
-  'swiss.warning.repeatPairing.label': 'REPEAT',
+  'swiss.warning.repeatPairing.label': 'Repeat',
   'swiss.warning.repeatPairing.title':
     'These players have already played against each other.',
-  'swiss.warning.samePlayer.label': 'PLAYER',
+  'swiss.warning.samePlayer.label': 'Player',
   'swiss.warning.samePlayer.title':
     'A player cannot play against themselves.',
-  'swiss.warning.thirdColor.label': 'COLOR',
+  'swiss.warning.thirdColor.label': 'Color',
   'swiss.warning.thirdColor.title':
     'A player would receive the same color for the third time in a row.',
-  'swiss.loadingDescription': 'Saved tournaments are syncing.',
   'swiss.loadingTitle': 'Loading data',
   'swiss.manualPairingFixed': 'Manual pairing fixed.',
   'swiss.managePlayers': 'Manage players',
@@ -633,7 +632,6 @@ export const en: Record<TranslationKey, string> = {
   'swiss.newPlayerRatingAria': 'New player rating',
   'swiss.newLobby': 'New lobby',
   'swiss.newRound': 'New round',
-  'swiss.noActiveDescription': 'Create a new tournament in the dialog.',
   'swiss.noActiveTitle': 'No active tournament',
   'swiss.noLobbyCreated': 'No lobby created yet.',
   'swiss.noRoundCreated': 'No round created yet.',
@@ -757,7 +755,6 @@ export const en: Record<TranslationKey, string> = {
   'triathlon.records.limits.swim': "Longer distances: extrapolation. Power law: 3 different anchors.",
   'triathlon.records.limits.bike': "CP ≠ FTP; watts ≠ km/h. Time model requires comparable riding conditions.",
   'triathlon.form.durationClock': 'Duration (m:ss / h:mm:ss)',
-  'triathlon.form.metricsDerived': 'Enter two values; the rest is calculated.',
   'triathlon.form.metricsFromIntervals': 'Calculated from the intervals.',
   'triathlon.journal.benchmarksOnly': 'Maximal tests only',
   'triathlon.journal.benchmark': 'Maximal test',
@@ -772,6 +769,7 @@ export const en: Record<TranslationKey, string> = {
   'triathlon.calendar.plannedOnly': 'Training plan',
   'triathlon.calendar.weekSummary': 'Week summary',
   'triathlon.calendar.duplicate': 'Copy workout',
+  'triathlon.calendar.moreActions': 'More actions',
   'triathlon.calendar.plan': 'Plan',
   'triathlon.calendar.jumpTo': 'Go to date',
   'triathlon.journal.title': 'Completed workouts',
@@ -1086,7 +1084,6 @@ export const en: Record<TranslationKey, string> = {
   'voting.result.hidden': 'The result appears as soon as voting has ended.',
   'voting.result.interim': 'Interim results',
   'voting.result.pending': 'Result',
-  'voting.result.rank': 'Rank {rank}',
   'voting.result.ranking': 'Ranking',
   'voting.result.tie': 'Tie',
   'voting.result.title': 'Result',
@@ -1121,7 +1118,6 @@ export const en: Record<TranslationKey, string> = {
   'codenames.wordlist.duett': 'Duet',
   'codenames.wordlist.all': 'All cards',
   'codenames.setupTitle': 'New game',
-  'codenames.setupInfo': '25 random German words. The randomly drawn starting team gets 9 cards.',
   'codenames.placeholderBadge': 'Placeholder',
   'codenames.hintLoading': 'Thinking of a clue for {team} …',
   'codenames.hintWaiting': '{team} is waiting for the clue.',

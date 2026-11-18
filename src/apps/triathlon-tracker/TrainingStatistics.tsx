@@ -41,6 +41,7 @@ import { IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Select, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { useI18n } from '@/lib/i18n'
 import { formatTrainingDuration } from './presentation'
+import { StatBand, StatBandItem } from './components'
 const TrainingCharts = lazy(() => import('./TrainingCharts'))
 
 type I18n = ReturnType<typeof useI18n>
@@ -610,7 +611,7 @@ function TrainingStatistics({
   )
 
   const rangeSummary = (
-    <dl className="grid grid-cols-3 divide-x rounded-lg border bg-card py-3">
+    <StatBand className="grid-cols-3">
       {[
         [
           t('triathlon.charts.totalTime'),
@@ -622,14 +623,11 @@ function TrainingStatistics({
           weeklyStats.filter((week) => week.totalTrainingCount > 0).length,
         ],
       ].map(([label, value]) => (
-        <div className="min-w-0 px-3 sm:px-4" key={label}>
-          <dt className="tri-stat-label text-muted-foreground">
-            {label}
-          </dt>
-          <dd className="mt-0.5 text-xl font-[650] tabular-nums">{value}</dd>
-        </div>
+        <StatBandItem key={label} label={label}>
+          {value}
+        </StatBandItem>
       ))}
-    </dl>
+    </StatBand>
   )
   const performanceControls = (
     <div className="grid gap-3 sm:grid-cols-3">

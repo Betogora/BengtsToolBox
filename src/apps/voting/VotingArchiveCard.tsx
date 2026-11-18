@@ -30,9 +30,9 @@ export function VotingArchiveCard({
   const archivedAt = round.archivedAtClientIso ? new Date(round.archivedAtClientIso) : null
 
   return (
-    <div className="rounded-lg border" data-voting-archive={round.title}>
+    <div className="py-2 first:pt-0 last:pb-0" data-voting-archive={round.title}>
       {/* Die ganze Kopfzeile klappt auf; Name und Löschen liegen als eigene Ziele darüber. */}
-      <div className="relative flex items-center gap-1 py-2 pr-2 pl-3">
+      <div className="relative flex items-center gap-1">
         <button
           type="button"
           className="absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
@@ -89,16 +89,16 @@ export function VotingArchiveCard({
               description={t('voting.archive.deleteDescription')}
               onConfirm={() => onDelete(round.id)}
               trigger={
-                <DeleteButton tone="quiet" className="size-11 sm:size-9" aria-label={t('common.archive.delete')} />
+                <DeleteButton className="size-11 sm:size-9" aria-label={t('common.archive.delete')} />
               }
             />
           </div>
         )}
       </div>
       {isOpen && (
-        <div className="border-t p-3 sm:p-4">
+        <div className="pt-3">
           {round.results.length === 0 ? (
-            <EmptyState className="p-4">{t('voting.archive.empty')}</EmptyState>
+            <EmptyState>{t('voting.archive.empty')}</EmptyState>
           ) : (
             <VotingResultList
               ballotCount={round.ballotCount}

@@ -13,7 +13,7 @@ import {
 
 import { useNextQuestion } from '@/apps/next-question/hooks/useNextQuestion'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
@@ -111,17 +112,12 @@ export function NextQuestionPage() {
 
   return (
     <AppPage>
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={StepForward} title={t('app.nextQuestion.title')} />
-      </section>
+      <AppPageHeader Icon={StepForward} title={t('app.nextQuestion.title')} />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <Card aria-busy={isCatalogLoading} className="overflow-hidden">
@@ -136,9 +132,6 @@ export function NextQuestionPage() {
               className="size-8 animate-spin text-primary"
             />
             <CardTitle>{t('nextQuestion.loadingTitle')}</CardTitle>
-            <CardDescription>
-              {t('nextQuestion.loadingDescription')}
-            </CardDescription>
           </CardHeader>
         ) : catalogError ? (
           <CardHeader
@@ -225,10 +218,8 @@ export function NextQuestionPage() {
                   <div
                     aria-live="polite"
                     className={cn(
-                      'min-h-24 rounded-md border border-dashed bg-background px-5 py-4 sm:px-6 sm:py-5',
-                      isAnswerVisible
-                        ? 'border-primary/40 bg-secondary/55'
-                        : 'text-muted-foreground',
+                      'min-h-24 rounded-md px-5 py-4 sm:px-6 sm:py-5',
+                      isAnswerVisible ? 'bg-primary-soft' : 'bg-muted text-muted-foreground',
                     )}
                   >
                     {isAnswerVisible ? (
@@ -251,7 +242,7 @@ export function NextQuestionPage() {
               </div>
             </section>
           ) : (
-            <EmptyState className="mx-auto w-full max-w-3xl p-8">
+            <EmptyState className="mx-auto w-full max-w-3xl py-8 text-center">
               {t('nextQuestion.empty')}
             </EmptyState>
           )}

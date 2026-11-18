@@ -25,7 +25,7 @@ import { SushiScoreCard } from '@/apps/territory-map/SushiScoreCard'
 import { getSushiScores } from '@/apps/territory-map/sushiScores'
 import { TerritoryMapCanvas } from '@/apps/territory-map/TerritoryMapCanvas'
 import { TerritoryMapPresenter } from '@/apps/territory-map/TerritoryMapPresenter'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -40,10 +40,8 @@ import type {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { useI18n } from '@/lib/i18n'
 import { dateTimeFormat } from '@/lib/i18n/formatters'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
@@ -194,40 +192,38 @@ export function TerritoryMapPage() {
   )
 
   return (
-    <AppPage className="gap-5 py-6 lg:py-6" width="wide">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <AppPageTitle Icon={UtensilsCrossed} title={appTitle} />
-        </div>
-        <PresenterLauncher
-          appTitle={appTitle}
-          views={[
-            {
-              id: 'map',
-              label: t('territory.map'),
-              Icon: MapPinned,
-              render: () => (
-                <TerritoryMapPresenter
-                  activeMap={state.activeMap}
-                  claims={currentClaims}
-                  isMapLoading={isMapLoading}
-                  players={players}
-                  sushiScores={sushiScores}
-                  territories={territories}
-                />
-              ),
-            },
-          ]}
-        />
-      </section>
+    <AppPage width="wide">
+      <AppPageHeader
+        Icon={UtensilsCrossed}
+        title={appTitle}
+        actions={
+          <PresenterLauncher
+            appTitle={appTitle}
+            views={[
+              {
+                id: 'map',
+                label: t('territory.map'),
+                Icon: MapPinned,
+                render: () => (
+                  <TerritoryMapPresenter
+                    activeMap={state.activeMap}
+                    claims={currentClaims}
+                    isMapLoading={isMapLoading}
+                    players={players}
+                    sushiScores={sushiScores}
+                    territories={territories}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <section className="grid gap-4">

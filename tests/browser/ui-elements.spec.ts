@@ -29,7 +29,7 @@ test('Katalog läuft direkt als Datei mit eingebetteten Demos @desktop', { tag: 
   await demo(page, 'AppResetButton').getByRole('button').click()
   await expect(demo(page, 'AppResetButton').getByRole('button')).toHaveText('Halten zum Zurücksetzen')
   await expect(page.locator('[data-demo]:empty')).toHaveCount(0)
-  await expect(page.locator('[data-icon-name] svg')).toHaveCount(93)
+  await expect(page.locator('[data-icon-name] svg')).toHaveCount(99)
   for (const image of await page.locator('img').all()) {
     expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0)
   }
@@ -38,7 +38,7 @@ test('Katalog läuft direkt als Datei mit eingebetteten Demos @desktop', { tag: 
 test('Katalog zeigt Grundbausteine und Rückmeldungen @desktop', async ({ page }) => {
   await expect(demo(page, 'Card-Familie').locator('[data-slot="card"]')).toBeVisible()
   await expect(demo(page, 'Table-Familie').getByRole('row')).toHaveCount(3)
-  await expect(page.locator('[data-icon-name] svg')).toHaveCount(93)
+  await expect(page.locator('[data-icon-name] svg')).toHaveCount(99)
 
   const invalidName = demo(page, 'Input').getByRole('textbox', { name: 'Name', exact: true })
   await expect(invalidName).toHaveAttribute('aria-invalid', 'true')

@@ -7,6 +7,7 @@ import type { ByeScore, InitialPlayerStatus, SeedingMode, Tournament, Tournament
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DeleteButton } from '@/components/ui/DeleteButton';
+import { Notice } from '@/components/ui/notice';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -373,7 +374,7 @@ function TournamentCreator({
 
           <div className="grid gap-2 md:gap-3">
             <form
-              className="border-t border-dashed bg-background px-2.5 py-2 sm:px-3"
+              className="rounded-md bg-muted p-3"
               onSubmit={(event) => {
                 event.preventDefault()
                 handleAddDraftPlayer()
@@ -412,18 +413,18 @@ function TournamentCreator({
               </div>
             </form>
 
-            <div className="grid gap-2 md:hidden">
-              <div className="type-field-label grid grid-cols-[minmax(0,1fr)_7rem] gap-2 px-2 text-muted-foreground">
+            <div className="grid divide-y md:hidden">
+              <div className="type-field-label grid grid-cols-[minmax(0,1fr)_7rem] gap-2 pb-2 text-muted-foreground">
                 <span>{t('common.name')}</span>
                 <span>{t('common.rating')}</span>
               </div>
               {players.map((player, index) => (
                 <div
                   key={player.id}
-                  className="grid gap-3 rounded-md border bg-card p-2.5 text-sm"
+                  className="grid gap-3 py-3 text-sm last:pb-0"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="type-caption flex h-6 min-w-7 items-center justify-center rounded-md border bg-secondary px-2 tabular-nums">
+                    <span className="type-caption flex h-6 min-w-7 items-center text-muted-foreground tabular-nums">
                       #{index + 1}
                     </span>
                     <Badge className="h-6" variant={statusVariant(player.status)}>
@@ -630,9 +631,7 @@ function TournamentCreator({
         </div>
 
         {createError && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {createError}
-          </div>
+          <Notice tone="danger">{createError}</Notice>
         )}
 
         <Button

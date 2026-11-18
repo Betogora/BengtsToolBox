@@ -48,12 +48,17 @@ test('Globaler Farbkreis zeigt live an und speichert direkte Änderungen', async
   await expect.poll(() => colorPickerFrames.count()).toBeGreaterThan(1)
 
   const picker = colorPickerFrames.first()
-  const framePaddings = await colorPickerFrames.evaluateAll((frames) =>
-    frames.map((frame) => getComputedStyle(frame).paddingTop),
+  // Alle kompakten Farbwähler sind runde Farbpunkte gleicher Form.
+  const swatchesAreRound = await colorPickerFrames.evaluateAll((frames) =>
+    frames.map((frame) => {
+      const dot = frame.querySelector('span[aria-hidden="true"]')
+      if (!dot) return false
+      return parseFloat(getComputedStyle(dot).borderRadius) >= dot.getBoundingClientRect().width / 2
+    }),
   )
 
-  expect(framePaddings.length).toBeGreaterThan(1)
-  expect([...new Set(framePaddings)]).toEqual(['2px'])
+  expect(swatchesAreRound.length).toBeGreaterThan(1)
+  expect([...new Set(swatchesAreRound)]).toEqual([true])
 
   const storedValues = () =>
     page.evaluate(() =>

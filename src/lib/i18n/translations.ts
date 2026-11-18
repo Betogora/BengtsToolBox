@@ -97,6 +97,8 @@ export const de = {
   'common.latestResults': 'Letzte Ergebnisse',
   'common.loadingApp': 'Lade {app}...',
   'common.loading': 'Laden...',
+  'common.localModeTitle': 'Lokaler Modus:',
+  'common.rank': 'Platz {rank}',
   'common.next': 'Weiter',
   'common.noTeam': 'Kein Team',
   'common.oldDatasets': 'Alte Datensätze',
@@ -157,6 +159,8 @@ export const de = {
   'decisionWheel.history.resetTitle': 'Verlauf zurücksetzen?',
   'decisionWheel.option.colorAria': '{option} Farbe wählen',
   'decisionWheel.option.deleteAria': '{option} löschen',
+  'decisionWheel.option.deleteDescription': '{option} wird aus dem Rad entfernt.',
+  'decisionWheel.option.deleteTitle': 'Option löschen?',
   'decisionWheel.option.textAria': 'Text von Option {number}',
   'decisionWheel.options': 'Optionen',
   'decisionWheel.options.resetDescription':
@@ -199,8 +203,7 @@ export const de = {
     'Vergangene Ergebnisse werden gelöscht. Die aktuelle Runde bleibt erhalten.',
   'liveBuzzer.history.resetTitle': 'Rundenhistorie zurücksetzen?',
   'liveBuzzer.overview': 'Spielerübersicht',
-  'liveBuzzer.localMode':
-    'Lokaler Modus: mehrere Geräte werden erst mit Firebase synchronisiert.',
+  'liveBuzzer.localMode': 'Andere Geräte können noch nicht mitbuzzern.',
   'liveBuzzer.memberCount': '{count} Mitglieder',
   'liveBuzzer.playerRemoved': 'Spieler wurde entfernt.',
   'liveBuzzer.presenter.liveView': 'Live-Ansicht',
@@ -254,8 +257,8 @@ export const de = {
   'lobby.notFoundDescription': 'Die Lobby wurde gelöscht oder der Link ist nicht gültig.',
   'lobby.back': 'Zu den Lobbys',
   'lobby.firebaseRequiredTitle': 'Firebase erforderlich',
-  'lobby.firebaseRequired':
-    'Zentrale Lobbys sind ohne Firebase-Konfiguration nicht verfügbar. Die globale App-Nutzung arbeitet weiterhin lokal.',
+  'lobby.defaultBadge': 'Standard',
+  'lobby.firebaseRequired': 'Lobbys sind nicht verfügbar, deine Apps laufen auf diesem Gerät weiter.',
   'lobby.createTitle': 'Neue Lobby erstellen',
   'lobby.name': 'Lobbyname',
   'lobby.deviceName': 'Gerätename',
@@ -270,8 +273,6 @@ export const de = {
   'lobby.tooltipDetail': 'Code {code} · seit {date}',
   'lobby.sharedState': 'Gemeinsamer Lobby-Zustand',
   'lobbyAdmin.title': 'Lobby-Verwaltung',
-  'lobbyAdmin.unlockDescription':
-    'Der einfache PIN schützt vor versehentlichem Zugriff und gilt nur für diese geöffnete Seite.',
   'lobbyAdmin.pin': 'Admin-PIN',
   'lobbyAdmin.unlock': 'Freischalten',
   'lobbyAdmin.pinError': 'Der PIN ist nicht korrekt.',
@@ -299,7 +300,6 @@ export const de = {
   'nextQuestion.loadErrorDescription':
     'Prüfe die Verbindung und versuche es erneut.',
   'nextQuestion.loadErrorTitle': 'Fragen konnten nicht geladen werden',
-  'nextQuestion.loadingDescription': 'Der Fragenkatalog wird vorbereitet.',
   'nextQuestion.loadingTitle': 'Fragen werden geladen',
   'nextQuestion.next': 'Nächste Frage',
   'nextQuestion.previous': 'Zurück',
@@ -512,7 +512,7 @@ export const de = {
   'swiss.firstRoundHint':
     'Erzeuge die erste Runde, sobald Spieler angelegt sind.',
   'swiss.fix': 'Fixieren',
-  'swiss.fixed': 'FIXIERT',
+  'swiss.fixed': 'Fixiert',
   'swiss.fixedPairingRemoveAria': 'Fixierte Paarung {white} gegen {black} lösen',
   'swiss.format.handAndBrain': 'Hand and Brain',
   'swiss.format.label': 'Turniermodus',
@@ -526,72 +526,71 @@ export const de = {
   'swiss.hardship.handAndBrain': 'Pech',
   'swiss.hardship.marioKart': 'Rennen',
   'swiss.hints': 'Hinweise',
-  'swiss.warning.byeCycleRestarted.label': 'BYE',
+  'swiss.warning.byeCycleRestarted.label': 'Bye',
   'swiss.warning.byeCycleRestarted.title':
     'Alle aktiven Spieler hatten bereits gleich viele Byes.',
-  'swiss.warning.colorImbalance.label': 'FARBE',
+  'swiss.warning.colorImbalance.label': 'Farbe',
   'swiss.warning.colorImbalance.title':
     'Die Farbbilanz eines Spielers würde zu stark kippen.',
-  'swiss.warning.duplicateRoundPlayer.label': 'DOPPELT',
+  'swiss.warning.duplicateRoundPlayer.label': 'Doppelt',
   'swiss.warning.duplicateRoundPlayer.title':
     'Ein Spieler oder Fahrer ist mehrfach eingeteilt.',
-  'swiss.warning.fallbackHard.label': 'STOPP',
+  'swiss.warning.fallbackHard.label': 'Stopp',
   'swiss.warning.fallbackHard.title':
     'Unbekannter harter Konflikt in dieser Paarung.',
-  'swiss.warning.fallbackSoft.label': 'HINWEIS',
+  'swiss.warning.fallbackSoft.label': 'Hinweis',
   'swiss.warning.fallbackSoft.title':
     'Unbekannter weicher Hinweis zu dieser Paarung.',
-  'swiss.warning.forcedFloater.label': 'FLOATER',
+  'swiss.warning.forcedFloater.label': 'Floater',
   'swiss.warning.forcedFloater.title':
     'Diese Paarung verbindet unterschiedliche Scoregroups.',
-  'swiss.warning.inactivePlayer.label': 'INAKTIV',
+  'swiss.warning.inactivePlayer.label': 'Inaktiv',
   'swiss.warning.inactivePlayer.title':
     'Ein eingeteilter Spieler ist in dieser Runde nicht aktiv.',
-  'swiss.warning.largePointGap.label': 'ABSTAND',
+  'swiss.warning.largePointGap.label': 'Abstand',
   'swiss.warning.largePointGap.title':
     'Die Punktdifferenz ist ungewöhnlich hoch.',
-  'swiss.warning.marioKartByeExtra.label': 'EXTRA',
+  'swiss.warning.marioKartByeExtra.label': 'Extra',
   'swiss.warning.marioKartByeExtra.title':
     'Dieses Bye enthält eine optionale Extra-Fahrt ohne Wertung.',
-  'swiss.warning.marioKartFillIn.label': 'FÜLLER',
+  'swiss.warning.marioKartFillIn.label': 'Füller',
   'swiss.warning.marioKartFillIn.title':
     'Dieser Fahrer füllt die Lobby auf; als Füller zählt sein eingetragenes Ergebnis für die Wertung.',
   'swiss.warning.marioKartExtra.title':
     'Das Ergebnis kann erfasst werden, zählt aber nicht, solange dieser Fahrer als EXTRA markiert ist.',
-  'swiss.warning.marioKartScoreGap.label': 'ABSTAND',
+  'swiss.warning.marioKartScoreGap.label': 'Abstand',
   'swiss.warning.marioKartScoreGap.title':
     'Der Turnierpunkte-Abstand dieser Lobby ist ungewöhnlich hoch.',
-  'swiss.warning.marioKartThreePlayerLobby.label': '3ER',
+  'swiss.warning.marioKartThreePlayerLobby.label': '3er',
   'swiss.warning.marioKartThreePlayerLobby.title':
     'Diese Lobby hat nur drei zählende Fahrer.',
-  'swiss.warning.missingPlayer.label': 'FEHLT',
+  'swiss.warning.missingPlayer.label': 'Fehlt',
   'swiss.warning.missingPlayer.title':
     'Diese Paarung oder Lobby ist unvollständig.',
-  'swiss.warning.multipleByes.label': 'BYE',
+  'swiss.warning.multipleByes.label': 'Bye',
   'swiss.warning.multipleByes.title':
     'Ein Spieler hat bereits ein Bye erhalten.',
-  'swiss.warning.nonFideFallback.label': 'FALLBACK',
+  'swiss.warning.nonFideFallback.label': 'Fallback',
   'swiss.warning.nonFideFallback.title':
     'Diese Paarung ist nur als Vereins-Fallback möglich.',
-  'swiss.warning.repeatHandBrainPartner.label': 'DUO',
+  'swiss.warning.repeatHandBrainPartner.label': 'Duo',
   'swiss.warning.repeatHandBrainPartner.title':
     'Diese Spieler waren bereits auf derselben Seite.',
-  'swiss.warning.repeatHandBrainRoles.label': 'ROLLE',
+  'swiss.warning.repeatHandBrainRoles.label': 'Rolle',
   'swiss.warning.repeatHandBrainRoles.title':
     'Dieses Duo hatte bereits dieselbe Hand/Brain-Verteilung.',
-  'swiss.warning.repeatHandBrainTeam.label': 'TEAM',
+  'swiss.warning.repeatHandBrainTeam.label': 'Team',
   'swiss.warning.repeatHandBrainTeam.title':
     'Diese Team-gegen-Team-Konstellation gab es bereits.',
-  'swiss.warning.repeatPairing.label': 'REPEAT',
+  'swiss.warning.repeatPairing.label': 'Repeat',
   'swiss.warning.repeatPairing.title':
     'Diese Spieler haben bereits gegeneinander gespielt.',
-  'swiss.warning.samePlayer.label': 'SPIELER',
+  'swiss.warning.samePlayer.label': 'Spieler',
   'swiss.warning.samePlayer.title':
     'Ein Spieler kann nicht gegen sich selbst spielen.',
-  'swiss.warning.thirdColor.label': 'FARBE',
+  'swiss.warning.thirdColor.label': 'Farbe',
   'swiss.warning.thirdColor.title':
     'Ein Spieler würde zum dritten Mal in Folge dieselbe Farbe erhalten.',
-  'swiss.loadingDescription': 'Gespeicherte Turniere werden synchronisiert.',
   'swiss.loadingTitle': 'Daten werden geladen',
   'swiss.manualPairingFixed': 'Manuelle Paarung fixiert.',
   'swiss.managePlayers': 'Spieler verwalten',
@@ -634,7 +633,6 @@ export const de = {
   'swiss.newPlayerRatingAria': 'Neues Spielerrating',
   'swiss.newLobby': 'Neue Lobby',
   'swiss.newRound': 'Neue Runde',
-  'swiss.noActiveDescription': 'Lege ein neues Turnier im Dialog an.',
   'swiss.noActiveTitle': 'Kein aktives Turnier',
   'swiss.noLobbyCreated': 'Noch keine Lobby erzeugt.',
   'swiss.noRoundCreated': 'Noch keine Runde erzeugt.',
@@ -759,7 +757,6 @@ export const de = {
   'triathlon.records.limits.swim': "Längere Distanzen: Extrapolation. Potenzmodell: 3 verschiedene Anker.",
   'triathlon.records.limits.bike': "CP ≠ FTP; Watt ≠ km/h. Zeitmodell nur bei vergleichbaren Fahrbedingungen.",
   'triathlon.form.durationClock': 'Dauer (m:ss / h:mm:ss)',
-  'triathlon.form.metricsDerived': 'Zwei Werte eingeben, der Rest wird berechnet.',
   'triathlon.form.metricsFromIntervals': 'Ergibt sich aus den Intervallen.',
   'triathlon.journal.benchmarksOnly': 'Nur Maximaltests',
   'triathlon.journal.benchmark': 'Maximaltest',
@@ -774,6 +771,7 @@ export const de = {
   'triathlon.calendar.plannedOnly': 'Trainingsplan',
   'triathlon.calendar.weekSummary': 'Wochensumme',
   'triathlon.calendar.duplicate': 'Einheit kopieren',
+  'triathlon.calendar.moreActions': 'Weitere Aktionen',
   'triathlon.calendar.plan': 'Planen',
   'triathlon.calendar.jumpTo': 'Zum Datum',
   'triathlon.journal.title': 'Absolvierte Trainings',
@@ -1088,7 +1086,6 @@ export const de = {
   'voting.result.hidden': 'Das Ergebnis erscheint, sobald die Abstimmung beendet ist.',
   'voting.result.interim': 'Zwischenstand',
   'voting.result.pending': 'Ergebnis',
-  'voting.result.rank': 'Platz {rank}',
   'voting.result.ranking': 'Rangliste',
   'voting.result.tie': 'Gleichstand',
   'voting.result.title': 'Ergebnis',
@@ -1123,7 +1120,6 @@ export const de = {
   'codenames.wordlist.duett': 'Duett',
   'codenames.wordlist.all': 'Alle Karten',
   'codenames.setupTitle': 'Neues Spiel',
-  'codenames.setupInfo': '25 zufällige Begriffe. Das ausgeloste Startteam bekommt 9 Karten.',
   'codenames.placeholderBadge': 'Platzhalter',
   'codenames.hintLoading': 'Hinweis für {team} wird überlegt …',
   'codenames.hintWaiting': '{team} wartet auf den Hinweis.',

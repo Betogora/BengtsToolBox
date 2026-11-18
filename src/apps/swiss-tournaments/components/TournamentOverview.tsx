@@ -98,7 +98,7 @@ export function ArchivedTournamentsList({
 
   if (entries.length === 0) {
     return (
-      <EmptyState className="p-4 text-left">
+      <EmptyState>
         {t('swiss.archived.empty')}
       </EmptyState>
     )
@@ -106,11 +106,11 @@ export function ArchivedTournamentsList({
 
   return (
     <>
-      <div className="grid gap-2 md:hidden">
+      <div className="grid divide-y md:hidden">
         {entries.map((entry) => (
           <div
             key={entry.tournament.id}
-            className="grid gap-3 rounded-md border bg-background p-3 text-sm"
+            className="grid gap-3 py-3 text-sm first:pt-0 last:pb-0"
           >
             <div className="min-w-0">
               <div className="type-action truncate">{entry.tournament.name}</div>

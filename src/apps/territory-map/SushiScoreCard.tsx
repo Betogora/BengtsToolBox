@@ -101,7 +101,7 @@ export function SushiScoreCard({
                       <span className="flex min-w-0 items-center gap-1.5">
                         <ColorPicker
                           ariaLabel={t('territory.touristColorAria', { name: player.name })}
-                          className="size-6 shrink-0 cursor-pointer p-px md:size-8 md:p-0.5"
+                          className="size-6 shrink-0 cursor-pointer md:size-8"
                           value={player.color}
                           onValueCommit={(color) => onColorChange(player.id, color)}
                         />

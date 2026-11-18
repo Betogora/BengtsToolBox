@@ -21,7 +21,8 @@ import {
 import { useScoreboard } from '@/apps/scoreboard/hooks/useScoreboard'
 import type { ScoreboardMode, ScoreboardStanding, ScoreTargetType } from '@/apps/scoreboard/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
@@ -32,10 +33,10 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
@@ -146,71 +147,69 @@ export function ScoreboardPage() {
 
   return (
     <AppPage width="wide">
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={ListOrdered} title={appTitle} />
-        <PresenterLauncher
-          appTitle={appTitle}
-          views={[
-            {
-              id: 'stand',
-              label: t('scoreboard.currentStand'),
-              Icon: Trophy,
-              render: () => <ScoreboardPresenter standings={scoreboard.standings} />,
-            },
-          ]}
-        />
-      </section>
+      <AppPageHeader
+        Icon={ListOrdered}
+        title={appTitle}
+        actions={
+          <PresenterLauncher
+            appTitle={appTitle}
+            views={[
+              {
+                id: 'stand',
+                label: t('scoreboard.currentStand'),
+                Icon: Trophy,
+                render: () => <ScoreboardPresenter standings={scoreboard.standings} />,
+              },
+            ]}
+          />
+        }
+      />
 
       {scoreboard.error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.syncError')}</CardTitle>
-            <CardDescription>
-              {t(syncErrorMessageKey(scoreboard.error))}
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.syncError')}>
+          {t(syncErrorMessageKey(scoreboard.error))}
+        </Notice>
       )}
 
-      <Card>
-        <CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <div className="min-w-0">
-            <InlineTextEdit
-              ariaLabel={t('scoreboard.scoringNameAria')}
-              className="type-section-title py-1"
-              fallback={t('scoreboard.scoringFallback')}
-              inputClassName="type-section-title h-11"
-              value={scoreboard.activeScoring.name}
-              onSave={(name) => scoreboard.updateScoringName(scoreboard.activeScoring.id, name)}
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
-            {(scoreboard.isLoading || scoreboard.isPending) && (
-              <Badge variant="outline">{t('common.syncing')}</Badge>
-            )}
-            <Button
-              variant="outline"
-              disabled={scoreboard.activeEvents.length === 0}
-              onClick={handleUndo}
-            >
-              <Undo2 className="size-4" />
-              {t('scoreboard.undo')}
-            </Button>
-            <SegmentedControl
-              aria-label={t('scoreboard.modeAria')}
-              value={scoreboard.activeScoring.mode}
-              options={(['individual', 'teams'] as const).map((value) => ({
-                value,
-                label: value === 'individual' ? t('scoreboard.modeIndividual') : t('scoreboard.modeTeams'),
-              }))}
-              onValueChange={async (mode) => {
-                const didChange = await scoreboard.changeMode(mode as ScoreboardMode)
-                if (!didChange) toast.error(t('common.syncError'))
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Werkzeugleiste ohne eigene Karte: Name links, Rückgängig und Wertungsart rechts. */}
+      <section className="flex flex-wrap items-center gap-x-3 gap-y-2" data-scoreboard-toolbar>
+        <div className="min-w-0 flex-1">
+          <InlineTextEdit
+            ariaLabel={t('scoreboard.scoringNameAria')}
+            className="type-section-title py-1"
+            fallback={t('scoreboard.scoringFallback')}
+            inputClassName="type-section-title h-11"
+            value={scoreboard.activeScoring.name}
+            onSave={(name) => scoreboard.updateScoringName(scoreboard.activeScoring.id, name)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          {(scoreboard.isLoading || scoreboard.isPending) && (
+            <span className="type-caption text-muted-foreground" role="status">{t('common.syncing')}</span>
+          )}
+          <Button
+            variant="outline"
+            className="max-sm:size-9 max-sm:px-0"
+            disabled={scoreboard.activeEvents.length === 0}
+            onClick={handleUndo}
+          >
+            <Undo2 className="size-4" />
+            <span className="max-sm:sr-only">{t('scoreboard.undo')}</span>
+          </Button>
+          <SegmentedControl
+            aria-label={t('scoreboard.modeAria')}
+            value={scoreboard.activeScoring.mode}
+            options={(['individual', 'teams'] as const).map((value) => ({
+              value,
+              label: value === 'individual' ? t('scoreboard.modeIndividual') : t('scoreboard.modeTeams'),
+            }))}
+            onValueChange={async (mode) => {
+              const didChange = await scoreboard.changeMode(mode as ScoreboardMode)
+              if (!didChange) toast.error(t('common.syncError'))
+            }}
+          />
+        </div>
+      </section>
 
       {scoreboard.targets.length >= 3 && (
         <Card>
@@ -388,11 +387,9 @@ export function ScoreboardPage() {
           </button>
         </CardHeader>
         {isArchiveOpen && (
-          <CardContent className="grid gap-3">
+          <CardContent className="grid divide-y">
             {scoreboard.archiveViews.length === 0 ? (
-              <div className="rounded-md border border-dashed p-6 text-center text-muted-foreground">
-                {t('scoreboard.emptyArchive')}
-              </div>
+              <EmptyState>{t('scoreboard.emptyArchive')}</EmptyState>
             ) : (
               scoreboard.archiveViews.map((archive) => (
                 <ArchiveCard

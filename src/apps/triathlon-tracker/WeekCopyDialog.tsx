@@ -68,7 +68,7 @@ function WeekCopyDialogContent({
     <DialogContent className="triathlon-tracker">
       <DialogHeader>
         <DialogTitle>{t('triathlon.copyWeek.title')}</DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="sr-only">
           {t('triathlon.copyWeek.description')}
         </DialogDescription>
       </DialogHeader>

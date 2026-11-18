@@ -7,7 +7,7 @@ import {
   getSortedEvents,
   rankPlayerScores,
 } from '@/apps/progress-dashboard/logic'
-import { getPodiumRankClass } from '@/apps/shared/podium'
+import { RankList, RankRow } from '@/apps/shared/components/RankRow'
 import { getArchivePlayers } from '@/apps/progress-dashboard/progressChartModel'
 import { DashboardProgressChart } from '@/apps/progress-dashboard/DashboardProgressChart'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
@@ -16,7 +16,6 @@ import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { useI18n } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 
 function formatDateTime(value: string | null | undefined, locale: string) {
   if (!value) {
@@ -49,9 +48,9 @@ export function ArchiveDatasetCard({
   const toggle = () => setIsOpen((current) => !current)
 
   return (
-    <div className="rounded-lg border">
+    <div className="py-2 first:pt-0 last:pb-0">
       {/* Die ganze Kopfzeile klappt auf; Name und Löschen liegen als eigene Ziele darüber. */}
-      <div className="relative flex items-center gap-1 py-2 pr-2 pl-3">
+      <div className="relative flex items-center gap-1">
         <button
           type="button"
           className="absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
@@ -98,7 +97,6 @@ export function ArchiveDatasetCard({
             onConfirm={() => onDelete(dataset.id)}
             trigger={
               <DeleteButton
-                tone="quiet"
                 className="size-11 sm:size-9"
                 aria-label={t('common.archive.delete')}
               />
@@ -124,8 +122,8 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
 
   if (dataset.events.length === 0) {
     return (
-      <div className="border-t p-3 sm:p-4">
-        <EmptyState className="p-4">
+      <div className="pt-2">
+        <EmptyState>
           {t('progress.emptyArchivedDataset')}
         </EmptyState>
       </div>
@@ -133,33 +131,26 @@ function ArchiveDatasetDetails({ dataset }: { dataset: ProgressDataset }) {
   }
 
   return (
-    <div className="grid gap-3 border-t p-3 sm:p-4">
+    <div className="grid gap-3 pt-3">
       <DashboardProgressChart
         className="h-[220px] md:h-[320px]"
         dataset={dataset}
         emptyMessage={t('progress.emptyArchivedUsableEvents')}
         players={archivePlayers}
       />
-      <ol className="divide-y overflow-hidden rounded-md border bg-background">
+      <RankList>
         {rankedScores.map(({ player, rank, score }) => (
-          <li
+          <RankRow
             key={player.id}
-            className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2"
-          >
-            <span className={cn(getPodiumRankClass(score > 0 ? rank : 0), 'type-caption size-5')}>
-              {rank}
-            </span>
-            <span className="flex min-w-0 items-center gap-2">
-              <span
-                className="size-3 shrink-0 rounded-full"
-                style={{ backgroundColor: player.color }}
-              />
-              <span className="type-label min-w-0 truncate">{player.name}</span>
-            </span>
-            <span className="type-action tabular-nums">{formatNumber(score)}</span>
-          </li>
+            color={player.color}
+            name={player.name}
+            podium={score > 0}
+            rank={rank}
+            size="compact"
+            value={formatNumber(score)}
+          />
         ))}
-      </ol>
+      </RankList>
     </div>
   )
 }

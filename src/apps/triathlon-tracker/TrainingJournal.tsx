@@ -10,7 +10,7 @@ import {
   Plus,
   Trophy,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { getTrainingIntensity } from './domain/incline'
 import { countWorkPhases } from './domain/intervals'
 import { averagePaceSeconds, formatPace } from './domain/units'
@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -44,10 +45,11 @@ const PAGE_SIZE = 20
 
 const chipClass = (active: boolean) =>
   cn(
-    'inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium leading-none whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 [&_svg]:size-3.5 [&_svg]:shrink-0',
+    // Filter sind bedienbar: 10-px-Radius wie Buttons, Pillen bleiben reinem Status vorbehalten.
+    'type-label inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-3 leading-none whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/45 [&_svg]:size-3.5 [&_svg]:shrink-0',
     active
-      ? 'border-primary/30 bg-primary-soft text-primary'
-      : 'bg-card text-foreground hover:bg-muted',
+      ? 'border-transparent bg-primary-soft text-primary'
+      : 'bg-card text-foreground shadow-xs hover:bg-muted',
   )
 
 export function TrainingJournal({
@@ -61,6 +63,7 @@ export function TrainingJournal({
   onDelete: (id: string) => Promise<void>
   onAdd: () => void
 }) {
+  const disciplineFilterRef = useRef<HTMLButtonElement>(null)
   const { t, formatDateTime, formatNumber } = useI18n()
   const [discipline, setDiscipline] = useState<Discipline | 'all'>('all')
   const [from, setFrom] = useState('')
@@ -139,6 +142,7 @@ export function TrainingJournal({
           }}
         >
           <SelectTrigger
+            ref={disciplineFilterRef}
             aria-label={t('triathlon.form.discipline')}
             className={cn(
               chipClass(discipline !== 'all'),
@@ -224,21 +228,24 @@ export function TrainingJournal({
           {t('triathlon.form.date')}
           <span aria-hidden="true">{ascending ? '↑' : '↓'}</span>
         </button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-[30px] px-2.5 text-[13px] text-muted-foreground"
-          disabled={discipline === 'all' && !from && !to && !benchmarksOnly}
-          onClick={() => {
-            setDiscipline('all')
-            setFrom('')
-            setTo('')
-            setBenchmarksOnly(false)
-            setPage(0)
-          }}
-        >
-          {t('triathlon.journal.clearFilters')}
-        </Button>
+        {(discipline !== 'all' || from || to || benchmarksOnly) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="type-label h-8 px-2.5 text-muted-foreground"
+            onClick={() => {
+              setDiscipline('all')
+              setFrom('')
+              setTo('')
+              setBenchmarksOnly(false)
+              setPage(0)
+              // Der Knopf verschwindet ohne aktiven Filter; der Fokus bleibt in der Filterzeile.
+              disciplineFilterRef.current?.focus()
+            }}
+          >
+            {t('triathlon.journal.clearFilters')}
+          </Button>
+        )}
       </div>
       {from && to && from > to && (
         <p role="alert" className="type-ui text-destructive">
@@ -251,25 +258,26 @@ export function TrainingJournal({
         </p>
       )}
       {filtered.length === 0 ? (
-        <div className="grid justify-items-center gap-3 rounded-lg border border-dashed bg-card px-4 py-12 text-center">
-          <NotebookPen
-            aria-hidden="true"
-            className="size-8 text-muted-foreground"
-          />
-          <h3 className="type-card-title">
+        <EmptyState
+          className="py-12"
+          icon={NotebookPen}
+          action={
+            actualTrainings.length === 0 && (
+              <Button onClick={onAdd}>
+                <Plus aria-hidden="true" />
+                {t('triathlon.actual.add')}
+              </Button>
+            )
+          }
+        >
+          <h3 className="type-card-title text-foreground">
             {t(
               actualTrainings.length === 0
                 ? 'triathlon.journal.empty'
                 : 'triathlon.journal.noResults',
             )}
           </h3>
-          {actualTrainings.length === 0 && (
-            <Button onClick={onAdd}>
-              <Plus aria-hidden="true" />
-              {t('triathlon.actual.add')}
-            </Button>
-          )}
-        </div>
+        </EmptyState>
       ) : (
         <>
           <ul
@@ -400,7 +408,6 @@ export function TrainingJournal({
                           description={t('triathlon.actual.deleteDescription')}
                           trigger={
                             <DeleteButton
-                              tone="quiet"
                               aria-label={`${t('common.delete')}: ${label}`}
                             />
                           }

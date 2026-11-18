@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Clock3,
   Copy,
+  Ellipsis,
   Plus,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -24,7 +25,14 @@ import {
   trainingLabelKey,
 } from './presentation'
 import type { ActualTraining, PlannedTraining } from './types'
+import { BottomActionBar } from '@/apps/shared/components/BottomActionBar'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tooltip } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -177,27 +185,43 @@ export function PlanCalendar({
       className="tri-calendar grid min-w-0 gap-4"
       aria-label={t('triathlon.tabs.calendar')}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="type-section-title flex min-h-12 items-center">{title}</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            aria-label={t('triathlon.calendar.plan')}
-            onClick={() => onAdd(activeLocalDate)}
-          >
-            <CalendarDays aria-hidden="true" />
-            <span className="hidden sm:inline">
-              {t('triathlon.calendar.plan')}
-            </span>
-          </Button>
-          <Button onClick={onLogActual}>
+      {/* Kopf: Zeitraum und Nebenaktionen; die Primäraktion sitzt mobil unten angeheftet. */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="type-section-title flex min-h-12 min-w-0 items-center">{title}</h2>
+        <div className="flex shrink-0 items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-label={t('triathlon.calendar.moreActions')}
+                size="icon"
+                variant="outline"
+              >
+                <Ellipsis aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => onAdd(activeLocalDate)}>
+                <CalendarDays aria-hidden="true" />
+                {t('triathlon.calendar.plan')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onCopyWeek}>
+                <Copy aria-hidden="true" />
+                {t('triathlon.copyWeek.action')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button className="max-sm:hidden" onClick={onLogActual}>
             <Plus aria-hidden="true" />
             {t('triathlon.actual.add')}
           </Button>
         </div>
       </div>
+      <BottomActionBar className="sm:hidden">
+        <Button className="h-11 w-full" onClick={onLogActual}>
+          <Plus aria-hidden="true" />
+          {t('triathlon.actual.add')}
+        </Button>
+      </BottomActionBar>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <Button
@@ -241,19 +265,7 @@ export function PlanCalendar({
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            className="size-9 sm:w-auto sm:px-3"
-            aria-label={t('triathlon.copyWeek.action')}
-            title={t('triathlon.copyWeek.action')}
-            onClick={onCopyWeek}
-          >
-            <Copy aria-hidden="true" />
-            <span className="hidden sm:inline">
-              {t('triathlon.copyWeek.action')}
-            </span>
-          </Button>
+        <div className="flex items-center gap-2">
           <SegmentedControl
             aria-label={t('triathlon.tabs.calendar')}
             value={view}

@@ -11,10 +11,8 @@ function Table({
     <div
       data-slot="table-container"
       tabIndex={0}
-      className={cn(
-        'w-full min-w-0 overflow-x-auto rounded-lg border bg-card',
-        containerClassName,
-      )}
+      // Ein Rahmen pro Ebene: Tabellen stehen in ihrer Karte ohne eigenen Kasten.
+      className={cn('w-full min-w-0 overflow-x-auto', containerClassName)}
     >
       <table
         data-slot="table"

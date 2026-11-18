@@ -13,7 +13,7 @@ export function ResultPanel({ result }: ResultPanelProps) {
 
   return (
     <div
-      className="rounded-lg border bg-secondary p-4"
+      className="rounded-md bg-muted p-4"
       style={
         result
           ? { backgroundColor: getColorWithAlpha(result.color, '80') }

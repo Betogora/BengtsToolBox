@@ -34,7 +34,7 @@ import {
   spinFullRotationDegrees,
   spinSettleDelayMs,
 } from '@/apps/decision-wheel/wheel'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { AppPage } from '@/apps/shared/components/AppPage'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
@@ -43,10 +43,10 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { Separator } from '@/components/ui/separator'
 import {
   Table,
@@ -312,35 +312,35 @@ export function DecisionWheelPage() {
         onClose={closeWinnerAnnouncement}
       />
 
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={CircleDot} title={appTitle} />
-        <PresenterLauncher
-          appTitle={appTitle}
-          views={[
-            {
-              id: 'wheel',
-              label: t('decisionWheel.wheel.title'),
-              Icon: CircleDot,
-              render: () => (
-                <DecisionWheelPresenter
-                  entries={wheelEntries}
-                  historyCount={data.history.length}
-                  lastResult={data.lastResult}
-                  rotation={rotation}
-                />
-              ),
-            },
-          ]}
-        />
-      </section>
+      <AppPageHeader
+        Icon={CircleDot}
+        title={appTitle}
+        actions={
+          <PresenterLauncher
+            appTitle={appTitle}
+            views={[
+              {
+                id: 'wheel',
+                label: t('decisionWheel.wheel.title'),
+                Icon: CircleDot,
+                render: () => (
+                  <DecisionWheelPresenter
+                    entries={wheelEntries}
+                    historyCount={data.history.length}
+                    lastResult={data.lastResult}
+                    rotation={rotation}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
@@ -394,14 +394,14 @@ export function DecisionWheelPage() {
                 </EmptyState>
               ) : (
                 <>
-                  <div className="grid gap-2 md:hidden">
+                  <div className="grid divide-y md:hidden">
                     {data.entries.map((entry, index) => (
                       <div
                         key={entry.id}
-                        className="type-ui grid gap-2 rounded-md border bg-card p-2.5"
+                        className="type-ui grid gap-2 py-3 first:pt-0"
                       >
                         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-                          <span className="type-action flex h-11 w-11 items-center justify-center rounded-md border bg-secondary px-2 tabular-nums">
+                          <span className="type-action flex h-11 w-8 items-center text-muted-foreground tabular-nums">
                             #{index + 1}
                           </span>
                           <EntryTextControl
@@ -413,7 +413,7 @@ export function DecisionWheelPage() {
                         </div>
 
                         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2">
-                          <span className="h-11 w-11" aria-hidden="true" />
+                          <span className="h-11 w-8" aria-hidden="true" />
                           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-end gap-2">
                             <EntryColorControl
                               entry={entry}
@@ -505,16 +505,14 @@ export function DecisionWheelPage() {
                 </>
               )}
 
-              <div className="rounded-md border border-dashed bg-background p-3">
-                <Button
-                  className="h-9 w-full"
-                  variant="outline"
-                  onClick={addEntry}
-                >
-                  <Plus className="size-4" />
-                  {t('decisionWheel.addOption')}
-                </Button>
-              </div>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={addEntry}
+              >
+                <Plus className="size-4" />
+                {t('decisionWheel.addOption')}
+              </Button>
             </CardContent>
           </Card>
 

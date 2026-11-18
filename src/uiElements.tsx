@@ -28,6 +28,8 @@ import {
   ChevronRight,
   ChevronRightIcon,
   ChevronUpIcon,
+  CircleAlert,
+  CircleCheck,
   CircleDot,
   CircleIcon,
   CirclePlus,
@@ -39,6 +41,7 @@ import {
   CornerDownLeft,
   Dice5,
   Download,
+  Ellipsis,
   Eye,
   EyeOff,
   Footprints,
@@ -49,6 +52,7 @@ import {
   Hand,
   History,
   Home,
+  Info,
   KeyRound,
   Landmark,
   Layers3,
@@ -71,6 +75,7 @@ import {
   Pin,
   Plus,
   Printer,
+  QrCode,
   Radio,
   RadioTower,
   RefreshCw,
@@ -95,6 +100,7 @@ import {
   Volume2,
   VolumeX,
   Waves,
+  WifiOff,
   Wine,
   X,
   XIcon,
@@ -107,6 +113,10 @@ import { PersonChip } from '@/apps/shared/components/PersonChip'
 import { PersonOption } from '@/apps/shared/components/PersonOption'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
+import { AppPageHeader, AppPageStatus } from '@/apps/shared/components/AppPageHeader'
+import { BottomActionBar } from '@/apps/shared/components/BottomActionBar'
+import { RankList, RankRow } from '@/apps/shared/components/RankRow'
+import { StatBand, StatBandItem } from '@/apps/triathlon-tracker/components'
 import type { TeamId } from '@/apps/shared/teams'
 import { dashboardApps } from '@/apps/registry'
 import { DashboardIllustration } from '@/components/layout/DashboardIllustrations'
@@ -115,6 +125,7 @@ import { Button } from '@/components/ui/button'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Notice } from '@/components/ui/notice'
 import { Separator } from '@/components/ui/separator'
 import { Toaster } from '@/components/ui/sonner'
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table'
@@ -427,10 +438,39 @@ const demos: Record<string, ReactNode> = {
   PersonOption: <PersonOptionDemo />,
   EmptyState: <EmptyState icon={Trophy} action={<Button variant="outline" size="sm"><Plus />Erste Runde starten</Button>}>Noch keine Ergebnisse</EmptyState>,
   ConfirmButton: <ConfirmationDemo />,
-  DeleteButton: <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
-    <div className="grid justify-items-center gap-2"><DeleteButton aria-label="Zeile löschen" /><span className="type-caption text-subtle-foreground">solid · Zeilen</span></div>
-    <div className="grid justify-items-center gap-2"><DeleteButton tone="quiet" aria-label="Datensatz löschen" /><span className="type-caption text-subtle-foreground">quiet · Kopfzeilen, Verwaltung</span></div>
+  DeleteButton: <div className="flex flex-wrap items-center gap-3">
+    <ConfirmButton mode="popover" title="Zeile löschen?" description="Rot erscheint erst im Bestätigen." confirmLabel="Löschen" onConfirm={() => undefined} trigger={<DeleteButton aria-label="Zeile löschen" />} />
+    <span className="type-caption text-subtle-foreground">ruhig im Ruhezustand, Rot erst beim Bestätigen</span>
   </div>,
+  Notice: <div className="grid w-full gap-2">
+    <Notice tone="info" icon={Radio} title="Lokaler Modus:">Andere Geräte können noch nicht mitbuzzern.</Notice>
+    <Notice tone="success">Turnier abgeschlossen</Notice>
+    <Notice tone="warning">Runde 3 hat noch 2 offene Ergebnisse.</Notice>
+    <Notice tone="danger" title="Synchronisierungsfehler">Dein Entwurf bleibt erhalten.</Notice>
+  </div>,
+  AppPageHeader: <div className="w-full">
+    <AppPageHeader
+      Icon={ChartNoAxesCombined}
+      title="Fortschritts-Dashboard"
+      status={<AppPageStatus Icon={Trophy}><span className="size-2 rounded-full bg-[#f0047f]" /><span className="text-foreground">Bengt</span><span className="font-[650] text-foreground tabular-nums">7</span></AppPageStatus>}
+      actions={<Button variant="outline" className="max-sm:size-9 max-sm:px-0"><Monitor /><span className="max-sm:sr-only">Presenter</span></Button>}
+    />
+  </div>,
+  RankRow: <RankList className="w-full max-w-sm">
+    <RankRow rank={1} color="#7b0fff" name="Maximiliane von Hohenstein" share={1} value={12} />
+    <RankRow rank={2} color="#f0047f" name="Paul" share={0.58} value={7} sub="60 % · Anna Keller, Ben Richter" />
+    <RankRow rank={2} color="#14b8a6" name="Bengt" share={0.58} value={7} />
+    <RankRow rank={4} color="#ffb020" name="Lennart" share={0} value={0} />
+  </RankList>,
+  BottomActionBar: <div className="relative w-full max-w-sm overflow-hidden rounded-lg border bg-background pt-16">
+    <BottomActionBar className="static"><Button className="h-11 w-full"><Plus />Training eintragen</Button></BottomActionBar>
+  </div>,
+  Kennzahlenband: <StatBand className="w-full grid-cols-2 sm:grid-cols-4">
+    <StatBandItem label="Diese Woche" sub="7 Trainings">5:40 h</StatBandItem>
+    <StatBandItem label={<><span aria-hidden="true" className="size-2 rounded-full bg-[#2f7fb8]" />Schwimmen</>} sub="2 Trainings">3,2 km</StatBandItem>
+    <StatBandItem label={<><span aria-hidden="true" className="size-2 rounded-full bg-[#c58a12]" />Rad</>} sub="2 Trainings">62 km</StatBandItem>
+    <StatBandItem label={<><span aria-hidden="true" className="size-2 rounded-full bg-[#c4563d]" />Laufen</>} sub="3 Trainings">18 km</StatBandItem>
+  </StatBand>,
   AppResetButton: <ConfirmationDemo reset />,
   Aufklappen: <div className="w-full max-w-sm divide-y rounded-lg border bg-card">
     <details open className="group px-3.5"><DisclosureSummary>Zusatzangaben</DisclosureSummary><div className="pb-3.5"><IftaInput label="Notiz" defaultValue="Nächste Runde" /></div></details>
@@ -472,6 +512,8 @@ const inventoryIcons: Record<string, LucideIcon> = {
   ChevronRight,
   ChevronRightIcon,
   ChevronUpIcon,
+  CircleAlert,
+  CircleCheck,
   CircleDot,
   CircleIcon,
   CirclePlus,
@@ -483,6 +525,7 @@ const inventoryIcons: Record<string, LucideIcon> = {
   CornerDownLeft,
   Dice5,
   Download,
+  Ellipsis,
   Eye,
   EyeOff,
   Footprints,
@@ -493,6 +536,7 @@ const inventoryIcons: Record<string, LucideIcon> = {
   Hand,
   History,
   Home,
+  Info,
   KeyRound,
   Landmark,
   Layers3,
@@ -514,6 +558,7 @@ const inventoryIcons: Record<string, LucideIcon> = {
   Pin,
   Plus,
   Printer,
+  QrCode,
   Radio,
   RadioTower,
   RefreshCw,
@@ -538,6 +583,7 @@ const inventoryIcons: Record<string, LucideIcon> = {
   Volume2,
   VolumeX,
   Waves,
+  WifiOff,
   Wine,
   X,
   XIcon,

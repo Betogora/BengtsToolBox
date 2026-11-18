@@ -8,6 +8,7 @@ type EmptyStateProps = ComponentProps<'div'> & {
   icon?: LucideIcon
 }
 
+// Leerzustand ohne Kasten: als ruhige Zeile, mit Icon oder Aktion zentriert gestapelt.
 export function EmptyState({
   action,
   children,
@@ -15,22 +16,21 @@ export function EmptyState({
   icon: Icon,
   ...props
 }: EmptyStateProps) {
+  const isStacked = Boolean(Icon || action)
+
   return (
     <div
+      data-slot="empty-state"
       className={cn(
-        'type-ui rounded-lg border border-dashed border-border-strong bg-transparent p-7 text-center font-semibold text-foreground',
-        (Icon || action) && 'flex flex-col items-center justify-center gap-3',
+        'type-ui text-muted-foreground',
+        isStacked ? 'flex flex-col items-center justify-center gap-2 px-4 py-6 text-center' : 'py-1',
         className,
       )}
       {...props}
     >
-      {Icon && (
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <Icon aria-hidden="true" className="size-5" />
-        </span>
-      )}
-      {Icon || action ? <div>{children}</div> : children}
-      {action}
+      {Icon && <Icon aria-hidden="true" className="size-5 text-subtle-foreground" />}
+      {isStacked ? <div>{children}</div> : children}
+      {action && <div className="mt-1">{action}</div>}
     </div>
   )
 }

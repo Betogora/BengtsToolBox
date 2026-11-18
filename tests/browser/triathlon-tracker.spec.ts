@@ -45,7 +45,8 @@ test('Planung prüft Datum und Uhrzeit und speichert einen Plan', async ({
   await waitForToastsToFade(page)
   await app.expectHealthy()
 
-  await page.getByRole('button', { name: 'Planen', exact: true }).click()
+  await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Planen', exact: true }).click()
   const plan = page.getByRole('dialog', { name: 'Plan hinzufügen' })
   const dateInput = plan.getByLabel('Datum', { exact: true })
   const toLocalDate = (value: string) =>
@@ -299,7 +300,8 @@ test('Planung kopiert Einheiten und Wochen getrennt vom Tagebuch', { tag: '@layo
       .getByRole('tabpanel', { name: 'Planung', exact: true })
       .getByText('45 min', { exact: true }),
   ).toHaveCount(0)
-  await page.getByRole('button', { name: 'Woche kopieren' }).click()
+  await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Woche kopieren' }).click()
   const copy = page.getByRole('dialog', { name: 'Trainingswoche kopieren' })
   const source = copy.getByLabel('Quellwoche', { exact: true })
   const sourceValue = await source.inputValue()

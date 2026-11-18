@@ -1,6 +1,8 @@
 @import "tailwindcss";
 /* Das eingebettete Demo-Bundle des UI-Katalogs ist Build-Ausgabe, keine Klassenquelle. */
 @source not "../../docs/ui-elements.html";
+/* Der bewertete Katalogvorschlag enthält eigene Musterklassen und ist ebenfalls keine Klassenquelle. */
+@source not "../../docs/ui-elements-fable.html";
 
 @font-face {
   font-family: "Manrope Variable";
@@ -82,8 +84,8 @@
   --btb-leading-dialog-title: 1.5rem;
   --btb-text-section-title: var(--btb-text-dialog-title);
   --btb-leading-section-title: var(--btb-leading-dialog-title);
-  --btb-text-page-title: 1.875rem;
-  --btb-leading-page-title: 2.2rem;
+  --btb-text-page-title: 1.5rem;
+  --btb-leading-page-title: 1.875rem;
   --btb-text-page-title-wide: 1.875rem;
   --btb-leading-page-title-wide: 2.25rem;
   --btb-text-dashboard-title: 3rem;
@@ -760,21 +762,10 @@ svg.lucide {
   }
 }
 
+/* Die Abendstand-Karte ist eine normale Card; innen gliedern Haarlinien statt weiterer Rahmen. */
 .raab-score-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  background: var(--card) !important;
-}
-
-.raab-score-card [data-slot="card-header"] {
-  padding: 16px 18px 8px;
-}
-
-.raab-score-card [data-slot="card-content"] {
-  padding: 0 18px 18px;
 }
 
 .raab-score-table-wrap {
@@ -867,10 +858,8 @@ svg.lucide {
 .raab-progress {
   display: grid;
   gap: 0.25rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
 .raab-progress-chart-wrap {
@@ -967,8 +956,7 @@ svg.lucide {
 .raab-progress-legend {
   min-width: 0;
   padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 0.25rem);
+  border-radius: var(--radius-md);
 }
 
 .raab-progress-legend-player-1 {
@@ -1064,12 +1052,6 @@ svg.lucide {
 }
 
 @media (max-width: 639px) {
-  .raab-score-card [data-slot="card-header"],
-  .raab-score-card [data-slot="card-content"] {
-    padding-right: 12px;
-    padding-left: 12px;
-  }
-
   .raab-score-column {
     width: 4rem;
   }
@@ -1083,10 +1065,6 @@ svg.lucide {
     width: 2.75rem;
     min-width: 0;
     min-height: 2rem;
-  }
-
-  .raab-progress {
-    padding: 0.875rem;
   }
 
   .raab-progress-legends {

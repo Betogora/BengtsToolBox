@@ -97,8 +97,9 @@ export function AppShell() {
                 fallback={
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="ghost"
                     size="icon"
+                    className="size-10 text-foreground hover:bg-secondary hover:text-primary"
                     aria-label={t('nav.menu')}
                     aria-haspopup="menu"
                     aria-expanded={false}

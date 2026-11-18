@@ -275,7 +275,7 @@ export function TournamentOverviewWorkflow({
               />
             </div>
           ) : (
-            <EmptyState className="text-left">
+            <EmptyState>
               {t(emptyUnitLabelKey(tournament.format))}
             </EmptyState>
           )}

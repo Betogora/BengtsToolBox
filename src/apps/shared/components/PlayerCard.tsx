@@ -92,7 +92,6 @@ export function PlayerCard({
           />
         </div>
         <DeleteButton
-          tone="quiet"
           aria-label={t('shared.playerCard.removeAria', { name: player.name })}
           onClick={onRemove}
         />

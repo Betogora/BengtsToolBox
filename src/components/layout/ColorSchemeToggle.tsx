@@ -18,7 +18,7 @@ export function ColorSchemeToggle({ className }: { className?: string }) {
     <button
       aria-label={label}
       className={cn(
-        'relative inline-grid size-10 shrink-0 place-items-center rounded-md text-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:size-11',
+        'relative inline-grid size-10 shrink-0 place-items-center rounded-md text-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50',
         className,
       )}
       title={label}

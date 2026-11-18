@@ -1,11 +1,11 @@
-import { Bell, Check, Clock3, History, Lock, Radio, Settings2, Trophy, Volume2, VolumeX } from 'lucide-react'
+import { Bell, Check, Clock3, History, Lock, Radio, Settings2, Trophy, Volume2, VolumeX, WifiOff } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { isLateBuzz } from '@/apps/live-buzzer/buzzerLogic'
 import { useLiveBuzzer } from '@/apps/live-buzzer/hooks/useLiveBuzzer'
 import type { BuzzerTeamId } from '@/apps/live-buzzer/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader, AppPageStatus } from '@/apps/shared/components/AppPageHeader'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { IftaInput } from '@/components/ui/ifta-field'
+import { Notice } from '@/components/ui/notice'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -48,14 +49,14 @@ function BuzzerResult({ app, large = false }: { app: BuzzerApp; large?: boolean 
   const late = buzzes.filter((buzz) => isLateBuzz(sessionState, buzz))
   const rows = [...early, ...late]
   const status = winner ? null : sessionState.isOpen ? 'liveBuzzer.waiting' : app.allClocksReady ? 'liveBuzzer.awaitRelease' : 'liveBuzzer.awaitSync'
-  return <Card className={cn('gap-3 py-4', winner && winnerTeam?.className)}>
-    <CardHeader className="px-4">
+  return <Card className={cn(winner && winnerTeam?.className)}>
+    <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2"><Trophy className="size-4" />{t('liveBuzzer.result')}</CardTitle>
         <Badge variant="outline">{t('common.round', { number: sessionState.roundNumber })}</Badge>
       </div>
     </CardHeader>
-    <CardContent className="grid gap-3 px-4">
+    <CardContent className="grid gap-3">
       <div role="status" aria-live="polite" aria-atomic="true" className="grid gap-1">
         <div className={cn('min-w-0 break-words [overflow-wrap:anywhere]', large ? 'text-[clamp(1.5rem,5vw,4rem)] font-bold' : 'type-section-title')}>
           {winner?.playerName ?? (status && t(status))}
@@ -135,20 +136,19 @@ export function LiveBuzzerPage() {
   const buttonLabel = app.isBuzzPending ? 'liveBuzzer.sending' : app.ownBuzz ? 'liveBuzzer.buzz.saved'
     : !sessionState.isOpen || !app.clockReady ? 'liveBuzzer.status.locked' : winner ? 'liveBuzzer.action.lateBuzz' : 'liveBuzzer.action.buzz'
   return <AppPage className="gap-3 py-4 lg:py-6">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <AppPageTitle Icon={Bell} title={t('app.liveBuzzer.title')} />
-      <div className="flex items-center gap-1">
-        <Badge variant="outline"><Radio className="size-3" />{t(app.isRealtime ? 'liveBuzzer.connected' : 'liveBuzzer.localOnly')}</Badge>
-        <PresenterLauncher appTitle={t('app.liveBuzzer.title')} views={[{
-          id: 'live', label: t('liveBuzzer.presenter.liveView'), Icon: Bell, render: () => <BuzzerResult app={app} large />,
-        }]} />
-      </div>
-    </div>
-    {app.error && <div role="alert" className="type-ui rounded-lg border border-destructive bg-card p-3 text-destructive">{t(syncErrorMessageKey(app.error))}</div>}
-    {!app.isRealtime && <p role="status" className="type-caption rounded-lg border bg-muted p-2">{t('liveBuzzer.localMode')}</p>}
-    {!selectedPlayer ? <Card className="mx-auto w-full max-w-md gap-4 py-4">
-      <CardHeader className="px-4"><CardTitle>{t('liveBuzzer.joinTitle')}</CardTitle></CardHeader>
-      <CardContent className="grid gap-3 px-4">
+    <AppPageHeader
+      Icon={Bell}
+      title={t('app.liveBuzzer.title')}
+      status={<AppPageStatus Icon={Radio}>{t(app.isRealtime ? 'liveBuzzer.connected' : 'liveBuzzer.localOnly')}</AppPageStatus>}
+      actions={<PresenterLauncher appTitle={t('app.liveBuzzer.title')} views={[{
+        id: 'live', label: t('liveBuzzer.presenter.liveView'), Icon: Bell, render: () => <BuzzerResult app={app} large />,
+      }]} />}
+    />
+    {app.error && <Notice tone="danger">{t(syncErrorMessageKey(app.error))}</Notice>}
+    {!app.isRealtime && <Notice tone="info" icon={WifiOff} title={t('common.localModeTitle')}>{t('liveBuzzer.localMode')}</Notice>}
+    {!selectedPlayer ? <Card className="mx-auto w-full max-w-md">
+      <CardHeader><CardTitle>{t('liveBuzzer.joinTitle')}</CardTitle></CardHeader>
+      <CardContent className="grid gap-3">
         <SegmentedControl
           aria-label={t('liveBuzzer.joinTitle')}
           value={asHost ? 'host' : 'player'}
@@ -161,7 +161,6 @@ export function LiveBuzzerPage() {
         {app.hostTaken && <p className="type-caption text-muted-foreground">{t('liveBuzzer.hostTaken')}</p>}
         <IftaInput label={t('liveBuzzer.playerName')} value={name} maxLength={40} onChange={(event) => setName(event.target.value)} />
         {!asHost && <TeamChoice app={app} value={team} onChange={setTeam} />}
-        {asHost && <p className="type-caption text-muted-foreground">{t('liveBuzzer.hostDevice')}</p>}
         <Button disabled={app.isLoading || app.isPending || !app.online || !name.trim() || asHost && app.hostTaken}
           onClick={async () => {
             const result = await app.join(name, team, asHost)
@@ -176,32 +175,35 @@ export function LiveBuzzerPage() {
           <Teams app={app} />
         </div>
         <div className="grid min-w-0 gap-3">
-          {app.isHost && <Card className="gap-3 py-4">
-            <CardHeader className="px-4"><CardTitle className="flex items-center justify-between gap-2">
-              {t('liveBuzzer.host')}<Badge variant="outline"><Lock className="size-3" />{t('liveBuzzer.hostProtected')}</Badge>
+          {app.isHost && <Card>
+            <CardHeader><CardTitle className="flex items-center justify-between gap-2">
+              {t('liveBuzzer.host')}<Badge variant="secondary"><Lock className="size-3" />{t('liveBuzzer.hostProtected')}</Badge>
             </CardTitle></CardHeader>
-            <CardContent className="grid gap-2 px-4">
-              <Button variant="outline" disabled={app.isPending || !app.online || !app.players.length} onClick={() => { void app.startClockSync() }}>
-                <Clock3 className="size-4" />{t('liveBuzzer.startSync')}
-              </Button>
-              <div role="status" className="type-caption text-muted-foreground">{t('liveBuzzer.syncProgress', { ready: app.syncReadyCount, total: app.players.length })}</div>
+            {/* Eine Primäraktion, darunter der Status und die Nebenaktionen als ruhige Zeile. */}
+            <CardContent className="grid gap-2">
               <Button disabled={!app.canOpenRound} onClick={() => { void app.openRound() }}>{t('liveBuzzer.nextRound')}</Button>
-              {sessionState.isOpen && !winner && !sessionState.firstReceivedAtMs && <Button variant="ghost" onClick={() => { void app.closeRound() }}>
-                <Lock className="size-4" />{t('liveBuzzer.action.lock')}
-              </Button>}
-              <Button variant="ghost" size="sm" role="switch" aria-checked={selectedPlayer.isActive} onClick={() => { void app.toggleHostPlaying() }}>
-                {selectedPlayer.isActive && <Check className="size-4" />}{t('liveBuzzer.hostPlays')}
-              </Button>
+              <div role="status" className="type-caption text-muted-foreground">{t('liveBuzzer.syncProgress', { ready: app.syncReadyCount, total: app.players.length })}</div>
+              <div className="-mx-2 flex flex-wrap items-center gap-x-1">
+                <Button variant="ghost" size="sm" disabled={app.isPending || !app.online || !app.players.length} onClick={() => { void app.startClockSync() }}>
+                  <Clock3 className="size-4" />{t('liveBuzzer.startSync')}
+                </Button>
+                {sessionState.isOpen && !winner && !sessionState.firstReceivedAtMs && <Button variant="ghost" size="sm" onClick={() => { void app.closeRound() }}>
+                  <Lock className="size-4" />{t('liveBuzzer.action.lock')}
+                </Button>}
+                <Button variant="ghost" size="sm" role="switch" aria-checked={selectedPlayer.isActive} onClick={() => { void app.toggleHostPlaying() }}>
+                  {selectedPlayer.isActive && <Check className="size-4" />}{t('liveBuzzer.hostPlays')}
+                </Button>
+              </div>
             </CardContent>
           </Card>}
-          {selectedPlayer.isActive && <Card className="gap-3 py-4">
-            <CardHeader className="px-4">
+          {selectedPlayer.isActive && <Card>
+            <CardHeader>
               <CardTitle className="type-ui flex flex-wrap items-center justify-between gap-2">
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">{selectedPlayer.name}</span>
                 <Badge variant={canBuzz && !winner ? 'default' : 'secondary'}>{t(winner ? 'liveBuzzer.status.locked' : canBuzz ? 'liveBuzzer.ready' : 'liveBuzzer.status.locked')}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-2 px-4">
+            <CardContent className="grid gap-2">
               <Button className="h-36 w-full touch-none flex-col gap-2 rounded-lg text-[clamp(1.2rem,5vw,2.5rem)] font-bold whitespace-normal leading-tight sm:h-44"
                 disabled={!canBuzz} variant={winner ? 'secondary' : 'default'}
                 onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); triggerBuzz() } }}

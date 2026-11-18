@@ -1,5 +1,6 @@
 import type { DecisionWheelEntry } from '@/apps/decision-wheel/types'
 import { getEntryDisplayText } from '@/apps/decision-wheel/utils'
+import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
@@ -144,7 +145,6 @@ export function EntryColorControl({
   return (
     <ColorPicker
       ariaLabel={t('decisionWheel.option.colorAria', { option: entryLabel })}
-      className="h-9 w-10"
       value={entry.color}
       onValueCommit={(color) =>
         onUpdateEntry(entry.id, { color })
@@ -165,10 +165,18 @@ export function RemoveEntryButton({
   )
 
   return (
-    <DeleteButton
-      aria-label={t('decisionWheel.option.deleteAria', { option: entryLabel })}
-      className={mode === 'mobile' ? 'size-11' : undefined}
-      onClick={() => onRemoveEntry(entry.id)}
+    <ConfirmButton
+      mode="popover"
+      title={t('decisionWheel.option.deleteTitle')}
+      description={t('decisionWheel.option.deleteDescription', { option: entryLabel })}
+      confirmLabel={t('common.delete')}
+      onConfirm={() => onRemoveEntry(entry.id)}
+      trigger={
+        <DeleteButton
+          aria-label={t('decisionWheel.option.deleteAria', { option: entryLabel })}
+          className={mode === 'mobile' ? 'size-11' : undefined}
+        />
+      }
     />
   )
 }

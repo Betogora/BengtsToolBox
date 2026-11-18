@@ -56,7 +56,6 @@ export function PlayerSetupList({
               onConfirm={() => onRemove(player.id)}
               trigger={
                 <DeleteButton
-                  tone="quiet"
                   className="size-11 sm:size-9"
                   aria-label={t('shared.playerCard.removeAria', { name: player.name })}
                 />

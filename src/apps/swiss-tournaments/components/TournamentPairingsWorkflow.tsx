@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Save,
   Swords,
-  TriangleAlert,
   X,
 } from "lucide-react";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
@@ -26,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Notice } from "@/components/ui/notice";
 import { IftaSelectTrigger } from "@/components/ui/ifta-field";
 import {
   Select,
@@ -94,25 +94,18 @@ function TournamentCompleteBanner({
   unitLabel: string;
 }) {
   return (
-    <div className="type-action flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-3 text-emerald-950">
-      <CheckCircle2 className="size-5 shrink-0" />
-      <span>{label}</span>
-      <Badge
-        className="border-emerald-300 bg-emerald-50 text-emerald-950"
-        variant="outline"
-      >
+    <Notice tone="success" icon={CheckCircle2}>
+      {label}
+      <span className="ml-2 tabular-nums text-muted-foreground">
         {completedRounds}/{numberOfRounds} {unitLabel}
-      </Badge>
-    </div>
+      </span>
+    </Notice>
   );
 }
 
 function MarioKartPlanningBanner({ label }: { label: string }) {
   return (
-    <div className="type-action flex items-center gap-2 rounded-md border border-amber-300 bg-amber-100 px-4 py-3 text-amber-950">
-      <TriangleAlert className="size-5 shrink-0" />
-      <span>{label}</span>
-    </div>
+    <Notice tone="warning">{label}</Notice>
   );
 }
 
@@ -152,7 +145,7 @@ function MarioKartReservationPanel({
     );
 
   return (
-    <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+    <div className="grid gap-3 border-t pt-4">
       {tournament.marioKartLobbyReservation &&
       !isEditingMarioKartReservation ? (
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
@@ -390,7 +383,7 @@ function ManualPairingForm({
     );
 
   return (
-    <div className="grid gap-3 rounded-md border border-dashed bg-background p-3">
+    <div className="grid gap-3 border-t pt-4">
       {tournament.format === "handAndBrain" && (
         <div className="grid gap-2">
           <div className="type-action flex items-center gap-2">
@@ -878,15 +871,18 @@ export function TournamentPairingsWorkflow({
                       unitLabel={t(completedUnitLabelKey(tournament.format))}
                     />
                   )}
+                  {/* Laufende Runde als getönte Mulde, abgeschlossene Runden als Abschnitte mit Haarlinie. */}
                   <Card
                     className={cn(
-                      "overflow-hidden",
+                      "overflow-hidden shadow-none",
                       round.status === "draft"
-                        ? "border-l-4 border-l-primary bg-primary/5"
-                        : "bg-card/80 opacity-85",
+                        ? "rounded-md border-0 bg-primary-soft"
+                        : "rounded-none border-0 border-t bg-transparent",
                     )}
                   >
-                    <CardHeader className="p-4 sm:p-6">
+                    <CardHeader
+                      className={round.status === "draft" ? "p-4 sm:p-5" : "px-0 pt-4 pb-4"}
+                    >
                       <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <CardTitle>{roundLabel}</CardTitle>
@@ -1089,7 +1085,12 @@ export function TournamentPairingsWorkflow({
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="grid gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
+                    <CardContent
+                      className={cn(
+                        "grid gap-4",
+                        round.status === "draft" ? "p-4 pt-0 sm:p-5 sm:pt-0" : "px-0 pb-0",
+                      )}
+                    >
                       <PairingsTable
                         editable={isEditable || Boolean(correctionDraft)}
                         inspection={correctionInspection ?? inspection}
@@ -1177,7 +1178,7 @@ export function TournamentPairingsWorkflow({
                   )}
                 />
               )}
-              <div className="type-ui flex flex-col gap-3 rounded-md border border-dashed p-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <div className="type-ui flex flex-col gap-3 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <span>{t(firstUnitHintLabelKey(tournament.format))}</span>
                 <Button
                   className="w-full sm:w-auto"

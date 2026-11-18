@@ -1,6 +1,6 @@
 import './codenames.css'
 
-import { Play, Sparkles, Trophy, VenetianMask } from 'lucide-react'
+import { Play, RotateCcw, Sparkles, Trophy, VenetianMask } from 'lucide-react'
 import { useId, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -14,8 +14,8 @@ import { proxyErrorMessage, useCodenames } from '@/apps/codenames/hooks/useCoden
 import { isWordlistId, WORDLIST_IDS, type RevealResponse, type WordlistId } from '@/apps/codenames/logic/protocol'
 import type { Team } from '@/apps/codenames/logic/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
-import { Badge } from '@/components/ui/badge'
+import { AppPageHeader, AppPageStatus } from '@/apps/shared/components/AppPageHeader'
+import { Notice } from '@/components/ui/notice'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -128,31 +128,36 @@ export function CodenamesPage() {
 
   return (
     <AppPage className="codenames-page">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <AppPageTitle Icon={VenetianMask} title={t('app.codenames.title')} />
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => setKeyOpen(true)}>
-            <Sparkles />
-            {t('codenames.ai.button')}
-            {game.aiConfigured === false && <Badge variant="secondary">{t('codenames.placeholderBadge')}</Badge>}
-          </Button>
-          {view && (
-            <Button variant="ghost" onClick={openNewGame} disabled={busy}>
-              {t('codenames.newGame')}
+      <AppPageHeader
+        Icon={VenetianMask}
+        title={t('app.codenames.title')}
+        status={
+          game.aiConfigured === false ? (
+            <AppPageStatus Icon={Sparkles}>{t('codenames.placeholderBadge')}</AppPageStatus>
+          ) : undefined
+        }
+        actions={
+          <>
+            {view && (
+              <Button variant="outline" className="max-sm:size-9 max-sm:px-0" onClick={openNewGame} disabled={busy}>
+                <RotateCcw />
+                <span className="max-sm:sr-only">{t('codenames.newGame')}</span>
+              </Button>
+            )}
+            <Button variant="outline" className="max-sm:size-9 max-sm:px-0" onClick={() => setKeyOpen(true)}>
+              <Sparkles />
+              <span className="max-sm:sr-only">{t('codenames.ai.button')}</span>
             </Button>
-          )}
-        </div>
-      </header>
+          </>
+        }
+      />
 
-      {game.error && (
-        <p className="type-ui text-destructive" role="alert">{t(syncErrorMessageKey(game.error))}</p>
-      )}
+      {game.error && <Notice tone="danger">{t(syncErrorMessageKey(game.error))}</Notice>}
 
       {!view ? (
         <Card className="mx-auto w-full max-w-xl">
           <CardHeader>
             <CardTitle>{t('codenames.setupTitle')}</CardTitle>
-            <p className="type-ui text-muted-foreground">{t('codenames.setupInfo')}</p>
           </CardHeader>
           <CardContent>{wordlistControl}</CardContent>
           <CardFooter>

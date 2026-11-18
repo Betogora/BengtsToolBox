@@ -1,6 +1,6 @@
 import { Trophy } from 'lucide-react'
 
-import { getPodiumRankClass } from '@/apps/shared/podium'
+import { RankList, RankRow } from '@/apps/shared/components/RankRow'
 import { getLeaders } from '@/apps/voting/logic'
 import type { VotingResultEntry } from '@/apps/voting/types'
 import { useI18n } from '@/lib/i18n'
@@ -75,72 +75,37 @@ export function VotingResultList({
   const maxVotes = Math.max(1, ...results.map((entry) => entry.votes))
 
   return (
-    <ol className={cn('grid', size === 'compact' ? 'gap-1.5' : 'gap-2.5')} aria-label={t('voting.result.ranking')}>
+    <RankList aria-label={t('voting.result.ranking')}>
       {results.map((entry) => {
         const percent = ballotCount > 0 ? Math.round((entry.votes / ballotCount) * 100) : 0
+        const voters = showVoters && entry.voterNames.length > 0 ? entry.voterNames : []
 
         return (
-          <li
+          <RankRow
             key={entry.personId}
             data-voting-result={entry.name}
-            className={cn(
-              'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-md border bg-card',
-              size === 'compact' ? 'px-2.5 py-2' : size === 'large' ? 'p-4' : 'px-3 py-2.5',
-            )}
-          >
-            <span
-              aria-label={t('voting.result.rank', { rank: entry.rank })}
-              className={cn(
-                getPodiumRankClass(entry.rank),
-                size === 'compact' ? 'type-caption size-6' : size === 'large' ? 'type-section-title size-12' : 'type-action size-8',
-              )}
-            >
-              {entry.rank}
-            </span>
-            <div className="grid min-w-0 gap-1.5">
-              <span className="flex min-w-0 items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cn('shrink-0 rounded-full', size === 'large' ? 'size-4' : 'size-2.5')}
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span
-                  className={cn(
-                    'min-w-0 truncate',
-                    size === 'large' ? 'type-section-title' : size === 'compact' ? 'type-label' : 'type-action',
-                  )}
-                >
-                  {entry.name}
-                </span>
-              </span>
-              <span
-                aria-hidden="true"
-                className={cn('block overflow-hidden rounded-full bg-muted', size === 'large' ? 'h-3' : 'h-1.5')}
-              >
-                <span
-                  className="block h-full rounded-full transition-[width] duration-500 ease-out"
-                  style={{ width: `${(entry.votes / maxVotes) * 100}%`, backgroundColor: entry.color }}
-                />
-              </span>
-            </div>
-            <span className="text-right">
-              <span className={cn('block tabular-nums', size === 'large' ? 'type-metric-xl' : 'type-metric-sm')}>
-                {entry.votes}
-              </span>
-              <span className="type-caption block tabular-nums text-muted-foreground">{percent} %</span>
-            </span>
-            {showVoters && entry.voterNames.length > 0 && (
-              <ul className="col-start-2 col-end-4 flex flex-wrap gap-1" aria-label={t('voting.result.votersOf', { name: entry.name })}>
-                {entry.voterNames.map((name) => (
-                  <li key={name} className="type-caption rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
+            color={entry.color}
+            name={entry.name}
+            rank={entry.rank}
+            share={entry.votes / maxVotes}
+            size={size}
+            value={entry.votes}
+            sub={
+              <>
+                {percent} %
+                {voters.length > 0 && (
+                  <>
+                    {' · '}
+                    <span aria-label={t('voting.result.votersOf', { name: entry.name })}>
+                      {voters.join(', ')}
+                    </span>
+                  </>
+                )}
+              </>
+            }
+          />
         )
       })}
-    </ol>
+    </RankList>
   )
 }

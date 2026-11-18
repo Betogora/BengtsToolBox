@@ -34,10 +34,12 @@ import { defaultPlanPaces, newTrainingContexts } from './types'
 import type { PlanPaces } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
+import { Notice } from '@/components/ui/notice'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 const loadTrainingStatistics = () => import('./TrainingStatistics')
 const TrainingStatistics = lazy(loadTrainingStatistics)
@@ -173,20 +175,20 @@ export function TriathlonTrackerPage() {
 
   return (
     <AppPage
-      className="triathlon-tracker gap-4 py-5 sm:gap-5 sm:py-8"
+      className={cn(
+        'triathlon-tracker gap-4 py-5 sm:gap-5 sm:py-8',
+        // Platz für die angeheftete Aktionsleiste der Planung, damit die Einstellungen darunter erreichbar bleiben.
+        activeTab === 'calendar' && 'max-sm:pb-28',
+      )}
       width="wide"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <AppPageTitle Icon={Activity} title={t('app.triathlonTracker.title')} />
-        {tracker.isPending && <SyncStatus />}
-      </header>
+      <AppPageHeader
+        Icon={Activity}
+        title={t('app.triathlonTracker.title')}
+        status={tracker.isPending ? <SyncStatus /> : undefined}
+      />
       {tracker.error && (
-        <p
-          className="rounded-md border border-destructive p-3 text-destructive"
-          role="alert"
-        >
-          {t(syncErrorMessageKey(tracker.error))}
-        </p>
+        <Notice tone="danger">{t(syncErrorMessageKey(tracker.error))}</Notice>
       )}
       {tracker.isLoading ? (
         <LoadingState />

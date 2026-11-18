@@ -207,7 +207,8 @@ Object.assign(review.scenes, {
   'picker-date': {
     path: '/apps/triathlon-tracker',
     run: async ({ page }) => {
-      await page.getByRole('button', { name: 'Planen', exact: true }).click()
+      await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Planen', exact: true }).click()
       const calendar = page.getByRole('button', {
         name: 'Kalender öffnen: Datum',
         exact: true,
@@ -218,7 +219,8 @@ Object.assign(review.scenes, {
   'picker-time': {
     path: '/apps/triathlon-tracker',
     run: async ({ page }) => {
-      await page.getByRole('button', { name: 'Planen', exact: true }).click()
+      await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Planen', exact: true }).click()
       const clock = page.getByRole('button', {
         name: 'Uhrzeit wählen: Uhrzeit (optional)',
         exact: true,
@@ -229,7 +231,8 @@ Object.assign(review.scenes, {
   'picker-dropdown': {
     path: '/apps/triathlon-tracker',
     run: async ({ page }) => {
-      await page.getByRole('button', { name: 'Planen', exact: true }).click()
+      await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Planen', exact: true }).click()
       await page
         .getByRole('combobox', { name: 'Disziplin', exact: true })
         .click()
@@ -270,17 +273,16 @@ Object.assign(review.scenes, {
     path: '/apps/triathlon-tracker',
     click: ['Planung'],
     run: async ({ page }) => {
-      await page
-        .getByRole('button', { name: 'Woche kopieren', exact: true })
-        .first()
-        .click()
+      await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Woche kopieren', exact: true }).click()
       await page.getByRole('dialog').waitFor()
     },
   },
   'plan-eintragen': {
     path: '/apps/triathlon-tracker',
     run: async ({ page }) => {
-      await page.getByRole('button', { name: 'Planen', exact: true }).click()
+      await page.getByRole('button', { name: 'Weitere Aktionen', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Planen', exact: true }).click()
       await page.getByRole('dialog').waitFor()
     },
   },

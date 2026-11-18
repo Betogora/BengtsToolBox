@@ -39,7 +39,7 @@ export function NavigationMenu({ items, openOnMount, focusOnMount }: NavigationM
   return (
     <DropdownMenu defaultOpen={openOnMount}>
       <DropdownMenuTrigger asChild>
-        <Button ref={triggerRef} variant="secondary" size="icon" aria-label={t('nav.menu')}>
+        <Button ref={triggerRef} variant="ghost" size="icon" className="size-10 text-foreground hover:bg-secondary hover:text-primary" aria-label={t('nav.menu')}>
           <Menu className="size-4" />
         </Button>
       </DropdownMenuTrigger>

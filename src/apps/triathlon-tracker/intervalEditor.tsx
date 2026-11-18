@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { IftaInput, IftaSelectTrigger } from '@/components/ui/ifta-field'
 import { Input } from '@/components/ui/input'
@@ -84,9 +85,7 @@ export function IntervalEditor({
         </Button>
       </div>
       {intervals.length === 0 ? (
-        <p className="type-ui rounded-md bg-muted p-4 text-center text-muted-foreground">
-          {t('triathlon.intervals.empty')}
-        </p>
+        <EmptyState>{t('triathlon.intervals.empty')}</EmptyState>
       ) : (
         <div className="grid gap-3">
           {intervals.map((interval, index) => (
@@ -99,7 +98,6 @@ export function IntervalEditor({
                   {t('triathlon.intervals.number', { number: index + 1 })}
                 </Badge>
                 <DeleteButton
-                  tone="quiet"
                   aria-label={t('triathlon.intervals.remove', {
                     number: index + 1,
                   })}
@@ -409,7 +407,6 @@ export function RunIntervalTable({
             {phaseInput(phase, index, 'endHeartRateBpm', t('triathlon.intervals.endHeartRate'))}
             {removable ? (
               <DeleteButton
-                tone="quiet"
                 aria-label={t('triathlon.intervals.removePhase', {
                   phase: phaseLabel(index),
                 })}

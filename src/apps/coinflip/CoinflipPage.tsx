@@ -15,7 +15,7 @@ import {
 } from '@/apps/coinflip/hooks/useCoinflip'
 import type { CoinflipResult } from '@/apps/coinflip/types'
 import { AppPage } from '@/apps/shared/components/AppPage'
-import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { AppResetButton } from '@/apps/shared/components/AppResetButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
@@ -27,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Notice } from '@/components/ui/notice'
 import { useI18n } from '@/lib/i18n'
 import { syncErrorMessageKey } from '@/lib/firebase/syncError'
 
@@ -154,33 +155,33 @@ export function CoinflipPage() {
 
   return (
     <AppPage>
-      <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <AppPageTitle Icon={Coins} title={appTitle} />
-        <PresenterLauncher
-          appTitle={appTitle}
-          views={[
-            {
-              id: 'last-flip',
-              label: t('coinflip.lastFlip'),
-              Icon: Coins,
-              render: () => (
-                <CoinflipPresenter
-                  history={presenterHistory}
-                  lastFlip={data.lastFlip}
-                />
-              ),
-            },
-          ]}
-        />
-      </section>
+      <AppPageHeader
+        Icon={Coins}
+        title={appTitle}
+        actions={
+          <PresenterLauncher
+            appTitle={appTitle}
+            views={[
+              {
+                id: 'last-flip',
+                label: t('coinflip.lastFlip'),
+                Icon: Coins,
+                render: () => (
+                  <CoinflipPresenter
+                    history={presenterHistory}
+                    lastFlip={data.lastFlip}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
 
       {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle>{t('common.firebaseError')}</CardTitle>
-            <CardDescription>{t(syncErrorMessageKey(error))}</CardDescription>
-          </CardHeader>
-        </Card>
+        <Notice tone="danger" title={t('common.firebaseError')}>
+          {t(syncErrorMessageKey(error))}
+        </Notice>
       )}
 
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -245,7 +246,7 @@ export function CoinflipPage() {
           </CardHeader>
           <CardContent>
             {visibleHistory.length === 0 ? (
-              <EmptyState className="p-8">
+              <EmptyState>
                 {t('coinflip.empty')}
               </EmptyState>
             ) : (

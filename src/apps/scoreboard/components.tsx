@@ -16,6 +16,7 @@ import type {
 import { ConfirmButton } from '@/apps/shared/components/ConfirmButton'
 import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { InlineTextEdit } from '@/apps/shared/components/InlineTextEdit'
+import { RankList, RankRow } from '@/apps/shared/components/RankRow'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
@@ -34,58 +35,30 @@ import { useI18n } from '@/lib/i18n'
 
 export function RankingBars({ standings }: { standings: ScoreboardStanding[] }) {
   const { formatNumber } = useI18n()
+  // Negative Stände reichen wie bisher von der Nulllinie nach links.
   const minScore = Math.min(0, ...standings.map((standing) => standing.score))
   const maxScore = Math.max(0, ...standings.map((standing) => standing.score))
   const range = Math.max(1, maxScore - minScore)
-  const zeroPosition = ((0 - minScore) / range) * 100
+  const zero = -minScore / range
 
   return (
-    <div className="grid divide-y">
+    <RankList>
       {standings.map((standing) => {
-        const scorePosition = ((standing.score - minScore) / range) * 100
-        const barStart = Math.min(zeroPosition, scorePosition)
-        const barWidth = Math.max(standing.score === 0 ? 0 : 1.25, Math.abs(scorePosition - zeroPosition))
+        const position = (standing.score - minScore) / range
 
         return (
-          <div
+          <RankRow
             key={`${standing.target.type}-${standing.target.id}`}
-            className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 py-3 first:pt-0 last:pb-0"
-          >
-            <span className="type-card-title text-muted-foreground tabular-nums">
-              {standing.rank}
-            </span>
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-2">
-                <span
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: standing.target.color }}
-                />
-                <span className="type-card-title truncate">{standing.target.name}</span>
-              </div>
-              <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 w-px bg-border"
-                  style={{ left: `${zeroPosition}%` }}
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 rounded-full"
-                  style={{
-                    backgroundColor: standing.target.color,
-                    left: `${barStart}%`,
-                    width: `${barWidth}%`,
-                  }}
-                />
-              </div>
-            </div>
-            <span className="text-[1.625rem] leading-none font-semibold tracking-tight tabular-nums">
-              {formatNumber(standing.score)}
-            </span>
-          </div>
+            color={standing.target.color}
+            name={standing.target.name}
+            rank={standing.rank}
+            share={Math.abs(position - zero)}
+            shareStart={Math.min(position, zero)}
+            value={formatNumber(standing.score)}
+          />
         )
       })}
-    </div>
+    </RankList>
   )
 }
 
@@ -333,7 +306,7 @@ export function HistoryList({ history }: { history: ScoreboardHistoryEntry[] }) 
   const { formatDateTime, formatNumber, t } = useI18n()
 
   if (history.length === 0) {
-    return <EmptyState className="p-4">{t('scoreboard.emptyHistory')}</EmptyState>
+    return <EmptyState>{t('scoreboard.emptyHistory')}</EmptyState>
   }
 
   return (
@@ -341,7 +314,7 @@ export function HistoryList({ history }: { history: ScoreboardHistoryEntry[] }) 
       {history.map(({ event, resultingScore }) => (
         <div
           key={event.id}
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-background p-3"
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md bg-background p-3"
           style={{ backgroundColor: `color-mix(in srgb, ${event.targetColor} 12%, var(--card))` }}
         >
           <div className="min-w-0">
@@ -399,8 +372,8 @@ export function ArchiveCard({
   )
 
   return (
-    <div className="rounded-lg border bg-background">
-      <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="py-3 first:pt-0 last:pb-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="min-w-0 flex-1">
             <InlineTextEdit
@@ -448,11 +421,11 @@ export function ArchiveCard({
       </div>
 
       {isOpen && (
-        <div className="grid gap-4 border-t p-3 sm:p-4">
+        <div className="grid gap-4 pt-3">
           <RankingBars standings={archive.standings} />
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {roster.map((player) => (
-              <div key={player.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border bg-card p-3">
+              <div key={player.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md bg-muted p-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: player.color }} />
@@ -483,13 +456,14 @@ export function AddCard({
   onClick: () => void | Promise<unknown>
 }) {
   return (
-    <Card className="border-dashed">
-      <CardContent className="flex h-full items-center justify-center p-4">
-        <Button className="h-full min-h-24 w-full flex-col gap-2" variant="outline" onClick={() => void onClick()}>
-          <Plus className="size-6" />
-          {label}
-        </Button>
-      </CardContent>
-    </Card>
+    // Eine gestrichelte Kachel ist selbst die Aktion; kein Button-Kasten in einer Karte.
+    <button
+      type="button"
+      className="type-action flex h-full min-h-24 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-strong text-muted-foreground transition-colors outline-none hover:border-primary hover:bg-primary-soft hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      onClick={() => void onClick()}
+    >
+      <Plus className="size-6" />
+      {label}
+    </button>
   )
 }
