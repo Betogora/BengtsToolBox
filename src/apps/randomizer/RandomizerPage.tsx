@@ -112,6 +112,7 @@ export function RandomizerPage() {
     <AppPage>
       <AppPageHeader
         Icon={Dice5}
+        shortTitle={t('app.randomizer.shortTitle')}
         title={appTitle}
         actions={
           <PresenterLauncher

@@ -72,9 +72,17 @@ test('Farbschema wechselt global, wird gespeichert und ist im Dunkelmodus barrie
   await app.open('/')
   const root = page.locator('html')
   await expect(root).not.toHaveClass(/\bdark\b/)
-  await page.getByRole('button', { name: 'Zum dunklen Farbschema wechseln' }).click()
+  // Unter sm steht der Schalter im Navigationsmenü statt in der TopBar.
+  const toDark = page.getByRole('button', { name: 'Zum dunklen Farbschema wechseln' })
+  const inMenu = page.viewportSize()!.width < 640
+  if (inMenu) {
+    await page.getByRole('button', { name: 'Navigation' }).click()
+    await page.getByRole('menuitem', { name: 'Zum dunklen Farbschema wechseln' }).click()
+  } else {
+    await toDark.click()
+  }
   await expect(root).toHaveClass(/\bdark\b/)
-  await expect(page.getByRole('button', { name: 'Zum hellen Farbschema wechseln' })).toBeVisible()
+  if (!inMenu) await expect(page.getByRole('button', { name: 'Zum hellen Farbschema wechseln' })).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('bengtstoolbox.colorScheme'))).toBe('dark')
   await app.expectHealthy()
   // app.open() leert LocalStorage; clientseitige Navigation prüft, dass das Schema in Apps gilt.

@@ -253,6 +253,7 @@ export function ProgressDashboardPage() {
     <AppPage width="wide" className="pb-28 lg:pb-10">
       <AppPageHeader
         Icon={ChartNoAxesCombined}
+        shortTitle={t('app.progressDashboard.shortTitle')}
         title={appTitle}
         status={
           <Tooltip

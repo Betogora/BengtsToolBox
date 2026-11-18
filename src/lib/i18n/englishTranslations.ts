@@ -43,15 +43,18 @@ export const en: Record<TranslationKey, string> = {
   'app.nextQuestion.title': 'Next Question',
   'app.progressDashboard.description':
     'Shared progress chart with players, colors, events, archive, and editable datasets.',
+  'app.progressDashboard.shortTitle': 'Progress',
   'app.progressDashboard.title': 'Progress Dashboard',
   'app.randomizer.description':
     'Online dice and random number generator with remembered latest state.',
+  'app.randomizer.shortTitle': 'Random Number',
   'app.randomizer.title': 'Random Number Generator',
   'app.scoreboard.description':
     'Live scoreboard for game nights, quizzes, challenges, and small tournaments.',
   'app.scoreboard.title': 'Scoreboard',
   'app.swissTournaments.description':
     'Chess tournaments using the Swiss system with players, pairings, results, tie-breaks, and export.',
+  'app.swissTournaments.shortTitle': 'SK Anderten',
   'app.swissTournaments.title': 'SK Anderten Tournament App',
   'app.territoryMap.description':
     'Interactive sushi travel map for countries and German states with diner colors and live sync.',
@@ -998,6 +1001,7 @@ export const en: Record<TranslationKey, string> = {
   'territory.zoomOut': 'Zoom out',
   'territory.selectTourist': 'Choose sushi tourist',
   'app.voting.description': 'Anonymous QR code voting, for example for the best costume, with results and archive.',
+  'app.voting.shortTitle': 'Costumes',
   'app.voting.title': 'Costume Contest',
   'voting.admin.close': 'End voting',
   'voting.admin.closed': 'Voting ended',

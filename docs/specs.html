@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:f012886e76555f637467a8f4772437748092d84c707b767f8dc8b3b2fdcfc179">
+  <meta name="specs-source-sha256" content="sha256:283f05eae7963aee3d0fb16a4cfa65ef30ce57407428340c57dbfe37af7b3b3d">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -514,7 +514,7 @@
           <article class="card">
             <h3>Shell & Routing</h3>
             <ul>
-              <li>Branding, Dashboard, Sonderbereiche, Lobbys, Sprachauswahl und Farbschema-Button (ganz rechts); Navigation ab 1024&nbsp;px mittig, darunter im Menü; die Lobby-Verwaltung liegt im Kopf der Lobby-Seite.</li>
+              <li>Branding, Dashboard, Sonderbereiche, Lobbys, Sprachauswahl und Farbschema-Button (ganz rechts, unter 640&nbsp;px im Menü); Navigation ab 1024&nbsp;px mittig, darunter im Menü; die Lobby-Verwaltung liegt im Kopf der Lobby-Seite.</li>
               <li>Desktopnavigation direkt, mobile Navigation im Menü.</li>
               <li>Globales Hell/Dunkel-Schema: Standard hell, Auswahl in <code>bengtstoolbox.colorScheme</code>, Klasse <code>dark</code> auf <code>&lt;html&gt;</code> schon vor dem ersten Rendern; ein Button wechselt, nur sein Symbol animiert. Farben nur über Tokens, Druck bleibt hell.</li>
               <li>Lazy Loading; Prefetch bei Fokus, Hover oder Touch.</li>
@@ -555,7 +555,7 @@
               <li>Tastaturfokus verwendet eine klare Kontur. Dialog-Schließen besitzt 44 px Bedienfläche mobil und 36 px ab 640 px.</li>
               <li>Lade-, Leer-, Fehler- und lokaler Modus müssen verständlich darstellbar sein. Globale Typografie verwendet Manrope Variable und semantische <code>type-*</code>-Rollen; Feldlabels und kleine Hinweise teilen 12/16 px, Abschnitts- und Dialogtitel 20/24 px.</li>
               <li>Kompakte Oberflächen; erklärende Untertitel nur auf ausdrücklichen Wunsch oder für notwendige Status- und Fehlermeldungen.</li>
-              <li>Gemeinsame Bausteine: <code>AppPageHeader</code> (Zurück-Pfeil, Titel und Aktionen in der schmalen TopBar, Status als Text in der Seite; die TopBar blendet beim Herunterscrollen aus), <code>Notice</code> für Hinweise und Sync-Fehler, <code>RankRow</code> für Ranglisten, <code>EmptyState</code> ohne Kasten, <code>BottomActionBar</code> für die mobile Primäraktion.</li>
+              <li>Gemeinsame Bausteine: <code>AppPageHeader</code> (Zurück-Pfeil, Titel und Aktionen in der schmalen TopBar, unter 400&nbsp;px mit optionalem Kurztitel; <code>h1</code> für Screenreader und Status als Text in der Seite; die TopBar blendet beim Herunterscrollen aus und bei Hochscrollen oder Shift+Tab wieder ein), <code>Notice</code> für Hinweise und Sync-Fehler, <code>RankRow</code> für Ranglisten, <code>EmptyState</code> ohne Kasten, <code>BottomActionBar</code> für die mobile Primäraktion.</li>
               <li>Ein Rahmen pro Ebene: in Karten nur Haarlinien, Abstand oder eine randlose Mulde. Löschen ist ruhig, Rot erst in der Bestätigung; kompakte Farbwähler sind runde Farbpunkte.</li>
             </ul>
           </article>

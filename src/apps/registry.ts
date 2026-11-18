@@ -21,6 +21,8 @@ import type { TranslationKey } from '@/lib/i18n'
 export type HubApp = {
   id: string
   titleKey: TranslationKey
+  /** Kürzerer Name für die TopBar unter 400 px, wo der volle Titel abgeschnitten würde. */
+  shortTitleKey?: TranslationKey
   descriptionKey: TranslationKey
   href: string
   routePath: string
@@ -66,6 +68,7 @@ const appDefinitions: readonly HubApp[] = [
   {
     id: 'progress-dashboard',
     titleKey: 'app.progressDashboard.title',
+    shortTitleKey: 'app.progressDashboard.shortTitle',
     descriptionKey: 'app.progressDashboard.description',
     href: '/apps/progress-dashboard',
     routePath: 'apps/progress-dashboard',
@@ -105,6 +108,7 @@ const appDefinitions: readonly HubApp[] = [
   {
     id: 'voting',
     titleKey: 'app.voting.title',
+    shortTitleKey: 'app.voting.shortTitle',
     descriptionKey: 'app.voting.description',
     href: '/apps/voting',
     routePath: 'apps/voting',
@@ -131,6 +135,7 @@ const appDefinitions: readonly HubApp[] = [
   {
     id: 'randomizer',
     titleKey: 'app.randomizer.title',
+    shortTitleKey: 'app.randomizer.shortTitle',
     descriptionKey: 'app.randomizer.description',
     href: '/apps/randomizer',
     routePath: 'apps/randomizer',
@@ -144,6 +149,7 @@ const appDefinitions: readonly HubApp[] = [
   {
     id: 'swiss-tournaments',
     titleKey: 'app.swissTournaments.title',
+    shortTitleKey: 'app.swissTournaments.shortTitle',
     descriptionKey: 'app.swissTournaments.description',
     href: '/apps/swiss-tournaments',
     routePath: 'apps/swiss-tournaments',

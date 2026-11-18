@@ -37,9 +37,11 @@ function printablePdfTitle(tournamentName: string) {
 }
 
 function AppTitleHeader({ actions, isMarioKart = false }: { actions?: ReactNode; isMarioKart?: boolean }) {
+  const { t } = useI18n()
   return (
     <AppPageHeader
       Icon={isMarioKart ? Beer : ChessKing}
+      shortTitle={isMarioKart ? undefined : t('app.swissTournaments.shortTitle')}
       title={isMarioKart ? marioKartAppTitle : appTitle}
       actions={actions}
     />

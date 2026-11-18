@@ -41,15 +41,18 @@ export const de = {
   'app.nextQuestion.title': 'Nächste Frage',
   'app.progressDashboard.description':
     'Gemeinsames Fortschrittsdiagramm mit Spielern, Farben, Events, Archiv und editierbaren Datensätzen.',
+  'app.progressDashboard.shortTitle': 'Fortschritt',
   'app.progressDashboard.title': 'Fortschritts-Dashboard',
   'app.randomizer.description':
     'Online-Würfel und Random Number Generator mit gemerktem letzten Zustand.',
+  'app.randomizer.shortTitle': 'Zufallszahl',
   'app.randomizer.title': 'Random Number Generator',
   'app.scoreboard.description':
     'Live-Scoreboard für Spieleabende, Quiz, Challenges und kleine Turniere.',
   'app.scoreboard.title': 'Scoreboard',
   'app.swissTournaments.description':
     'Schachturniere nach Schweizer System mit Spielern, Paarungen, Ergebnissen, Tie-Breaks und Export.',
+  'app.swissTournaments.shortTitle': 'SK Anderten',
   'app.swissTournaments.title': 'SK Anderten Turnier-App',
   'app.territoryMap.description':
     'Interaktive Sushi-Reisekarte für Weltländer und deutsche Bundesländer mit Esserfarben und Live-Sync.',
@@ -1000,6 +1003,7 @@ export const de = {
   'territory.zoomOut': 'Rauszoomen',
   'territory.selectTourist': 'Sushi-Tourist wählen',
   'app.voting.description': 'Anonyme Abstimmung per QR-Code, etwa für das beste Kostüm, mit Auswertung und Archiv.',
+  'app.voting.shortTitle': 'Kostüme',
   'app.voting.title': 'Kostüm\u00ADwettbewerb',
   'voting.admin.close': 'Abstimmung beenden',
   'voting.admin.closed': 'Abstimmung beendet',

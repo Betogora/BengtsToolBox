@@ -294,6 +294,7 @@ export function VotingPage() {
     <AppPage width="wide">
       <AppPageHeader
         Icon={Drama}
+        shortTitle={t('app.voting.shortTitle')}
         title={appTitle}
         status={
           !isRealtime ? (

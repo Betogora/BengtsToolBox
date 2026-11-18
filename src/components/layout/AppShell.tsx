@@ -8,11 +8,13 @@ import {
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
+import { registeredApps } from '@/apps/registry'
 import { Button } from '@/components/ui/button'
 import { ColorSchemeToggle } from '@/components/layout/ColorSchemeToggle'
 import { LanguageSelector } from '@/components/layout/LanguageSelector'
 import type { NavigationItem } from '@/components/layout/NavigationMenu'
 import { ShellHeaderSlotsContext } from '@/components/layout/shellHeaderSlots'
+import { ShellTitle } from '@/components/layout/ShellTitle'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -61,23 +63,41 @@ const parentHubPath = (pathname: string) =>
       ? '/lobbies'
       : '/')
 
+// App einer Route, auch innerhalb einer Lobby; liefert der Leiste den Titel, solange die Seite lädt oder gesperrt ist.
+const appForPath = (pathname: string) => {
+  const path = pathname.replace(/^\/lobbies\/[^/]+/, '')
+  return registeredApps.find((app) => path === `/${app.routePath}` || path.startsWith(`/${app.routePath}/`))
+}
+
 // Blendet die TopBar beim Herunterscrollen aus und beim Hochscrollen sofort wieder ein.
 // Der Zustand gilt nur für die Seite, auf der gescrollt wurde: Nach einem Routenwechsel steht die Leiste wieder.
 function useHiddenOnScrollDown(headerRef: RefObject<HTMLElement | null>, pathname: string) {
   const [hiddenOnPath, setHiddenOnPath] = useState<string | null>(null)
 
   useEffect(() => {
-    let lastY = window.scrollY
+    // Auf den echten Scrollbereich begrenzt: Das Zurückfedern am Seitenende (iOS) zählt nicht als Hochscrollen.
+    const scrollY = () =>
+      Math.min(Math.max(window.scrollY, 0), document.documentElement.scrollHeight - window.innerHeight)
+    let lastY = scrollY()
     const onScroll = () => {
-      const y = window.scrollY
+      const y = scrollY()
       if (Math.abs(y - lastY) < 8) return
       // Mit Tastaturfokus in der Leiste bleibt sie stehen, sonst verlöre die Tastatur ihr Ziel.
       const hide = y > lastY && y > 96 && !headerRef.current?.matches(':has(:focus-visible)')
       setHiddenOnPath(hide ? pathname : null)
       lastY = y
     }
+    // Wer per Shift+Tab rückwärts navigiert, bekommt die Leiste sofort zurück und erreicht sie so auch ohne
+    // Hochscrollen. Vorwärts-Tab bleibt ohne Wirkung, damit die Leiste nicht über das nächste Ziel gleitet.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab' && event.shiftKey) setHiddenOnPath(null)
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('keydown', onKeyDown)
+    }
   }, [headerRef, pathname])
 
   return hiddenOnPath === pathname
@@ -94,6 +114,7 @@ export function AppShell() {
   const usesDefaultLobby =
     location.pathname.startsWith('/apps/') || location.pathname.startsWith('/schlag-den-raab')
   const isCompact = !hubPathPattern.test(location.pathname)
+  const fallbackApp = isCompact ? appForPath(location.pathname) : undefined
   const shellSlots = useMemo(
     () => (isCompact ? { title: titleSlot, actions: actionsSlot } : null),
     [isCompact, titleSlot, actionsSlot],
@@ -127,7 +148,7 @@ export function AppShell() {
             // Pfeil, Icon und Titel führen gemeinsam zurück zum Hub. Der Titel kommt per Portal aus der Seite;
             // in einem Link läge er in React außerhalb von dessen Klickbehandlung und löste einen vollen
             // Seitenaufruf aus. Deshalb spannt der Pfeil-Link seine Fläche über die ganze Gruppe.
-            <div className="group relative flex min-w-0 max-w-full items-center gap-1 justify-self-start rounded-md text-foreground transition-colors hover:bg-secondary has-[h1]:pr-3 sm:-ml-2.5">
+            <div className="group relative flex min-w-0 max-w-full items-center gap-1 justify-self-start rounded-md text-foreground transition-colors hover:bg-secondary has-[[data-shell-title]]:pr-3 sm:-ml-2.5">
               <Link
                 to={parentHubPath(location.pathname)}
                 aria-label={t('common.back')}
@@ -136,7 +157,15 @@ export function AppShell() {
               >
                 <ArrowLeft aria-hidden="true" className="size-5" />
               </Link>
-              <div ref={setTitleSlot} className="pointer-events-none min-w-0" />
+              <div ref={setTitleSlot} className="peer pointer-events-none min-w-0 empty:hidden" />
+              {fallbackApp && (
+                <ShellTitle
+                  className="pointer-events-none hidden peer-empty:flex"
+                  Icon={fallbackApp.Icon}
+                  shortTitle={fallbackApp.shortTitleKey && t(fallbackApp.shortTitleKey)}
+                  title={t(fallbackApp.titleKey)}
+                />
+              )}
             </div>
           ) : (
             <Link
@@ -167,8 +196,8 @@ export function AppShell() {
 
           <div className="flex items-center gap-1.5 justify-self-end sm:gap-2">
             {isCompact && <div ref={setActionsSlot} className="flex items-center gap-2 empty:hidden" />}
-            {/* In der schmalen TopBar stehen Sprache und Farbschema unter sm im Menü. */}
-            <div className={cn('contents', isCompact && 'max-sm:hidden')}>
+            {/* Unter sm stehen Sprache und Farbschema im Menü, damit Marke und Titel Platz haben. */}
+            <div className="contents max-sm:hidden">
               <LanguageSelector />
               <ColorSchemeToggle />
             </div>
@@ -206,7 +235,6 @@ export function AppShell() {
                   items={navigationItems}
                   openOnMount={menuRequest.open}
                   focusOnMount={menuRequest.focus}
-                  showPreferences={isCompact}
                 />
               </Suspense>
             </div>

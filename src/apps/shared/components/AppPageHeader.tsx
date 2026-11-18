@@ -4,22 +4,27 @@ import { createPortal } from 'react-dom'
 
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
 import { useShellHeaderSlots } from '@/components/layout/shellHeaderSlots'
+import { ShellTitle } from '@/components/layout/ShellTitle'
 import { cn } from '@/lib/utils'
 
 const statusClassName = 'type-label flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground'
 
-// Ein Seitenkopf für alle Apps. In der Shell stehen Icon, Titel und Aktionen in der TopBar; in der Seite
-// bleibt nur der Status als ruhige Textzeile. Ohne Shell erscheint alles als eigene Kopfzeile.
+// Ein Seitenkopf für alle Apps. In der Shell stehen Icon, Titel und Aktionen sichtbar in der TopBar; in der
+// Seite bleiben die Überschrift für Screenreader (auch bei ausgeblendeter Leiste) und der Status als ruhige
+// Textzeile. Ohne Shell erscheint alles als eigene Kopfzeile.
 export function AppPageHeader({
   actions,
   className,
   Icon,
+  shortTitle,
   status,
   title,
 }: {
   actions?: ReactNode
   className?: string
   Icon: LucideIcon
+  // Kürzere Fassung für die TopBar auf schmalen Telefonen.
+  shortTitle?: string
   status?: ReactNode
   title: string
 }) {
@@ -28,8 +33,9 @@ export function AppPageHeader({
   if (shellSlots) {
     return (
       <>
-        {shellSlots.title && createPortal(<AppPageTitle compact Icon={Icon} title={title} />, shellSlots.title)}
+        {shellSlots.title && createPortal(<ShellTitle Icon={Icon} shortTitle={shortTitle} title={title} />, shellSlots.title)}
         {actions && shellSlots.actions && createPortal(actions, shellSlots.actions)}
+        <h1 className="sr-only">{title}</h1>
         {status && (
           <div data-slot="app-page-header" className={cn(statusClassName, className)}>
             {status}

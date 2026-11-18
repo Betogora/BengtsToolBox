@@ -66,6 +66,19 @@ test('verschachtelte Scoreboard-Route unterstützt Aktion und Dialog per Tastatu
   await expect(page.getByRole('banner')).toBeHidden()
   await page.evaluate(() => window.scrollBy(0, -60))
   await expect(page.getByRole('banner')).toBeVisible()
+  // Per Shift+Tab kommt sie auch ohne Hochscrollen zurück.
+  await page.evaluate(() => window.scrollTo(0, 300))
+  await expect(page.getByRole('banner')).toBeHidden()
+  // Fokus auf einen sichtbaren Button in der unteren Hälfte, damit Shift+Tab ein Ziel im Bild trifft.
+  await page.evaluate(() => {
+    const target = [...document.querySelectorAll<HTMLElement>('main button')].find((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.top > window.innerHeight / 2 && rect.bottom < window.innerHeight
+    })
+    target?.focus({ preventScroll: true })
+  })
+  await page.keyboard.press('Shift+Tab')
+  await expect(page.getByRole('banner')).toBeVisible()
   await page.setViewportSize(viewport)
   await page.evaluate(() => window.scrollTo(0, 0))
 
@@ -114,7 +127,7 @@ test('verschachtelte Scoreboard-Route unterstützt Aktion und Dialog per Tastatu
   })
   // Erst messen, wenn die eingleitende TopBar steht.
   await page.waitForFunction(() => document.querySelector('header')?.getBoundingClientRect().top === 0)
-  const title = await page.getByRole('heading', { level: 1, name: 'Scoreboard' }).boundingBox()
+  const title = await page.locator('header [data-shell-title]').filter({ visible: true }).boundingBox()
   await page.mouse.click(title!.x + title!.width / 2, title!.y + title!.height / 2)
   await expect(page).toHaveURL(/\/lobbies\/default$/)
   expect(await page.evaluate(() => 'withoutReload' in window)).toBe(true)

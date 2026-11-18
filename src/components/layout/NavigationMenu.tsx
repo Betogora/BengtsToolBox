@@ -25,12 +25,10 @@ type NavigationMenuProps = {
   // Carry over a click or focus the placeholder trigger received before this chunk arrived.
   openOnMount: boolean
   focusOnMount: boolean
-  // Sprache und Farbschema als Einträge, solange die schmale TopBar ihre Schalter ausblendet.
-  showPreferences: boolean
 }
 
 // Loaded outside the startup bundle; the shell renders an identical trigger until it is ready.
-export function NavigationMenu({ items, openOnMount, focusOnMount, showPreferences }: NavigationMenuProps) {
+export function NavigationMenu({ items, openOnMount, focusOnMount }: NavigationMenuProps) {
   const { language, setLanguage, t } = useI18n()
   const { colorScheme, setColorScheme } = useColorScheme()
   const otherLanguage = language === 'de' ? 'en' : 'de'
@@ -60,19 +58,18 @@ export function NavigationMenu({ items, openOnMount, focusOnMount, showPreferenc
             </Link>
           </DropdownMenuItem>
         ))}
-        {showPreferences && (
-          <div className="sm:hidden">
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2" onSelect={() => setLanguage(otherLanguage)}>
-              <Languages className="size-4" />
-              {t('language.switchTo', { language: t(`language.${otherLanguage}.label`) })}
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2" onSelect={() => setColorScheme(isDark ? 'light' : 'dark')}>
-              <SchemeIcon className="size-4" />
-              {t(isDark ? 'colorScheme.switchToLight' : 'colorScheme.switchToDark')}
-            </DropdownMenuItem>
-          </div>
-        )}
+        {/* Unter sm stehen Sprache und Farbschema hier statt in der TopBar. */}
+        <div className="sm:hidden">
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2" onSelect={() => setLanguage(otherLanguage)}>
+            <Languages className="size-4" />
+            {t('language.switchTo', { language: t(`language.${otherLanguage}.label`) })}
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-2" onSelect={() => setColorScheme(isDark ? 'light' : 'dark')}>
+            <SchemeIcon className="size-4" />
+            {t(isDark ? 'colorScheme.switchToLight' : 'colorScheme.switchToDark')}
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )
