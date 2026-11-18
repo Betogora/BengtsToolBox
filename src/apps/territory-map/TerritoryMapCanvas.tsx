@@ -33,6 +33,7 @@ import type {
   TerritoryPlayer,
   TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
+import { getTerritoryVisitHistory } from '@/apps/territory-map/visitHistory'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -103,24 +104,11 @@ export function TerritoryMapCanvas({
   const { locale, t } = useI18n()
   const isMapLoading = territories.length === 0
   const contentViewBox = useMemo(() => parseMapViewBox(mapViewBoxes[mapId]), [mapId])
-  // Gebietsname und erster Besuch je Person für den Tooltip der Karte.
+  // Gebietsname für den Tooltip der Karte.
   const territoryNames = useMemo(
     () => new Map(territories.map((territory) => [territory.id, territory.name])),
     [territories],
   )
-  const firstVisits = useMemo(() => {
-    const visits = new Map<string, Map<string, string>>()
-    events.forEach((event) => {
-      if (event.mapId !== mapId) return
-      const byPlayer = visits.get(event.territoryId) ?? new Map<string, string>()
-      const known = byPlayer.get(event.playerId)
-      if (!known || event.createdAtClientIso < known) {
-        byPlayer.set(event.playerId, event.createdAtClientIso)
-      }
-      visits.set(event.territoryId, byPlayer)
-    })
-    return visits
-  }, [events, mapId])
   const [tip, setTip] = useState<{ territoryId: string; x: number; y: number } | null>(null)
   const [view, setView] = useState<MapView>(defaultMapView)
   // Gezeichnete Ansicht auf dem SVG-Layer und Live-Ansicht der laufenden Geste.
@@ -477,9 +465,9 @@ export function TerritoryMapCanvas({
   }
 
   const tipOwners = tip ? getTerritoryClaimOwners(claims[tip.territoryId]) : []
-  const tipVisits = tip ? firstVisits.get(tip.territoryId) : undefined
-  const formatVisitDate = (value: string | undefined) =>
-    value ? dateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value)) : ''
+  const tipHistory = tip ? getTerritoryVisitHistory(events, mapId, tip.territoryId) : null
+  const formatVisitDate = (value: string) =>
+    dateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value))
   const isZoomedIn = view.zoom > minMapZoom
 
   return (
@@ -681,15 +669,25 @@ export function TerritoryMapCanvas({
               )}
               title={territoryNames.get(tip.territoryId) ?? tip.territoryId}
               description={
-                tipOwners.length === 0
-                  ? t('territory.unvisited')
-                  : tipOwners.map((owner) => (
-                      <span key={owner.playerId} className="block">
-                        {`${owner.playerName} · ${formatVisitDate(
-                          tipVisits?.get(owner.playerId) ?? claims[tip.territoryId]?.claimedAtClientIso,
-                        )}`}
+                !tipHistory || tipHistory.days.length === 0 ? (
+                  t('territory.unvisited')
+                ) : (
+                  <>
+                    {tipHistory.days.map((day, index) => (
+                      <span
+                        key={day.dayKey}
+                        className={index === 0 ? 'block text-foreground' : 'block'}
+                      >
+                        {`${formatVisitDate(day.dateIso)} · ${day.playerNames.join(', ')}`}
                       </span>
-                    ))
+                    ))}
+                    {tipHistory.hiddenDayCount > 0 && (
+                      <span className="block text-muted-foreground">
+                        {t('territory.moreVisitDays', { count: tipHistory.hiddenDayCount })}
+                      </span>
+                    )}
+                  </>
+                )
               }
             >
               <span

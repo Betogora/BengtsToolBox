@@ -985,6 +985,7 @@ export const en: Record<TranslationKey, string> = {
   'territory.score': 'Score',
   'territory.territory': 'Territory',
   'territory.total': 'Total',
+  'territory.moreVisitDays': '… {count} more',
   'territory.tourist': 'Sushi tourist',
   'territory.unclaimed': 'This territory is still available.',
   'territory.unvisited': 'Unvisited',

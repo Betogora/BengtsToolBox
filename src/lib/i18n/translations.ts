@@ -987,6 +987,7 @@ export const de = {
   'territory.score': 'Punktzahl',
   'territory.territory': 'Territorium',
   'territory.total': 'Gesamt',
+  'territory.moreVisitDays': '… {count} weitere',
   'territory.tourist': 'Sushi-Tourist',
   'territory.unclaimed': 'Dieses Territorium ist noch frei.',
   'territory.unvisited': 'Unbereist',
