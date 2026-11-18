@@ -325,6 +325,7 @@ Alle Hooks verwenden außerhalb eines Lobby-Kontexts weiterhin `default`. In ein
 - Eine bestätigte leere Datensatz-Collection erzeugt genau diesen leeren `dataset-current`. Während der initiale Snapshot lädt, fehlschlägt oder das Dokument fehlt, bleiben Claims, Events und Spieleränderungen gesperrt; ein lokaler Ersatzdatensatz wird niemals gespeichert.
 - Vorhandene Welt-Events mit der früheren Territoriums-ID `gb` werden nach dem Laden des jeweiligen Lobby-Datensatzes einmalig zu England (`gb-eng`) migriert. Bis zum erfolgreichen Migrationsschreibvorgang bleiben Datensatzänderungen gesperrt.
 - Ein Besuch speichert Karte, Territorium, Personensnapshot, Farbe, Zeit und Position als Event.
+- Ein Bundesland-Besuch legt für dieselbe Person mit demselben Zeitpunkt zusätzlich einen Welt-Besuch für Deutschland (`de`) an, sofern diese Person an diesem Tag noch keinen hat; das gilt beim Eintragen und beim Korrigieren eines Bundesland-Events. Die Ableitung wirkt nur in diese Richtung, „Unbesucht“ und Löschen bleiben kartenlokal.
 - Der aktuelle Claim eines Territoriums stammt aus dessen jüngstem lokalen Kalendertag.
 - Mehrere Personen können am selben jüngsten Tag gemeinsame Owner desselben Territoriums sein.
 - Gemeinsame Owner werden in stabiler Reihenfolge durch adaptive diagonale Farbstreifen dargestellt. Pro Territorium passt mindestens ein vollständiger Owner-Zyklus; sichtbare Einzelstreifen sind höchstens etwa drei Pixel breit.

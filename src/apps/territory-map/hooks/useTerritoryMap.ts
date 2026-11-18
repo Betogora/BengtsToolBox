@@ -35,6 +35,7 @@ const territoryColorPresets = [...participantColorPresets]
 const activeDatasetId = 'dataset-current'
 const legacyUnitedKingdomTerritoryId = 'gb'
 const englandTerritoryId = 'gb-eng'
+const germanyCountryTerritoryId = 'de'
 
 const initialState: TerritoryMapState = {
   activeMap: 'world',
@@ -179,6 +180,56 @@ export function migrateLegacyUnitedKingdomEvents(
   })
 
   return changed ? migrated : events
+}
+
+function getNextEventPosition(events: TerritoryVisitEvent[]) {
+  return (
+    events.reduce(
+      (max, entry, index) =>
+        Math.max(max, Number.isFinite(entry.position) ? entry.position : index + 1),
+      0,
+    ) + 1
+  )
+}
+
+/**
+ * Ein Bundesland-Besuch zählt am selben Tag auch als Besuch von Deutschland
+ * auf der Weltkarte. Die Ableitung gilt nur in diese Richtung.
+ */
+export function addGermanyCountryEvent(
+  events: TerritoryVisitEvent[],
+  stateEvent: TerritoryVisitEvent,
+  createEventId = () => `event-${createRandomId()}`,
+): TerritoryVisitEvent[] {
+  const eventDay = getLocalDateKey(stateEvent.createdAtClientIso)
+
+  if (stateEvent.mapId !== 'germany' || !eventDay) {
+    return events
+  }
+
+  const hasCountryVisit = events.some(
+    (event) =>
+      event.mapId === 'world' &&
+      event.territoryId === germanyCountryTerritoryId &&
+      event.playerId === stateEvent.playerId &&
+      getLocalDateKey(event.createdAtClientIso) === eventDay,
+  )
+
+  if (hasCountryVisit) {
+    return events
+  }
+
+  return [
+    ...events,
+    {
+      ...stateEvent,
+      id: createEventId(),
+      mapId: 'world',
+      territoryId: germanyCountryTerritoryId,
+      territoryName: getTerritoryName('world', germanyCountryTerritoryId),
+      position: getNextEventPosition(events),
+    },
+  ]
 }
 
 function normalizeEvent(
@@ -634,12 +685,25 @@ export function useTerritoryMap(lobbyId?: string) {
       lastUpdatedBy: session.userId,
     }
 
-    return saveActiveDataset((current) => ({
-      events: (current.events ?? []).some((entry) => entry.id === event.id) ? (current.events ?? []) : [
-        ...(current.events ?? []),
-        { ...event, position: (current.events ?? []).reduce((max, entry, index) => Math.max(max, Number.isFinite(entry.position) ? entry.position : index + 1), 0) + 1 },
-      ],
-    })).then((result) => result.ok)
+    return saveActiveDataset((current) => {
+      const currentEvents = current.events ?? []
+
+      if (currentEvents.some((entry) => entry.id === event.id)) {
+        return { events: currentEvents }
+      }
+
+      const positionedEvent = {
+        ...event,
+        position: getNextEventPosition(currentEvents),
+      }
+
+      return {
+        events: addGermanyCountryEvent(
+          [...currentEvents, positionedEvent],
+          positionedEvent,
+        ),
+      }
+    }).then((result) => result.ok)
   }
 
   const deleteEvent = (eventId: string) =>
@@ -682,8 +746,8 @@ export function useTerritoryMap(lobbyId?: string) {
       >
     >,
   ) =>
-    saveActiveDataset((current) => ({
-      events: (current.events ?? []).map((event) => {
+    saveActiveDataset((current) => {
+      const events = (current.events ?? []).map((event): TerritoryVisitEvent => {
         if (event.id !== eventId) {
           return event
         }
@@ -709,8 +773,15 @@ export function useTerritoryMap(lobbyId?: string) {
             partialValue.createdAtClientIso ?? event.createdAtClientIso,
           lastUpdatedBy: session.userId,
         }
-      }),
-    }))
+      })
+      const updatedEvent = events.find((event) => event.id === eventId)
+
+      return {
+        events: updatedEvent
+          ? addGermanyCountryEvent(events, updatedEvent)
+          : events,
+      }
+    })
 
   return {
     activeDataset,

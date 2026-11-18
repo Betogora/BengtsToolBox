@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:22571ca9a29f4c56d095ff14b30fb27e5d7c87f3078b7f837515087dd1c21554">
+  <meta name="specs-source-sha256" content="sha256:04486974d7f207012c6fd6aa334da60af4eec8a78473d26463a7dd6c6f447c87">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -798,6 +798,7 @@
             <li>Eine bestätigte leere Datensatz-Collection erzeugt genau diesen leeren <code>dataset-current</code>. Während der initiale Snapshot lädt, fehlschlägt oder das Dokument fehlt, bleiben Claims, Events und Spieleränderungen gesperrt; ein lokaler Ersatzdatensatz wird niemals gespeichert.</li>
             <li>Vorhandene Welt-Events mit der früheren Territoriums-ID <code>gb</code> werden nach dem Laden des jeweiligen Lobby-Datensatzes einmalig zu England (<code>gb-eng</code>) migriert. Bis zum erfolgreichen Migrationsschreibvorgang bleiben Datensatzänderungen gesperrt.</li>
             <li>Ein Besuch speichert Karte, Territorium, Personensnapshot, Farbe, Zeit und Position als Event.</li>
+            <li>Ein Bundesland-Besuch legt für dieselbe Person mit demselben Zeitpunkt zusätzlich einen Welt-Besuch für Deutschland (<code>de</code>) an, sofern diese Person an diesem Tag noch keinen hat; das gilt beim Eintragen und beim Korrigieren eines Bundesland-Events. Die Ableitung wirkt nur in diese Richtung, „Unbesucht“ und Löschen bleiben kartenlokal.</li>
             <li>Der aktuelle Claim eines Territoriums stammt aus dessen jüngstem lokalen Kalendertag.</li>
             <li>Mehrere Personen können am selben jüngsten Tag gemeinsame Owner desselben Territoriums sein.</li>
             <li>Gemeinsame Owner werden in stabiler Reihenfolge durch adaptive diagonale Farbstreifen dargestellt. Pro Territorium passt mindestens ein vollständiger Owner-Zyklus; sichtbare Einzelstreifen sind höchstens etwa drei Pixel breit.</li>

@@ -79,6 +79,7 @@ vi.mock('@/lib/firebase/useFirestoreCollection', () => ({
 }))
 
 import {
+  addGermanyCountryEvent,
   getCurrentClaims,
   migrateLegacyUnitedKingdomEvents,
   selectCurrentDataset,
@@ -222,6 +223,76 @@ describe('Sushi-Map-Datensatzbereitschaft', () => {
 
     expect(result).toBe(false)
     expect(stores.players.deleteItem).not.toHaveBeenCalled()
+  })
+})
+
+describe('Sushi-Map: Bundesland zählt für Deutschland', () => {
+  const stateEvent: TerritoryVisitEvent = {
+    id: 'event-ni',
+    mapId: 'germany',
+    territoryId: 'DE-NI',
+    territoryName: 'Niedersachsen',
+    playerId: 'person-1',
+    playerName: 'Bengt',
+    playerColor: '#063852',
+    createdAtClientIso: '2026-06-04T12:00:00.000Z',
+    createdAtLabel: '2026-06-04T12:00:00.000Z',
+    position: 3,
+  }
+  const countryEvent = (patch: Partial<TerritoryVisitEvent>): TerritoryVisitEvent => ({
+    ...stateEvent,
+    id: 'event-de',
+    mapId: 'world',
+    territoryId: 'de',
+    territoryName: 'Deutschland',
+    ...patch,
+  })
+
+  it('trägt Deutschland am selben Tag für dieselbe Person nach', () => {
+    const result = addGermanyCountryEvent([stateEvent], stateEvent, () => 'event-de')
+
+    expect(result).toEqual([stateEvent, countryEvent({ position: 4 })])
+    expect(getCurrentClaims(result).world.de).toEqual(
+      expect.objectContaining({ playerId: 'person-1' }),
+    )
+  })
+
+  it.each([
+    ['bestehender Deutschland-Besuch derselben Person am selben Tag', [countryEvent({ position: 1 })], stateEvent],
+    ['Weltkarten-Event', [], { ...stateEvent, mapId: 'world' as const, territoryId: 'fr' }],
+  ])('legt nichts an bei %s', (_, existing, event) => {
+    const events = [...existing, event]
+
+    expect(addGermanyCountryEvent(events, event)).toBe(events)
+  })
+
+  it('legt Deutschland für andere Personen oder Tage zusätzlich an', () => {
+    const otherDay = countryEvent({ createdAtClientIso: '2026-06-01T12:00:00.000Z', position: 1 })
+    const otherPlayer = countryEvent({ id: 'event-de-2', playerId: 'person-2', position: 2 })
+
+    expect(
+      addGermanyCountryEvent([otherDay, otherPlayer, stateEvent], stateEvent),
+    ).toHaveLength(4)
+  })
+
+  it('schreibt beim Bundesland-Claim beide Events in den aktuellen Datensatz', async () => {
+    stores.dataset.data = [dataset()]
+    stores.dataset.isLoading = false
+    let map: ReturnType<typeof useTerritoryMap> | undefined
+    function Probe() { map = useTerritoryMap(); return null }
+    renderToStaticMarkup(createElement(Probe))
+
+    await map!.claimTerritory('germany', 'DE-HH', 'person-1')
+    const updater = stores.dataset.mergeItem.mock.calls.at(-1)?.at(1) as unknown as (
+      current: TerritoryDataset,
+    ) => Partial<TerritoryDataset>
+    const events = updater(dataset()).events ?? []
+
+    expect(events.map(({ mapId, territoryId, playerId }) => ({ mapId, territoryId, playerId }))).toEqual([
+      { mapId: 'germany', territoryId: 'DE-HH', playerId: 'person-1' },
+      { mapId: 'world', territoryId: 'de', playerId: 'person-1' },
+    ])
+    expect(events[1].createdAtClientIso).toBe(events[0].createdAtClientIso)
   })
 })
 
