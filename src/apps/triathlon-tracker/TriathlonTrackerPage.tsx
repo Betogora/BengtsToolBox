@@ -178,7 +178,7 @@ export function TriathlonTrackerPage() {
   return (
     <AppPage
       className={cn(
-        'triathlon-tracker gap-4 py-5 sm:gap-5 sm:py-8',
+        'triathlon-tracker gap-4 pb-5 sm:gap-5 sm:pb-8',
         // Platz für die angeheftete Aktionsleiste der Planung, damit die Einstellungen darunter erreichbar bleiben.
         activeTab === 'calendar' && 'max-sm:pb-28',
       )}

@@ -294,12 +294,10 @@ export function VotingPage() {
     <AppPage width="wide">
       <AppPageHeader
         Icon={Drama}
-        titleContent={
-          <h1 className="type-page-title min-w-0 break-words max-[359px]:text-[1.375rem]">{appTitle}</h1>
-        }
+        title={appTitle}
         status={
           !isRealtime ? (
-            <AppPageStatus Icon={Radio} className="max-sm:hidden">{t('liveBuzzer.localOnly')}</AppPageStatus>
+            <AppPageStatus Icon={Radio}>{t('liveBuzzer.localOnly')}</AppPageStatus>
           ) : undefined
         }
         actions={

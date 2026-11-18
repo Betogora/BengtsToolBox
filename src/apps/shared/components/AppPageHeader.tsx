@@ -1,36 +1,52 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 import { AppPageTitle } from '@/apps/shared/components/AppPageTitle'
+import { useShellHeaderSlots } from '@/components/layout/shellHeaderSlots'
 import { cn } from '@/lib/utils'
 
-// Ein Seitenkopf für alle Apps: Icon und Titel links, Aktionen rechts, Status als ruhige Textzeile.
-// Mobil steht der Status unter dem Titel, ab sm vor den Aktionen.
+const statusClassName = 'type-label flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground'
+
+// Ein Seitenkopf für alle Apps. In der Shell stehen Icon, Titel und Aktionen in der TopBar; in der Seite
+// bleibt nur der Status als ruhige Textzeile. Ohne Shell erscheint alles als eigene Kopfzeile.
 export function AppPageHeader({
   actions,
   className,
   Icon,
   status,
   title,
-  titleContent,
 }: {
   actions?: ReactNode
   className?: string
   Icon: LucideIcon
   status?: ReactNode
-  title?: string
-  titleContent?: ReactNode
+  title: string
 }) {
+  const shellSlots = useShellHeaderSlots()
+
+  if (shellSlots) {
+    return (
+      <>
+        {shellSlots.title && createPortal(<AppPageTitle compact Icon={Icon} title={title} />, shellSlots.title)}
+        {actions && shellSlots.actions && createPortal(actions, shellSlots.actions)}
+        {status && (
+          <div data-slot="app-page-header" className={cn(statusClassName, className)}>
+            {status}
+          </div>
+        )}
+      </>
+    )
+  }
+
   return (
     <header
       data-slot="app-page-header"
       className={cn('flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1.5', className)}
     >
-      <AppPageTitle Icon={Icon} title={title} className="min-w-0 flex-1 gap-2.5 sm:gap-3">
-        {titleContent}
-      </AppPageTitle>
+      <AppPageTitle Icon={Icon} title={title} className="min-w-0 flex-1 gap-2.5 sm:gap-3" />
       {status && (
-        <div className="type-label order-last flex min-w-0 basis-full flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground sm:order-none sm:basis-auto">
+        <div className={cn(statusClassName, 'order-last basis-full sm:order-none sm:basis-auto')}>
           {status}
         </div>
       )}

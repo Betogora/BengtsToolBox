@@ -333,7 +333,9 @@ test('Sushi Map synchronisiert Ansichten und berücksichtigt Lennart', { tag: '@
   await scoreToggle.click()
   await expect(page.getByRole('table')).toHaveCount(0)
 
-  await page.getByRole('link', { name: 'BengtsToolBox' }).click()
+  // Die TopBar ist nach dem Herunterscrollen ausgeblendet und kommt beim Hochscrollen zurück.
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.getByRole('link', { name: 'Zurück', exact: true }).click()
   await page.getByRole('link', { name: 'Sushi Map öffnen' }).click()
 
   await expect(

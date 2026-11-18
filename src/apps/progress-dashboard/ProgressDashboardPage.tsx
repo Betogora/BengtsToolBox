@@ -315,7 +315,7 @@ export function ProgressDashboardPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
         {/* Auf schmalen Ansichten bleibt das Diagramm angeheftet, solange die Rangliste läuft. */}
-        <div className="sticky top-[4.5rem] z-10 -mx-4 border-b bg-background px-4 pb-2 sm:-mx-6 sm:px-6 lg:top-[5.5rem] lg:mx-0 lg:border-0 lg:px-0 lg:pb-0">
+        <div className="sticky top-(--shell-offset) z-10 -mx-4 border-b bg-background px-4 pb-2 transition-[top] duration-200 motion-reduce:transition-none sm:-mx-6 sm:px-6 lg:top-[calc(var(--shell-offset)+1rem)] lg:mx-0 lg:border-0 lg:px-0 lg:pb-0">
           <DashboardProgressChart
             className="h-[250px] md:h-[400px] lg:h-[540px]"
             dataset={activeDataset}

@@ -1,27 +1,35 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+// `compact` ist die einzeilige Fassung für die TopBar.
 export function AppPageTitle({
-  children,
   className,
+  compact = false,
   Icon,
   title,
 }: {
-  children?: ReactNode
   className?: string
+  compact?: boolean
   Icon: LucideIcon
-  title?: string
+  title: string
 }) {
   return (
-    <div className={cn('flex min-w-0 items-center gap-3', className)}>
-      <Icon aria-hidden="true" className="size-7 shrink-0 text-primary sm:size-8" />
-      {children ?? (
-        <h1 className="type-page-title min-w-0 break-words">
-          {title}
-        </h1>
-      )}
+    <div className={cn('flex min-w-0 items-center', compact ? 'gap-2' : 'gap-3', className)}>
+      <Icon
+        aria-hidden="true"
+        className={cn('shrink-0 text-primary', compact ? 'size-5' : 'size-7 sm:size-8')}
+      />
+      <h1
+        className={cn(
+          'min-w-0',
+          compact
+            ? 'truncate text-[1.0625rem] font-[650] leading-tight tracking-[-0.01em]'
+            : 'type-page-title break-words',
+        )}
+      >
+        {title}
+      </h1>
     </div>
   )
 }

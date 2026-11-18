@@ -54,6 +54,20 @@ test('verschachtelte Scoreboard-Route unterstützt Aktion und Dialog per Tastatu
   await app.open('/lobbies/default/apps/scoreboard')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Scoreboard' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Zurück', exact: true })).toHaveAttribute(
+    'href',
+    '/lobbies/default',
+  )
+
+  // Die TopBar weicht beim Herunterscrollen und kommt beim Hochscrollen zurück.
+  const viewport = page.viewportSize()!
+  await page.setViewportSize({ width: viewport.width, height: 420 })
+  await page.evaluate(() => window.scrollTo(0, 300))
+  await expect(page.getByRole('banner')).toBeHidden()
+  await page.evaluate(() => window.scrollBy(0, -60))
+  await expect(page.getByRole('banner')).toBeVisible()
+  await page.setViewportSize(viewport)
+  await page.evaluate(() => window.scrollTo(0, 0))
 
   const incrementButton = page.getByRole('button', {
     name: 'Spieler 1 einen Punkt hinzufügen',

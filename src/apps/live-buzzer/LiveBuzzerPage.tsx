@@ -135,7 +135,7 @@ export function LiveBuzzerPage() {
   }
   const buttonLabel = app.isBuzzPending ? 'liveBuzzer.sending' : app.ownBuzz ? 'liveBuzzer.buzz.saved'
     : !sessionState.isOpen || !app.clockReady ? 'liveBuzzer.status.locked' : winner ? 'liveBuzzer.action.lateBuzz' : 'liveBuzzer.action.buzz'
-  return <AppPage className="gap-3 py-4 lg:py-6">
+  return <AppPage className="gap-3 pb-4 lg:pb-6">
     <AppPageHeader
       Icon={Bell}
       title={t('app.liveBuzzer.title')}
