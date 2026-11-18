@@ -124,16 +124,19 @@ export function AppShell() {
           )}
         >
           {isCompact ? (
-            <div className="flex min-w-0 items-center gap-1 justify-self-start">
+            // Pfeil, Icon und Titel führen gemeinsam zurück zum Hub. Der Titel kommt per Portal aus der Seite;
+            // in einem Link läge er in React außerhalb von dessen Klickbehandlung und löste einen vollen
+            // Seitenaufruf aus. Deshalb spannt der Pfeil-Link seine Fläche über die ganze Gruppe.
+            <div className="group relative flex min-w-0 max-w-full items-center gap-1 justify-self-start rounded-md text-foreground transition-colors hover:bg-secondary has-[h1]:pr-3 sm:-ml-2.5">
               <Link
                 to={parentHubPath(location.pathname)}
                 aria-label={t('common.back')}
                 title={t('common.back')}
-                className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:-ml-2.5"
+                className="grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground outline-none transition-colors after:absolute after:inset-0 group-hover:text-primary"
               >
                 <ArrowLeft aria-hidden="true" className="size-5" />
               </Link>
-              <div ref={setTitleSlot} className="min-w-0" />
+              <div ref={setTitleSlot} className="pointer-events-none min-w-0" />
             </div>
           ) : (
             <Link

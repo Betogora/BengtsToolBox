@@ -323,7 +323,6 @@ export function VotingPage() {
               label={t('voting.qrAlt')}
               openLabel={t('dashboard.qrOpen')}
               value={qrValue}
-              variant="icon"
             />
           </>
         }

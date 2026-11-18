@@ -105,6 +105,19 @@ test('verschachtelte Scoreboard-Route unterstützt Aktion und Dialog per Tastatu
   await expect(dialog).toBeHidden()
   await expect(archiveTrigger).toBeFocused()
   await app.expectHealthy()
+
+  // Auch der Titel führt zurück, ohne die Seite neu zu laden: Der Titel kommt per Portal in die
+  // TopBar und erreicht die Klickbehandlung des Router-Links sonst nicht.
+  await page.evaluate(() => {
+    Object.assign(window, { withoutReload: true })
+    window.scrollTo(0, 0)
+  })
+  // Erst messen, wenn die eingleitende TopBar steht.
+  await page.waitForFunction(() => document.querySelector('header')?.getBoundingClientRect().top === 0)
+  const title = await page.getByRole('heading', { level: 1, name: 'Scoreboard' }).boundingBox()
+  await page.mouse.click(title!.x + title!.width / 2, title!.y + title!.height / 2)
+  await expect(page).toHaveURL(/\/lobbies\/default$/)
+  expect(await page.evaluate(() => 'withoutReload' in window)).toBe(true)
 })
 
 test('Schlag-den-Raab-Passwortfehler ist mit dem Feld verknüpft', async ({

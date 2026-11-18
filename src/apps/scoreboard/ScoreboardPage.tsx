@@ -171,9 +171,10 @@ export function ScoreboardPage() {
         </Notice>
       )}
 
-      {/* Werkzeugleiste ohne eigene Karte: Name links, Rückgängig und Wertungsart rechts. */}
+      {/* Werkzeugleiste ohne eigene Karte: Name links, Rückgängig und Wertungsart rechts.
+          Wird der Name schmaler als 7rem, rutschen die Bedienelemente rechtsbündig darunter. */}
       <section className="flex flex-wrap items-center gap-x-3 gap-y-2" data-scoreboard-toolbar>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-[1_1_7rem]">
           <InlineTextEdit
             ariaLabel={t('scoreboard.scoringNameAria')}
             className="type-section-title py-1"
@@ -183,9 +184,10 @@ export function ScoreboardPage() {
             onSave={(name) => scoreboard.updateScoringName(scoreboard.activeScoring.id, name)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           {(scoreboard.isLoading || scoreboard.isPending) && (
-            <span className="type-caption text-muted-foreground" role="status">{t('common.syncing')}</span>
+            // Mobil nur für Screenreader: Der kurze Hinweis würde die Leiste sonst bei jeder Buchung umbrechen lassen.
+            <span className="type-caption text-muted-foreground max-sm:sr-only" role="status">{t('common.syncing')}</span>
           )}
           <Button
             variant="outline"

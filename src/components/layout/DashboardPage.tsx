@@ -1,8 +1,9 @@
-import { UsersRound } from 'lucide-react'
+import { ArrowRight, UsersRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { dashboardApps, type HubApp } from '@/apps/registry'
+import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip } from '@/components/ui/tooltip'
 import { QrCodeButton } from '@/components/ui/QrCodeButton'
@@ -173,7 +174,7 @@ function CompactTile({ app, href }: AppTileProps) {
 export function DashboardPage({ lobby }: { lobby?: Lobby }) {
   const { locale, t } = useI18n()
   const activeLobby = lobby ?? defaultLobby
-  // Der Tooltip nennt, was die Karte nicht zeigt: bei eigenen Lobbys Beitrittscode und Alter.
+  // Der Tooltip nennt, was der Button nicht zeigt: bei eigenen Lobbys Beitrittscode und Alter.
   const isDefaultLobby = activeLobby.kind === 'default'
   const lobbyDetail = isDefaultLobby
     ? undefined
@@ -188,30 +189,29 @@ export function DashboardPage({ lobby }: { lobby?: Lobby }) {
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 pb-6 pt-4 sm:px-6 lg:gap-8 lg:pb-8 lg:pt-6">
-      <section className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-5 max-[28rem]:grid-cols-1">
+      <section className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 max-[28rem]:grid-cols-1">
         <h1 className="type-dashboard-title min-w-0 text-foreground">
           <span className="title-highlight">{t('dashboard.title')}</span>
         </h1>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 justify-self-end max-[28rem]:justify-start max-[28rem]:justify-self-start">
-          <Card className="h-[72px] w-fit max-w-60 border-primary/20 shadow-[0_18px_46px_-30px_rgba(6,52,79,0.55)]">
-            <CardHeader className="flex h-full flex-row items-center gap-4 p-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
-                <UsersRound className="size-5" />
-              </div>
-              <Tooltip
-                side="bottom"
-                title={isDefaultLobby ? t('lobby.defaultDescription') : activeLobby.name}
-                description={lobbyDetail}
-              >
-                <CardTitle className="truncate whitespace-nowrap">
-                  {activeLobby.name}
-                </CardTitle>
-              </Tooltip>
-            </CardHeader>
-          </Card>
+        <div className="flex min-w-0 max-w-full items-center justify-end gap-2 justify-self-end max-[28rem]:justify-start max-[28rem]:justify-self-start">
+          {/* Die aktive Lobby führt in den Lobby-Bereich. */}
+          <Tooltip
+            side="bottom"
+            title={isDefaultLobby ? t('lobby.defaultDescription') : activeLobby.name}
+            description={lobbyDetail}
+          >
+            <Button asChild size="lg" variant="outline" className="min-w-0 max-w-64 shrink px-4">
+              <Link to="/lobbies">
+                <UsersRound aria-hidden="true" className="text-primary" />
+                <span className="min-w-0 truncate">{activeLobby.name}</span>
+                <ArrowRight aria-hidden="true" className="text-primary" />
+              </Link>
+            </Button>
+          </Tooltip>
 
           <QrCodeButton
+            className="size-10 text-primary"
             label={t('dashboard.qrAlt')}
             openLabel={t('dashboard.qrOpen')}
             value={`${window.location.origin}${lobby ? `/lobbies/${lobby.id}` : '/'}`}
