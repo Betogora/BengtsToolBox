@@ -154,8 +154,6 @@ const options = [
   { value: 'stats', label: 'Langfristige Auswertung', icon: ChartNoAxesCombined },
 ]
 
-const skAndertenLogoUrl = new URL('../public/sk-anderten-watermark.png', import.meta.url).href
-
 function SelectionDemo({ tabs = false }: { tabs?: boolean }) {
   const [value, setValue] = useState('overview')
   const [period, setPeriod] = useState('week')
@@ -391,9 +389,7 @@ function DashboardArtworkDemo() {
   return <div className="artwork-gallery">
     {dashboardApps.map(app => <figure key={app.id} data-app-artwork={app.id} className="artwork-sample">
       <div className="artwork-image">
-        {app.id === 'swiss-tournaments'
-          ? <img src={skAndertenLogoUrl} alt="" className="artwork-logo" />
-          : <DashboardIllustration appId={app.id} />}
+        <DashboardIllustration appId={app.id} />
       </div>
       <figcaption>{t(app.titleKey)}</figcaption>
     </figure>)}
