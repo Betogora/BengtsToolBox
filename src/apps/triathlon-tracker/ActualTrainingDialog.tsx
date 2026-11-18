@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { useI18n } from '@/lib/i18n'
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 import { estimateCyclingPowerWatts } from './domain/cyclingPower'
 import { estimateRunningPowerWatts } from './domain/incline'
 import {
@@ -418,8 +419,8 @@ function ActualTrainingDialogContent({
     try {
       await onSave(nextTraining)
       onOpenChange(false)
-    } catch {
-      setError(t('triathlon.form.saveFailed'))
+    } catch (error) {
+      if (!isEditLocked(error)) setError(t('triathlon.form.saveFailed'))
     } finally {
       setIsSaving(false)
     }
@@ -696,8 +697,8 @@ function ActualTrainingDialogContent({
                   try {
                     await onDelete(training.id)
                     onOpenChange(false)
-                  } catch {
-                    setError(t('triathlon.form.saveFailed'))
+                  } catch (error) {
+                    if (!isEditLocked(error)) setError(t('triathlon.form.saveFailed'))
                   }
                 }}
               />

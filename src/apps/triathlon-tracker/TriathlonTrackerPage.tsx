@@ -34,6 +34,8 @@ import { defaultPlanPaces, newTrainingContexts } from './types'
 import type { PlanPaces } from './types'
 import type { ActualTraining, PlannedTraining } from './types'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { EditUnlockDialog } from '@/apps/shared/components/EditUnlockDialog'
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { Notice } from '@/components/ui/notice'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -255,8 +257,8 @@ export function TriathlonTrackerPage() {
                         tracker.updatePlannedTraining(training.id, { localDate }),
                       )
                       toast.success(t('triathlon.plan.saved'))
-                    } catch {
-                      toast.error(t('triathlon.form.saveFailed'))
+                    } catch (error) {
+                      if (!isEditLocked(error)) toast.error(t('triathlon.form.saveFailed'))
                     }
                   }}
                 />
@@ -392,6 +394,7 @@ export function TriathlonTrackerPage() {
           )
         }}
       />
+      <EditUnlockDialog editUnlock={tracker.editUnlock} />
     </AppPage>
   )
 }

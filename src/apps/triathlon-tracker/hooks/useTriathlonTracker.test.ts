@@ -70,6 +70,28 @@ vi.mock('@/lib/firebase/useAnonymousSession', () => ({
   }),
 }))
 
+// Simuliert die Bearbeitungssperre: entsperrt oder mit abgebrochener PIN-Abfrage.
+const editLock = vi.hoisted(() => ({ unlocked: true }))
+
+vi.mock('@/apps/shared/useEditUnlock', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/apps/shared/useEditUnlock')>()
+  return {
+    ...actual,
+    useEditUnlock: () => ({
+      isUnlocked: editLock.unlocked,
+      isPrompting: false,
+      requestUnlock: () => Promise.resolve(editLock.unlocked),
+      protect: <Args extends unknown[], T>(
+        write: (...args: Args) => T | Promise<T>,
+        lockedResult: T,
+      ) => (...args: Args) =>
+        Promise.resolve(editLock.unlocked ? write(...args) : lockedResult),
+      submit: () => true,
+      cancel: () => undefined,
+    }),
+  }
+})
+
 vi.mock('@/lobbies/LobbyContext', () => ({
   useActiveLobbyId: (lobbyId?: string) => lobbyId ?? 'default',
 }))
@@ -88,6 +110,7 @@ vi.mock('@/lib/firebase/useFirestoreCollection', () => ({
   },
 }))
 
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 import {
   createPlannedWeekCopyPreview,
   useTriathlonTracker,
@@ -158,6 +181,7 @@ describe('useTriathlonTracker', () => {
       schemaVersion: 1,
       weightKg: null,
     }
+    editLock.unlocked = true
   })
 
   function renderHook(lobbyId?: string) {
@@ -384,5 +408,24 @@ describe('useTriathlonTracker', () => {
       }),
       expect.any(Object),
     )
+  })
+
+  it('schreibt ohne Bearbeitungs-PIN nichts in den globalen Datensatz', async () => {
+    editLock.unlocked = false
+    stores.planned.data = [plannedTraining('planned', '2026-08-17', 1)]
+    const tracker = renderHook()
+
+    const results = await Promise.all([
+      tracker.updateSettings({ weightKg: 70 }),
+      tracker.updatePlannedTraining('planned', { localDate: '2026-08-18' }),
+      tracker.deletePlannedTraining('planned'),
+      tracker.deleteActualTraining('actual'),
+    ])
+
+    expect(results.every((result) => isEditLocked(result.error))).toBe(true)
+    expect(stores.settings.merge).not.toHaveBeenCalled()
+    expect(stores.planned.setItem).not.toHaveBeenCalled()
+    expect(stores.planned.deleteItem).not.toHaveBeenCalled()
+    expect(stores.actual.deleteItem).not.toHaveBeenCalled()
   })
 })

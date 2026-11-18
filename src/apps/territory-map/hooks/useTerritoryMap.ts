@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { territoryOptionsByMap } from '@/apps/territory-map/data/territories'
 import { getLocalDateKey } from '@/apps/territory-map/eventDates'
@@ -12,12 +12,14 @@ import type {
   TerritoryPlayer,
   TerritoryVisitEvent,
 } from '@/apps/territory-map/types'
+import { editLockedResult, useEditUnlock } from '@/apps/shared/useEditUnlock'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { commitSyncBatch, type SyncBatch } from '@/lib/firebase/syncBatch'
 import {
   SyncError,
   syncFailure,
+  syncSuccess,
   type SyncResult,
 } from '@/lib/firebase/syncError'
 import {
@@ -31,6 +33,10 @@ import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
 import { useActiveLobbyId } from '@/lobbies/LobbyContext'
 
 const territoryColorPresets = [...participantColorPresets]
+
+type LocalView = Partial<
+  Pick<TerritoryMapState, 'activeMap' | 'isAchievementsOpen' | 'isScoreOpen'>
+>
 
 const activeDatasetId = 'dataset-current'
 const legacyUnitedKingdomTerritoryId = 'gb'
@@ -391,6 +397,9 @@ export function useTerritoryMap(lobbyId?: string) {
   const playersInitializationStarted = useRef(false)
   const datasetInitializationStarted = useRef(false)
   const session = useAnonymousSession()
+  const editUnlock = useEditUnlock(activeLobbyId)
+  // Ohne Freischaltung wirken Ansichtswechsel nur auf diesem Gerät.
+  const [localView, setLocalView] = useState<LocalView>({})
   const statePath = useMemo(
     () => firebasePaths.territoryMapState(activeLobbyId),
     [activeLobbyId],
@@ -416,7 +425,11 @@ export function useTerritoryMap(lobbyId?: string) {
     [],
   )
 
-  const state = useMemo(() => normalizeState(stateStore.data), [stateStore.data])
+  const sharedState = useMemo(() => normalizeState(stateStore.data), [stateStore.data])
+  const state = useMemo(
+    () => ({ ...sharedState, ...localView }),
+    [localView, sharedState],
+  )
   const players = useMemo(
     () => playersStore.data.map(normalizePlayer),
     [playersStore.data],
@@ -536,23 +549,26 @@ export function useTerritoryMap(lobbyId?: string) {
     (partialValue: Partial<TerritoryDataset> | ((current: TerritoryDataset) => Partial<TerritoryDataset>), batch: SyncBatch): void
   }
 
-  const setActiveMap = (activeMap: TerritoryMapId) =>
-    stateStore.merge({
-      activeMap,
-      updatedBy: session.userId,
+  const setView = (partial: LocalView) => {
+    if (!editUnlock.isUnlocked) {
+      setLocalView((current) => ({ ...current, ...partial }))
+      return Promise.resolve(syncSuccess(undefined))
+    }
+    // Lokale Ansichten aus der Sperrzeit bleiben nach dem Entsperren, bis sie geteilt geändert werden.
+    setLocalView((current) => {
+      const next = { ...current }
+      for (const key of Object.keys(partial) as Array<keyof LocalView>) delete next[key]
+      return next
     })
+    return stateStore.merge({ ...partial, updatedBy: session.userId })
+  }
+
+  const setActiveMap = (activeMap: TerritoryMapId) => setView({ activeMap })
 
   const setAchievementsOpen = (isAchievementsOpen: boolean) =>
-    stateStore.merge({
-      isAchievementsOpen,
-      updatedBy: session.userId,
-    })
+    setView({ isAchievementsOpen })
 
-  const setScoreOpen = (isScoreOpen: boolean) =>
-    stateStore.merge({
-      isScoreOpen,
-      updatedBy: session.userId,
-    })
+  const setScoreOpen = (isScoreOpen: boolean) => setView({ isScoreOpen })
 
   const addPlayer = (name = '', color = '') => {
     if (!isDatasetReady) {
@@ -783,13 +799,16 @@ export function useTerritoryMap(lobbyId?: string) {
       }
     })
 
+  const { protect } = editUnlock
+
   return {
     activeDataset,
-    addPlayer,
-    claimTerritory,
+    addPlayer: protect(addPlayer, null),
+    claimTerritory: protect(claimTerritory, false),
     claimsByMap,
     currentClaims,
-    deleteEvent,
+    deleteEvent: protect(deleteEvent, editLockedResult(undefined)),
+    editUnlock,
     error:
       stateStore.error ?? playersStore.error ?? datasetsStore.error ?? session.error,
     isLoading:
@@ -800,16 +819,16 @@ export function useTerritoryMap(lobbyId?: string) {
     isRealtime:
       stateStore.isRealtime && playersStore.isRealtime && datasetsStore.isRealtime,
     players,
-    removePlayer,
+    removePlayer: protect(removePlayer, false),
     session,
     setAchievementsOpen,
     setActiveMap,
     setScoreOpen,
     state,
     territoryColorPresets,
-    unclaimTerritory,
-    updateEvent,
-    updatePlayerColor,
-    updatePlayerName,
+    unclaimTerritory: protect(unclaimTerritory, false),
+    updateEvent: protect(updateEvent, editLockedResult(undefined)),
+    updatePlayerColor: protect(updatePlayerColor, undefined),
+    updatePlayerName: protect(updatePlayerName, undefined),
   }
 }

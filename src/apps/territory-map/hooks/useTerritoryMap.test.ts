@@ -58,19 +58,43 @@ vi.mock('@/lib/firebase/useAnonymousSession', () => ({
   }),
 }))
 
+// Simuliert die Bearbeitungssperre: entsperrt oder mit abgebrochener PIN-Abfrage.
+const editLock = vi.hoisted(() => ({ unlocked: true }))
+
+vi.mock('@/apps/shared/useEditUnlock', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/apps/shared/useEditUnlock')>()
+  return {
+    ...actual,
+    useEditUnlock: () => ({
+      isUnlocked: editLock.unlocked,
+      isPrompting: false,
+      requestUnlock: () => Promise.resolve(editLock.unlocked),
+      protect: <Args extends unknown[], T>(
+        write: (...args: Args) => T | Promise<T>,
+        lockedResult: T,
+      ) => (...args: Args) =>
+        Promise.resolve(editLock.unlocked ? write(...args) : lockedResult),
+      submit: () => true,
+      cancel: () => undefined,
+    }),
+  }
+})
+
 vi.mock('@/lobbies/LobbyContext', () => ({
   useActiveLobbyId: () => 'default',
 }))
 
+const stateStore = vi.hoisted(() => ({
+  data: { activeMap: 'world' },
+  error: null,
+  isLoading: false,
+  isPending: false,
+  isRealtime: true,
+  merge: vi.fn(),
+}))
+
 vi.mock('@/lib/firebase/useFirestoreDoc', () => ({
-  useFirestoreDoc: () => ({
-    data: { activeMap: 'world' },
-    error: null,
-    isLoading: false,
-    isPending: false,
-    isRealtime: true,
-    merge: vi.fn(),
-  }),
+  useFirestoreDoc: () => stateStore,
 }))
 
 vi.mock('@/lib/firebase/useFirestoreCollection', () => ({
@@ -117,6 +141,28 @@ describe('Sushi-Map-Datensatzbereitschaft', () => {
     vi.clearAllMocks()
     stores.dataset.data = []
     stores.dataset.isLoading = true
+    editLock.unlocked = true
+  })
+
+  it('schreibt ohne Bearbeitungs-PIN weder Besuche, Spieler noch geteilte Ansicht', async () => {
+    editLock.unlocked = false
+    stores.dataset.data = [dataset()]
+    stores.dataset.isLoading = false
+    let territoryMap: ReturnType<typeof useTerritoryMap> | undefined
+
+    function Probe() {
+      territoryMap = useTerritoryMap()
+      return null
+    }
+
+    renderToStaticMarkup(createElement(Probe))
+    expect(await territoryMap?.claimTerritory('world', 'jp', 'person-1')).toBe(false)
+    expect(await territoryMap?.addPlayer('Neu')).toBeNull()
+    expect(await territoryMap?.setActiveMap('germany')).toMatchObject({ ok: true })
+
+    expect(stores.dataset.mergeItem).not.toHaveBeenCalled()
+    expect(stores.players.setItem).not.toHaveBeenCalled()
+    expect(stateStore.merge).not.toHaveBeenCalled()
   })
 
   it('liefert während des Ladens keinen schreibbaren Datensatz', () => {

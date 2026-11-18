@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useI18n } from '@/lib/i18n'
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 import {
   addDaysToLocalDate,
   getWeekStartLocalDate,
@@ -136,8 +137,8 @@ function WeekCopyDialogContent({
             try {
               await onCopy(preview)
               onOpenChange(false)
-            } catch {
-              setError(t('triathlon.form.saveFailed'))
+            } catch (error) {
+              if (!isEditLocked(error)) setError(t('triathlon.form.saveFailed'))
             } finally {
               setIsSaving(false)
             }

@@ -29,6 +29,7 @@ export function SushiScoreCard({
   isOpen,
   onAdd,
   onColorChange,
+  onEditRequest,
   onNameChange,
   onRemove,
   onToggle,
@@ -39,6 +40,8 @@ export function SushiScoreCard({
   isOpen: boolean
   onAdd: () => Promise<void>
   onColorChange: (playerId: string, color: string) => unknown
+  /** Liefert, ob die Tabelle bearbeitet werden darf, und fragt dafür bei Bedarf die PIN ab. */
+  onEditRequest: () => Promise<boolean>
   onNameChange: (playerId: string, name: string) => Promise<unknown> | void
   onRemove: (playerId: string) => unknown
   onToggle: () => void
@@ -171,7 +174,10 @@ export function SushiScoreCard({
               size="sm"
               variant={isEditing ? 'default' : 'outline'}
               disabled={!isDatasetReady}
-              onClick={() => setIsEditRequested(!isEditing)}
+              onClick={async () => {
+                if (!isEditing && !(await onEditRequest())) return
+                setIsEditRequested(!isEditing)
+              }}
             >
               {isEditing ? <Check className="size-4" /> : <Pencil className="size-4" />}
               {t(isEditing ? 'territory.editTouristsDone' : 'territory.editTourists')}

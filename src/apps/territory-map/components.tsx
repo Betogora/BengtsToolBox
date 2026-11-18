@@ -399,6 +399,8 @@ function TerritoryEventDate({
         if (date !== originalDate) {
           void onUpdateEvent(event.id, {
             createdAtClientIso: fromDateInputValue(date, event.createdAtClientIso),
+          }).then((result) => {
+            if (!result.ok) setDraft(originalDate)
           })
         }
       }}

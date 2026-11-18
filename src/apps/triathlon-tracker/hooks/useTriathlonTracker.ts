@@ -15,10 +15,11 @@ import type {
   PlannedTraining,
   TrackerSettings,
 } from '@/apps/triathlon-tracker/types'
+import { editLockedResult, useEditUnlock } from '@/apps/shared/useEditUnlock'
 import { createRandomId } from '@/apps/shared/utils'
 import { firebasePaths } from '@/lib/firebase/paths'
 import { commitSyncBatch } from '@/lib/firebase/syncBatch'
-import { SyncError, syncFailure } from '@/lib/firebase/syncError'
+import { SyncError, syncFailure, type SyncResult } from '@/lib/firebase/syncError'
 import { useAnonymousSession } from '@/lib/firebase/useAnonymousSession'
 import { useFirestoreCollection } from '@/lib/firebase/useFirestoreCollection'
 import { useFirestoreDoc } from '@/lib/firebase/useFirestoreDoc'
@@ -188,6 +189,11 @@ export function createPlannedWeekCopyPreview(
 export function useTriathlonTracker(lobbyId?: string) {
   const activeLobbyId = useActiveLobbyId(lobbyId)
   const session = useAnonymousSession()
+  const editUnlock = useEditUnlock(activeLobbyId)
+  // Jede Änderung am globalen Datensatz wartet bei Bedarf auf die Bearbeitungs-PIN.
+  const protect = <Args extends unknown[]>(
+    write: (...args: Args) => Promise<SyncResult<void>>,
+  ) => editUnlock.protect(write, editLockedResult(undefined))
   const statePath = useMemo(
     () => firebasePaths.triathlonTrackerState(activeLobbyId),
     [activeLobbyId],
@@ -379,11 +385,12 @@ export function useTriathlonTracker(lobbyId?: string) {
 
   return {
     actualTrainings,
-    addActualTraining,
-    addPlannedTraining,
-    copyPlannedWeek,
-    deleteActualTraining,
-    deletePlannedTraining,
+    addActualTraining: protect(addActualTraining),
+    addPlannedTraining: protect(addPlannedTraining),
+    copyPlannedWeek: protect(copyPlannedWeek),
+    deleteActualTraining: protect(deleteActualTraining),
+    deletePlannedTraining: protect(deletePlannedTraining),
+    editUnlock,
     error:
       settingsStore.error ??
       plannedTrainingsStore.error ??
@@ -401,8 +408,8 @@ export function useTriathlonTracker(lobbyId?: string) {
     previewPlannedWeekCopy,
     session,
     settings: settingsStore.data,
-    updateActualTraining,
-    updatePlannedTraining,
-    updateSettings,
+    updateActualTraining: protect(updateActualTraining),
+    updatePlannedTraining: protect(updatePlannedTraining),
+    updateSettings: protect(updateSettings),
   }
 }

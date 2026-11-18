@@ -15,6 +15,7 @@ import {
 import { IftaInput } from '@/components/ui/ifta-field'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { useI18n } from '@/lib/i18n'
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 import { isValidLocalDate } from './domain/dates'
 import { maximumInclinePercent } from './domain/incline'
 import {
@@ -168,8 +169,8 @@ function PlannedTrainingDialogContent({
         label: label.trim().slice(0, 40),
       })
       onOpenChange(false)
-    } catch {
-      setError(t('triathlon.form.saveFailed'))
+    } catch (error) {
+      if (!isEditLocked(error)) setError(t('triathlon.form.saveFailed'))
     } finally {
       setIsSaving(false)
     }
@@ -287,8 +288,8 @@ function PlannedTrainingDialogContent({
                   try {
                     await onDelete(training.id)
                     onOpenChange(false)
-                  } catch {
-                    setError(t('triathlon.form.saveFailed'))
+                  } catch (error) {
+                    if (!isEditLocked(error)) setError(t('triathlon.form.saveFailed'))
                   }
                 }}
               />

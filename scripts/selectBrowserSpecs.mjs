@@ -22,6 +22,10 @@ export const specDependencies = {
     'src/apps/scoreboard/',
     'src/apps/territory-map/',
   ],
+  'edit-lock': [
+    'src/apps/territory-map/',
+    'src/apps/triathlon-tracker/',
+  ],
   scoreboard: ['src/apps/decision-wheel/'],
   'segmented-controls': ['src/apps/triathlon-tracker/'],
   'sync-errors': [

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:04486974d7f207012c6fd6aa334da60af4eec8a78473d26463a7dd6c6f447c87">
+  <meta name="specs-source-sha256" content="sha256:0604ac59f6b4f39701374d397daee9218701515f2f98365790c586f2b9236b31">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -807,7 +807,8 @@
             <li>Namens- und bestätigte Farbänderungen aktualisieren die Events von <code>dataset-current</code>.</li>
             <li>Die Rangliste zählt pro Person alle aktuell gehaltenen Welt- und Deutschland-Claims.</li>
             <li>Zehn Achievements werden für alle Personen aus der Besuchshistorie abgeleitet, unter anderem Afrika, Deutschland, Nordics, Balkan, Amerika, Pazifik, Microstates, Japan und Berlin.</li>
-            <li>Die Punktzahl ist initial ausgeklappt, die Achievements sind initial eingeklappt; beide Zustände werden je Lobby im App-State synchronisiert.</li>
+            <li>Im globalen Datenraum verlangt jede Änderung die Bearbeitungs-PIN: Besuche eintragen, korrigieren oder löschen sowie Touristen anlegen, umbenennen, umfärben und entfernen; der Bearbeitungsmodus der Rangliste fragt sie beim Öffnen ab. Ansehen, Karte, Achievements, Rangliste und Presenter bleiben frei. Anlage von Startdaten und die <code>gb</code>-Migration laufen ohne PIN. Lobby-Datensätze sind nicht geschützt.</li>
+            <li>Die Punktzahl ist initial ausgeklappt, die Achievements sind initial eingeklappt; beide Zustände und die aktive Karte werden je Lobby im App-State synchronisiert. Ohne Freischaltung wirken diese Ansichtswechsel im globalen Datenraum nur lokal.</li>
             <li>Die Karte unterstützt Tastaturauswahl, Pointer-Drag sowie stufenlosen Pinch-, Mausrad- und Trackpad-Zoom zwischen <code>1</code> und <code>1024</code>; die Zoomknöpfe springen zur nächsten Zweierpotenz. In der Übersicht scrollt ein Finger die Seite und laufendes Seitenscrollen über der Karte bleibt Seitenscrollen. Welt- und Deutschlandkarte teilen dieselbe Kartenhöhe.</li>
             <li>Der Presenter zeigt aktive Karte, Claims, Legende und Rangliste.</li>
             </ul>
@@ -903,6 +904,7 @@
             <h4>Betriebsmodell und Ansichten</h4>
             <ul>
             <li>Ein Tracker gehört zum globalen oder aktuellen Lobby-Datenraum und verwendet die gemeinsamen Firestore-Hooks samt lokalem Fallback. Das optionale Gewicht und die Plantempi liegen im State-Dokument; Planungen und absolvierte Einheiten liegen in getrennten Collections. Rekorde und Hochrechnungen werden aus Rohdaten abgeleitet und nicht gespeichert.</li>
+            <li>Im globalen Datenraum verlangt jede Änderung die Bearbeitungs-PIN: Planungen und absolvierte Einheiten anlegen, bearbeiten, verschieben und löschen, Wochenkopien übernehmen sowie Gewicht, Ruhepuls und Plantempi ändern. Die Abfrage erscheint erst beim Speichern; Eingaben bleiben beim Abbrechen erhalten. Alle Ansichten und die Vorschau einer Wochenkopie bleiben frei. Lobby-Datensätze sind nicht geschützt.</li>
             <li>Die Tabs <code>Planung</code>, <code>Rekorde</code>, <code>Statistik</code> und <code>Tagebuch</code> trennen in dieser Reihenfolge Planung, Bestleistungen, Auswertung und Erfassung. <code>Planung</code> ist die Einstiegsansicht; unter dem Kalender liegen aktuelles Gewicht und Plantempi, auf <code>Rekorde</code> die Kontextfilter. Jeder Tab beginnt mit einer Überschrift auf gleicher Höhe: Planungszeitraum, <code>Bestleistungen</code>, <code>Leistungsentwicklung</code> und <code>Absolvierte Trainings</code>. <code>Statistik</code> wird nach dem Seitenaufbau im Leerlauf geladen und vorberechnet und bleibt danach im Hintergrund erhalten. Diagramme werden lazy geladen.</li>
             <li>Metrische Einheiten, <code>Europe/Berlin</code> und Montag als Wochenbeginn gelten durchgehend. Schwimmen trennt 25-m-Becken, 50-m-Becken und Freiwasser; Radfahren Ergometer und Outdoor; Laufen Straße und Laufband. Bahn zählt zur Straße, auch bei bereits gespeicherten Einträgen. Die Kontextauswahl in Trainingseingabe, Rekorden und Statistik verwendet Dropdowns. Neue Einheiten beginnen auf 50-m-Becken, Ergometer und Laufband; Rekorde und Statistik zeigen zuerst 50-m-Becken, Ergometer und Straße. Ältere Einträge ohne Kontext werden diesen Anzeige-Standards zugeordnet. Jede Disziplin hat app-weit genau ein Icon (Wellen, Rad, Fußstapfen); Varianten wie Gehen erhalten kein eigenes.</li>
             </ul>
@@ -1234,6 +1236,7 @@ npx firebase-tools init hosting:github</code></pre>
           <h3>Vertrauensbasierter privater Hub</h3>
           <p>Die globalen Legacy-Pfade unter <code>apps/{appId}/...</code> bleiben für alle authentifizierten Clients offen. Lobby-Metadaten sind lesbar, aktive Lobby-App-Zustände gemeinsam bearbeitbar und Geräte-Dokumente beim Schreiben auf die eigene UID begrenzt.</p>
           <p>Gerätehistorie und Löschmarker sind wegen der Spark-only-Verwaltung technisch für authentifizierte Clients zugänglich. Der PIN <code>5340</code> verhindert versehentliche Nutzung, ist im Web-Bundle aber auslesbar und keine Sicherheitsgrenze. Entfernte Lobbys werden im App-Verzeichnis deaktiviert. Live-Buzzer-Daten sind gemeinsam lesbar; Rundensteuerung und globaler Uhrabgleich sind an eine unveränderliche Host-UID gebunden. Neue Buzzes prüfen die eigene Spieler-UID. Lobby-Pfade trennen die Daten logisch, ohne vertrauliche Mitgliederräume. Uhrmessungen sind auf die eigene Auth-UID beschränkt. Realtime-Regeln können den Firestore-Löschmarker nicht direkt prüfen.</p>
+          <p>Eine getrennte Bearbeitungs-PIN <code>9696</code> sperrt Änderungen an den globalen Datensätzen von Triathlon-Tracker und Sushi Map, ohne das Ansehen zu sperren. Sie wird erst bei einer Änderung abgefragt, gilt für beide Apps bis zum Ende der Browser-Sitzung und ist ebenfalls nur eine Oberflächensperre.</p>
           <p>Der KI-Proxy nimmt nur Anfragen der ToolBox-Domains, ihrer Preview Channels und von <code>localhost</code> an und begrenzt Anfragen je Adresse. Der Spielstand reist als AES-GCM-Paket, das nur der Proxy öffnen kann; der OpenRouter-Schlüssel bleibt in der Vercel-Umgebung. Jede Person auf den erlaubten Domains kann Modellhinweise auslösen; Ratenlimits und das Ausgabenlimit des Schlüssels begrenzen die Kosten.</p>
           <p>Vor öffentlicher Nutzung mit sensiblen Daten, echten Besitzerrollen oder Mandantentrennung müssen Datenräume, Identitäten und Besitzer-/Teilnehmer-Claims modelliert, globale Legacy-Pfade migriert und Rules verengt werden. Client-PINs müssen durch serverseitig prüfbare Autorisierung ersetzt und erlaubte, abgewiesene sowie migrationsbezogene Zugriffe mit Emulator-/Rules-Tests abgesichert werden.</p>
         </div>

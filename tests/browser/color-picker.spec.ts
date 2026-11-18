@@ -1,5 +1,12 @@
 import { expect, test } from './browserApp'
 
+// Diese Abläufe bearbeiten den globalen Datensatz; die Sperre selbst prüft edit-lock.spec.ts.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() =>
+    window.sessionStorage.setItem('bengts-toolbox:edit-protection:unlocked', 'true'),
+  )
+})
+
 test('Globaler Farbkreis zeigt live an und speichert direkte Änderungen', async ({
   app,
   page,

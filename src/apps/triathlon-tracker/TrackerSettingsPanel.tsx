@@ -10,6 +10,7 @@ import {
 } from './domain/units'
 import { isValidPlanPace, restingHeartRateRange } from './domain/validation'
 import type { PlanPaces, RunVariant } from './types'
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 import { IftaInput } from '@/components/ui/ifta-field'
 import { useI18n } from '@/lib/i18n'
 
@@ -48,8 +49,9 @@ function OptionalNumberInput({
     try {
       await onSave(next)
       toast.success(savedMessage)
-    } catch {
-      toast.error(t('triathlon.form.saveFailed'))
+    } catch (error) {
+      if (isEditLocked(error)) setValue(current?.toString() ?? '')
+      else toast.error(t('triathlon.form.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -106,8 +108,12 @@ function PlanPaceInput({
     try {
       await onSave(next)
       toast.success(t('triathlon.settings.planPaceSaved'))
-    } catch {
-      toast.error(t('triathlon.form.saveFailed'))
+    } catch (error) {
+      if (isEditLocked(error)) {
+        setDraft({ pace: formatPace(paceSeconds), speed: formatSpeed(paceSeconds) })
+      } else {
+        toast.error(t('triathlon.form.saveFailed'))
+      }
     } finally {
       setSaving(false)
     }

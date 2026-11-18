@@ -1,8 +1,17 @@
-// Gemeinsame, bewusst clientseitige PIN für Spielleitungsbereiche; sie verhindert keine technische Umgehung.
+// Bewusst clientseitige PINs; sie verhindern keine technische Umgehung.
+// Spielleitungsbereiche wie Schlag den Raab.
 const adminPassword = '5340'
+// Getrennte PIN, die Änderungen an geschützten globalen Datensätzen freigibt.
+const editPassword = '9696'
+
+export const editUnlockStorageKey = 'bengts-toolbox:edit-protection:unlocked'
 
 export function isAdminPassword(value: string) {
   return value.trim() === adminPassword
+}
+
+export function isEditPassword(value: string) {
+  return value.trim() === editPassword
 }
 
 export function isAdminUnlocked(storageKey: string) {

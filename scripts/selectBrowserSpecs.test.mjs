@@ -6,8 +6,8 @@ import { listAvailableSpecs, selectBrowserSpecs, specDependencies } from './sele
 const specs = listAvailableSpecs().sort()
 
 it.each([
-  ['an app file', ['src/apps/triathlon-tracker/TriathlonTrackerPage.tsx'], ['segmented-controls', 'triathlon-tracker']],
-  ['an app shared by several specs', ['src/apps/territory-map/TerritoryMapCanvas.tsx'], ['color-picker', 'territory-map']],
+  ['an app file', ['src/apps/triathlon-tracker/TriathlonTrackerPage.tsx'], ['edit-lock', 'segmented-controls', 'triathlon-tracker']],
+  ['an app shared by several specs', ['src/apps/territory-map/TerritoryMapCanvas.tsx'], ['color-picker', 'edit-lock', 'territory-map']],
   ['translations', ['src/lib/i18n/translations.ts', 'src/apps/swiss-tournaments/logic.ts'], ['browser-smoke', 'tournament-smoke']],
   ['an edited spec', ['tests/browser/live-buzzer.spec.ts'], ['live-buzzer']],
 ])('selects only the specs affected by %s', (_, files, expected) => {

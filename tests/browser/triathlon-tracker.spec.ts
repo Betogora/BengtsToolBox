@@ -1,6 +1,13 @@
 import { expect, test } from './browserApp'
 import type { Page } from '@playwright/test'
 
+// Diese Abläufe bearbeiten den globalen Datensatz; die Sperre selbst prüft edit-lock.spec.ts.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() =>
+    window.sessionStorage.setItem('bengts-toolbox:edit-protection:unlocked', 'true'),
+  )
+})
+
 const plannedKey =
   'app-hub:collection:apps/triathlon-tracker/sessions/default/planned-trainings'
 const actualKey =

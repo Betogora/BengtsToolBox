@@ -40,6 +40,7 @@ import { EmptyState } from '@/apps/shared/components/EmptyState'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { isEditLocked } from '@/apps/shared/useEditUnlock'
 
 const PAGE_SIZE = 20
 
@@ -415,8 +416,8 @@ export function TrainingJournal({
                             setError(null)
                             try {
                               await onDelete(training.id)
-                            } catch {
-                              setError(t('triathlon.form.saveFailed'))
+                            } catch (error) {
+                              if (!isEditLocked(error)) setError(t('triathlon.form.saveFailed'))
                             }
                           }}
                         />

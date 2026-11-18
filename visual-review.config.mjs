@@ -32,6 +32,10 @@ const review = {
       (route) => route.abort('blockedbyclient'),
     )
     await page.goto(base + '/apps/triathlon-tracker')
+    // Szenen zeigen auch Bearbeitungsabläufe; die Bearbeitungs-PIN gilt als eingegeben.
+    await page.addInitScript(() =>
+      window.sessionStorage.setItem('bengts-toolbox:edit-protection:unlocked', 'true'),
+    )
     await page.addInitScript(() => {
       const dates = (daysAgo) => {
         const date = new Date()

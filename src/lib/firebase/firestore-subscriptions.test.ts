@@ -25,6 +25,19 @@ vi.mock('react', async (original) => {
     },
   }
 })
+// Diese Tests prüfen die Synchronisierung; die Bearbeitungssperre gilt hier als freigeschaltet.
+vi.mock('@/apps/shared/useEditUnlock', async (original) => ({
+  ...await original<typeof import('@/apps/shared/useEditUnlock')>(),
+  useEditUnlock: () => ({
+    isUnlocked: true,
+    isPrompting: false,
+    requestUnlock: () => Promise.resolve(true),
+    protect: <Args extends unknown[], T>(write: (...args: Args) => T | Promise<T>) =>
+      (...args: Args) => Promise.resolve(write(...args)),
+    submit: () => true,
+    cancel: () => undefined,
+  }),
+}))
 vi.mock('@/lib/firebase/client', () => ({
   get isFirebaseConfigured() { return mock.configured },
   getFirebaseServices: () => mock.configured ? { db: {} } : null,

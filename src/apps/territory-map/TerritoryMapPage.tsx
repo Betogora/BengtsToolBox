@@ -27,6 +27,7 @@ import { TerritoryMapCanvas } from '@/apps/territory-map/TerritoryMapCanvas'
 import { TerritoryMapPresenter } from '@/apps/territory-map/TerritoryMapPresenter'
 import { AppPageHeader } from '@/apps/shared/components/AppPageHeader'
 import { AppPage } from '@/apps/shared/components/AppPage'
+import { EditUnlockDialog } from '@/apps/shared/components/EditUnlockDialog'
 import { DisclosureIndicator } from '@/components/ui/disclosure'
 import { Tooltip } from '@/components/ui/tooltip'
 import { PresenterLauncher } from '@/apps/shared/components/Presenter'
@@ -57,6 +58,7 @@ export function TerritoryMapPage() {
     claimsByMap,
     currentClaims,
     deleteEvent,
+    editUnlock,
     error,
     isDatasetReady,
     players,
@@ -155,6 +157,10 @@ export function TerritoryMapPage() {
     if (!isDatasetReady || !selectedTerritory) {
       return
     }
+    // Bei abgebrochener PIN-Abfrage bleibt der Dialog mit der Auswahl offen.
+    if (!(await editUnlock.requestUnlock())) {
+      return
+    }
 
     if (playerId === unclaimedValue) {
       await unclaimTerritory(
@@ -246,6 +252,7 @@ export function TerritoryMapPage() {
           scores={sushiScores}
           onAdd={handleAddEater}
           onColorChange={updatePlayerColor}
+          onEditRequest={editUnlock.requestUnlock}
           onNameChange={updatePlayerName}
           onRemove={removePlayer}
           onToggle={() => void setScoreOpen(!state.isScoreOpen)}
@@ -374,6 +381,7 @@ export function TerritoryMapPage() {
         players={players}
         territory={selectedTerritory}
       />
+      <EditUnlockDialog editUnlock={editUnlock} />
     </AppPage>
   )
 }
