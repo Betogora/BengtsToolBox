@@ -232,9 +232,17 @@ export function TournamentOverviewWorkflow({
           onCreate={onCreateTournament}
           tournaments={tournaments}
           trigger={
-            <Button className="h-full min-h-14 w-full rounded-lg px-3 text-base shadow-sm md:min-h-0 md:px-4">
-              <Plus className="size-5" />
-              <span className="min-w-0 truncate">
+            // Vereinslogo über die volle Breite des Buttons, oben und unten beschnitten.
+            <Button className="relative h-full min-h-20 w-full justify-start overflow-hidden rounded-lg px-4 text-base shadow-sm max-[374px]:gap-1.5 max-[374px]:px-2.5 max-[374px]:text-sm md:min-h-0 md:px-6">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "swiss-new-tournament-logo pointer-events-none absolute -inset-x-2 top-1/2 h-[152%] -translate-y-1/2",
+                  isMarioKartTournament && "swiss-new-tournament-logo--mario-kart",
+                )}
+              />
+              <Plus className="relative size-5" />
+              <span className="relative min-w-0 truncate">
                 {t("swiss.newTournament")}
               </span>
             </Button>

@@ -12,7 +12,6 @@ import { Notice } from '@/components/ui/notice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/i18n';
 import { syncErrorMessageKey } from '@/lib/firebase/syncError';
-import { cn } from '@/lib/utils';
 import { StandingsTable } from '@/apps/swiss-tournaments/components/StandingsTable'
 import { tournamentFormatLabelKey, tournamentWebsiteQrUrl } from '@/apps/swiss-tournaments/components/tournamentUiPresentation';
 import { NewTournamentDialog } from '@/apps/swiss-tournaments/components/TournamentCreatorDialog';
@@ -172,10 +171,7 @@ export function SwissTournamentsPage() {
     inspection?.players.get(playerId)?.canRemove ?? false
   return (
     <AppPage
-      className={cn(
-        'swiss-tournaments-page',
-        isMarioKartTournament && 'swiss-tournaments-page--mario-kart',
-      )}
+      className="swiss-tournaments-page"
       width="wide"
     >
       <AppTitleHeader
