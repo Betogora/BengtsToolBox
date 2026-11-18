@@ -208,8 +208,8 @@ export function TournamentOverviewWorkflow({
 
   return (
     <TabsContent value="overview" className="grid gap-4">
-      <section className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <section className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4">
+        <Card className="col-span-2 md:col-span-1">
           <CardHeader className="gap-3 p-4 md:gap-2">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3">
               <CardDescription>
@@ -232,7 +232,7 @@ export function TournamentOverviewWorkflow({
           onCreate={onCreateTournament}
           tournaments={tournaments}
           trigger={
-            <Button className="h-full min-h-0 w-full rounded-lg px-4 text-base shadow-sm">
+            <Button className="h-full min-h-14 w-full rounded-lg px-3 text-base shadow-sm md:min-h-0 md:px-4">
               <Plus className="size-5" />
               <span className="min-w-0 truncate">
                 {t("swiss.newTournament")}

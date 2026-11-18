@@ -199,40 +199,37 @@ export function StandingsTable({
       <CardContent style={roundCellWidthStyle}>
         <Table
           className="table-fixed"
-          containerClassName="swiss-standings-mobile overflow-x-hidden md:hidden"
+          containerClassName="swiss-standings-mobile overflow-x-hidden rounded-lg border bg-card md:hidden"
         >
             <colgroup>
-              <col className="swiss-mobile-col-rank w-16" />
+              <col className="w-9" />
               <col />
-              <col className="swiss-mobile-col-points w-20" />
+              <col className="w-12" />
               {!isMarioKart && (
                 <>
-                  <col className="swiss-mobile-col-buchholz w-20" />
-                  <col className="swiss-mobile-sb w-20" />
+                  <col className="w-11" />
+                  <col className="w-13 max-[374px]:w-0 max-[374px]:collapse" />
                 </>
               )}
             </colgroup>
             <TableHeader>
-                <TableHead className="px-1.5 py-2">{t('swiss.rank')}</TableHead>
-                <TableHead className="py-2 pl-4 pr-1.5">{t('common.name')}</TableHead>
-                <TableHead className="px-1 py-2 text-center" title={primaryPointsLabel}>
+                <TableHead className="px-1 py-1.5 text-center">{t('swiss.rank')}</TableHead>
+                <TableHead className="py-1.5 pl-2 pr-1">{t('common.name')}</TableHead>
+                <TableHead className="px-1 py-1.5 text-center" title={primaryPointsLabel}>
                   {mobilePrimaryPointsLabel}
                 </TableHead>
                 {!isMarioKart && (
                   <>
                     <TableHead className="px-1 py-2 text-center">
-                      <span className="swiss-mobile-buchholz-label">
-                        {t('swiss.table.buchholz')}
-                      </span>
                       <abbr
                         aria-label={t('swiss.table.buchholz')}
-                        className="swiss-mobile-buch-label hidden no-underline"
+                        className="no-underline"
                         title={t('swiss.table.buchholz')}
                       >
                         Buch
                       </abbr>
                     </TableHead>
-                    <TableHead className="swiss-mobile-sb px-1 py-2 text-center">
+                    <TableHead className="px-1 py-1.5 text-center max-[374px]:hidden">
                       {t('swiss.table.sb')}
                     </TableHead>
                   </>
@@ -262,30 +259,30 @@ export function StandingsTable({
                         }
                       }}
                     >
-                      <TableCell className="px-0.5 py-1.5 text-center tabular-nums">
+                      <TableCell className="px-0.5 py-1 text-center tabular-nums">
                         <RankPlacement
                           className="justify-center"
                           isMarioKart={isMarioKart}
                           rank={row.rank}
                         />
                       </TableCell>
-                      <TableCell className="type-label min-w-0 py-2 pl-4 pr-1.5">
+                      <TableCell className="type-label min-w-0 py-1 pl-2 pr-1">
                         <span className="flex min-w-0 items-center justify-between gap-2">
                           <span className="min-w-0 truncate">{row.playerName}</span>
                           <DisclosureIndicator isOpen={isExpanded} />
                         </span>
                       </TableCell>
-                      <TableCell className="px-1 py-2 text-center tabular-nums">
-                        <span className="type-action inline-flex min-w-9 items-center justify-center rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-primary">
+                      <TableCell className="px-1 py-1 text-center tabular-nums">
+                        <span className="type-action inline-flex min-w-8 items-center justify-center rounded-md bg-primary/10 px-1 text-primary">
                           {formatPoints(row.points)}
                         </span>
                       </TableCell>
                       {!isMarioKart && (
                         <>
-                          <TableCell className="px-1 py-2 text-center tabular-nums">
+                          <TableCell className="px-1 py-1 text-center tabular-nums">
                             {formatPoints(row.buchholz)}
                           </TableCell>
-                          <TableCell className="swiss-mobile-sb px-1 py-2 text-center tabular-nums">
+                          <TableCell className="px-1 py-1 text-center tabular-nums max-[374px]:hidden">
                             {formatPoints(row.sonnebornBerger)}
                           </TableCell>
                         </>
@@ -313,7 +310,7 @@ export function StandingsTable({
                             <div className="type-field-label flex flex-wrap items-center gap-2 text-muted-foreground">
                               <span>{winsLabel}: {winsCount(row)}</span>
                               {!isMarioKart && (
-                                <span className="swiss-mobile-sb-detail hidden">
+                                <span className="hidden max-[374px]:inline">
                                   {t('swiss.table.sb')}: {formatPoints(row.sonnebornBerger)}
                                 </span>
                               )}
@@ -354,7 +351,7 @@ export function StandingsTable({
             isMarioKart && 'swiss-standings-mario-kart',
             isMarioKart ? 'table-fixed' : 'min-w-[68rem]',
           )}
-          containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
+          containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden rounded-lg border bg-card md:block"
           style={
             isMarioKart
               ? { minWidth: `${marioKartStandingsMinWidthRem}rem` }
@@ -501,7 +498,7 @@ export function StandingsTable({
             </h3>
             <Table
               className="swiss-standings-beer-mobile table-fixed"
-              containerClassName="swiss-standings-mobile md:hidden"
+              containerClassName="swiss-standings-mobile rounded-lg border bg-card md:hidden"
             >
               <colgroup>
                 <col className="w-16" />
@@ -557,7 +554,7 @@ export function StandingsTable({
             </Table>
             <Table
               className="swiss-standings-beer swiss-standings-table table-fixed"
-              containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden md:block"
+              containerClassName="swiss-standings-table-wrap swiss-standings-desktop hidden rounded-lg border bg-card md:block"
               style={{ minWidth: `${marioKartEventTableMinWidthRem}rem` }}
             >
               <colgroup>

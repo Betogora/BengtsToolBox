@@ -549,7 +549,7 @@ function ManualPairingForm({
           </div>
         </div>
       )}
-      <div className="grid gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_8.5rem]">
         <Select
           value={manualWhite}
           onValueChange={setManualWhite}
@@ -607,7 +607,7 @@ function ManualPairingForm({
           </SelectContent>
         </Select>
         <Button
-          className="h-9 w-full lg:h-11"
+          className="col-span-2 h-9 w-full lg:col-span-1 lg:h-11"
           size="ifta"
           disabled={!canAddManualPairing}
           onClick={async () => {
@@ -895,13 +895,13 @@ export function TournamentPairingsWorkflow({
                             </Badge>
                           )}
                         </div>
-                        <div className="flex w-full min-w-0 flex-col justify-end gap-2 md:w-auto md:flex-row">
+                        <div className="flex w-full min-w-0 flex-row flex-wrap items-center justify-end gap-2 md:w-auto md:flex-nowrap">
                           {!isMarioKartLobby && round.status === "draft" && (
                             <Select
                               value={String(tournament.settings.roundByeScores?.[round.roundNumber] ?? tournament.settings.byeScore)}
                               onValueChange={(value) => void onSetRoundByeScore(round.roundNumber, Number(value) as 0 | 0.5 | 1)}
                             >
-                              <IftaSelectTrigger label={t("swiss.pointsPerBye")} className="w-full md:w-40">
+                              <IftaSelectTrigger label={t("swiss.pointsPerBye")} className="w-full" containerClassName="w-[calc(50%-0.25rem)] md:w-40">
                                 <SelectValue />
                               </IftaSelectTrigger>
                               <SelectContent>
@@ -935,7 +935,7 @@ export function TournamentPairingsWorkflow({
                                 trigger={
                                   <Button
                                     aria-label={t("swiss.backToRoundAria")}
-                                    className="h-8 w-full shrink-0 p-0 md:w-10"
+                                    className="h-11 min-w-11 md:min-w-0 md:h-8 shrink-0 p-0 md:w-10"
                                     title={t("swiss.backToRoundAria")}
                                     variant="outline"
                                   >
@@ -946,7 +946,7 @@ export function TournamentPairingsWorkflow({
                             )}
                           {isCurrentRound && (
                             <Button
-                              className="h-8 w-full md:w-auto"
+                              className="h-11 min-w-11 md:min-w-0 flex-1 basis-[40%] md:h-8 md:flex-none md:basis-auto"
                               disabled={!canCreateNextRound}
                               title={marioKartPlanningBlockMessage ?? undefined}
                               onClick={() => void onGenerateRound()}
@@ -961,7 +961,7 @@ export function TournamentPairingsWorkflow({
                                 !correctionDraft && (
                                   <Button
                                     aria-label={t("swiss.marioKartEditLobby")}
-                                    className="h-8 w-full p-0 md:w-10"
+                                    className="h-11 min-w-11 md:min-w-0 md:h-8 p-0 md:w-10"
                                     size="sm"
                                     title={t("swiss.marioKartEditLobby")}
                                     variant="outline"
@@ -984,7 +984,7 @@ export function TournamentPairingsWorkflow({
                                 <>
                                   <Button
                                     aria-label={t("common.cancel")}
-                                    className="h-8 w-full p-0 md:w-10"
+                                    className="h-11 min-w-11 md:min-w-0 md:h-8 p-0 md:w-10"
                                     size="sm"
                                     title={t("common.cancel")}
                                     variant="outline"
@@ -996,7 +996,7 @@ export function TournamentPairingsWorkflow({
                                     aria-label={t(
                                       "swiss.marioKartSaveCorrection",
                                     )}
-                                    className="h-8 w-full p-0 md:w-10"
+                                    className="h-11 min-w-11 md:min-w-0 md:h-8 p-0 md:w-10"
                                     disabled={!correctionIsValid}
                                     size="sm"
                                     title={t("swiss.marioKartSaveCorrection")}
@@ -1015,7 +1015,7 @@ export function TournamentPairingsWorkflow({
                               {canMutateMarioKartLineup && (
                                 <>
                                   <Button
-                                    className="h-8 w-full md:w-auto"
+                                    className="h-11 min-w-11 md:min-w-0 flex-1 basis-[40%] md:h-8 md:flex-none md:basis-auto"
                                     variant="outline"
                                     onClick={() => void onRegenerateRound()}
                                   >
@@ -1024,7 +1024,7 @@ export function TournamentPairingsWorkflow({
                                   </Button>
                                   <DeleteButton
                                     aria-label={t("swiss.deleteRound")}
-                                    className="h-8 w-full md:w-10"
+                                    className="h-11 min-w-11 md:min-w-0 md:h-8 md:w-10"
                                     title={t("swiss.deleteRound")}
                                     onClick={() => void onDeleteLatestRound()}
                                   />
@@ -1035,7 +1035,7 @@ export function TournamentPairingsWorkflow({
                             <>
                               {isEditable && (
                                 <Button
-                                  className="h-8 w-full md:w-auto"
+                                  className="h-11 min-w-11 md:min-w-0 flex-1 basis-[40%] md:h-8 md:flex-none md:basis-auto"
                                   disabled={!canRegenerateRound}
                                   variant="outline"
                                   onClick={() => void onRegenerateRound()}
@@ -1075,7 +1075,7 @@ export function TournamentPairingsWorkflow({
                                 trigger={
                                   <DeleteButton
                                     aria-label={t("swiss.deleteRound")}
-                                    className="h-8 w-full md:w-10"
+                                    className="h-11 min-w-11 md:min-w-0 md:h-8 md:w-10"
                                     title={t("swiss.deleteRound")}
                                   />
                                 }

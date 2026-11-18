@@ -98,7 +98,7 @@ export function ArchivedTournamentsList({
 
   if (entries.length === 0) {
     return (
-      <EmptyState>
+      <EmptyState className="p-4 text-left">
         {t('swiss.archived.empty')}
       </EmptyState>
     )
@@ -106,11 +106,11 @@ export function ArchivedTournamentsList({
 
   return (
     <>
-      <div className="grid divide-y md:hidden">
+      <div className="grid gap-2 md:hidden">
         {entries.map((entry) => (
           <div
             key={entry.tournament.id}
-            className="grid gap-3 py-3 text-sm first:pt-0 last:pb-0"
+            className="grid gap-3 rounded-md border bg-background p-3 text-sm"
           >
             <div className="min-w-0">
               <div className="type-action truncate">{entry.tournament.name}</div>
@@ -136,7 +136,7 @@ export function ArchivedTournamentsList({
         ))}
       </div>
 
-      <Table className="min-w-[58rem]" containerClassName="hidden md:block">
+      <Table className="min-w-[58rem]" containerClassName="hidden rounded-lg border bg-card md:block">
           <TableHeader>
               <TableHead>{t('swiss.tournamentName')}</TableHead>
               <TableHead>{t('swiss.archived')}</TableHead>
@@ -219,7 +219,7 @@ export function SwissStandingsPresenter({
         {standings.length === 0 ? (
           <EmptyState>{t('swiss.emptyStandings')}</EmptyState>
         ) : (
-          <Table className={cn('min-w-[44rem]', isMarioKart && 'min-w-[52rem]')}>
+          <Table className={cn('min-w-[44rem]', isMarioKart && 'min-w-[52rem]')} containerClassName="rounded-lg border bg-card">
             <TableHeader>
               <TableHead>{t('swiss.rank')}</TableHead>
               <TableHead>{t('common.name')}</TableHead>

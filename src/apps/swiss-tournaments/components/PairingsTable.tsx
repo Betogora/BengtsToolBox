@@ -529,7 +529,7 @@ export function PairingsTable({
   const canCorrectResult = (pairing: Pairing) =>
     resultCorrectionEnabled && !pairing.isBye && Boolean(onResultCorrection)
 
-  const renderMobileResult = (pairing: Pairing) => {
+  const renderMobileResult = (pairing: Pairing, compact = false) => {
     if (pairing.isBye) {
       return <Badge className="type-ui align-middle" variant="secondary">{resultLabel(pairing.result, t)}</Badge>
     }
@@ -542,9 +542,15 @@ export function PairingsTable({
             handleResultSelect(pairing.id, value as ResultSelectValue)
           }
         >
-          <IftaSelectTrigger label={t('swiss.result')}>
-            <SelectValue placeholder={t('swiss.result.open')} />
-          </IftaSelectTrigger>
+          {compact ? (
+            <SelectTrigger aria-label={t('swiss.result')} className="h-9 w-[6.5rem] pl-2.5 pr-8">
+              <SelectValue placeholder={t('swiss.result.open')} />
+            </SelectTrigger>
+          ) : (
+            <IftaSelectTrigger label={t('swiss.result')}>
+              <SelectValue placeholder={t('swiss.result.open')} />
+            </IftaSelectTrigger>
+          )}
           <SelectContent>
             <SelectItem value={openResultValue}>{t('swiss.result.open')}</SelectItem>
             {resultOptions.map((option) => (
@@ -784,14 +790,14 @@ export function PairingsTable({
 
     return (
       <>
-        <div className="grid divide-y md:hidden">
+        <div className="grid gap-2 md:hidden">
           {pairings.flatMap((pairing) =>
             racersFor(pairing).map((racer, index) => (
                   <div
                     key={`${pairing.id}-${racer.playerId}-${racer.scoringCycleNumber ?? 'extra'}`}
                     className={cn(
-                      'grid gap-2 py-3 text-sm transition-colors first:pt-0 last:pb-0',
-                      racer.event && 'bg-secondary/60',
+                      'grid gap-2 rounded-md border bg-background p-3 text-sm transition-colors',
+                      racer.event && 'border-primary/25 bg-secondary/60',
                     )}
                   >
                     <div className="flex min-w-0 items-start justify-between gap-2">
@@ -827,7 +833,7 @@ export function PairingsTable({
           )}
         </div>
 
-        <Table className="min-w-[48rem] table-fixed" containerClassName="hidden md:block">
+        <Table className="min-w-[48rem] table-fixed" containerClassName="hidden rounded-lg border bg-card md:block">
           <colgroup>
             <col />
             <col className="w-24" />
@@ -879,52 +885,44 @@ export function PairingsTable({
 
   return (
     <>
-      <div className="grid divide-y md:hidden">
+      {/* Mobil eine Tabellenzeile pro Brett – Nummer, Weiß über Schwarz, Ergebnis rechts. */}
+      <div className="divide-y overflow-hidden rounded-lg border bg-card md:hidden">
+        <div className="type-field-label grid grid-cols-[1.75rem_minmax(0,1fr)_6.5rem] gap-2 bg-muted/50 px-2.5 py-1.5 text-muted-foreground">
+          <span>#</span>
+          <span>{t('swiss.table.white')} / {t('swiss.table.black')}</span>
+          <span>{t('swiss.result')}</span>
+        </div>
         {pairings.map((pairing) => {
-          const whiteName = renderWhite(pairing)
-          const blackName = renderBlack(pairing)
+          const hasHints =
+            showWarnings &&
+            (pairing.isManual || visibleWarningsForPairing(pairing).length > 0)
 
           return (
             <div
               key={pairing.id}
               className={cn(
-                'py-3 text-sm first:pt-0 last:pb-0',
+                'grid grid-cols-[1.75rem_minmax(0,1fr)_6.5rem] items-center gap-2 px-2.5 py-2 text-sm',
                 pairing.isManual && 'bg-primary/5',
               )}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="type-action tabular-nums whitespace-nowrap">
-                  {t('swiss.board')} {pairing.boardNumber}
-                  {pairing.kind === 'single' && (
-                    <Badge className="type-ui ml-2 align-middle" variant="secondary">
-                      {t('swiss.singleGame')}
-                    </Badge>
-                  )}
-                </div>
-                {showWarnings && renderMobileWarnings(pairing)}
-              </div>
-              <div className="mt-2.5 grid grid-cols-2 gap-2">
-                <div className="min-w-0">
-                  <div className="type-caption text-muted-foreground">
-                    {t('swiss.table.white')}
-                  </div>
-                  <div className="whitespace-normal">{whiteName}</div>
-                </div>
-                <div className="min-w-0">
-                  <div className="type-caption text-muted-foreground">
-                    {t('swiss.table.black')}
-                  </div>
-                  <div className="whitespace-normal">{blackName}</div>
-                </div>
-              </div>
-              <div className="mt-2.5">
-                {(!editable || !onResultChange) && (
-                  <div className="type-caption mb-1.5 text-muted-foreground">
-                    {t('swiss.result')}
-                  </div>
+              <span className="type-action tabular-nums">{pairing.boardNumber}</span>
+              <div className="grid min-w-0 gap-0.5">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] border border-border bg-white" />
+                  <span className="truncate">{renderWhite(pairing)}</span>
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] bg-foreground" />
+                  <span className="truncate">{renderBlack(pairing)}</span>
+                </span>
+                {pairing.kind === 'single' && (
+                  <Badge className="type-ui mt-1 w-fit" variant="secondary">
+                    {t('swiss.singleGame')}
+                  </Badge>
                 )}
-                {renderMobileResult(pairing)}
+                {hasHints && <div className="mt-1">{renderMobileWarnings(pairing)}</div>}
               </div>
+              <div className="justify-self-end">{renderMobileResult(pairing, true)}</div>
             </div>
           )
         })}
@@ -932,7 +930,7 @@ export function PairingsTable({
 
       <Table
         className="min-w-[48rem] table-fixed"
-        containerClassName="hidden md:block"
+        containerClassName="hidden rounded-lg border bg-card md:block"
       >
           <colgroup>
             <col className="w-40" />
