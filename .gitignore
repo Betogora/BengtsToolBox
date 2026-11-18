@@ -13,6 +13,8 @@ dist-ssr
 coverage
 playwright-report
 test-results
+tmp
+functions
 *.local
 gha-creds-*.json
 
