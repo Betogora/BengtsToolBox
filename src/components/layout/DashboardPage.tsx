@@ -14,8 +14,8 @@ import { defaultLobby, type Lobby } from '@/lobbies/types'
 
 type TileSize = 'large' | 'wide' | 'small'
 
-// Display order and size of the wide-screen tiles; complex multi-view apps get
-// more room. Unlisted apps follow as small tiles in registry order.
+// Display order at every width and size of the wide-screen tiles; complex
+// multi-view apps get more room. Unlisted apps follow as small tiles in registry order.
 const bentoLayout: Record<string, TileSize> = {
   'swiss-tournaments': 'large',
   'territory-map': 'large',
@@ -25,9 +25,9 @@ const bentoLayout: Record<string, TileSize> = {
   scoreboard: 'wide',
   'live-buzzer': 'small',
   voting: 'small',
-  'triathlon-tracker': 'wide',
   randomizer: 'small',
   'next-question': 'small',
+  'triathlon-tracker': 'wide',
 }
 
 const bentoOrder = Object.keys(bentoLayout)
@@ -240,7 +240,7 @@ export function AppTileGrid({
     <>
       {/* Phones get uniform picture tiles; wider screens weight tiles by app complexity. */}
       <section className="grid grid-cols-2 gap-3 sm:hidden">
-        {apps.map((app) => (
+        {bentoApps.map((app) => (
           <CompactTile key={app.id} app={app} href={hrefOf(app)} />
         ))}
       </section>
