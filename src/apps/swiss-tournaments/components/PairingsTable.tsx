@@ -886,13 +886,13 @@ export function PairingsTable({
           )}
         </div>
 
-        <Table className="min-w-[48rem] table-fixed" containerClassName="hidden rounded-lg border bg-card md:block">
+        <Table className="table-fixed" containerClassName="hidden rounded-lg border bg-card md:block">
           <colgroup>
             <col />
             <col className="w-24" />
             <col className="w-24" />
             <col className="w-24" />
-            {showWarnings && <col className="w-56" />}
+            {showWarnings && <col className="w-40" />}
           </colgroup>
           <TableHeader className="bg-muted/50">
             <TableHead>{t('common.name')}</TableHead>
@@ -909,9 +909,7 @@ export function PairingsTable({
                       className="transition-colors"
                     >
                       <TableCell className={eventCellClass(racer)}>
-                        <span className="min-w-0 truncate">
-                          {playerName(tournament, racer.playerId)}
-                        </span>
+                        <WrappedName>{playerName(tournament, racer.playerId)}</WrappedName>
                       </TableCell>
                       <TableCell className={cn('tabular-nums', eventCellClass(racer))}>
                         {raceNumber(pairing, racer.playerId)}
