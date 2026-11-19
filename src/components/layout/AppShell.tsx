@@ -115,6 +115,11 @@ export function AppShell() {
     location.pathname.startsWith('/apps/') || location.pathname.startsWith('/schlag-den-raab')
   const isCompact = !hubPathPattern.test(location.pathname)
   const fallbackApp = isCompact ? appForPath(location.pathname) : undefined
+  // Beim Rückweg zum Hub blendet der Titel der verlassenen App mit aus, statt sofort zu verschwinden.
+  // Andere schmale Seiten zeigen nur ihren eigenen Titel, nie den einer zuvor besuchten App.
+  const [lastApp, setLastApp] = useState(fallbackApp)
+  if (fallbackApp && fallbackApp !== lastApp) setLastApp(fallbackApp)
+  const titleApp = isCompact ? fallbackApp : lastApp
   const shellSlots = useMemo(
     () => (isCompact ? { title: titleSlot, actions: actionsSlot } : null),
     [isCompact, titleSlot, actionsSlot],
@@ -128,27 +133,31 @@ export function AppShell() {
       </Suspense>
       <header
         ref={headerRef}
+        data-shell-mode={isCompact ? 'app' : 'hub'}
         className={cn(
-          'app-shell-header sticky top-0 z-40 px-2 transition-[translate,visibility] duration-200 motion-reduce:transition-none sm:px-4',
-          isCompact ? 'border-b bg-card/95 backdrop-blur' : 'py-2',
+          'app-shell-header sticky top-0 z-40',
           // Unsichtbar statt nur verschoben: außerhalb des Bildes weder fokussierbar noch überdeckend.
           isHidden && 'invisible -translate-y-full',
         )}
       >
         {/* Equal outer columns keep the navigation centred regardless of brand and control widths. */}
-        <div
-          className={cn(
-            'mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 sm:gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
-            isCompact
-              ? 'h-12 px-1 sm:px-6'
-              : 'h-16 rounded-lg border bg-card/95 px-2.5 shadow-[0_18px_50px_-36px_rgba(6,52,79,0.65)] backdrop-blur sm:px-6',
-          )}
-        >
-          {isCompact ? (
-            // Pfeil, Icon und Titel führen gemeinsam zurück zum Hub. Der Titel kommt per Portal aus der Seite;
-            // in einem Link läge er in React außerhalb von dessen Klickbehandlung und löste einen vollen
-            // Seitenaufruf aus. Deshalb spannt der Pfeil-Link seine Fläche über die ganze Gruppe.
-            <div className="group relative flex min-w-0 max-w-full items-center gap-1 justify-self-start rounded-md text-foreground transition-colors hover:bg-secondary has-[[data-shell-title]]:pr-3 sm:-ml-2.5">
+        <div className="app-shell-bar mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 px-1 sm:gap-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+          {/* Marke und Zurück-Gruppe liegen übereinander und bleiben gemountet, damit sie ineinander überblenden. */}
+          <div className="grid min-w-0 grid-cols-[minmax(0,auto)] items-center justify-self-start *:[grid-area:1/1]">
+            <Link
+              to="/"
+              inert={isCompact}
+              className="app-shell-brand type-brand ml-1.5 min-w-0 justify-self-start whitespace-nowrap rounded-md text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:ml-0"
+            >
+              Bengts<span className="text-primary">Tool</span>Box
+            </Link>
+            {/* Pfeil, Icon und Titel führen gemeinsam zurück zum Hub. Der Titel kommt per Portal aus der Seite;
+                in einem Link läge er in React außerhalb von dessen Klickbehandlung und löste einen vollen
+                Seitenaufruf aus. Deshalb spannt der Pfeil-Link seine Fläche über die ganze Gruppe. */}
+            <div
+              inert={!isCompact}
+              className="app-shell-back group relative flex min-w-0 items-center gap-1 justify-self-start rounded-md text-foreground hover:bg-secondary has-[[data-shell-title]]:pr-3 sm:-ml-2.5"
+            >
               <Link
                 to={parentHubPath(location.pathname)}
                 aria-label={t('common.back')}
@@ -158,23 +167,16 @@ export function AppShell() {
                 <ArrowLeft aria-hidden="true" className="size-5" />
               </Link>
               <div ref={setTitleSlot} className="peer pointer-events-none min-w-0 empty:hidden" />
-              {fallbackApp && (
+              {titleApp && (
                 <ShellTitle
                   className="pointer-events-none hidden peer-empty:flex"
-                  Icon={fallbackApp.Icon}
-                  shortTitle={fallbackApp.shortTitleKey && t(fallbackApp.shortTitleKey)}
-                  title={t(fallbackApp.titleKey)}
+                  Icon={titleApp.Icon}
+                  shortTitle={titleApp.shortTitleKey && t(titleApp.shortTitleKey)}
+                  title={t(titleApp.titleKey)}
                 />
               )}
             </div>
-          ) : (
-            <Link
-              to="/"
-              className="type-brand min-w-0 justify-self-start whitespace-nowrap rounded-md text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              Bengts<span className="text-primary">Tool</span>Box
-            </Link>
-          )}
+          </div>
 
           <nav className="hidden items-center gap-1 lg:flex">
             {navigationItems.map(({ href, labelKey, Icon }) => (
