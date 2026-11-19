@@ -1,5 +1,5 @@
 import { Brain, Check, Hand, Pencil, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { playerName } from '@/apps/swiss-tournaments/components/tournamentUiPresentation'
 import type { GameResult, MarioKartRacer, Pairing, PairingWarning, Tournament } from '@/apps/swiss-tournaments/types';
@@ -26,6 +26,27 @@ const resultOptions: Array<{ value: GameResult; labelKey?: TranslationKey; label
 
 const openResultValue = 'open'
 
+// Mobile Namen brechen nur an Leerzeichen oder nach Bindestrich auf höchstens zwei Zeilen um;
+// ein einzelnes zu langes Wort endet mit „…“ statt mitten im Wort getrennt zu werden.
+function WrappedName({ children }: { children: ReactNode }) {
+  if (typeof children !== 'string') {
+    return <span className="min-w-0">{children}</span>
+  }
+
+  const parts = children.split(/(?<=-)|\s+/).filter(Boolean)
+
+  return (
+    <span className="line-clamp-2 min-w-0">
+      {parts.map((part, index) => (
+        <span key={index}>
+          {index > 0 && !parts[index - 1].endsWith('-') ? ' ' : ''}
+          <span className="inline-block max-w-full truncate align-bottom">{part}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 type ResultSelectValue = GameResult | typeof openResultValue
 
 function resultLabel(
@@ -48,6 +69,20 @@ function resultLabel(
     resultOptions.find((option) => option.value === result)?.label ??
     result.replaceAll('forfeit-', `${t('swiss.result.forfeit')} `).replaceAll('-', ' - ')
   )
+}
+
+// Kurzform im schmalen mobilen Auswahlfeld, damit ein kampfloses Ergebnis nicht die ganze Ergebnisspalte verbreitert; das Menü zeigt weiter die vollen Bezeichnungen.
+const compactResultLabels: Partial<Record<GameResult, string>> = {
+  '0.5-0.5': '½ - ½',
+  'forfeit-1-0': '+ - -',
+  'forfeit-0-1': '- - +',
+}
+
+function compactResultLabel(
+  result: GameResult | undefined,
+  t: ReturnType<typeof useI18n>['t'],
+) {
+  return (result && compactResultLabels[result]) ?? resultLabel(result, t)
 }
 
 function resultOptionLabel(
@@ -211,9 +246,10 @@ const warningBadgeMeta: Record<string, PairingWarningBadgeDefinition> = {
 
 const pairingHintBadgeClassName = 'type-action align-middle'
 
+// Gleiche Maße wie die übrigen Hinweis-Badges; nur als Span gebaut, weil der Entfernen-Knopf darin sitzt.
 const fixedPairingHintClassName = cn(
   pairingHintBadgeClassName,
-  'inline-flex items-center overflow-hidden rounded-md border border-yellow-300 bg-yellow-100 text-yellow-950',
+  'inline-flex h-[1.375rem] items-center overflow-hidden rounded-full border border-yellow-300 bg-yellow-100 text-xs leading-none font-semibold whitespace-nowrap text-yellow-950',
 )
 
 function pairingWarningBadgeMeta(
@@ -543,8 +579,13 @@ export function PairingsTable({
           }
         >
           {compact ? (
-            <SelectTrigger aria-label={t('swiss.result')} className="h-9 w-[6.5rem] pl-2.5 pr-8">
-              <SelectValue placeholder={t('swiss.result.open')} />
+            <SelectTrigger
+              aria-label={t('swiss.result')}
+              className="h-9 w-full pl-2.5 pr-7 [&>svg]:right-2"
+            >
+              <SelectValue placeholder={t('swiss.result.open')}>
+                {compactResultLabel(pairing.result, t)}
+              </SelectValue>
             </SelectTrigger>
           ) : (
             <IftaSelectTrigger label={t('swiss.result')}>
@@ -591,11 +632,11 @@ export function PairingsTable({
             className={fixedPairingHintClassName}
             title={removeLabel}
           >
-            <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
+            <span className="px-2">{t('swiss.fixed')}</span>
             {editable && onManualPairingRemove && (
               <Button
                 aria-label={pairingRemoveLabel(pairing)}
-                className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+                className="h-full w-5 rounded-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
                 disabled={!canChangePairings}
                 size="icon"
                 type="button"
@@ -885,12 +926,13 @@ export function PairingsTable({
 
   return (
     <>
-      {/* Mobil eine Tabellenzeile pro Brett – Nummer, Weiß über Schwarz, Ergebnis rechts. */}
-      <div className="divide-y overflow-hidden rounded-lg border bg-card md:hidden">
-        <div className="type-field-label grid grid-cols-[1.75rem_minmax(0,1fr)_6.5rem] gap-2 bg-muted/50 px-2.5 py-1.5 text-muted-foreground">
+      {/* Mobil eine Zeile pro Brett mit festen Spalten Weiß | Schwarz; die Ergebnisspalte ist über alle Bretter nur so breit wie nötig. */}
+      <div className="grid grid-cols-[1.25rem_minmax(0,1fr)_minmax(0,1fr)_auto] gap-x-2 divide-y overflow-hidden rounded-lg border bg-card md:hidden">
+        <div className="type-field-label col-span-full grid grid-cols-subgrid bg-muted/50 px-2.5 py-1.5 text-muted-foreground">
           <span>#</span>
-          <span>{t('swiss.table.white')} / {t('swiss.table.black')}</span>
-          <span>{t('swiss.result')}</span>
+          <span>{t('swiss.table.white')}</span>
+          <span>{t('swiss.table.black')}</span>
+          <span className="text-right">{t('swiss.result')}</span>
         </div>
         {pairings.map((pairing) => {
           const hasHints =
@@ -901,28 +943,30 @@ export function PairingsTable({
             <div
               key={pairing.id}
               className={cn(
-                'grid grid-cols-[1.75rem_minmax(0,1fr)_6.5rem] items-center gap-2 px-2.5 py-2 text-sm',
+                'col-span-full grid grid-cols-subgrid items-center gap-y-1 px-2.5 py-2 text-sm',
                 pairing.isManual && 'bg-primary/5',
               )}
             >
               <span className="type-action tabular-nums">{pairing.boardNumber}</span>
-              <div className="grid min-w-0 gap-0.5">
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] border border-border bg-white" />
-                  <span className="truncate">{renderWhite(pairing)}</span>
-                </span>
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] bg-foreground" />
-                  <span className="truncate">{renderBlack(pairing)}</span>
-                </span>
-                {pairing.kind === 'single' && (
-                  <Badge className="type-ui mt-1 w-fit" variant="secondary">
-                    {t('swiss.singleGame')}
-                  </Badge>
-                )}
-                {hasHints && <div className="mt-1">{renderMobileWarnings(pairing)}</div>}
-              </div>
-              <div className="justify-self-end">{renderMobileResult(pairing, true)}</div>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] border border-border bg-white" />
+                <WrappedName>{renderWhite(pairing)}</WrappedName>
+              </span>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] bg-foreground" />
+                <WrappedName>{renderBlack(pairing)}</WrappedName>
+              </span>
+              <div className="flex justify-end">{renderMobileResult(pairing, true)}</div>
+              {(pairing.kind === 'single' || hasHints) && (
+                <div className="col-span-3 col-start-2 flex flex-wrap items-center gap-1">
+                  {pairing.kind === 'single' && (
+                    <Badge className="type-ui w-fit" variant="secondary">
+                      {t('swiss.singleGame')}
+                    </Badge>
+                  )}
+                  {hasHints && renderMobileWarnings(pairing)}
+                </div>
+              )}
             </div>
           )
         })}
@@ -1008,11 +1052,11 @@ export function PairingsTable({
                   <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
                     {pairing.isManual && (
                       <span className={fixedPairingHintClassName}>
-                        <span className="px-2 py-0.5">{t('swiss.fixed')}</span>
+                        <span className="px-2">{t('swiss.fixed')}</span>
                         {editable && onManualPairingRemove && (
                           <Button
                             aria-label={pairingRemoveLabel(pairing)}
-                            className="h-5 w-5 rounded-l-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
+                            className="h-full w-5 rounded-none border-l border-yellow-300 p-0 text-yellow-950 hover:bg-destructive hover:text-destructive-foreground"
                             disabled={!canChangePairings}
                             size="icon"
                             type="button"

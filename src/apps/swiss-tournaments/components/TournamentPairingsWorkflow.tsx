@@ -166,7 +166,7 @@ function MarioKartReservationPanel({
                       key={playerId}
                       className={fixedPairingHintClassName}
                     >
-                      <span className="px-2 py-0.5">
+                      <span className="px-2">
                         {player?.name ?? playerId} · {t("swiss.fixed")}
                       </span>
                     </span>
@@ -871,13 +871,13 @@ export function TournamentPairingsWorkflow({
                       unitLabel={t(completedUnitLabelKey(tournament.format))}
                     />
                   )}
-                  {/* Laufende Runde als getönte Mulde, abgeschlossene Runden als Abschnitte mit Haarlinie. */}
+                  {/* Laufende Runde als getönte Mulde, abgeschlossene Runden als Abschnitte ohne Trennlinie. */}
                   <Card
                     className={cn(
                       "overflow-hidden shadow-none",
                       round.status === "draft"
                         ? "rounded-md border-0 bg-primary-soft"
-                        : "rounded-none border-0 border-t bg-transparent",
+                        : "rounded-none border-0 bg-transparent",
                     )}
                   >
                     <CardHeader
