@@ -205,6 +205,9 @@ export function TournamentOverviewWorkflow({
   const currentRound = inspection?.latestRound ?? null;
   const currentUnitProgress = inspection?.progress.currentUnitCount ?? 0;
   const isMarioKartTournament = tournament.format === "marioKart";
+  const byeScoreStartRound = currentRound
+    ? currentRound.roundNumber + (currentRound.status === "completed" ? 1 : 0)
+    : null;
 
   return (
     <TabsContent value="overview" className="grid gap-4">
@@ -343,7 +346,13 @@ export function TournamentOverviewWorkflow({
                 >
                   <IftaSelectTrigger
                     className={singleLineSelectTriggerClass}
-                    label={t("swiss.pointsPerBye")}
+                    label={
+                      byeScoreStartRound
+                        ? t("swiss.byePointsFromRound", {
+                            number: byeScoreStartRound,
+                          })
+                        : t("swiss.pointsPerBye")
+                    }
                   >
                     <SelectValue />
                   </IftaSelectTrigger>

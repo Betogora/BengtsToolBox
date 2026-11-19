@@ -7,7 +7,6 @@ import {
 } from '@/apps/swiss-tournaments/domain/tournamentDomain'
 import { sequenceTournamentNames } from '@/apps/swiss-tournaments/historicalNames'
 import type {
-  ByeScore,
   CreateTournamentInput,
   GameResult,
   HandBrainSide,
@@ -253,9 +252,6 @@ export function useSwissTournaments(lobbyId?: string) {
       changes: { settings: partial },
     })
 
-  const setRoundByeScore = (roundNumber: number, byeScore: ByeScore) =>
-    commitCommand({ type: 'round-bye-score.set', roundNumber, byeScore })
-
   const addPlayer = (name: string, rating?: number) =>
     commitCommand({ type: 'player.add', name, rating })
 
@@ -470,7 +466,6 @@ export function useSwissTournaments(lobbyId?: string) {
     setMarioKartResult,
     setMarioKartLobbyReservation: updateMarioKartLobbyReservation,
     setResult,
-    setRoundByeScore,
     shouldConfirmResultCorrection,
     standings,
     summarizeTournament: tournamentDomain.summarize,

@@ -495,6 +495,7 @@ export const en: Record<TranslationKey, string> = {
   'swiss.backToRound': 'Go back',
   'swiss.board': 'Board',
   'swiss.boardCount': '{count} boards/byes',
+  'swiss.byePointsFromRound': 'Bye points from round {number}',
   'swiss.byePolicy': 'Bye assignment',
   'swiss.byePolicy.lowestScore': 'Lowest score group',
   'swiss.byePolicy.protectLateEntrants': 'Protect late players',

@@ -496,6 +496,7 @@ export const de = {
   'swiss.backToRound': 'Zurückgehen',
   'swiss.board': 'Brett',
   'swiss.boardCount': '{count} Bretter/Byes',
+  'swiss.byePointsFromRound': 'Bye-Punkte ab Runde {number}',
   'swiss.byePolicy': 'Bye-Vergabe',
   'swiss.byePolicy.lowestScore': 'Niedrigste Scoregruppe',
   'swiss.byePolicy.protectLateEntrants': 'Späte Spieler schützen',

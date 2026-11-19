@@ -1,5 +1,4 @@
 import type {
-  ByeScore,
   GameResult,
   HandBrainSide,
   MarioKartRacer,
@@ -40,7 +39,6 @@ export type TournamentCommand =
         settings?: Partial<TournamentSettings>
       }
     }
-  | { type: 'round-bye-score.set'; roundNumber: number; byeScore: ByeScore }
   | { type: 'tournament.reset-progress' }
   | { type: 'player.add'; name: string; rating?: number }
   | {

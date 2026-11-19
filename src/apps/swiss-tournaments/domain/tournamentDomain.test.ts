@@ -49,17 +49,23 @@ describe('tournamentDomain decisions', () => {
     }
   })
 
-  it('updates existing draft byes and their score when the round override changes', () => {
-    const bye = { ...makeStandardPairing('bye', 1, 'p1', 'p2'), isBye: true, byePlayerId: 'p3', result: 'bye-1' as const }
+  it('applies a changed bye score to the running round but keeps completed rounds', () => {
+    const bye = (roundNumber: number, playerId: string) => ({ ...makeStandardPairing(`bye-${roundNumber}`, roundNumber, 'p1', 'p2'), isBye: true, byePlayerId: playerId, result: 'bye-1' as const })
     const tournament = makeTournament('swiss', 3, {
-      currentRound: 1,
-      rounds: [makeRound(1, [makeStandardPairing('game', 1, 'p1', 'p2', '1-0'), bye], 'draft')],
+      currentRound: 2,
+      rounds: [
+        makeRound(1, [makeStandardPairing('game-1', 1, 'p1', 'p2', '1-0'), bye(1, 'p3')], 'completed'),
+        makeRound(2, [makeStandardPairing('game-2', 2, 'p1', 'p3', '1-0'), bye(2, 'p2')], 'draft'),
+      ],
     })
-    const result = tournamentDomain.transition(tournament, { command: { type: 'round-bye-score.set', roundNumber: 1, byeScore: 0.5 } })
+    tournament.settings.roundByeScores = { 1: 1, 2: 1, 3: 1 }
+    const result = tournamentDomain.transition(tournament, { command: { type: 'tournament.configure', changes: { settings: { byeScore: 0.5 } } } })
     expect(result.status).toBe('changed')
     if (result.status !== 'changed') return
-    expect(result.tournament.rounds[0].pairings[1].result).toBe('bye-0.5')
-    expect(tournamentDomain.inspect(result.tournament).standings.find((entry) => entry.playerId === 'p3')?.points).toBe(0.5)
+    expect(result.tournament.rounds.map((round) => round.pairings[1].result)).toEqual(['bye-1', 'bye-0.5'])
+    expect(result.tournament.settings.roundByeScores).toEqual({ 1: 1 })
+    const points = Object.fromEntries(tournamentDomain.inspect(result.tournament).standings.map((entry) => [entry.playerId, entry.points]))
+    expect(points).toMatchObject({ p2: 0.5, p3: 1 })
   })
 
   it('returns unchanged with the original normalized reference for an idempotent command', () => {

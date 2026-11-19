@@ -263,7 +263,6 @@ export function SwissTournamentsPage() {
           onSetMarioKartLobbyReservation={app.setMarioKartLobbyReservation}
           onSetMarioKartResult={app.setMarioKartResult}
           onSetResult={app.setResult}
-          onSetRoundByeScore={app.setRoundByeScore}
         />
 
         <TabsContent value="standings">

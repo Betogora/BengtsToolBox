@@ -676,7 +676,6 @@ type TournamentPairingsWorkflowProps = {
     typeof useSwissTournaments
   >["setMarioKartResult"];
   onSetResult: ReturnType<typeof useSwissTournaments>["setResult"];
-  onSetRoundByeScore: ReturnType<typeof useSwissTournaments>["setRoundByeScore"];
 };
 
 export function TournamentPairingsWorkflow({
@@ -697,9 +696,8 @@ export function TournamentPairingsWorkflow({
   onSetMarioKartLobbyReservation,
   onSetMarioKartResult,
   onSetResult,
-  onSetRoundByeScore,
 }: TournamentPairingsWorkflowProps) {
-  const { t, formatNumber } = useI18n();
+  const { t } = useI18n();
   const manualPairingDraft: ManualPairingDraft = {
     white: useDraftStore(""),
     black: useDraftStore(""),
@@ -896,21 +894,6 @@ export function TournamentPairingsWorkflow({
                           )}
                         </div>
                         <div className="flex w-full min-w-0 flex-row flex-wrap items-center justify-end gap-2 md:w-auto md:flex-nowrap">
-                          {!isMarioKartLobby && round.status === "draft" && (
-                            <Select
-                              value={String(tournament.settings.roundByeScores?.[round.roundNumber] ?? tournament.settings.byeScore)}
-                              onValueChange={(value) => void onSetRoundByeScore(round.roundNumber, Number(value) as 0 | 0.5 | 1)}
-                            >
-                              <IftaSelectTrigger label={t("swiss.pointsPerBye")} className="w-full" containerClassName="w-[calc(50%-0.25rem)] md:w-40">
-                                <SelectValue />
-                              </IftaSelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0">0</SelectItem>
-                                <SelectItem value="1">1</SelectItem>
-                                <SelectItem value="0.5">{formatNumber(0.5)}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
                           {!isMarioKartLobby &&
                             canGoBackToRound &&
                             currentRound && (

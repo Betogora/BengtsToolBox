@@ -25,7 +25,7 @@ import {
   setMarioKartLobbyReservation,
 } from './marioKartFormat'
 import { getTournamentProgress } from './tournamentProgress'
-import type { Pairing, Tournament } from '@/apps/swiss-tournaments/types'
+import type { ByeScore, Pairing, Tournament } from '@/apps/swiss-tournaments/types'
 import { normalizeTournament } from './tournamentInspection'
 import type {
   TournamentCommandEnvelope,
@@ -133,7 +133,7 @@ function configureTournament(
         )
       : requestedRoundRobinCycles
 
-  return {
+  const configured = {
     ...tournament,
     name: changes.name?.trim() || tournament.name,
     numberOfRounds:
@@ -148,6 +148,41 @@ function configureTournament(
       ...tournament.settings,
       ...changes.settings,
       roundRobinCycles,
+    },
+  }
+
+  return changes.settings?.byeScore === undefined
+    ? configured
+    : applyByeScoreToOpenRounds(configured, changes.settings.byeScore)
+}
+
+// Der Bye-Wert gilt ab der laufenden Runde; abgeschlossene Runden behalten ihr Ergebnis.
+function applyByeScoreToOpenRounds(tournament: Tournament, byeScore: ByeScore): Tournament {
+  const completedRoundNumbers = new Set(
+    tournament.rounds
+      .filter((round) => round.status === 'completed')
+      .map((round) => round.roundNumber),
+  )
+
+  return {
+    ...tournament,
+    rounds: tournament.rounds.map((round) =>
+      round.status === 'completed'
+        ? round
+        : {
+            ...round,
+            pairings: round.pairings.map((pairing) =>
+              pairing.isBye ? { ...pairing, result: byeResult(byeScore) } : pairing,
+            ),
+          },
+    ),
+    settings: {
+      ...tournament.settings,
+      roundByeScores: Object.fromEntries(
+        Object.entries(tournament.settings.roundByeScores ?? {}).filter(
+          ([roundNumber]) => completedRoundNumbers.has(Number(roundNumber)),
+        ),
+      ),
     },
   }
 }
@@ -322,38 +357,6 @@ function transitionNormalizedTournament(
         value,
         normalizeTournament(configureTournament(tournament, command.changes)),
       )
-
-    case 'round-bye-score.set': {
-      const round = tournament.rounds.find((entry) => entry.roundNumber === command.roundNumber)
-      if (!Number.isInteger(command.roundNumber) || command.roundNumber < 1) {
-        return reject(value, { code: 'invalid-input', subject: 'round' })
-      }
-      if (round?.status === 'completed') {
-        return reject(value, { code: 'invalid-state', subject: 'round' })
-      }
-      return decideChange(value, {
-        ...tournament,
-        rounds: tournament.rounds.map((entry) =>
-          entry.roundNumber === command.roundNumber
-            ? {
-                ...entry,
-                pairings: entry.pairings.map((pairing) =>
-                  pairing.isBye
-                    ? { ...pairing, result: byeResult(command.byeScore) }
-                    : pairing,
-                ),
-              }
-            : entry,
-        ),
-        settings: {
-          ...tournament.settings,
-          roundByeScores: {
-            ...tournament.settings.roundByeScores,
-            [command.roundNumber]: command.byeScore,
-          },
-        },
-      })
-    }
 
     case 'tournament.reset-progress':
       return decideChange(value, resetTournamentProgress(tournament))

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Produkt- und Systemspezifikation der BengtsToolBox">
-  <meta name="specs-source-sha256" content="sha256:4b4caf704557968827697fb34f424c1476aa41d8b656fa0b619e09ebb72a405a">
+  <meta name="specs-source-sha256" content="sha256:75e9202c356212b1671d45a2a93a7abb0913d1c388000f7d44b31649eaa53118">
   <title>BengtsToolBox – Produkt- und Systemspezifikation</title>
   <style>
     :root {
@@ -827,7 +827,7 @@
               <li>Bei Mario Kart können mehrere Draft-Runden als aktive Lobbys parallel bestehen; die übrigen Formate bearbeiten nur die jüngste Draft-Runde.</li>
               <li>Neue Turniere archivieren vorher aktive; Reset archiviert eine Kopie und setzt Runden, Fortschritt und Spielerstatus zurück. Ranglisten sind als CSV und über die Druckansicht als PDF exportierbar; der Presenter zeigt die aktuelle Rangliste.</li>
               <li>Automatische Turniernamen enthalten nur den lokalen Starttag; mehrere Turniere desselben Tages werden formatübergreifend römisch nummeriert.</li>
-              <li>Bye-Wertungen 1, 0,5 oder 0 sind im Kopf einer Draft-Runde überschreibbar und ändern vorhandene Byes sofort. Abgeschlossene Runden müssen zuerst wieder geöffnet werden.</li>
+              <li>Bye-Wertungen 1, 0,5 oder 0 werden nur in der Übersicht eingestellt. Eine Änderung gilt ab der laufenden Draft-Runde und ändert deren vorhandene Byes sofort; abgeschlossene Runden behalten ihre Bye-Wertung.</li>
               <li>Eine Draft-Runde beeinflusst die Rangliste erst ab dem ersten eingetragenen Partieergebnis. Automatische Bye-Wertungen allein aktivieren sie nicht; danach wird die gesamte Runde einschließlich offener Pairings und Byes berücksichtigt.</li>
               <li>Nicht-Mario-Rangfolge: Punkte, Buchholz, SB, Siege, direkter Vergleich, Seed.</li>
               <li>Standardresultate sind <code>1-0</code>, <code>0-1</code>, <code>½-½</code> und kampflose Siege.</li>
