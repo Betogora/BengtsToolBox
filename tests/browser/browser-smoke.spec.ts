@@ -157,9 +157,14 @@ test('Schlag-den-Raab-Passwortfehler ist mit dem Feld verknüpft', async ({
 test('Presenter bleibt read-only und stellt den Fokus wieder her', async ({ app, page }) => {
   await app.open('/apps/coinflip')
 
-  const presenterTrigger = page.getByRole('button', { name: 'Presenter', exact: true })
+  // Unter sm steht der Presenter im Navigationsmenü; der Fokus kehrt dann zum Menü-Button zurück.
+  const inMenu = page.viewportSize()!.width < 640
+  const presenterTrigger = inMenu
+    ? page.getByRole('button', { name: 'Navigation' })
+    : page.getByRole('button', { name: 'Presenter', exact: true })
   await presenterTrigger.focus()
   await page.keyboard.press('Enter')
+  if (inMenu) await page.getByRole('menuitem', { name: 'Presenter' }).click()
 
   const presenter = page.getByRole('dialog', { name: 'Coinflip Presenter' })
   const exitButton = presenter.getByRole('button', { name: 'Presenter beenden' })

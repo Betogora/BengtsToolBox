@@ -2,6 +2,7 @@ import { Languages, Menu, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import type { ShellMenuAction } from '@/components/layout/shellHeaderSlots'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,6 +22,8 @@ export type NavigationItem = {
 }
 
 type NavigationMenuProps = {
+  // Einträge der aktuellen App-Seite, etwa der Presenter; nur unter sm, darüber stehen sie in der TopBar.
+  actions: readonly ShellMenuAction[]
   items: readonly NavigationItem[]
   // Carry over a click or focus the placeholder trigger received before this chunk arrived.
   openOnMount: boolean
@@ -28,7 +31,7 @@ type NavigationMenuProps = {
 }
 
 // Loaded outside the startup bundle; the shell renders an identical trigger until it is ready.
-export function NavigationMenu({ items, openOnMount, focusOnMount }: NavigationMenuProps) {
+export function NavigationMenu({ actions, items, openOnMount, focusOnMount }: NavigationMenuProps) {
   const { language, setLanguage, t } = useI18n()
   const { colorScheme, setColorScheme } = useColorScheme()
   const otherLanguage = language === 'de' ? 'en' : 'de'
@@ -52,22 +55,38 @@ export function NavigationMenu({ items, openOnMount, focusOnMount }: NavigationM
       <DropdownMenuContent align="end">
         {items.map(({ href, labelKey, Icon }) => (
           <DropdownMenuItem key={href} asChild>
-            <Link to={href} className="gap-2">
+            <Link to={href}>
               <Icon className="size-4" />
               {t(labelKey)}
             </Link>
           </DropdownMenuItem>
         ))}
-        {/* Unter sm stehen Sprache und Farbschema hier statt in der TopBar. */}
+        {/* Unter sm stehen Seitenaktionen, Sprache und Farbschema hier statt in der TopBar. */}
         <div className="sm:hidden">
+          {actions.length > 0 && <DropdownMenuSeparator />}
+          {actions.map(({ disabled, Icon, id, label, onSelect }) => (
+            // Erst nach dem Schließen des Menüs öffnen, sonst kollidiert der Fokus mit einem folgenden Dialog.
+            <DropdownMenuItem
+              key={id}
+              disabled={disabled}
+              onSelect={() => {
+                const trigger = triggerRef.current
+                window.setTimeout(() => onSelect(trigger))
+              }}
+            >
+              <Icon />
+              {label}
+            </DropdownMenuItem>
+          ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="gap-2" onSelect={() => setLanguage(otherLanguage)}>
-            <Languages className="size-4" />
-            {t('language.switchTo', { language: t(`language.${otherLanguage}.label`) })}
+          <DropdownMenuItem onSelect={() => setLanguage(otherLanguage)}>
+            <Languages />
+            {/* „Englisch“ bzw. „Deutsch“ ist in beiden Sprachen ein deutsches Wort. */}
+            <span lang="de">{t('nav.menuLanguage')}</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2" onSelect={() => setColorScheme(isDark ? 'light' : 'dark')}>
-            <SchemeIcon className="size-4" />
-            {t(isDark ? 'colorScheme.switchToLight' : 'colorScheme.switchToDark')}
+          <DropdownMenuItem onSelect={() => setColorScheme(isDark ? 'light' : 'dark')}>
+            <SchemeIcon />
+            {t(isDark ? 'nav.menuLightMode' : 'nav.menuDarkMode')}
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>

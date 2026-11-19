@@ -303,7 +303,7 @@ export function VotingPage() {
         }
         actions={
           <>
-            {/* Presenter und Schloss nur ab sm; mobil sitzt das Schloss in der Rundenkarte. */}
+            {/* Presenter und Schloss ab sm in der TopBar; mobil steht der Presenter im Menü, das Schloss in der Rundenkarte. */}
             <div className="hidden items-center gap-2 sm:flex">
               <PresenterLauncher
                 appTitle={appTitle}

@@ -10,6 +10,7 @@ import {
 } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 
+import { useShellHeaderSlots } from '@/components/layout/shellHeaderSlots'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -64,10 +65,17 @@ export function PresenterLauncher({
   )
   const hasViews = views.length > 0
   const isDisabled = disabled || !hasViews
+  const shellSlots = useShellHeaderSlots()
+  const registerMenuAction = shellSlots?.registerMenuAction
+  const label = buttonLabel ?? t('common.presenter')
 
+  // Startet der Presenter aus dem Menü, ist der Button verborgen; dann kehrt der Fokus zum Menü-Button zurück.
+  const returnFocusRef = useRef<HTMLElement | null>(null)
   const restoreFocus = useCallback(() => {
     window.requestAnimationFrame(() => {
-      launcherRef.current?.focus()
+      const launcher = launcherRef.current
+      // getClientRects statt checkVisibility, das Safari erst ab 17.4 kennt.
+      ;(launcher && launcher.getClientRects().length > 0 ? launcher : returnFocusRef.current)?.focus()
     })
   }, [])
 
@@ -106,10 +114,13 @@ export function PresenterLauncher({
     }
   }, [activeView, restoreFocus])
 
-  const handleLaunch = () => {
+  const handleLaunch = (returnFocusTo?: HTMLElement | null) => {
     if (isDisabled) {
       return
     }
+
+    returnFocusRef.current =
+      returnFocusTo ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
 
     if (views.length === 1) {
       startView(views[0].id)
@@ -119,19 +130,36 @@ export function PresenterLauncher({
     setIsChooserOpen(true)
   }
 
+  // In der Shell steht der Presenter unter sm im Navigationsmenü statt als Button in der TopBar.
+  const launchRef = useRef(handleLaunch)
+  useEffect(() => {
+    launchRef.current = handleLaunch
+  })
+  useEffect(
+    () =>
+      registerMenuAction?.({
+        id: 'presenter',
+        label,
+        Icon: Monitor,
+        disabled: isDisabled,
+        onSelect: (returnFocusTo) => launchRef.current(returnFocusTo),
+      }),
+    [registerMenuAction, label, isDisabled],
+  )
+
   return (
     <>
-      {/* Mobil als Icon-Button im Seitenkopf, ab sm mit Beschriftung. */}
+      {/* Ohne Shell mobil als Icon-Button, ab sm mit Beschriftung. */}
       <Button
         ref={launcherRef}
-        className={cn('max-sm:size-9 max-sm:px-0', className)}
+        className={cn(registerMenuAction ? 'max-sm:hidden' : 'max-sm:size-9 max-sm:px-0', className)}
         disabled={isDisabled}
         type="button"
         variant="outline"
-        onClick={handleLaunch}
+        onClick={() => handleLaunch()}
       >
         <Monitor className="size-4" />
-        <span className="max-sm:sr-only">{buttonLabel ?? t('common.presenter')}</span>
+        <span className="max-sm:sr-only">{label}</span>
       </Button>
 
       <Dialog open={isChooserOpen} onOpenChange={setIsChooserOpen}>

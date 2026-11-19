@@ -41,7 +41,7 @@ function AppTitleHeader({ actions, isMarioKart = false }: { actions?: ReactNode;
   return (
     <AppPageHeader
       Icon={isMarioKart ? Beer : ChessKing}
-      shortTitle={isMarioKart ? undefined : t('app.swissTournaments.shortTitle')}
+      shortTitle={t(isMarioKart ? 'swiss.format.marioKart' : 'app.swissTournaments.shortTitle')}
       title={isMarioKart ? marioKartAppTitle : appTitle}
       actions={actions}
     />

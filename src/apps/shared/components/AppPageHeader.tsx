@@ -23,7 +23,7 @@ export function AppPageHeader({
   actions?: ReactNode
   className?: string
   Icon: LucideIcon
-  // Kürzere Fassung für die TopBar auf schmalen Telefonen.
+  // Kürzere Fassung für die TopBar, wo der volle Titel nicht passt (unter 768 px und 1024–1151 px).
   shortTitle?: string
   status?: ReactNode
   title: string

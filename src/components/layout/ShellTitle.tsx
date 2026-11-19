@@ -12,7 +12,8 @@ export function ShellTitle({
 }: {
   className?: string
   Icon: LucideIcon
-  // Ersetzt den Titel unter 400 px, wo lange App-Namen sonst abgeschnitten würden.
+  // Ersetzt den Titel, wo lange App-Namen sonst abgeschnitten würden: unter md (768 px) neben den Aktionen
+  // und von lg bis 72rem (1024–1151 px), wo die Navigation in der Mitte Platz kostet.
   shortTitle?: string
   title: string
 }) {
@@ -22,8 +23,8 @@ export function ShellTitle({
       <span className="min-w-0 truncate text-[1.0625rem] font-[650] leading-tight tracking-[-0.01em]">
         {shortTitle ? (
           <>
-            <span className="min-[25rem]:hidden">{shortTitle}</span>
-            <span className="max-[25rem]:hidden">{title}</span>
+            <span className="md:max-lg:hidden min-[72rem]:hidden">{shortTitle}</span>
+            <span className="max-md:hidden lg:max-[72rem]:hidden">{title}</span>
           </>
         ) : (
           title

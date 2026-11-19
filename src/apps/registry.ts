@@ -21,7 +21,7 @@ import type { TranslationKey } from '@/lib/i18n'
 export type HubApp = {
   id: string
   titleKey: TranslationKey
-  /** Kürzerer Name für die TopBar unter 400 px, wo der volle Titel abgeschnitten würde. */
+  /** Kürzerer Name für die TopBar, wo der volle Titel abgeschnitten würde (unter 768 px und 1024–1151 px). */
   shortTitleKey?: TranslationKey
   descriptionKey: TranslationKey
   href: string

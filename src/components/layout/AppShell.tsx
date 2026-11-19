@@ -5,7 +5,7 @@ import {
   Target,
   UsersRound,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { registeredApps } from '@/apps/registry'
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { ColorSchemeToggle } from '@/components/layout/ColorSchemeToggle'
 import { LanguageSelector } from '@/components/layout/LanguageSelector'
 import type { NavigationItem } from '@/components/layout/NavigationMenu'
-import { ShellHeaderSlotsContext } from '@/components/layout/shellHeaderSlots'
+import { ShellHeaderSlotsContext, type ShellMenuAction } from '@/components/layout/shellHeaderSlots'
 import { ShellTitle } from '@/components/layout/ShellTitle'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -120,9 +120,15 @@ export function AppShell() {
   const [lastApp, setLastApp] = useState(fallbackApp)
   if (fallbackApp && fallbackApp !== lastApp) setLastApp(fallbackApp)
   const titleApp = isCompact ? fallbackApp : lastApp
+  const [menuActions, setMenuActions] = useState<readonly ShellMenuAction[]>([])
+  const registerMenuAction = useCallback((action: ShellMenuAction) => {
+    setMenuActions((actions) => [...actions.filter((entry) => entry.id !== action.id), action])
+    // Nach Objekt statt id abmelden: Eine veraltete Anmeldung entfernt so nie die neuere mit gleicher id.
+    return () => setMenuActions((actions) => actions.filter((entry) => entry !== action))
+  }, [])
   const shellSlots = useMemo(
-    () => (isCompact ? { title: titleSlot, actions: actionsSlot } : null),
-    [isCompact, titleSlot, actionsSlot],
+    () => (isCompact ? { title: titleSlot, actions: actionsSlot, registerMenuAction } : null),
+    [isCompact, titleSlot, actionsSlot, registerMenuAction],
   )
   const shellOffset = isHidden ? '0px' : isCompact ? 'calc(3rem + 1px)' : '5rem'
 
@@ -143,7 +149,7 @@ export function AppShell() {
         {/* Equal outer columns keep the navigation centred regardless of brand and control widths. */}
         <div className="app-shell-bar mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 px-1 sm:gap-3 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           {/* Marke und Zurück-Gruppe liegen übereinander und bleiben gemountet, damit sie ineinander überblenden. */}
-          <div className="grid min-w-0 grid-cols-[minmax(0,auto)] items-center justify-self-start *:[grid-area:1/1]">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-center *:[grid-area:1/1]">
             <Link
               to="/"
               inert={isCompact}
@@ -156,7 +162,7 @@ export function AppShell() {
                 Seitenaufruf aus. Deshalb spannt der Pfeil-Link seine Fläche über die ganze Gruppe. */}
             <div
               inert={!isCompact}
-              className="app-shell-back group relative flex min-w-0 items-center gap-1 justify-self-start rounded-md text-foreground hover:bg-secondary has-[[data-shell-title]]:pr-3 sm:-ml-2.5"
+              className="app-shell-back group relative flex min-w-0 max-w-full items-center gap-1 justify-self-start rounded-md text-foreground hover:bg-secondary has-[[data-shell-title]]:pr-3 sm:-ml-2.5"
             >
               <Link
                 to={parentHubPath(location.pathname)}
@@ -234,6 +240,7 @@ export function AppShell() {
                 }
               >
                 <LazyNavigationMenu
+                  actions={menuActions}
                   items={navigationItems}
                   openOnMount={menuRequest.open}
                   focusOnMount={menuRequest.focus}
