@@ -244,7 +244,9 @@ svg.lucide {
   background-size: 1rem;
 }
 
-:is(button, input, select, textarea, a, summary, [tabindex]):focus-visible {
+/* Menü- und Dialog-Container bekommen den Fokus nur per Code; Chrome zeigt ihn nach Maus oder Touch sonst als
+   Rahmen um den ganzen Container. Optionen mit tabindex="-1" (Select) behalten ihren Tastaturrahmen. */
+:is(button, input, select, textarea, a, summary, [tabindex]:not([role='menu'], [role='dialog'], [role='alertdialog'])):focus-visible {
   outline: 2px solid var(--ring) !important;
   outline-offset: 3px !important;
   box-shadow: none !important;
