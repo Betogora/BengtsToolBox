@@ -41,11 +41,9 @@ import { TabsContent } from "@/components/ui/tabs";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { PairingsTable } from "@/apps/swiss-tournaments/components/PairingsTable";
-import { RoundStatusBadge } from "@/apps/swiss-tournaments/components/RoundStatusBadge";
 import {
   byeScoreOptions,
   plannedUnitLabelKey,
-  shouldShowPairingCountBadge,
   singleLineSelectTriggerClass,
   tournamentFormatLabelKey,
 } from "@/apps/swiss-tournaments/components/tournamentUiPresentation";
@@ -262,29 +260,11 @@ export function TournamentOverviewWorkflow({
         </CardHeader>
         <CardContent>
           {currentRound ? (
-            <div className="grid gap-3">
-              <div className="flex flex-wrap gap-2">
-                <Badge className="type-ui align-middle" variant="outline">
-                  {isMarioKartTournament
-                    ? inspection?.rounds.get(currentRound.roundNumber)
-                        ?.displayLabel
-                    : t("common.round", { number: currentRound.roundNumber })}
-                </Badge>
-                <RoundStatusBadge status={currentRound.status} />
-                {shouldShowPairingCountBadge(tournament.format) && (
-                  <Badge className="type-ui align-middle" variant="secondary">
-                    {t("swiss.boardCount", {
-                      count: currentRound.pairings.length,
-                    })}
-                  </Badge>
-                )}
-              </div>
-              <PairingsTable
-                inspection={inspection}
-                tournament={tournament}
-                pairings={currentRound.pairings}
-              />
-            </div>
+            <PairingsTable
+              inspection={inspection}
+              tournament={tournament}
+              pairings={currentRound.pairings}
+            />
           ) : (
             <EmptyState>
               {t(emptyUnitLabelKey(tournament.format))}

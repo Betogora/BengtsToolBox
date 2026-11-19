@@ -239,6 +239,11 @@ function TournamentCreator({
   const [players, setPlayers] = useState<DraftPlayer[]>(() =>
     tournamentPlayersToDraftPlayers(initialTournament),
   )
+  // Den Wert sofort lesen: Im späteren Updater ist event.currentTarget bereits null.
+  const updateDraftPlayer = (id: string, patch: Partial<Pick<DraftPlayer, 'name' | 'rating'>>) =>
+    setPlayers((currentPlayers) =>
+      currentPlayers.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+    )
   const [newDraftPlayerName, setNewDraftPlayerName] = useState('')
   const [newDraftPlayerRating, setNewDraftPlayerRating] = useState('')
   const [initialSeedingMode, setInitialSeedingMode] =
@@ -440,13 +445,7 @@ function TournamentCreator({
                       })}
                       value={player.name}
                       onChange={(event) =>
-                        setPlayers((currentPlayers) =>
-                          currentPlayers.map((entry) =>
-                            entry.id === player.id
-                              ? { ...entry, name: event.currentTarget.value }
-                              : entry,
-                          ),
-                        )
+                        updateDraftPlayer(player.id, { name: event.currentTarget.value })
                       }
                     />
                     <Input
@@ -459,13 +458,7 @@ function TournamentCreator({
                       type="number"
                       value={player.rating}
                       onChange={(event) =>
-                        setPlayers((currentPlayers) =>
-                          currentPlayers.map((entry) =>
-                            entry.id === player.id
-                              ? { ...entry, rating: event.currentTarget.value }
-                              : entry,
-                          ),
-                        )
+                        updateDraftPlayer(player.id, { rating: event.currentTarget.value })
                       }
                     />
                   </div>
@@ -538,13 +531,7 @@ function TournamentCreator({
                         })}
                         value={player.name}
                         onChange={(event) =>
-                          setPlayers((currentPlayers) =>
-                            currentPlayers.map((entry) =>
-                              entry.id === player.id
-                                ? { ...entry, name: event.currentTarget.value }
-                                : entry,
-                            ),
-                          )
+                          updateDraftPlayer(player.id, { name: event.currentTarget.value })
                         }
                       />
                     </TableCell>
@@ -560,13 +547,7 @@ function TournamentCreator({
                         type="number"
                         value={player.rating}
                         onChange={(event) =>
-                          setPlayers((currentPlayers) =>
-                            currentPlayers.map((entry) =>
-                              entry.id === player.id
-                                ? { ...entry, rating: event.currentTarget.value }
-                                : entry,
-                            ),
-                          )
+                          updateDraftPlayer(player.id, { rating: event.currentTarget.value })
                         }
                       />
                     </TableCell>

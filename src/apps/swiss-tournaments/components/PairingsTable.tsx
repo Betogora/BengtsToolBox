@@ -26,7 +26,19 @@ const resultOptions: Array<{ value: GameResult; labelKey?: TranslationKey; label
 
 const openResultValue = 'open'
 
-// Mobile Namen brechen nur an Leerzeichen oder nach Bindestrich auf höchstens zwei Zeilen um;
+function ColorSwatch({ color }: { color: 'white' | 'black' }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'size-2.5 shrink-0 rounded-[2px]',
+        color === 'white' ? 'border border-border bg-white' : 'bg-foreground',
+      )}
+    />
+  )
+}
+
+// Namen brechen nur an Leerzeichen oder nach Bindestrich auf höchstens zwei Zeilen um;
 // ein einzelnes zu langes Wort endet mit „…“ statt mitten im Wort getrennt zu werden.
 function WrappedName({ children }: { children: ReactNode }) {
   if (typeof children !== 'string') {
@@ -882,7 +894,7 @@ export function PairingsTable({
             <col className="w-24" />
             {showWarnings && <col className="w-56" />}
           </colgroup>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableHead>{t('common.name')}</TableHead>
             <TableHead>{t('swiss.marioKartGames')}</TableHead>
             <TableHead>{t('swiss.marioKartPlacement')}</TableHead>
@@ -949,11 +961,11 @@ export function PairingsTable({
             >
               <span className="type-action tabular-nums">{pairing.boardNumber}</span>
               <span className="flex min-w-0 items-center gap-1.5">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] border border-border bg-white" />
+                <ColorSwatch color="white" />
                 <WrappedName>{renderWhite(pairing)}</WrappedName>
               </span>
               <span className="flex min-w-0 items-center gap-1.5">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-[2px] bg-foreground" />
+                <ColorSwatch color="black" />
                 <WrappedName>{renderBlack(pairing)}</WrappedName>
               </span>
               <div className="flex justify-end">{renderMobileResult(pairing, true)}</div>
@@ -972,18 +984,16 @@ export function PairingsTable({
         })}
       </div>
 
-      <Table
-        className="min-w-[48rem] table-fixed"
-        containerClassName="hidden rounded-lg border bg-card md:block"
-      >
+      {/* Ohne Mindestbreite: Ab md passt die Tabelle ohne seitliche Scrollleiste, lange Namen brechen um. */}
+      <Table className="table-fixed" containerClassName="hidden rounded-lg border bg-card md:block">
           <colgroup>
-            <col className="w-40" />
+            <col className="w-16" />
             <col />
             <col />
             <col className="w-36" />
-            {showWarnings && <col className="w-56" />}
+            {showWarnings && <col className="w-40" />}
           </colgroup>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableHead>{t('swiss.board')}</TableHead>
             <TableHead>{t('swiss.table.white')}</TableHead>
             <TableHead>{t('swiss.table.black')}</TableHead>
@@ -999,19 +1009,21 @@ export function PairingsTable({
                 key={pairing.id}
                 className={pairing.isManual ? 'bg-primary/5' : undefined}
               >
-              <TableCell className="tabular-nums">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span>{pairing.boardNumber}</span>
-                  {pairing.kind === 'single' && (
-                    <Badge className="type-ui align-middle" variant="secondary">{t('swiss.singleGame')}</Badge>
-                  )}
-                </div>
+              <TableCell className="tabular-nums">{pairing.boardNumber}</TableCell>
+              <TableCell>
+                <span className="flex min-w-0 items-center gap-2">
+                  <ColorSwatch color="white" />
+                  <WrappedName>{renderWhite(pairing)}</WrappedName>
+                </span>
+                {pairing.kind === 'single' && (
+                  <Badge className="type-ui mt-1 ml-[1.125rem] w-fit" variant="secondary">{t('swiss.singleGame')}</Badge>
+                )}
               </TableCell>
               <TableCell>
-                {renderWhite(pairing)}
-              </TableCell>
-              <TableCell>
-                {renderBlack(pairing)}
+                <span className="flex min-w-0 items-center gap-2">
+                  <ColorSwatch color="black" />
+                  <WrappedName>{renderBlack(pairing)}</WrappedName>
+                </span>
               </TableCell>
               <TableCell>
                 {pairing.isBye ? (
